@@ -9,6 +9,7 @@ interface SalaryManagementProps {
 
 interface SalaryRecord {
     id: string;
+    slipId?: string | null;
     employeeId: string;
     employeeName: string;
     employeeEmail: string;
@@ -109,6 +110,27 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
         } catch (err) {
             console.error('Error processing payment:', err);
             toast.error('An error occurred');
+        }
+    };
+
+    const handleDownloadPdf = async (slipId: string, employeeName: string) => {
+        try {
+            const res = await fetch(`/api/hr/salary-slips/${slipId}/download`);
+            if (!res.ok) {
+                toast.error('Could not download PDF');
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Salary_Slip_${employeeName}_${selectedMonth}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            toast.error('Could not download PDF');
         }
     };
 
@@ -243,7 +265,7 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
+                                    <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => {
                                                         setSelectedSalary(record);
@@ -320,12 +342,22 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-secondary-200 flex justify-between items-center">
                             <h3 className="text-lg font-semibold text-secondary-900">Payslip</h3>
-                            <button
-                                onClick={() => setShowPayslipModal(false)}
-                                className="text-secondary-400 hover:text-secondary-600"
-                            >
-                                ✕
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {selectedSalary.slipId && (
+                                    <button
+                                        onClick={() => handleDownloadPdf(selectedSalary.slipId as string, selectedSalary.employeeName)}
+                                        className="text-primary-600 hover:text-primary-800 text-sm font-medium"
+                                    >
+                                        Download PDF
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setShowPayslipModal(false)}
+                                    className="text-secondary-400 hover:text-secondary-600"
+                                >
+                                    ✕
+                                </button>
+                            </div>
                         </div>
                         <div className="p-6">
                             <div className="border-b border-secondary-200 pb-4 mb-4">

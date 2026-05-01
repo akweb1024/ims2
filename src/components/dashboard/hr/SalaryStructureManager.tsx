@@ -93,9 +93,9 @@ export default function SalaryStructureManager() {
     };
 
     const autoPopulate = () => {
-        const gross = parseFloat(prompt("Enter Target Monthly Gross Amount:") || "0");
-        if (gross > 0) {
-            calculateStructureFromGross(gross);
+        const ctc = parseFloat(prompt("Enter Target Monthly CTC Amount:") || "0");
+        if (ctc > 0) {
+            calculateStructureFromGross(ctc);
         }
     };
 

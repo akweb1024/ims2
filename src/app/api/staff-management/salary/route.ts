@@ -11,6 +11,7 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const companyId = searchParams.get('companyId');
             const employeeId = searchParams.get('employeeId');
+            const departmentId = searchParams.get('departmentId');
             const month = searchParams.get('month');
             const year = searchParams.get('year');
 
@@ -18,15 +19,26 @@ export const GET = authorizedRoute(
 
             // Filter by company
             if (companyId) {
-                where.employeeProfile = {
+                where.employee = {
                     user: {
                         companyId
                     }
                 };
             } else if (user.companyId) {
-                where.employeeProfile = {
+                where.employee = {
                     user: {
                         companyId: user.companyId
+                    }
+                };
+            }
+
+            // Filter by department/team
+            if (departmentId && departmentId !== 'all') {
+                where.employee = {
+                    ...(where.employee || {}),
+                    user: {
+                        ...((where.employee && where.employee.user) || {}),
+                        departmentId
                     }
                 };
             }
@@ -82,6 +94,7 @@ export const GET = authorizedRoute(
 
                 return {
                     id: slip?.id || record.id, // Use slip ID if exists, else structure ID (for key)
+                    slipId: slip?.id || null,
                     employeeId: record.employeeId,
                     employeeName: usr?.name || 'Unknown',
                     employeeEmail: usr?.email || 'N/A',

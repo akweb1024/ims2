@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
-import { PayrollCalculator } from '@/lib/payroll';
+import { generateSalarySlips } from '@/lib/services/payroll/generateSalarySlips';
 
 export const GET = authorizedRoute(
     [],
@@ -130,192 +130,21 @@ export const POST = authorizedRoute(
                 if (employees.length === 0) {
                     return NextResponse.json({ message: 'No eligible employees found for payroll generation.', count: 0 });
                 }
-
-                const statutoryConfig = await PayrollCalculator.getStatutoryConfig(user.companyId!);
-
-                let generatedCount = 0;
-                for (const emp of employees) {
-                    try {
-                        await prisma.$transaction(async (tx) => {
-                            // Check if already exists
-                            const existing = await tx.salarySlip.findFirst({
-                                where: { employeeId: emp.id, month: m, year: y }
-                            });
-
-                            // If generating single, we might want to overwrite or warn? 
-                            // For now, let's skip if exists, similar to bulk.
-                            if (existing) return;
-
-                            const struct = emp.salaryStructure;
-                            if (!struct || struct.grossSalary <= 0) return;
-
-                            // 1. Check for Advances / EMIs
-                            const activeEmi = await tx.advanceEMI.findFirst({
-                                where: {
-                                    advance: { employeeId: emp.id, status: 'APPROVED' },
-                                    month: m,
-                                    year: y,
-                                    status: 'PENDING'
-                                }
-                            });
-
-                            // 2. Compute Leaves / LWP from LeaveLedger
-                            const ledger = await tx.leaveLedger.findUnique({
-                                where: {
-                                    employeeId_month_year: {
-                                        employeeId: emp.id,
-                                        month: m,
-                                        year: y
-                                    }
-                                }
-                            });
-
-                            const opening = ledger?.openingBalance || emp.currentLeaveBalance || 0;
-                            const allotted = ledger?.autoCredit || 0;
-                            const taken = ledger?.takenLeaves || 0;
-                            const delayDeds = (ledger?.lateDeductions || 0) + (ledger?.shortLeaveDeductions || 0);
-
-                            const actualBalance = opening + allotted - taken - delayDeds;
-                            const overheadDays = actualBalance < 0 ? Math.abs(actualBalance) : 0;
-
-                            const displayBalance = Math.max(0, actualBalance);
-                            await tx.employeeProfile.update({
-                                where: { id: emp.id },
-                                data: {
-                                    currentLeaveBalance: displayBalance,
-                                    leaveBalance: displayBalance
-                                }
-                            });
-                            const daysInMonth = new Date(y, m, 0).getDate();
-
-                            const breakdown = PayrollCalculator.calculate({
-                                basicSalary: struct.basicSalary,
-                                hra: struct.hra,
-                                conveyance: struct.conveyance,
-                                medical: struct.medical,
-                                specialAllowance: struct.specialAllowance,
-                                otherAllowances: struct.otherAllowances,
-                                statutoryBonus: (struct as any).statutoryBonus || 0,
-                                gratuity: (struct as any).gratuity || 0,
-                                healthCare: (struct as any).healthCare || 0,
-                                travelling: (struct as any).travelling || 0,
-                                mobile: (struct as any).mobile || 0,
-                                internet: (struct as any).internet || 0,
-                                booksAndPeriodicals: (struct as any).booksAndPeriodicals || 0,
-                                salaryFixed: struct.salaryFixed || 0,
-                                salaryVariable: struct.salaryVariable || 0,
-                                salaryIncentive: 0,
-                                pfEmployee: struct.pfEmployee,
-                                pfEmployer: struct.pfEmployer,
-                                esicEmployee: struct.esicEmployee,
-                                esicEmployer: struct.esicEmployer,
-                                lwpDays: overheadDays,
-                                daysInMonth
-                            }, statutoryConfig);
-
-                            // 2b. Fetch and sum APPROVED incentives for this month/year
-                            const incentives = await tx.employeeIncentive.findMany({
-                                where: {
-                                    employeeProfileId: emp.id,
-                                    status: 'APPROVED',
-                                    date: {
-                                        gte: new Date(y, m - 1, 1),
-                                        lt: new Date(y, m, 1)
-                                    },
-                                    salarySlipId: null
-                                }
-                            });
-                            const incentiveSum = incentives.reduce((sum, inc) => sum + inc.amount, 0);
-
-                            // Re-adjust netPayable and CTC to include incentiveSum
-                            const finalNetPayable = breakdown.netPayable + incentiveSum;
-                            const finalCTC = breakdown.costToCompany + incentiveSum;
-
-                            const advanceDeduction = activeEmi ? activeEmi.amount : 0;
-                            const amountPaidData = Math.max(0, finalNetPayable - advanceDeduction);
-
-                            const slip = await tx.salarySlip.create({
-                                data: {
-                                    employeeId: emp.id,
-                                    month: m,
-                                    year: y,
-                                    amountPaid: parseFloat(amountPaidData.toFixed(2)),
-                                    advanceDeduction,
-                                    lwpDeduction: breakdown.deductions.lwpDeduction,
-                                    basicSalary: breakdown.earnings.basic,
-                                    hra: breakdown.earnings.hra,
-                                    conveyance: breakdown.earnings.conveyance,
-                                    medical: breakdown.earnings.medical,
-                                    specialAllowance: breakdown.earnings.specialAllowance,
-                                    otherAllowances: breakdown.earnings.otherAllowances,
-                                    statutoryBonus: breakdown.earnings.statutoryBonus,
-                                    grossSalary: breakdown.earnings.gross,
-                                    pfEmployee: breakdown.deductions.pfEmployee,
-                                    esicEmployee: breakdown.deductions.esicEmployee,
-                                    professionalTax: breakdown.deductions.professionalTax,
-                                    tds: breakdown.deductions.tds,
-                                    totalDeductions: breakdown.deductions.total + advanceDeduction,
-                                    pfEmployer: breakdown.employerContribution.pfEmployer,
-                                    esicEmployer: breakdown.employerContribution.esicEmployer,
-                                    gratuity: breakdown.employerContribution.gratuity,
-                                    ctc: finalCTC,
-                                    arrears: breakdown.arrears || 0,
-                                    expenses: 0,
-                                    healthCare: breakdown.perks.healthCare,
-                                    travelling: breakdown.perks.travelling,
-                                    mobile: breakdown.perks.mobile,
-                                    internet: breakdown.perks.internet,
-                                    booksAndPeriodicals: breakdown.perks.booksAndPeriodicals,
-                                    salaryFixed: breakdown.salaryFixed,
-                                    salaryVariable: breakdown.salaryVariable,
-                                    salaryIncentive: incentiveSum,
-                                    netPayable: amountPaidData,
-                                    isPFDeducted: struct.deductPF,
-                                    status: 'GENERATED',
-                                    companyId: user.companyId
-                                } as any
-                            });
-
-                            // 2c. Link incentives to the slip
-                            if (incentives.length > 0) {
-                                await tx.employeeIncentive.updateMany({
-                                    where: { id: { in: incentives.map(i => i.id) } },
-                                    data: { salarySlipId: slip.id, status: 'PAID' }
-                                });
-                            }
-
-                            if (activeEmi) {
-                                await tx.advanceEMI.update({
-                                    where: { id: activeEmi.id },
-                                    data: {
-                                        status: 'PAID',
-                                        salarySlipId: slip.id,
-                                        paidAt: new Date()
-                                    }
-                                });
-
-                                const advance = await tx.salaryAdvance.findUnique({
-                                    where: { id: activeEmi.advanceId },
-                                    include: { emis: true }
-                                });
-
-                                if (advance) {
-                                    const pendingEmis = advance.emis.filter(e => e.status === 'PENDING').length;
-                                    await tx.salaryAdvance.update({
-                                        where: { id: advance.id },
-                                        data: {
-                                            status: pendingEmis === 0 ? 'COMPLETED' : 'APPROVED',
-                                            paidEmis: advance.totalEmis - pendingEmis
-                                        }
-                                    });
-                                }
-                            }
-                            generatedCount++;
-                        });
-                    } catch (err) {
-                        console.error(`Failed to generate slip for ${emp.id}:`, err);
-                    }
-                }
+                const { generatedCount } = await prisma.$transaction((tx) =>
+                    generateSalarySlips(
+                        {
+                            companyId: user.companyId!,
+                            month: m,
+                            year: y,
+                            employees: employees.map((e: any) => ({
+                                id: e.id,
+                                currentLeaveBalance: e.currentLeaveBalance,
+                                salaryStructure: e.salaryStructure,
+                            })),
+                        },
+                        tx
+                    )
+                );
 
                 return NextResponse.json({ message: `Payroll generation complete for ${generatedCount} employee(s).`, count: generatedCount });
             }
