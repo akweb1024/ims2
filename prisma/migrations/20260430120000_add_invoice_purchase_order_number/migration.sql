@@ -1,3 +1,2 @@
--- Add optional PO number on invoices (shown on print/PDF copies)
-ALTER TABLE "Invoice" ADD COLUMN "purchaseOrderNumber" TEXT;
-
+-- Squashed into 20260301000000_baseline_init.
+-- Intentionally left empty to preserve migration ordering.

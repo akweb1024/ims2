@@ -1,3 +1,2 @@
--- Add new invoice product category "reinste"
-ALTER TYPE "InvoiceProductCategory" ADD VALUE IF NOT EXISTS 'REINSTE';
-
+-- Squashed into 20260301000000_baseline_init.
+-- Intentionally left empty to preserve migration ordering.

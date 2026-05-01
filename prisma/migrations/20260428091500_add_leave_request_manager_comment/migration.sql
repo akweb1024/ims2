@@ -1,2 +1,2 @@
-ALTER TABLE "LeaveRequest"
-ADD COLUMN IF NOT EXISTS "managerComment" TEXT;
+-- Squashed into 20260301000000_baseline_init.
+-- Intentionally left empty to preserve migration ordering.

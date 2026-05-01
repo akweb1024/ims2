@@ -1,3 +1,2 @@
--- Allow overriding invoice issue date (separate from createdAt)
-ALTER TABLE "Invoice" ADD COLUMN "invoiceDate" TIMESTAMP(3);
-
+-- Squashed into 20260301000000_baseline_init.
+-- Intentionally left empty to preserve migration ordering.
