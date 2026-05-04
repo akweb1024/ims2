@@ -25,6 +25,12 @@ const SENSITIVE_MODULE_ROUTES: Array<{ prefix: string; moduleId: string }> = [
     { prefix: '/api/recruitment', moduleId: 'HR' },
 ];
 
+const MODULE_ACCESS_ROUTE_EXCEPTIONS = new Set([
+    '/api/hr/attendance',
+    '/api/hr/work-reports',
+    '/api/hr/work-reports/comments',
+]);
+
 export const hasModuleAccess = (user: TokenPayload, moduleId: string): boolean => {
     if (user.role === 'SUPER_ADMIN') return true;
 
@@ -38,6 +44,11 @@ export const hasModuleAccess = (user: TokenPayload, moduleId: string): boolean =
 };
 
 export const getRequiredSensitiveModule = (pathname: string): string | null => {
+    const normalizedPath = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+    if (MODULE_ACCESS_ROUTE_EXCEPTIONS.has(normalizedPath)) {
+        return null;
+    }
+
     const matched = SENSITIVE_MODULE_ROUTES.find((entry) => pathname.startsWith(entry.prefix));
     return matched?.moduleId || null;
 };
