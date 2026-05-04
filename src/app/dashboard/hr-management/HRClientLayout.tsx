@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LayoutDashboard,
@@ -18,8 +18,13 @@ interface HRClientLayoutProps {
 
 export default function HRClientLayout({ children }: HRClientLayoutProps) {
     const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const activeTab = searchParams.get('tab');
+    const [activeTab, setActiveTab] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        setActiveTab(params.get('tab'));
+    }, [pathname]);
 
     const navItems = [
         { name: 'Command Center', href: '/dashboard/hr-management', icon: LayoutDashboard, tab: null },
