@@ -36,6 +36,7 @@ const MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS = new Set([
     '/api/hr/leave-requests',
     '/api/hr/salary-slips',
     '/api/hr/performance',
+    '/api/hr/performance/kra-kpi-overview',
     '/api/hr/performance/monthly',
     '/api/hr/performance/kpis',
     '/api/hr/performance/insights',

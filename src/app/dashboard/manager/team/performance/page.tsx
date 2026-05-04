@@ -1,6 +1,8 @@
 import { auth } from '@/lib/nextauth';
 import { getUnifiedPerformance } from '@/lib/team-service';
 import { format } from 'date-fns';
+import KRAKPIOverviewPanel from '@/components/dashboard/performance/KRAKPIOverviewPanel';
+import KRAKPIConfigPanel from '@/components/dashboard/performance/KRAKPIConfigPanel';
 
 import PerformanceCharts from './PerformanceCharts';
 
@@ -26,6 +28,9 @@ export default async function UnifiedPerformancePage({
                     Monitor KPIs and performance reviews across your team
                 </p>
             </div>
+
+            <KRAKPIOverviewPanel scope="team" title="Team KRA/KPI + Work Report Analysis" />
+            <KRAKPIConfigPanel />
 
             <div className="grid grid-cols-1 gap-6">
                 {performanceData.map((user) => (
@@ -136,4 +141,3 @@ export default async function UnifiedPerformancePage({
         </div >
     );
 }
-

@@ -10,6 +10,7 @@ import TaxDeclarationPortal from '@/components/dashboard/staff/TaxDeclarationPor
 import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding';
 import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
+import KRAKPIOverviewPanel from '@/components/dashboard/performance/KRAKPIOverviewPanel';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
@@ -547,7 +548,8 @@ export default function StaffPortalPage() {
                     )}
 
                     {activeTab === 'performance' && (
-                        <div className="p-8">
+                        <div className="p-8 space-y-6">
+                            <KRAKPIOverviewPanel scope="self" />
                             <EmployeeKPIView 
                                 snapshots={snapshots} 
                                 reviews={performance} 
