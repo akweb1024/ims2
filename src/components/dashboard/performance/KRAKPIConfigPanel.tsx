@@ -23,6 +23,8 @@ export default function KRAKPIConfigPanel() {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     const [kra, setKra] = useState('');
     const [kpis, setKpis] = useState<KpiRow[]>([]);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
     const selectedEmployee = useMemo(
         () => employees.find((e) => e.employeeId === selectedEmployeeId),
@@ -49,6 +51,23 @@ export default function KRAKPIConfigPanel() {
 
     useEffect(() => {
         loadAll();
+    }, []);
+
+    useEffect(() => {
+        const loadTemplates = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/hr/performance/kra-kpi-templates', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const payload = await res.json().catch(() => []);
+                if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to load templates');
+                setTemplates(Array.isArray(payload) ? payload : []);
+            } catch {
+                setTemplates([]);
+            }
+        };
+        loadTemplates();
     }, []);
 
     useEffect(() => {
@@ -127,6 +146,31 @@ export default function KRAKPIConfigPanel() {
         }
     };
 
+    const applyTemplate = () => {
+        if (!selectedTemplateId) {
+            setError('Please select a template first');
+            return;
+        }
+        const template = templates.find((t) => t.id === selectedTemplateId);
+        if (!template) {
+            setError('Template not found');
+            return;
+        }
+        setError('');
+        setNotice(`Applied template: ${template.name}`);
+        setKra(template.kra || '');
+        setKpis(
+            (template.kpis || []).map((k: any) => ({
+                title: k.title || '',
+                target: Number(k.target || 0),
+                current: Number(k.current || 0),
+                unit: k.unit || 'COUNT',
+                period: k.period || 'MONTHLY',
+                category: k.category || 'GENERAL',
+            }))
+        );
+    };
+
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -167,6 +211,28 @@ export default function KRAKPIConfigPanel() {
                     placeholder="Employee email"
                     className="border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500 bg-gray-50"
                 />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+                <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700"
+                >
+                    <option value="">Select Team Template</option>
+                    {templates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                            {template.name} [{template.family} - {template.roleType}]
+                        </option>
+                    ))}
+                </select>
+                <button
+                    type="button"
+                    onClick={applyTemplate}
+                    className="px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-bold"
+                >
+                    Apply Template
+                </button>
             </div>
 
             <div>
