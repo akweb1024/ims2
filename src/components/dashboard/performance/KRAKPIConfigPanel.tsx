@@ -14,6 +14,26 @@ type KpiRow = {
 
 const PERIODS = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
 
+type FieldLabelProps = {
+    label: string;
+    tooltip: string;
+};
+
+function FieldLabel({ label, tooltip }: FieldLabelProps) {
+    return (
+        <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-gray-600">
+            <span>{label}</span>
+            <span
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] font-bold text-gray-500 cursor-help"
+                title={tooltip}
+                aria-label={tooltip}
+            >
+                ?
+            </span>
+        </label>
+    );
+}
+
 export default function KRAKPIConfigPanel() {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -259,52 +279,88 @@ export default function KRAKPIConfigPanel() {
                 {kpis.map((kpi, index) => (
                     <div key={`${kpi.id || 'new'}-${index}`} className="border border-gray-200 rounded-lg p-3 space-y-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <input
-                                value={kpi.title}
-                                onChange={(e) => updateKpi(index, { title: e.target.value })}
-                                placeholder="KPI title"
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            />
-                            <input
-                                value={kpi.category}
-                                onChange={(e) => updateKpi(index, { category: e.target.value })}
-                                placeholder="Category"
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            />
+                            <div>
+                                <FieldLabel
+                                    label="KPI Title (What to Track)"
+                                    tooltip="Define the exact deliverable or performance outcome to measure."
+                                />
+                                <input
+                                    value={kpi.title}
+                                    onChange={(e) => updateKpi(index, { title: e.target.value })}
+                                    placeholder="e.g., Feature delivery commitments met"
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel
+                                    label="Category (Focus Area)"
+                                    tooltip="Group this KPI under a performance theme like DELIVERY, QUALITY, or RELIABILITY."
+                                />
+                                <input
+                                    value={kpi.category}
+                                    onChange={(e) => updateKpi(index, { category: e.target.value })}
+                                    placeholder="e.g., DELIVERY"
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                />
+                            </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                            <input
-                                type="number"
-                                value={kpi.target}
-                                onChange={(e) => updateKpi(index, { target: Number(e.target.value) })}
-                                placeholder="Target"
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            />
-                            <input
-                                type="number"
-                                value={kpi.current}
-                                onChange={(e) => updateKpi(index, { current: Number(e.target.value) })}
-                                placeholder="Current"
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            />
-                            <input
-                                value={kpi.unit}
-                                onChange={(e) => updateKpi(index, { unit: e.target.value })}
-                                placeholder="Unit"
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            />
-                            <select
-                                value={kpi.period}
-                                onChange={(e) => updateKpi(index, { period: e.target.value })}
-                                className="border border-gray-200 rounded-lg px-2 py-2 text-xs"
-                            >
-                                {PERIODS.map((p) => (
-                                    <option key={p} value={p}>{p}</option>
-                                ))}
-                            </select>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                            <div>
+                                <FieldLabel
+                                    label="Target (Goal)"
+                                    tooltip="Set the expected numeric outcome for this KPI within the selected evaluation cycle."
+                                />
+                                <input
+                                    type="number"
+                                    value={kpi.target}
+                                    onChange={(e) => updateKpi(index, { target: Number(e.target.value) })}
+                                    placeholder="e.g., 4"
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel
+                                    label="Current (Achieved So Far)"
+                                    tooltip="Enter progress already achieved against the target."
+                                />
+                                <input
+                                    type="number"
+                                    value={kpi.current}
+                                    onChange={(e) => updateKpi(index, { current: Number(e.target.value) })}
+                                    placeholder="e.g., 1"
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel
+                                    label="Unit (How Measured)"
+                                    tooltip="Specify measurement type such as PERCENT, TASKS, HOURS_MAX, or INR."
+                                />
+                                <input
+                                    value={kpi.unit}
+                                    onChange={(e) => updateKpi(index, { unit: e.target.value })}
+                                    placeholder="e.g., FEATURES"
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                />
+                            </div>
+                            <div>
+                                <FieldLabel
+                                    label="Period (Evaluation Cycle)"
+                                    tooltip="Choose how often this KPI is reviewed and reset: daily, weekly, monthly, quarterly, or yearly."
+                                />
+                                <select
+                                    value={kpi.period}
+                                    onChange={(e) => updateKpi(index, { period: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-lg px-2 py-2 text-xs"
+                                >
+                                    {PERIODS.map((p) => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <button
                                 onClick={() => removeKpi(index)}
-                                className="border border-red-200 rounded-lg px-2 py-2 text-xs font-bold text-red-600"
+                                className="md:mt-6 border border-red-200 rounded-lg px-2 py-2 text-xs font-bold text-red-600"
                             >
                                 Remove
                             </button>

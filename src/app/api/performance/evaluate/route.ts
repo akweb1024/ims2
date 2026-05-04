@@ -8,7 +8,7 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 
 // POST submit an evaluation for a goal
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

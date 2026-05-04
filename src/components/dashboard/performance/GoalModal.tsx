@@ -59,7 +59,12 @@ export default function GoalModal({ isOpen, onClose, goal, onSuccess, period }: 
         const fetchEmployees = async () => {
             setIsLoadingEmployees(true);
             try {
-                const res = await fetch('/api/staff-management/employees');
+                const token = localStorage.getItem('token');
+                const headers: Record<string, string> = {};
+                if (token) headers.Authorization = `Bearer ${token}`;
+                const res = await fetch('/api/hr/employees', {
+                    headers,
+                });
                 const data = await res.json();
                 if (res.ok) setEmployees(data);
             } catch (error) {
@@ -76,9 +81,12 @@ export default function GoalModal({ isOpen, onClose, goal, onSuccess, period }: 
         setIsSubmitting(true);
         try {
             const method = goal ? 'PATCH' : 'POST';
-            const res = await fetch('/api/performance/goals', {
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
+            const res = await fetch('/api/hr/performance/goals', {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     ...formData,
                     id: goal?.id

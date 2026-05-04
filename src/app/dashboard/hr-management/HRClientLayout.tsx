@@ -2,17 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LayoutDashboard,
-    Users,
     Briefcase,
     Clock,
     TrendingUp,
-    ShieldCheck,
     UserCheck,
-    Settings
 } from 'lucide-react';
 
 interface HRClientLayoutProps {
@@ -21,11 +18,13 @@ interface HRClientLayoutProps {
 
 export default function HRClientLayout({ children }: HRClientLayoutProps) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const activeTab = searchParams.get('tab');
 
     const navItems = [
-        { name: 'Command Center', href: '/dashboard/hr-management', icon: LayoutDashboard },
+        { name: 'Command Center', href: '/dashboard/hr-management', icon: LayoutDashboard, tab: null },
         { name: 'Recruitment Hub', href: '/dashboard/recruitment', icon: Briefcase },
-        { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: Clock },
+        { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: Clock, tab: 'attendance' },
         { name: 'Performance', href: '/dashboard/hr-management/performance/monthly', icon: TrendingUp },
         { name: 'Staff Management', href: '/dashboard/staff-management', icon: UserCheck },
     ];
@@ -37,9 +36,11 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
                 <div className="bg-white border-b border-secondary-200 sticky top-0 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
                     <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar">
                         {navItems.map((item) => {
-                            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                            // Use startsWith for sub-pages but exactly for main dashboard if needed
-                            const isCurrent = pathname === item.href || (item.href !== '/dashboard/hr-management' && pathname.startsWith(item.href));
+                            const itemPath = item.href.split('?')[0];
+                            const isHrRootTab = itemPath === '/dashboard/hr-management' && item.tab !== undefined;
+                            const isCurrent = isHrRootTab
+                                ? pathname === '/dashboard/hr-management' && activeTab === item.tab
+                                : pathname === itemPath || (itemPath !== '/dashboard/hr-management' && pathname.startsWith(itemPath));
 
                             return (
                                 <Link

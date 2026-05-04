@@ -31,12 +31,17 @@ export default function GoalsPage() {
 
     const user = session?.user as any;
     const userRole = user?.role;
-    const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER'].includes(userRole);
 
     const fetchGoals = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/performance/goals?type=${activeTab}`);
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            const res = await fetch(`/api/hr/performance/goals?type=${activeTab}`, {
+                headers,
+            });
             const data = await res.json();
             if (res.ok) {
                 setGoals(data);

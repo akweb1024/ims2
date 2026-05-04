@@ -39,6 +39,7 @@ const MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS = new Set([
     '/api/hr/performance/kra-kpi-overview',
     '/api/hr/performance/monthly',
     '/api/hr/performance/kpis',
+    '/api/hr/performance/goals',
     '/api/hr/performance/insights',
     '/api/hr/my-documents',
     '/api/hr/onboarding/compliance',

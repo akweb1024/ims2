@@ -57,7 +57,12 @@ export default function GoalManager({ employees }: { employees: Employee[] }) {
 
     const fetchGoals = async () => {
         try {
-            const res = await fetch('/api/hr/performance/goals');
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            const res = await fetch('/api/hr/performance/goals', {
+                headers,
+            });
             if (res.ok) setGoals(await res.json());
         } catch (err) {
             console.error(err);
@@ -71,10 +76,13 @@ export default function GoalManager({ employees }: { employees: Employee[] }) {
         try {
             const method = selectedGoal ? 'PATCH' : 'POST';
             const body = selectedGoal ? { ...formData, id: selectedGoal.id } : formData;
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
 
             const res = await fetch('/api/hr/performance/goals', {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(body)
             });
 

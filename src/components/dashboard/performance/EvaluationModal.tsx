@@ -26,9 +26,12 @@ export default function EvaluationModal({ isOpen, onClose, goal, onSuccess }: Ev
         if (e) e.preventDefault();
         setIsSubmitting(true);
         try {
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
             const res = await fetch('/api/performance/evaluate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     goalId: goal.id,
                     score: formData.score,

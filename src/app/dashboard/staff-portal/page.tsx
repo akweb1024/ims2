@@ -11,6 +11,7 @@ import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding'
 import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
 import KRAKPIOverviewPanel from '@/components/dashboard/performance/KRAKPIOverviewPanel';
+import KRAKPIConfigPanel from '@/components/dashboard/performance/KRAKPIConfigPanel';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
@@ -294,7 +295,7 @@ export default function StaffPortalPage() {
         setActiveTab(tabId);
         if (tabId === 'team-ops') setActiveSubTab('members');
         else if (tabId === 'team-payroll') setActiveSubTab('salary');
-        else if (tabId === 'team-perf') setActiveSubTab('analytics');
+        else if (tabId === 'team-perf') setActiveSubTab('kra-kpi');
     };
 
     return (
@@ -756,6 +757,7 @@ export default function StaffPortalPage() {
                     {activeTab === 'team-perf' && (
                         <div className="p-8 space-y-8">
                             <div className="flex flex-wrap gap-4 mb-8 bg-secondary-50 p-2 rounded-2xl w-fit">
+                                <button onClick={() => setActiveSubTab('kra-kpi')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'kra-kpi' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>KRA/KPI</button>
                                 <button onClick={() => setActiveSubTab('analytics')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'analytics' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Analytics</button>
                                 <button onClick={() => setActiveSubTab('goals')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'goals' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Goals (KRA)</button>
                                 <button onClick={() => setActiveSubTab('tasks')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'tasks' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Tasks</button>
@@ -763,6 +765,12 @@ export default function StaffPortalPage() {
                                 <button onClick={() => setActiveSubTab('reports')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'reports' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Reports</button>
                             </div>
                             <div className="animate-in fade-in duration-500">
+                                {activeSubTab === 'kra-kpi' && (
+                                    <div className="space-y-6">
+                                        <KRAKPIOverviewPanel scope="team" title="Team KRA/KPI + Work Report Analysis" />
+                                        <KRAKPIConfigPanel />
+                                    </div>
+                                )}
                                 {activeSubTab === 'analytics' && <TeamAnalyticsView filters={managerFilters} />}
                                 {activeSubTab === 'goals' && <TeamGoalTrackingView />}
                                 {activeSubTab === 'tasks' && <TeamTaskMasterView />}
