@@ -247,7 +247,7 @@ export default function StaffPortalPage() {
             if (res.ok) {
                 await fetchAllData();
                 // Refresh profile to update button state
-                const userRes = await fetch('/api/hr/profile', {
+                const userRes = await fetch('/api/hr/profile/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (userRes.ok) setUser(await userRes.json());

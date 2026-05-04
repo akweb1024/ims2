@@ -25,11 +25,38 @@ const SENSITIVE_MODULE_ROUTES: Array<{ prefix: string; moduleId: string }> = [
     { prefix: '/api/recruitment', moduleId: 'HR' },
 ];
 
-const MODULE_ACCESS_ROUTE_EXCEPTIONS = new Set([
+const MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS = new Set([
+    // HR self-service endpoints used by staff portal
+    '/api/hr/profile',
+    '/api/hr/profile/me',
+    '/api/hr/profile/upload-photo',
     '/api/hr/attendance',
     '/api/hr/work-reports',
     '/api/hr/work-reports/comments',
+    '/api/hr/leave-requests',
+    '/api/hr/salary-slips',
+    '/api/hr/performance',
+    '/api/hr/performance/monthly',
+    '/api/hr/performance/kpis',
+    '/api/hr/performance/insights',
+    '/api/hr/my-documents',
+    '/api/hr/onboarding/compliance',
+    '/api/hr/onboarding/progress',
+    '/api/hr/tasks',
+    '/api/hr/reimbursements',
+    '/api/hr/documents/my-digital',
 ]);
+
+const MODULE_ACCESS_PREFIX_EXCEPTIONS = [
+    // Executive/employee finance-facing endpoints with explicit route-level role checks
+    '/api/proforma',
+    '/api/revenue/transactions',
+    '/api/revenue/claims',
+    // Employee self-service record endpoints
+    '/api/hr/salary-slips',
+    '/api/hr/tasks',
+    '/api/hr/work-reports',
+];
 
 export const hasModuleAccess = (user: TokenPayload, moduleId: string): boolean => {
     if (user.role === 'SUPER_ADMIN') return true;
@@ -45,10 +72,17 @@ export const hasModuleAccess = (user: TokenPayload, moduleId: string): boolean =
 
 export const getRequiredSensitiveModule = (pathname: string): string | null => {
     const normalizedPath = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-    if (MODULE_ACCESS_ROUTE_EXCEPTIONS.has(normalizedPath)) {
+    if (MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS.has(normalizedPath)) {
         return null;
     }
 
-    const matched = SENSITIVE_MODULE_ROUTES.find((entry) => pathname.startsWith(entry.prefix));
+    const isPrefixException = MODULE_ACCESS_PREFIX_EXCEPTIONS.some((prefix) =>
+        normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+    );
+    if (isPrefixException) {
+        return null;
+    }
+
+    const matched = SENSITIVE_MODULE_ROUTES.find((entry) => normalizedPath.startsWith(entry.prefix));
     return matched?.moduleId || null;
 };

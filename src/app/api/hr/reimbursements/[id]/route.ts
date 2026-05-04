@@ -5,7 +5,7 @@ import { createAuditLog } from '@/lib/notifications';
 
 const ALLOWED_STATUS = new Set(['SUBMITTED', 'APPROVED', 'PAID']);
 
-export const PATCH = authorizedRoute(['SUPER_ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'], async (req: NextRequest, user: any, context: any) => {
+export const PATCH = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'], async (req: NextRequest, user: any, context: any) => {
     try {
         const id = context?.params?.id as string | undefined;
         if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
