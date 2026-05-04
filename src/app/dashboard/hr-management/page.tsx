@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import HRClientLayout from './HRClientLayout';
@@ -42,6 +42,7 @@ import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { TableSkeleton, CardSkeleton } from '@/components/ui/skeletons';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { formatToISTDate, getISTToday } from '@/lib/date-utils';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
     useCreateEmployee, useUpdateEmployee,
@@ -56,6 +57,11 @@ import {
 const FormattedTime = ({ date }: { date: string | Date | null }) => {
     if (!date) return <span>--:--</span>;
     return <span>{new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+};
+
+const toISTDateKey = (value?: string | Date | null) => {
+    if (!value) return '';
+    return formatToISTDate(value);
 };
 
 
@@ -374,10 +380,33 @@ const HRManagementContent = () => {
             await updateLeaveStatus.mutateAsync({ leaveId, status });
         } catch (err) { console.error(err); }
     };
-    // Computed stats
+    const todayIST = useMemo(() => getISTToday(), []);
+    const todayISTKey = useMemo(() => toISTDateKey(todayIST), [todayIST]);
+    const tomorrowIST = useMemo(() => {
+        const d = new Date(todayIST);
+        d.setDate(d.getDate() + 1);
+        return d;
+    }, [todayIST]);
+
+    const todayAttendance = useMemo(
+        () => allAttendance.filter((entry: any) => toISTDateKey(entry.date) === todayISTKey),
+        [allAttendance, todayISTKey]
+    );
+    const activeNowCount = todayAttendance.filter((a: any) => a.checkIn && !a.checkOut).length;
+    const leftOfficeCount = todayAttendance.filter((a: any) => !!a.checkOut).length;
+    const onLeaveTodayCount = leaves.filter((l: any) => {
+        if (l.status !== 'APPROVED') return false;
+        const start = new Date(l.startDate);
+        const end = new Date(l.endDate);
+        return start <= tomorrowIST && end >= todayIST;
+    }).length;
+
+    // Computed stats for today's attendance state
     const stats = {
         total: employees.length,
-        present: employees.filter((e: any) => e._count?.attendance > 0).length // _count might be undefined if not included in query? Hook should include it.
+        present: activeNowCount,
+        leftOffice: leftOfficeCount,
+        absent: Math.max(0, employees.length - activeNowCount - leftOfficeCount - onLeaveTodayCount)
     };
 
     // Old fetch implementations removed in favor of React Query mutations
@@ -527,14 +556,22 @@ const HRManagementContent = () => {
                 </div>
 
                 {/* Quick Stats Banner */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6">
                     <div className="card-premium p-6 border-l-4 border-primary-500">
                         <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Total Workforce</p>
                         <p className="text-3xl font-black text-secondary-900">{stats.total}</p>
                     </div>
                     <div className="card-premium p-6 border-l-4 border-success-500">
-                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Active Today</p>
+                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Present Now</p>
                         <p className="text-3xl font-black text-secondary-900">{stats.present}</p>
+                    </div>
+                    <div className="card-premium p-6 border-l-4 border-sky-500">
+                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Left Office</p>
+                        <p className="text-3xl font-black text-secondary-900">{stats.leftOffice}</p>
+                    </div>
+                    <div className="card-premium p-6 border-l-4 border-danger-500">
+                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Absent Today</p>
+                        <p className="text-3xl font-black text-secondary-900">{stats.absent}</p>
                     </div>
                     <div className="card-premium p-6 border-l-4 border-warning-500">
                         <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Pending Leaves</p>
@@ -1200,7 +1237,7 @@ const HRManagementContent = () => {
                                     <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
                                     <div className="text-xs font-bold text-secondary-600">
                                         <span className="block text-secondary-400 font-extrabold uppercase text-[10px]">Active</span>
-                                        {allAttendance.filter(a => !a.checkOut).length} Staff
+                                        {activeNowCount} Staff
                                     </div>
                                 </div>
                             </div>
@@ -1210,7 +1247,7 @@ const HRManagementContent = () => {
                             <div className="absolute inset-0 bg-[url('https://maps.wikimedia.org/img/osm-intl,12,28.6139,77.2090,300x200.png')] bg-cover opacity-50 grayscale group-hover:grayscale-0 transition-all duration-700"></div>
 
                             <div className="absolute inset-0 p-10">
-                                {allAttendance.filter(a => !a.checkOut && a.latitude).map((a, i) => (
+                                {todayAttendance.filter((a: any) => !a.checkOut && a.latitude).map((a, i) => (
                                     <div
                                         key={a.id}
                                         className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer hover:z-50 transition-all duration-300 hover:scale-110"
@@ -1240,7 +1277,7 @@ const HRManagementContent = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {allAttendance.filter(a => !a.checkOut).map(a => (
+                            {todayAttendance.filter((a: any) => !a.checkOut).map(a => (
                                 <div key={a.id} className="card-premium p-4 flex items-center gap-4">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${a.isGeofenced ? 'bg-emerald-500' : 'bg-rose-500'}`}>
                                         {a.employee.user.email[0].toUpperCase()}

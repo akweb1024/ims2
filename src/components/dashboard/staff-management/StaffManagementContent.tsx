@@ -50,6 +50,7 @@ export default function StaffManagementContent() {
     const [staffData, setStaffData] = useState({
         totalEmployees: 0,
         presentToday: 0,
+        leftOffice: 0,
         onLeave: 0,
         absent: 0,
         totalSalary: 0,

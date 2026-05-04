@@ -5,6 +5,7 @@ interface StaffOverviewProps {
     staffData: {
         totalEmployees: number;
         presentToday: number;
+        leftOffice?: number;
         onLeave: number;
         absent: number;
         totalSalary: number;
@@ -17,6 +18,7 @@ interface StaffOverviewProps {
             logo: string | null;
             totalEmployees: number;
             presentToday: number;
+            leftOffice?: number;
             presentPercentage: number;
             totalSalary: number;
         }[];
@@ -38,6 +40,12 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
             value: staffData.presentToday,
             icon: '✅',
             color: 'bg-green-500'
+        },
+        {
+            name: 'Left Office',
+            value: staffData.leftOffice || 0,
+            icon: '🏠',
+            color: 'bg-sky-500'
         },
         {
             name: 'On Leave',
@@ -125,7 +133,7 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                                         <td className="py-3 px-4 text-center text-secondary-700 font-medium">
                                             {company.totalEmployees}
                                         </td>
-                                        <td className="py-3 px-4">
+                                        <td className="py-3 px-4" title={`${company.presentToday} present now, ${company.leftOffice || 0} checked out`}>
                                             <div className="flex items-center justify-center gap-2">
                                                 <span className="text-secondary-700 font-medium">{company.presentPercentage}%</span>
                                                 <div className="w-16 h-2 bg-secondary-100 rounded-full overflow-hidden">
