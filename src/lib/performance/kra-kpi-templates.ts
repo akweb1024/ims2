@@ -1,19 +1,70 @@
 export type KpiTemplateRow = {
+    // KPI name shown to managers/employees
     title: string;
+    // Goal number to achieve in the selected period
     target: number;
+    // Start value when template is applied
     current: number;
+    // Measurement unit, e.g. PERCENT, INR, TASKS, HOURS_MAX
     unit: string;
+    // Tracking cycle for this KPI row
     period: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+    // Grouping label for dashboards/reports
     category: string;
 };
 
 export type KRAKPITemplate = {
+    // Unique slug for this template object
     id: string;
+    // Human-readable template label in dropdown
     name: string;
+    // Team/domain bucket, e.g. AI Engineering, Accounts
     family: string;
+    // Whether template is for individual contributor or manager
     roleType: 'INDIVIDUAL' | 'MANAGER';
+    // Main responsibility statement for this role
     kra: string;
+    // KPI rows shipped with this template
     kpis: KpiTemplateRow[];
+};
+
+/**
+ * Field labels for quick reference while editing template objects.
+ */
+export const TEMPLATE_OBJECT_LABELS = {
+    id: 'Unique template ID (snake_case)',
+    name: 'Template display name',
+    family: 'Team/department family',
+    roleType: 'INDIVIDUAL or MANAGER',
+    kra: 'Primary KRA statement',
+    kpis: 'List of KPI rows',
+    kpiTitle: 'KPI title',
+    kpiTarget: 'Expected target value',
+    kpiCurrent: 'Initial current value (usually 0)',
+    kpiUnit: 'Measurement unit',
+    kpiPeriod: 'DAILY/WEEKLY/MONTHLY/QUARTERLY/YEARLY',
+    kpiCategory: 'KPI grouping category',
+} as const;
+
+/**
+ * Copy-ready placeholders for creating new template objects.
+ */
+export const KPI_ROW_PLACEHOLDER: KpiTemplateRow = {
+    title: 'Example KPI title',
+    target: 100,
+    current: 0,
+    unit: 'PERCENT',
+    period: 'MONTHLY',
+    category: 'PERFORMANCE',
+};
+
+export const TEMPLATE_OBJECT_PLACEHOLDER: KRAKPITemplate = {
+    id: 'new_team_individual',
+    name: 'New Team Individual Template',
+    family: 'New Team',
+    roleType: 'INDIVIDUAL',
+    kra: 'Define the key responsibility areas for this role in one clear sentence.',
+    kpis: [KPI_ROW_PLACEHOLDER],
 };
 
 export const KRA_KPI_TEMPLATES: KRAKPITemplate[] = [
