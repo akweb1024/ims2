@@ -40,10 +40,15 @@ const envSchema = z.object({
   AWS_SES_FROM_EMAIL: z.string().email().optional(),
 
   // WhatsApp / Twilio (Optional)
-  WHATSAPP_PROVIDER: z.enum(["mock", "twilio"]).optional(),
+  WHATSAPP_PROVIDER: z.enum(["mock", "twilio", "meta"]).optional(),
   WHATSAPP_TWILIO_ACCOUNT_SID: z.string().optional(),
   WHATSAPP_TWILIO_AUTH_TOKEN: z.string().optional(),
   WHATSAPP_TWILIO_FROM: z.string().optional(),
+  WHATSAPP_META_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_META_API_VERSION: z.string().optional(),
+  WHATSAPP_META_RECIPIENTS: z.string().optional(),
+  WHATSAPP_REPORT_RECIPIENTS: z.string().optional(),
 
   // Redis (Optional)
   REDIS_URL: z.string().url().optional(),

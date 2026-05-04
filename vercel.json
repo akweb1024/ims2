@@ -7,6 +7,22 @@
     {
       "path": "/api/cron/performance-observability?cadence=60m",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/attendance-whatsapp-digest?slot=0930",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/attendance-whatsapp-digest?slot=1100",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/attendance-whatsapp-digest?slot=1730",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/attendance-whatsapp-digest?slot=1830",
+      "schedule": "0 13 * * *"
     }
   ]
 }

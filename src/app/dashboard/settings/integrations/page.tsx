@@ -11,6 +11,7 @@ const PROVIDER_ICONS = {
     PLAGIARISM_SCANNER: Webhook,
     AWS_SES: KeyRound,
     WHATSAPP_TWILIO: Webhook,
+    WHATSAPP_META: Webhook,
 } as const;
 
 export default function IntegrationsGatewayPage() {
@@ -202,7 +203,7 @@ export default function IntegrationsGatewayPage() {
                                             </div>
                                         </div>
 
-                                        {(provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO') && (
+                                        {(provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO' || provider.id === 'WHATSAPP_META') && (
                                             <div className="space-y-2 mt-4">
                                                 <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">
                                                     {provider.valueLabel}
@@ -217,6 +218,11 @@ export default function IntegrationsGatewayPage() {
                                                 {provider.id === 'WHATSAPP_TWILIO' && (
                                                     <p className="text-xs font-medium text-secondary-500">
                                                         Save the Twilio auth token in the secret field above. Use JSON here for `accountSid` and `from`.
+                                                    </p>
+                                                )}
+                                                {provider.id === 'WHATSAPP_META' && (
+                                                    <p className="text-xs font-medium text-secondary-500">
+                                                        Save Meta access token in the secret field above. Use JSON here for `phoneNumberId`, optional `apiVersion`, and `recipients` list.
                                                     </p>
                                                 )}
                                             </div>
@@ -251,7 +257,7 @@ export default function IntegrationsGatewayPage() {
                                         )}
 
                                         <div className="flex justify-end gap-3 pt-2">
-                                            {['GEMINI', 'PLAGIARISM_SCANNER', 'AWS_SES', 'WHATSAPP_TWILIO'].includes(provider.id) && (
+                                            {['GEMINI', 'PLAGIARISM_SCANNER', 'AWS_SES', 'WHATSAPP_TWILIO', 'WHATSAPP_META'].includes(provider.id) && (
                                                 <button
                                                     onClick={() => handleTest(provider.id)}
                                                     disabled={testing === provider.id}

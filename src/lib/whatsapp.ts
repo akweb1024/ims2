@@ -7,10 +7,14 @@ interface WhatsAppMessage {
 }
 
 interface WhatsAppProviderConfig {
-    provider: 'mock' | 'twilio';
+    provider: 'mock' | 'twilio' | 'meta';
     accountSid?: string;
     authToken?: string;
     from?: string;
+    phoneNumberId?: string;
+    accessToken?: string;
+    apiVersion?: string;
+    recipients?: string[];
 }
 
 function normalizeWhatsAppRecipient(phone: string) {
@@ -20,22 +24,74 @@ function normalizeWhatsAppRecipient(phone: string) {
     return `whatsapp:${digits}`;
 }
 
+function normalizeMetaRecipient(phone: string) {
+    const trimmed = phone.trim().replace(/^whatsapp:/i, '');
+    return trimmed.replace(/[^\d]/g, '');
+}
+
+function parseRecipientList(input: unknown): string[] {
+    if (Array.isArray(input)) {
+        return input
+            .map((item) => String(item || '').trim())
+            .filter(Boolean);
+    }
+
+    if (typeof input === 'string') {
+        return input
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+}
+
+function dedupeRecipients(recipients: string[]) {
+    return Array.from(new Set(recipients.map((item) => item.trim()).filter(Boolean)));
+}
+
+async function getCompanyIntegration(companyId: string, provider: string) {
+    return (prisma as any).companyIntegration.findUnique({
+        where: {
+            companyId_provider: {
+                companyId,
+                provider
+            }
+        }
+    }).catch(() => null);
+}
+
 async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise<WhatsAppProviderConfig> {
     if (companyId) {
-        const integration = await (prisma as any).companyIntegration.findUnique({
-            where: {
-                companyId_provider: {
-                    companyId,
-                    provider: 'WHATSAPP_TWILIO'
+        const metaIntegration = await getCompanyIntegration(companyId, 'WHATSAPP_META');
+        if (metaIntegration?.isActive && metaIntegration.key) {
+            let parsedValue: Record<string, unknown> = {};
+            if (metaIntegration.value) {
+                try {
+                    parsedValue = JSON.parse(metaIntegration.value);
+                } catch (error) {
+                    console.warn('WhatsApp Meta integration value is not valid JSON, falling back to env config');
                 }
             }
-        }).catch(() => null);
 
-        if (integration?.isActive && integration.key) {
-            let parsedValue: Record<string, string> = {};
-            if (integration.value) {
+            const phoneNumberId = String(parsedValue.phoneNumberId || '').trim();
+            if (phoneNumberId) {
+                return {
+                    provider: 'meta',
+                    phoneNumberId,
+                    accessToken: metaIntegration.key,
+                    apiVersion: String(parsedValue.apiVersion || 'v22.0'),
+                    recipients: dedupeRecipients(parseRecipientList(parsedValue.recipients))
+                };
+            }
+        }
+
+        const twilioIntegration = await getCompanyIntegration(companyId, 'WHATSAPP_TWILIO');
+        if (twilioIntegration?.isActive && twilioIntegration.key) {
+            let parsedValue: Record<string, unknown> = {};
+            if (twilioIntegration.value) {
                 try {
-                    parsedValue = JSON.parse(integration.value);
+                    parsedValue = JSON.parse(twilioIntegration.value);
                 } catch (error) {
                     console.warn('WhatsApp integration value is not valid JSON, falling back to env config');
                 }
@@ -44,12 +100,27 @@ async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise
             if (parsedValue.accountSid && parsedValue.from) {
                 return {
                     provider: 'twilio',
-                    accountSid: parsedValue.accountSid,
-                    authToken: integration.key,
-                    from: parsedValue.from
+                    accountSid: String(parsedValue.accountSid),
+                    authToken: twilioIntegration.key,
+                    from: String(parsedValue.from),
+                    recipients: dedupeRecipients(parseRecipientList(parsedValue.recipients))
                 };
             }
         }
+    }
+
+    if (
+        process.env.WHATSAPP_PROVIDER === 'meta' &&
+        process.env.WHATSAPP_META_PHONE_NUMBER_ID &&
+        process.env.WHATSAPP_META_ACCESS_TOKEN
+    ) {
+        return {
+            provider: 'meta',
+            phoneNumberId: process.env.WHATSAPP_META_PHONE_NUMBER_ID,
+            accessToken: process.env.WHATSAPP_META_ACCESS_TOKEN,
+            apiVersion: process.env.WHATSAPP_META_API_VERSION || 'v22.0',
+            recipients: dedupeRecipients(parseRecipientList(process.env.WHATSAPP_META_RECIPIENTS || process.env.WHATSAPP_REPORT_RECIPIENTS))
+        };
     }
 
     if (
@@ -63,10 +134,18 @@ async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise
             accountSid: process.env.WHATSAPP_TWILIO_ACCOUNT_SID,
             authToken: process.env.WHATSAPP_TWILIO_AUTH_TOKEN,
             from: process.env.WHATSAPP_TWILIO_FROM,
+            recipients: dedupeRecipients(parseRecipientList(process.env.WHATSAPP_REPORT_RECIPIENTS))
         };
     }
 
     return { provider: 'mock' };
+}
+
+export async function getWhatsAppReportRecipients(companyId?: string | null) {
+    const providerConfig = await resolveWhatsAppProviderConfig(companyId);
+    const fromConfig = dedupeRecipients(providerConfig.recipients || []);
+    if (fromConfig.length > 0) return fromConfig;
+    return dedupeRecipients(parseRecipientList(process.env.WHATSAPP_REPORT_RECIPIENTS || process.env.WHATSAPP_META_RECIPIENTS));
 }
 
 /**
@@ -83,6 +162,48 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
             hasMedia: Boolean(mediaUrl)
         });
         return { success: true, mode: 'mock', message: 'Mock WhatsApp logged' };
+    }
+
+    if (providerConfig.provider === 'meta' && providerConfig.phoneNumberId && providerConfig.accessToken) {
+        try {
+            const recipient = normalizeMetaRecipient(to);
+            if (!recipient) {
+                return { success: false, mode: 'meta', error: 'Invalid WhatsApp recipient number' };
+            }
+
+            const bodyText = mediaUrl ? `${message}\n\nAttachment: ${mediaUrl}` : message;
+            const response = await fetch(`https://graph.facebook.com/${providerConfig.apiVersion || 'v22.0'}/${providerConfig.phoneNumberId}/messages`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${providerConfig.accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: recipient,
+                    type: 'text',
+                    text: {
+                        body: bodyText,
+                        preview_url: false
+                    }
+                }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                console.error('Meta WhatsApp Error:', result);
+                return { success: false, mode: 'meta', error: result?.error?.message || 'Failed to send WhatsApp message via Meta' };
+            }
+
+            return {
+                success: true,
+                mode: 'meta',
+                messageId: result?.messages?.[0]?.id
+            };
+        } catch (error) {
+            console.error('Meta WhatsApp Error:', error);
+            return { success: false, mode: 'meta', error: error instanceof Error ? error.message : 'Unknown WhatsApp provider error' };
+        }
     }
 
     if (providerConfig.provider === 'twilio' && providerConfig.accountSid && providerConfig.authToken && providerConfig.from) {

@@ -31,6 +31,14 @@ export const SUPPORTED_INTEGRATION_PROVIDERS = [
     valueLabel: "Provider Config JSON",
     valuePlaceholder: '{"accountSid":"AC...","from":"whatsapp:+14155238886"}',
   },
+  {
+    id: "WHATSAPP_META",
+    name: "WhatsApp via Meta Cloud API",
+    desc: "Used for operational and HR WhatsApp notifications without Twilio.",
+    type: "Messaging",
+    valueLabel: "Provider Config JSON",
+    valuePlaceholder: '{"phoneNumberId":"1234567890","apiVersion":"v22.0","recipients":["+9198xxxxxx01","+9198xxxxxx02"]}',
+  },
 ] as const;
 
 export const SUPPORTED_INTEGRATION_PROVIDER_IDS =

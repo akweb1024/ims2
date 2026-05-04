@@ -64,6 +64,50 @@ async function testTwilioConnection(companyId: string) {
     }
 }
 
+async function testMetaConnection(companyId: string) {
+    const integration = await getCompanyIntegration(companyId, 'WHATSAPP_META');
+    if (!integration?.isActive || !integration.key) {
+        return { ok: false, message: 'WhatsApp Meta integration is not active or missing access token.' };
+    }
+
+    let parsedValue: Record<string, string> = {};
+    try {
+        parsedValue = integration.value ? JSON.parse(integration.value) : {};
+    } catch {
+        return { ok: false, message: 'WhatsApp Meta config JSON is invalid. Expected phoneNumberId.' };
+    }
+
+    const phoneNumberId = parsedValue.phoneNumberId;
+    const apiVersion = parsedValue.apiVersion || 'v22.0';
+    if (!phoneNumberId) {
+        return { ok: false, message: 'WhatsApp Meta config must include phoneNumberId in JSON config.' };
+    }
+
+    try {
+        const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}?fields=display_phone_number,verified_name`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${integration.key}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            return { ok: false, message: data?.error?.message || 'Meta WhatsApp credentials were rejected.' };
+        }
+
+        return {
+            ok: true,
+            message: `Meta WhatsApp connection verified for ${data?.verified_name || data?.display_phone_number || phoneNumberId}.`
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            message: error instanceof Error ? error.message : 'Failed to reach Meta Graph API.'
+        };
+    }
+}
+
 async function testSesConnection(companyId: string) {
     const integration = await getCompanyIntegration(companyId, 'AWS_SES');
     const senderIdentity = integration?.value || process.env.AWS_SES_FROM_EMAIL || process.env.EMAIL_FROM || '';
@@ -165,6 +209,8 @@ export async function POST(req: NextRequest) {
         const integration = await getCompanyIntegration(companyId, provider);
         if (provider === 'WHATSAPP_TWILIO') {
             result = await testTwilioConnection(companyId);
+        } else if (provider === 'WHATSAPP_META') {
+            result = await testMetaConnection(companyId);
         } else if (provider === 'AWS_SES') {
             result = await testSesConnection(companyId);
         } else if (provider === 'GEMINI') {
