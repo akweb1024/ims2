@@ -48,6 +48,52 @@ export class StorageService {
         return !!process.env.STORAGE_ROOT_PATH;
     }
 
+    private static normalizeRelativePath(relativePath: string): string {
+        const normalized = relativePath
+            .replace(/\\/g, '/')
+            .replace(/^\/+/, '')
+            .split('/')
+            .filter(Boolean);
+
+        if (!normalized.length || normalized.includes('..')) {
+            throw new Error('Access denied');
+        }
+
+        return normalized.join('/');
+    }
+
+    private static buildReadCandidates(normalizedRelativePath: string): string[] {
+        const roots = new Set<string>([
+            this.rootPath,
+            join(process.cwd(), 'public', 'uploads'),
+            '/app/uploads',
+        ]);
+
+        return Array.from(roots).map((root) => join(root, normalizedRelativePath));
+    }
+
+    private static async resolveLegacyPathFromRecord(normalizedRelativePath: string): Promise<string | null> {
+        const unixSuffix = `/${normalizedRelativePath}`;
+        const winSuffix = `\\${normalizedRelativePath.replace(/\//g, '\\')}`;
+        const apiUrl = `/api/files/${normalizedRelativePath}`;
+        const uploadsUrl = `/uploads/${normalizedRelativePath}`;
+
+        const record = await prisma.fileRecord.findFirst({
+            where: {
+                OR: [
+                    { url: apiUrl },
+                    { url: uploadsUrl },
+                    { path: { endsWith: unixSuffix } },
+                    { path: { endsWith: winSuffix } },
+                ],
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { path: true },
+        });
+
+        return record?.path ?? null;
+    }
+
     /** Resolve a sub-path for the given category */
     private static async getTargetDirectory(
         category: FileCategory,
@@ -184,24 +230,71 @@ export class StorageService {
      * Read a file from storage (used by the /api/files proxy).
      */
     static async readFile(relativePath: string): Promise<{ buffer: Buffer; contentType: string }> {
-        const fullPath = join(this.rootPath, relativePath);
+        const normalizedRelativePath = this.normalizeRelativePath(relativePath);
 
-        if (!fullPath.startsWith(this.rootPath)) {
-            throw new Error('Access denied');
+        let lastError: any;
+        const tried = new Set<string>();
+
+        for (const candidatePath of this.buildReadCandidates(normalizedRelativePath)) {
+            if (tried.has(candidatePath)) continue;
+            tried.add(candidatePath);
+            try {
+                const buffer = await readFile(candidatePath);
+                const ext = normalizedRelativePath.split('.').pop()?.toLowerCase();
+                const contentType = (ext && MIME_TYPES[ext]) ? MIME_TYPES[ext] : 'application/octet-stream';
+                return { buffer, contentType };
+            } catch (error: any) {
+                lastError = error;
+                if (error?.code !== 'ENOENT') throw error;
+            }
         }
 
-        const buffer = await readFile(fullPath);
-        const ext    = relativePath.split('.').pop()?.toLowerCase();
-        const contentType = (ext && MIME_TYPES[ext]) ? MIME_TYPES[ext] : 'application/octet-stream';
+        // Backward-compatibility fallback for migrated storage roots:
+        // resolve and read using the absolute legacy path stored in FileRecord.
+        const dbPath = await this.resolveLegacyPathFromRecord(normalizedRelativePath);
+        if (dbPath && !tried.has(dbPath)) {
+            try {
+                const buffer = await readFile(dbPath);
+                const ext = normalizedRelativePath.split('.').pop()?.toLowerCase();
+                const contentType = (ext && MIME_TYPES[ext]) ? MIME_TYPES[ext] : 'application/octet-stream';
+                return { buffer, contentType };
+            } catch (error: any) {
+                lastError = error;
+                if (error?.code !== 'ENOENT') throw error;
+            }
+        }
 
-        return { buffer, contentType };
+        throw lastError ?? Object.assign(new Error('File not found'), { code: 'ENOENT' });
     }
 
     /** Get fs.stat info for a file */
     static async getFileInfo(relativePath: string) {
-        const fullPath = join(this.rootPath, relativePath);
-        if (!fullPath.startsWith(this.rootPath)) throw new Error('Access denied');
-        return await stat(fullPath);
+        const normalizedRelativePath = this.normalizeRelativePath(relativePath);
+        let lastError: any;
+        const tried = new Set<string>();
+
+        for (const candidatePath of this.buildReadCandidates(normalizedRelativePath)) {
+            if (tried.has(candidatePath)) continue;
+            tried.add(candidatePath);
+            try {
+                return await stat(candidatePath);
+            } catch (error: any) {
+                lastError = error;
+                if (error?.code !== 'ENOENT') throw error;
+            }
+        }
+
+        const dbPath = await this.resolveLegacyPathFromRecord(normalizedRelativePath);
+        if (dbPath && !tried.has(dbPath)) {
+            try {
+                return await stat(dbPath);
+            } catch (error: any) {
+                lastError = error;
+                if (error?.code !== 'ENOENT') throw error;
+            }
+        }
+
+        throw lastError ?? Object.assign(new Error('File not found'), { code: 'ENOENT' });
     }
 
     /**
