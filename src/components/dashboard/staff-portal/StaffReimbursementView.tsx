@@ -12,6 +12,28 @@ const MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+function getApprovalInfo(record: any): { primary: string; secondary: string } {
+    if (record?.status === 'SUBMITTED') {
+        return { primary: 'Pending approval', secondary: 'Awaiting HR/Accounts action' };
+    }
+
+    const actedByName = record?.approval?.actedBy?.name || record?.approval?.actedBy?.email;
+    const actedAt = record?.approval?.actedAt;
+
+    if (actedByName && actedAt) {
+        return {
+            primary: actedByName,
+            secondary: `${record.status} on ${new Date(actedAt).toLocaleDateString('en-IN')}`,
+        };
+    }
+
+    if (actedByName) {
+        return { primary: actedByName, secondary: record.status };
+    }
+
+    return { primary: record.status, secondary: 'Approval actor unavailable' };
+}
+
 function getPreviousMonth() {
     const today = new Date();
     const prevMonth = today.getMonth() === 0 ? 12 : today.getMonth();
@@ -378,8 +400,10 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                         <tr>
                             <th className="px-6 py-4">Date Filed</th>
                             <th className="px-6 py-4">Period</th>
+                            <th className="px-6 py-4">Company</th>
                             <th className="px-6 py-4 text-right">Total Claim</th>
                             <th className="px-6 py-4 text-center">Status</th>
+                            <th className="px-6 py-4">Approval</th>
                             <th className="px-6 py-4">Signature</th>
                             <th className="px-6 py-4 text-center">Download</th>
                         </tr>
@@ -387,6 +411,8 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                     <tbody className="divide-y divide-secondary-100">
                         {filtered.map((r, i) => {
                             const mn = MONTH_NAMES[(r.month ?? 1) - 1];
+                            const companyName = r.user?.company?.name || user?.company?.name || '—';
+                            const approvalInfo = getApprovalInfo(r);
                             return (
                                 <tr key={i} className="hover:bg-primary-50/40 transition-all group">
                                     <td className="px-6 py-5 font-bold text-secondary-900">
@@ -396,6 +422,9 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                                         <div className="bg-secondary-100/50 px-3 py-1.5 rounded-xl inline-block font-black text-[11px] text-secondary-700">
                                             {mn} {r.year}
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="font-semibold text-secondary-700">{companyName}</span>
                                     </td>
                                     <td className="px-6 py-5 text-right font-mono font-black text-secondary-900 text-lg">
                                         ₹{r.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -408,6 +437,12 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                                         }`}>
                                             {r.status}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="text-xs">
+                                            <p className="font-bold text-secondary-900">{approvalInfo.primary}</p>
+                                            <p className="text-secondary-400">{approvalInfo.secondary}</p>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-5">
                                         {r.employeeSignatureUrl ? (
@@ -658,32 +693,36 @@ function HRReimbursementTable() {
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-	                        <thead className="bg-secondary-100/30 text-[10px] uppercase font-black text-secondary-400 tracking-[0.2em]">
-	                            <tr>
-	                                <th className="px-6 py-4">Employee</th>
-	                                <th className="px-6 py-4">Emp ID</th>
-	                                <th className="px-6 py-4">Period</th>
-	                                <th className="px-6 py-4 text-right">Total Claim</th>
-	                                <th className="px-6 py-4 text-center">Status</th>
-	                                <th className="px-6 py-4 text-center">Action</th>
-	                                <th className="px-6 py-4">Filed On</th>
-	                                <th className="px-6 py-4 text-center">Download</th>
-	                            </tr>
-	                        </thead>
+		                        <thead className="bg-secondary-100/30 text-[10px] uppercase font-black text-secondary-400 tracking-[0.2em]">
+		                            <tr>
+		                                <th className="px-6 py-4">Employee</th>
+		                                <th className="px-6 py-4">Emp ID</th>
+		                                <th className="px-6 py-4">Period</th>
+		                                <th className="px-6 py-4 text-right">Total Claim</th>
+		                                <th className="px-6 py-4 text-center">Status</th>
+		                                <th className="px-6 py-4">Approval</th>
+		                                <th className="px-6 py-4 text-center">Action</th>
+		                                <th className="px-6 py-4">Filed On</th>
+		                                <th className="px-6 py-4 text-center">Download</th>
+		                            </tr>
+		                        </thead>
                         <tbody className="divide-y divide-secondary-100">
-                            {records.map((r, i) => {
-                                const mn = MONTH_NAMES[(r.month ?? 1) - 1];
-                                const userName = r.user?.name || r.user?.email || 'Unknown';
-                                const empId = r.user?.employeeProfile?.employeeId || 'N/A';
-                                return (
-                                    <tr key={i} className="hover:bg-primary-50/40 transition-all group">
-                                        <td className="px-6 py-5">
-                                            <div className="font-bold text-secondary-900">{userName}</div>
-                                            <div className="text-xs text-secondary-400">{r.user?.email}</div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className="font-mono text-xs font-bold bg-secondary-100 px-2 py-1 rounded-lg text-secondary-700">{empId}</span>
-                                        </td>
+	                            {records.map((r, i) => {
+	                                const mn = MONTH_NAMES[(r.month ?? 1) - 1];
+	                                const userName = r.user?.name || r.user?.email || 'Unknown';
+	                                const empId = r.user?.employeeProfile?.employeeId || 'N/A';
+                                    const companyName = r.user?.company?.name || '—';
+                                    const approvalInfo = getApprovalInfo(r);
+	                                return (
+	                                    <tr key={i} className="hover:bg-primary-50/40 transition-all group">
+	                                        <td className="px-6 py-5">
+	                                            <div className="font-bold text-secondary-900">{userName}</div>
+	                                            <div className="text-xs text-secondary-400">{r.user?.email}</div>
+                                                <div className="text-[11px] font-semibold text-primary-600 mt-1">{companyName}</div>
+	                                        </td>
+	                                        <td className="px-6 py-5">
+	                                            <span className="font-mono text-xs font-bold bg-secondary-100 px-2 py-1 rounded-lg text-secondary-700">{empId}</span>
+	                                        </td>
                                         <td className="px-6 py-5">
                                             <div className="bg-secondary-100/50 px-3 py-1.5 rounded-xl inline-block font-black text-[11px] text-secondary-700">
                                                 {mn} {r.year}
@@ -698,11 +737,17 @@ function HRReimbursementTable() {
 	                                                r.status === 'PAID' ? 'bg-primary-600 text-white' :
 	                                                'bg-amber-400 text-white'
 	                                            }`}>
-	                                                {r.status}
-	                                            </span>
-	                                        </td>
-	                                        <td className="px-6 py-5 text-center">
-	                                            <select
+		                                                {r.status}
+		                                            </span>
+		                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="text-xs">
+                                                <p className="font-bold text-secondary-900">{approvalInfo.primary}</p>
+                                                <p className="text-secondary-400">{approvalInfo.secondary}</p>
+                                            </div>
+                                        </td>
+		                                        <td className="px-6 py-5 text-center">
+		                                            <select
 	                                                className="bg-white border border-secondary-200 rounded-xl px-3 py-2 text-[10px] font-black tracking-widest text-secondary-700 hover:border-primary-200 transition-colors"
 	                                                value={r.status}
 	                                                disabled={updatingId === r.id}

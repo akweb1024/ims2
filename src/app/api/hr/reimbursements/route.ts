@@ -47,6 +47,12 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
                         id: true,
                         name: true,
                         email: true,
+                        company: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                         employeeProfile: {
                             select: {
                                 employeeId: true,
@@ -59,7 +65,49 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
             orderBy: [{ year: 'desc' }, { month: 'desc' }, { createdAt: 'desc' }],
         });
 
-        return NextResponse.json({ data: records });
+        const reimbursementIds = records.map((record) => record.id);
+        const auditLogs = reimbursementIds.length
+            ? await prisma.auditLog.findMany({
+                where: {
+                    entity: 'REIMBURSEMENT',
+                    action: 'UPDATE',
+                    entityId: { in: reimbursementIds },
+                },
+                select: {
+                    entityId: true,
+                    createdAt: true,
+                    changes: true,
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+            })
+            : [];
+
+        const latestApprovalByRecord = new Map<string, any>();
+        for (const log of auditLogs) {
+            if (!latestApprovalByRecord.has(log.entityId)) {
+                const changes = (log.changes as any) ?? {};
+                latestApprovalByRecord.set(log.entityId, {
+                    actedAt: log.createdAt,
+                    fromStatus: changes?.from?.status ?? null,
+                    toStatus: changes?.to?.status ?? null,
+                    actedBy: log.user ?? null,
+                });
+            }
+        }
+
+        const enrichedRecords = records.map((record) => ({
+            ...record,
+            approval: latestApprovalByRecord.get(record.id) ?? null,
+        }));
+
+        return NextResponse.json({ data: enrichedRecords });
     } catch (error: any) {
         console.error('HR Reimbursements GET Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
