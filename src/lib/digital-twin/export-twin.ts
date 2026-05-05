@@ -22,17 +22,28 @@ export function exportTwinToCSV(
     lines.push(`Critical Items,${summary.criticalItems}`);
     lines.push(`Warning Items,${summary.warningItems}`);
     lines.push(`Active Threads,${summary.activeThreads}`);
+    lines.push(`Avg Engagement Score,${summary.avgEngagementScore}`);
+    lines.push(`Avg KPI Progress,${summary.avgKpiProgress}`);
+    lines.push(`High Risk Employees,${summary.highRiskEmployees}`);
     lines.push('');
 
     // Personnel Section
     lines.push('PERSONNEL NODES');
-    lines.push('Name,Status,Active Tasks,Bandwidth %,Linked Inventory IDs,Last Active,7-Day Attendance');
+    lines.push('Name,Status,Active Tasks,Overdue Tasks,Bandwidth %,KPI Progress %,KRA Match %,Projects,Think Tank (30d),Reports (7d),Discipline,Linked Inventory IDs,Last Active,7-Day Attendance');
     employees.forEach(emp => {
+        const thinkTankTotal = emp.thinkTankIdeas30d + emp.thinkTankVotes30d + emp.thinkTankQuestions30d + emp.thinkTankComments30d;
         lines.push([
             `"${emp.name}"`,
             emp.status,
             emp.taskCount,
+            emp.overdueTasks,
             `${emp.bandwidth}%`,
+            emp.avgKpiProgress.toFixed(2),
+            (emp.avgKraMatch30d * 100).toFixed(1),
+            emp.activeProjectsCount,
+            thinkTankTotal,
+            emp.workReports7d,
+            emp.disciplineScore.toFixed(0),
             `"${emp.linkedInventoryIds.join(' | ')}"`,
             new Date(emp.lastActive).toLocaleString(),
             `"${emp.weeklyAttendance.join(', ')}"`,

@@ -122,9 +122,15 @@ export function TracePanel({ trace, loading = false }: TracePanelProps) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-[10px] text-white/55">
                       <span>Score: <strong>{behavior.behaviorScore}</strong></span>
                       <span>Attendance(7d): <strong>{behavior.attendanceDays7d}</strong></span>
+                      <span>Reports(7d): <strong>{behavior.workReports7d}</strong></span>
                       <span>Open Tasks: <strong>{behavior.openTasks}</strong></span>
                       <span>Overdue: <strong>{behavior.overdueTasks}</strong></span>
                       <span>Completed(30d): <strong>{behavior.completedTasks30d}</strong></span>
+                      <span>KPI: <strong>{behavior.avgKpiProgress.toFixed(0)}%</strong></span>
+                      <span>KRA: <strong>{(behavior.avgKraMatch30d * 100).toFixed(0)}%</strong></span>
+                      <span>Projects: <strong>{behavior.activeProjects}</strong></span>
+                      <span>Think Tank: <strong>{behavior.thinkTankContributions30d}</strong></span>
+                      <span>Discipline: <strong>{behavior.disciplineScore.toFixed(0)}</strong></span>
                       <span>Deals: <strong>{behavior.activeDeals}</strong></span>
                       <span>Tickets: <strong>{behavior.activeTickets}</strong></span>
                       <span>Reviews: <strong>{behavior.activeReviews}</strong></span>
@@ -136,13 +142,16 @@ export function TracePanel({ trace, loading = false }: TracePanelProps) {
 
             {!loading && trace && tab === 'performance' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {[
                     ['Health Score', trace.performance.healthScore],
                     ['Tasks Done (7d)', trace.performance.tasksCompleted7d],
                     ['Dispatch Delivered (7d)', trace.performance.dispatchDelivered7d],
                     ['Stock Moves (7d)', trace.performance.stockMovements7d],
                     ['Open Deals', trace.performance.openDeals],
+                    ['Avg KPI %', trace.performance.avgKpiProgress.toFixed(1)],
+                    ['Avg KRA %', (trace.performance.avgKraMatch30d * 100).toFixed(1)],
+                    ['Think Tank Active', trace.performance.thinkTankContributors],
                   ].map(([label, value]) => (
                     <div key={String(label)} className="p-3 rounded-xl bg-white/5 border border-white/10">
                       <p className="text-[10px] text-white/35 uppercase tracking-widest">{label}</p>

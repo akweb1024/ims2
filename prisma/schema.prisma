@@ -3817,6 +3817,50 @@ model AppConfiguration {
   @@index([category])
 }
 
+model DigitalTwinDepartmentConfig {
+  id                  String   @id @default(uuid())
+  companyId           String
+  departmentId        String?
+  departmentName      String?
+  scoringWeights      Json
+  riskThresholdHigh   Int      @default(65)
+  riskThresholdMedium Int      @default(35)
+  isActive            Boolean  @default(true)
+  updatedById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([companyId, departmentId])
+  @@index([companyId])
+  @@index([departmentId])
+}
+
+model DigitalTwinFollowUp {
+  id               String   @id @default(uuid())
+  companyId        String
+  departmentId     String?
+  employeeId       String
+  managerId        String
+  questionCategory String
+  questionText     String
+  actionPlan       String
+  status           String   @default("OPEN")
+  outcome          String?
+  outcomeRating    Int?
+  dueDate          DateTime?
+  resolvedAt       DateTime?
+  signalSnapshot   Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([employeeId])
+  @@index([managerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model JournalDomain {
   id          String    @id @default(uuid())
   name        String    @unique

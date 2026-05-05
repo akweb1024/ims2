@@ -21,8 +21,6 @@ export async function buildTwinTrace(
   const since = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000);
   const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
 
   const [employeeTwin, inventoryTwin] = await Promise.all([
     getEmployeeTwinStatus(companyId),
@@ -36,9 +34,12 @@ export async function buildTwinTrace(
     stockMovements,
     performanceSignals,
     auditEvents,
+    attendanceSignals,
+    workReportSignals,
+    kpiSignals,
+    projectSignals,
+    thinkTankSignals,
     employeeProfiles,
-    attendance7d,
-    allTasksForProfiles,
     openDeals,
     activeTickets,
     workReportPerformance,
@@ -131,24 +132,113 @@ export async function buildTwinTrace(
         user: { select: { name: true, email: true } },
       },
     }),
+    prisma.attendance.findMany({
+      where: {
+        companyId,
+        date: { gte: since },
+        OR: [
+          { isLate: true },
+          { shortMinutes: { gt: 0 } },
+          { status: { not: "PRESENT" } },
+        ],
+      },
+      orderBy: { date: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        employeeId: true,
+        date: true,
+        status: true,
+        isLate: true,
+        lateMinutes: true,
+        shortMinutes: true,
+        employee: {
+          select: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
+    }),
+    prisma.workReport.findMany({
+      where: {
+        companyId,
+        date: { gte: since },
+      },
+      orderBy: { date: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        employeeId: true,
+        title: true,
+        date: true,
+        status: true,
+        managerRating: true,
+        kraMatchRatio: true,
+        employee: {
+          select: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
+    }),
+    prisma.employeeKPI.findMany({
+      where: {
+        companyId,
+        updatedAt: { gte: since },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        employeeId: true,
+        title: true,
+        target: true,
+        current: true,
+        period: true,
+        updatedAt: true,
+        employee: {
+          select: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
+    }),
+    prisma.projectMember.findMany({
+      where: {
+        joinedAt: { gte: since },
+        project: { companyId },
+      },
+      orderBy: { joinedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        role: true,
+        joinedAt: true,
+        user: { select: { name: true, email: true } },
+        project: { select: { id: true, title: true, status: true } },
+      },
+    }),
+    prisma.thinkTankIdeaAuditEvent.findMany({
+      where: {
+        createdAt: { gte: since },
+        idea: { companyId },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        action: true,
+        outcome: true,
+        createdAt: true,
+        ideaId: true,
+        actor: { select: { name: true, email: true } },
+      },
+    }),
     prisma.employeeProfile.findMany({
       where: { user: { companyId } },
       select: {
         id: true,
         user: { select: { id: true, name: true, email: true } },
-      },
-    }),
-    prisma.attendance.findMany({
-      where: { companyId, date: { gte: since7d } },
-      select: { employeeId: true, date: true },
-    }),
-    prisma.task.findMany({
-      where: { companyId },
-      select: {
-        userId: true,
-        status: true,
-        dueDate: true,
-        updatedAt: true,
       },
     }),
     prisma.deal.count({
@@ -252,6 +342,80 @@ export async function buildTwinTrace(
       entityId: signal.sourceEntityId || signal.id,
       actorName: undefined,
     })),
+    ...attendanceSignals.map((row) => ({
+      id: `attendance-signal-${row.id}`,
+      type: "ATTENDANCE_SIGNAL" as const,
+      title: `Attendance signal: ${row.status}`,
+      description: `${row.employee?.user?.name || row.employee?.user?.email || "Unknown"} · Late ${row.lateMinutes || 0}m · Short ${row.shortMinutes || 0}m`,
+      severity: (
+        row.status === "ABSENT"
+          ? "CRITICAL"
+          : row.isLate || (row.shortMinutes || 0) > 0
+            ? "WARNING"
+            : "INFO"
+      ) as TraceSeverity,
+      at: row.date.toISOString(),
+      entityType: "attendance",
+      entityId: row.id,
+      actorName: row.employee?.user?.name || row.employee?.user?.email || undefined,
+    })),
+    ...workReportSignals.map((row) => ({
+      id: `work-report-signal-${row.id}`,
+      type: "WORK_REPORT_SIGNAL" as const,
+      title: `Work report: ${row.title}`,
+      description: `${row.employee?.user?.name || row.employee?.user?.email || "Unknown"} · KRA ${((row.kraMatchRatio || 0) * 100).toFixed(0)}% · Rating ${row.managerRating || "N/A"}`,
+      severity: (
+        row.status === "REJECTED"
+          ? "CRITICAL"
+          : (row.kraMatchRatio || 0) < 0.5
+            ? "WARNING"
+            : "SUCCESS"
+      ) as TraceSeverity,
+      at: row.date.toISOString(),
+      entityType: "work_report",
+      entityId: row.id,
+      actorName: row.employee?.user?.name || row.employee?.user?.email || undefined,
+    })),
+    ...kpiSignals.map((kpi) => {
+      const progress = kpi.target > 0 ? (kpi.current / kpi.target) * 100 : 0;
+      return {
+        id: `kpi-signal-${kpi.id}`,
+        type: "KPI_SIGNAL" as const,
+        title: `KPI updated: ${kpi.title}`,
+        description: `${kpi.employee?.user?.name || kpi.employee?.user?.email || "Unknown"} · ${progress.toFixed(0)}% (${kpi.current}/${kpi.target}) · ${kpi.period}`,
+        severity: (progress < 40 ? "WARNING" : "INFO") as TraceSeverity,
+        at: kpi.updatedAt.toISOString(),
+        entityType: "employee_kpi",
+        entityId: kpi.id,
+        actorName: kpi.employee?.user?.name || kpi.employee?.user?.email || undefined,
+      };
+    }),
+    ...projectSignals.map((row) => ({
+      id: `project-signal-${row.id}`,
+      type: "PROJECT_SIGNAL" as const,
+      title: `Project assignment: ${row.project.title}`,
+      description: `${row.user?.name || row.user?.email || "Unknown"} joined as ${row.role || "MEMBER"} · ${row.project.status}`,
+      severity: "INFO" as const,
+      at: row.joinedAt.toISOString(),
+      entityType: "project",
+      entityId: row.project.id,
+      actorName: row.user?.name || row.user?.email || undefined,
+    })),
+    ...thinkTankSignals.map((row) => ({
+      id: `think-tank-signal-${row.id}`,
+      type: "THINK_TANK_SIGNAL" as const,
+      title: `Think Tank: ${row.action.replaceAll("_", " ")}`,
+      description: row.outcome || "Idea workflow action recorded.",
+      severity: (
+        row.outcome === "REJECTED" || row.outcome === "VETOED"
+          ? "WARNING"
+          : "INFO"
+      ) as TraceSeverity,
+      at: row.createdAt.toISOString(),
+      entityType: "think_tank_idea",
+      entityId: row.ideaId || row.id,
+      actorName: row.actor?.name || row.actor?.email || undefined,
+    })),
     ...auditEvents.map((a) => ({
       id: `audit-${a.id}`,
       type: "AUDIT_EVENT" as const,
@@ -268,73 +432,39 @@ export async function buildTwinTrace(
     .slice(0, limit);
 
   const employeeById = new Map(employeeProfiles.map((p) => [p.id, p]));
-  const userIdToEmployee = new Map(
-    employeeProfiles
-      .filter((p) => p.user?.id)
-      .map((p) => [p.user!.id, p]),
-  );
-
-  const attendanceDaysByEmployee = new Map<string, Set<string>>();
-  for (const row of attendance7d) {
-    if (!attendanceDaysByEmployee.has(row.employeeId)) {
-      attendanceDaysByEmployee.set(row.employeeId, new Set<string>());
-    }
-    const day = row.date.toISOString().slice(0, 10);
-    attendanceDaysByEmployee.get(row.employeeId)!.add(day);
-  }
-
-  const taskMetricsByUser = new Map<
-    string,
-    { openTasks: number; completedTasks30d: number; overdueTasks: number }
-  >();
-
-  for (const task of allTasksForProfiles) {
-    if (!task.userId) continue;
-    const prev = taskMetricsByUser.get(task.userId) || {
-      openTasks: 0,
-      completedTasks30d: 0,
-      overdueTasks: 0,
-    };
-
-    if (task.status !== "COMPLETED") {
-      prev.openTasks += 1;
-      if (task.dueDate && task.dueDate < startOfToday) {
-        prev.overdueTasks += 1;
-      }
-    } else if (task.updatedAt >= since30d) {
-      prev.completedTasks30d += 1;
-    }
-
-    taskMetricsByUser.set(task.userId, prev);
-  }
-
   const employeeTwinByUserId = new Map(employeeTwin.map((t) => [t.userId, t]));
 
   const behaviors: TwinBehaviorTrace[] = employeeProfiles.map((profile) => {
     const user = profile.user;
     const userId = user?.id || "";
     const twin = employeeTwinByUserId.get(userId);
-    const taskMetrics = taskMetricsByUser.get(userId) || {
-      openTasks: 0,
-      completedTasks30d: 0,
-      overdueTasks: 0,
-    };
-    const attendanceDays7d = attendanceDaysByEmployee.get(profile.id)?.size || 0;
 
     const behaviorScore = clamp(
-      40 +
-        attendanceDays7d * 6 +
-        Math.min(taskMetrics.completedTasks30d, 10) * 3 -
-        taskMetrics.overdueTasks * 6 -
-        Math.max(taskMetrics.openTasks - 5, 0) * 2,
+      35
+      + (twin?.attendanceDays7d || 0) * 6
+      + Math.min(twin?.completedTasks30d || 0, 12) * 2
+      + Math.min(twin?.avgKpiProgress || 0, 100) * 0.15
+      + Math.min((twin?.avgKraMatch30d || 0) * 100, 100) * 0.1
+      - (twin?.overdueTasks || 0) * 8
+      - Math.max((twin?.taskCount || 0) - 5, 0) * 2,
       0,
       100,
     );
 
     let risk: "LOW" | "MEDIUM" | "HIGH" = "LOW";
-    if (taskMetrics.overdueTasks >= 3 || twin?.status === "OVERLOADED" || twin?.status === "OFFLINE_ALERT") {
+    if (
+      (twin?.overdueTasks || 0) >= 3 ||
+      twin?.status === "OVERLOADED" ||
+      twin?.status === "OFFLINE_ALERT" ||
+      (twin?.avgKpiProgress || 0) < 40
+    ) {
       risk = "HIGH";
-    } else if (taskMetrics.overdueTasks > 0 || attendanceDays7d <= 2 || taskMetrics.openTasks >= 4) {
+    } else if (
+      (twin?.overdueTasks || 0) > 0 ||
+      (twin?.attendanceDays7d || 0) <= 2 ||
+      (twin?.taskCount || 0) >= 4 ||
+      (twin?.avgKpiProgress || 0) < 70
+    ) {
       risk = "MEDIUM";
     }
 
@@ -343,10 +473,20 @@ export async function buildTwinTrace(
       userId,
       name: user?.name || user?.email || "Unnamed Employee",
       currentStatus: twin?.status || "OFFLINE",
-      attendanceDays7d,
-      openTasks: taskMetrics.openTasks,
-      completedTasks30d: taskMetrics.completedTasks30d,
-      overdueTasks: taskMetrics.overdueTasks,
+      attendanceDays7d: twin?.attendanceDays7d || 0,
+      workReports7d: twin?.workReports7d || 0,
+      openTasks: twin?.taskCount || 0,
+      completedTasks30d: twin?.completedTasks30d || 0,
+      overdueTasks: twin?.overdueTasks || 0,
+      avgKraMatch30d: twin?.avgKraMatch30d || 0,
+      avgKpiProgress: twin?.avgKpiProgress || 0,
+      activeProjects: twin?.activeProjectsCount || 0,
+      thinkTankContributions30d:
+        (twin?.thinkTankIdeas30d || 0) +
+        (twin?.thinkTankVotes30d || 0) +
+        (twin?.thinkTankQuestions30d || 0) +
+        (twin?.thinkTankComments30d || 0),
+      disciplineScore: twin?.disciplineScore || 0,
       activeDeals: twin?.activeDealsCount || 0,
       activeTickets: twin?.activeTicketsCount || 0,
       activeReviews: twin?.activeReviewsCount || 0,
@@ -380,10 +520,21 @@ export async function buildTwinTrace(
     dispatchDelivered7d,
     stockMovements7d,
     openDeals,
+    avgKpiProgress: employeeTwin.length > 0
+      ? Number((employeeTwin.reduce((sum, row) => sum + (row.avgKpiProgress || 0), 0) / employeeTwin.length).toFixed(2))
+      : 0,
+    avgKraMatch30d: employeeTwin.length > 0
+      ? Number((employeeTwin.reduce((sum, row) => sum + (row.avgKraMatch30d || 0), 0) / employeeTwin.length).toFixed(3))
+      : 0,
+    thinkTankContributors: employeeTwin.filter((row) =>
+      row.thinkTankIdeas30d > 0 ||
+      row.thinkTankVotes30d > 0 ||
+      row.thinkTankQuestions30d > 0 ||
+      row.thinkTankComments30d > 0,
+    ).length,
     topContributors: contributorRows,
   };
 
-  // If there are no open support tickets in twin stream, still keep real operational number.
   if (performance.topContributors.length === 0 && activeTickets > 0) {
     performance.topContributors = [];
   }

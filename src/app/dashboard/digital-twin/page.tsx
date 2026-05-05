@@ -8,6 +8,7 @@ import { DispatchPanel } from '@/components/digital-twin/DispatchPanel';
 import { NetworkGraphView } from '@/components/digital-twin/NetworkGraphView';
 import { IntelligencePanel } from '@/components/digital-twin/IntelligencePanel';
 import { TracePanel } from '@/components/digital-twin/TracePanel';
+import { ScoringConfigPanel } from '@/components/digital-twin/ScoringConfigPanel';
 import { EmployeeTwin, InventoryTwin, TwinSummary } from '@/lib/digital-twin/twin-engine';
 import { exportTwinToCSV } from '@/lib/digital-twin/export-twin';
 import { runIntelligenceEngine, IntelligenceSummary } from '@/lib/digital-twin/intelligence';
@@ -25,10 +26,10 @@ export type LensType = 'LOGISTICS' | 'SALES' | 'SERVICE' | 'EDITORIAL';
 const POLL_INTERVAL = 10000;
 
 const summaryStats = (summary: TwinSummary) => [
-    { label: 'Active Nodes', value: summary.activeEmployees, color: 'text-green-400', icon: '●' },
-    { label: 'Overloaded', value: summary.overloadedStaff, color: 'text-red-400', icon: '▲' },
-    { label: 'Critical Items', value: summary.criticalItems, color: 'text-red-500', icon: '⚠' },
-    { label: 'Active Threads', value: summary.activeThreads, color: 'text-indigo-400', icon: '⟶' },
+    { label: 'Active Workforce', value: summary.activeEmployees, color: 'text-green-400', icon: '●' },
+    { label: 'High Risk People', value: summary.highRiskEmployees, color: 'text-red-400', icon: '▲' },
+    { label: 'Avg KPI Progress', value: `${summary.avgKpiProgress}%`, color: 'text-cyan-400', icon: '◔' },
+    { label: 'Think Tank Active', value: summary.thinkTankContributors, color: 'text-indigo-400', icon: '✦' },
 ];
 
 // Animated particle system
@@ -290,7 +291,7 @@ export default function DigitalTwinPage() {
                         Digital Twin <span className="text-indigo-500">Command Center</span>
                     </h1>
                     <p className="text-white/40 max-w-2xl leading-relaxed text-sm">
-                        <span className="text-indigo-400 font-bold">Smart Dispatch Active:</span> Real-time operational threads between human capital and physical assets.
+                        <span className="text-indigo-400 font-bold">People Intelligence Active:</span> Attendance, work reports, KRA/KPI, tasks, projects, and think-tank signals synced in real time.
                     </p>
 
                     <div className="flex bg-white/5 rounded-xl p-1 mt-8 w-max mx-auto border border-white/10 relative z-10 backdrop-blur-md shadow-2xl">
@@ -323,6 +324,8 @@ export default function DigitalTwinPage() {
                         ))}
                     </div>
                 )}
+
+                <ScoringConfigPanel />
 
                 {/* AI Intelligence Engine Panel */}
                 {intelligence && data && (

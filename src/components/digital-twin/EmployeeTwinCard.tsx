@@ -171,6 +171,41 @@ export const EmployeeTwinCard = ({
                         </div>
                     </div>
                 </div>
+
+                {/* Performance & Innovation Sync */}
+                <div className="pt-3 border-t border-white/5 grid grid-cols-2 gap-2">
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
+                        isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
+                    }`}>
+                        <p className="text-[9px] uppercase tracking-wider text-white/35 mb-1">KPI / KRA</p>
+                        <p className={`text-sm font-bold ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>
+                            {employee.avgKpiProgress.toFixed(0)}% / {(employee.avgKraMatch30d * 100).toFixed(0)}%
+                        </p>
+                    </div>
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
+                        isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
+                    }`}>
+                        <p className="text-[9px] uppercase tracking-wider text-white/35 mb-1">Reports 7d</p>
+                        <p className={`text-sm font-bold ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>
+                            {employee.workReports7d}
+                            <span className="text-[10px] text-white/35 ml-1">({employee.workReports30d} / 30d)</span>
+                        </p>
+                    </div>
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
+                        isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
+                    }`}>
+                        <p className="text-[9px] uppercase tracking-wider text-white/35 mb-1">Projects</p>
+                        <p className={`text-sm font-bold ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>{employee.activeProjectsCount}</p>
+                    </div>
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
+                        isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
+                    }`}>
+                        <p className="text-[9px] uppercase tracking-wider text-white/35 mb-1">Think Tank</p>
+                        <p className={`text-sm font-bold ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>
+                            {employee.thinkTankIdeas30d + employee.thinkTankVotes30d + employee.thinkTankQuestions30d + employee.thinkTankComments30d}
+                        </p>
+                    </div>
+                </div>
             </div>
             
             {employee.status === 'ACTIVE' && (

@@ -40,10 +40,29 @@ export interface DispatchSuggestion {
     }>;
 }
 
+export interface EmployeePerformanceRisk {
+    employeeId: string;
+    employeeName: string;
+    risk: RiskLevel;
+    score: number;
+    reasons: string[];
+}
+
+export interface ClarifyingQuestion {
+    employeeId: string;
+    employeeName: string;
+    category: 'ATTENDANCE' | 'EXECUTION' | 'KRA_KPI' | 'PROJECTS' | 'INNOVATION';
+    priority: RiskLevel;
+    question: string;
+    insight: string;
+}
+
 export interface IntelligenceSummary {
     overloadPredictions: OverloadPrediction[];
     depletionForecasts: DepletionForecast[];
     dispatchSuggestions: DispatchSuggestion[];
+    employeePerformanceRisks: EmployeePerformanceRisk[];
+    clarifyingQuestions: ClarifyingQuestion[];
     healthScore: number; // 0-100 overall system health
 }
 
@@ -175,6 +194,142 @@ export function generateDispatchSuggestions(
     });
 }
 
+export function predictEmployeePerformanceRisk(employees: EmployeeTwin[]): EmployeePerformanceRisk[] {
+    return employees
+        .filter((emp) => emp.status !== 'ON_LEAVE')
+        .map((emp) => {
+            let score = 0;
+            const reasons: string[] = [];
+
+            if (emp.status === 'OVERLOADED') {
+                score += 35;
+                reasons.push(`Employee is overloaded with ${emp.taskCount} open tasks.`);
+            }
+            if (emp.status === 'OFFLINE_ALERT') {
+                score += 30;
+                reasons.push('Employee is offline while work remains unresolved.');
+            }
+            if (emp.overdueTasks >= 3) {
+                score += 20;
+                reasons.push(`${emp.overdueTasks} overdue tasks need immediate follow-up.`);
+            } else if (emp.overdueTasks > 0) {
+                score += 10;
+                reasons.push(`${emp.overdueTasks} overdue task${emp.overdueTasks > 1 ? 's' : ''} pending.`);
+            }
+            if (emp.avgKpiProgress < 40) {
+                score += 18;
+                reasons.push(`KPI progress is ${emp.avgKpiProgress.toFixed(0)}%, below threshold.`);
+            } else if (emp.avgKpiProgress < 70) {
+                score += 8;
+            }
+            if (emp.avgKraMatch30d < 0.45) {
+                score += 16;
+                reasons.push(`KRA alignment is ${(emp.avgKraMatch30d * 100).toFixed(0)}%.`);
+            }
+            if (emp.attendanceDays7d <= 2) {
+                score += 14;
+                reasons.push(`Attendance is low (${emp.attendanceDays7d}/7 days this week).`);
+            }
+            if (emp.workReports7d === 0) {
+                score += 12;
+                reasons.push('No work reports submitted this week.');
+            }
+            if (emp.disciplineScore < 50) {
+                score += 14;
+                reasons.push(`Discipline score is ${emp.disciplineScore.toFixed(0)}.`);
+            }
+            if ((emp.engagementScore || 0) < 45) {
+                score += 12;
+                reasons.push(`Engagement score is ${emp.engagementScore || 0}.`);
+            }
+
+            const normalized = Math.max(0, Math.min(100, Math.round(score)));
+            const highThreshold = Math.max(40, Math.min(95, emp.riskThresholdHigh || 65));
+            const mediumThreshold = Math.max(10, Math.min(highThreshold - 5, emp.riskThresholdMedium || 35));
+            const risk: RiskLevel = normalized >= highThreshold ? 'HIGH' : normalized >= mediumThreshold ? 'MEDIUM' : 'LOW';
+
+            return {
+                employeeId: emp.id,
+                employeeName: emp.name,
+                risk,
+                score: normalized,
+                reasons,
+            };
+        })
+        .filter((row) => row.risk !== 'LOW' || row.reasons.length > 0)
+        .sort((a, b) => b.score - a.score);
+}
+
+export function generateClarifyingQuestions(employees: EmployeeTwin[]): ClarifyingQuestion[] {
+    const questions: ClarifyingQuestion[] = [];
+
+    for (const emp of employees) {
+        if (emp.status === 'ON_LEAVE') continue;
+
+        if (emp.attendanceDays7d <= 2 || emp.status === 'OFFLINE_ALERT') {
+            questions.push({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                category: 'ATTENDANCE',
+                priority: emp.attendanceDays7d <= 1 ? 'HIGH' : 'MEDIUM',
+                question: 'What blocked your attendance consistency this week, and what support do you need to fix it?',
+                insight: `Attendance is ${emp.attendanceDays7d}/7 with status ${emp.status}.`,
+            });
+        }
+
+        if (emp.overdueTasks >= 2 || emp.disciplineScore < 50) {
+            questions.push({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                category: 'EXECUTION',
+                priority: emp.overdueTasks >= 3 ? 'HIGH' : 'MEDIUM',
+                question: 'Which tasks are blocked right now, and what is your concrete recovery plan by end of day?',
+                insight: `${emp.overdueTasks} overdue tasks and discipline score ${emp.disciplineScore.toFixed(0)}.`,
+            });
+        }
+
+        if (emp.avgKpiProgress < 70 || emp.avgKraMatch30d < 0.6) {
+            questions.push({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                category: 'KRA_KPI',
+                priority: emp.avgKpiProgress < 40 || emp.avgKraMatch30d < 0.4 ? 'HIGH' : 'MEDIUM',
+                question: 'Which KPI or KRA is currently off-track, and what weekly actions will move it back on target?',
+                insight: `KPI ${emp.avgKpiProgress.toFixed(0)}% · KRA ${(emp.avgKraMatch30d * 100).toFixed(0)}%.`,
+            });
+        }
+
+        if (emp.activeProjectsCount > 3 && emp.bandwidth < 35) {
+            questions.push({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                category: 'PROJECTS',
+                priority: 'MEDIUM',
+                question: 'Which project priorities should be de-scoped or delegated to avoid overload this sprint?',
+                insight: `${emp.activeProjectsCount} active projects with ${emp.bandwidth}% bandwidth.`,
+            });
+        }
+
+        if (emp.thinkTankIdeas30d + emp.thinkTankVotes30d + emp.thinkTankQuestions30d + emp.thinkTankComments30d === 0) {
+            questions.push({
+                employeeId: emp.id,
+                employeeName: emp.name,
+                category: 'INNOVATION',
+                priority: 'LOW',
+                question: 'Is there a process or product improvement you can contribute to Think Tank this cycle?',
+                insight: 'No recent think-tank contribution detected in last 30 days.',
+            });
+        }
+    }
+
+    return questions
+        .sort((a, b) => {
+            const rank: Record<RiskLevel, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+            return rank[a.priority] - rank[b.priority];
+        })
+        .slice(0, 60);
+}
+
 /**
  * Computes an overall system health score from 0 (worst) to 100 (best).
  */
@@ -192,6 +347,13 @@ export function computeHealthScore(
         else if (e.status === 'OVERLOADED') penalty += 20;
         else if (e.status === 'OFFLINE_ALERT') penalty += 15;
         else if (e.bandwidth < 30) penalty += 8;
+        if (e.overdueTasks >= 3) penalty += 10;
+        else if (e.overdueTasks > 0) penalty += 4;
+        if (e.avgKpiProgress < 40) penalty += 10;
+        else if (e.avgKpiProgress < 70) penalty += 5;
+        if (e.avgKraMatch30d < 0.4) penalty += 8;
+        if (e.attendanceDays7d <= 2) penalty += 6;
+        if (e.disciplineScore < 50) penalty += 7;
         
         // Bonus for high organizational engagement across active roster
         if (e.status !== 'ON_LEAVE' && (e.engagementScore || 0) > 80) penalty -= 2;
@@ -215,6 +377,8 @@ export function runIntelligenceEngine(
         overloadPredictions: predictOverload(employees),
         depletionForecasts: forecastDepletion(inventory),
         dispatchSuggestions: generateDispatchSuggestions(employees, inventory),
+        employeePerformanceRisks: predictEmployeePerformanceRisk(employees),
+        clarifyingQuestions: generateClarifyingQuestions(employees),
         healthScore: computeHealthScore(employees, inventory),
     };
 }

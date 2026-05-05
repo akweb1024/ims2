@@ -8,7 +8,12 @@ export interface TwinActivityEvent {
     | "DISPATCH_UPDATED"
     | "STOCK_MOVEMENT"
     | "AUDIT_EVENT"
-    | "PERFORMANCE_SIGNAL";
+    | "PERFORMANCE_SIGNAL"
+    | "ATTENDANCE_SIGNAL"
+    | "WORK_REPORT_SIGNAL"
+    | "KPI_SIGNAL"
+    | "PROJECT_SIGNAL"
+    | "THINK_TANK_SIGNAL";
   title: string;
   description: string;
   severity: TraceSeverity;
@@ -24,9 +29,15 @@ export interface TwinBehaviorTrace {
   name: string;
   currentStatus: string;
   attendanceDays7d: number;
+  workReports7d: number;
   openTasks: number;
   completedTasks30d: number;
   overdueTasks: number;
+  avgKraMatch30d: number;
+  avgKpiProgress: number;
+  activeProjects: number;
+  thinkTankContributions30d: number;
+  disciplineScore: number;
   activeDeals: number;
   activeTickets: number;
   activeReviews: number;
@@ -45,6 +56,9 @@ export interface TwinPerformanceTrace {
   dispatchDelivered7d: number;
   stockMovements7d: number;
   openDeals: number;
+  avgKpiProgress: number;
+  avgKraMatch30d: number;
+  thinkTankContributors: number;
   topContributors: Array<{
     employeeId: string;
     name: string;
