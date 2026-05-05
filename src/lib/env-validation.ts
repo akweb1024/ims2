@@ -48,6 +48,9 @@ const envSchema = z.object({
   WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_META_API_VERSION: z.string().optional(),
   WHATSAPP_META_RECIPIENTS: z.string().optional(),
+  WHATSAPP_META_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_META_APP_SECRET: z.string().optional(),
+  WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_REPORT_RECIPIENTS: z.string().optional(),
 
   // Redis (Optional)
