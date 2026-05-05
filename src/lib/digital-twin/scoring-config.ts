@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export interface DepartmentScoringWeights {
   attendance: number;
@@ -47,13 +48,47 @@ export function sanitizeScoringWeights(input: unknown): DepartmentScoringWeights
 }
 
 export async function getDigitalTwinScoringConfig(companyId: string) {
-  const records = await prisma.digitalTwinDepartmentConfig.findMany({
-    where: {
-      companyId,
-      isActive: true,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  let records: Array<{
+    companyId: string;
+    departmentId: string | null;
+    departmentName: string | null;
+    scoringWeights: unknown;
+    riskThresholdHigh: number;
+    riskThresholdMedium: number;
+    isActive: boolean;
+    updatedAt: Date;
+  }> = [];
+
+  try {
+    records = await prisma.digitalTwinDepartmentConfig.findMany({
+      where: {
+        companyId,
+        isActive: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (error) {
+    // Soft-fallback when schema migration is not yet applied in target DB.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return {
+        defaultConfig: {
+          companyId,
+          departmentId: null,
+          departmentName: null,
+          weights: DEFAULT_SCORING_WEIGHTS,
+          riskThresholdHigh: 65,
+          riskThresholdMedium: 35,
+          isActive: true,
+        },
+        byDepartment: new Map<string, DepartmentScoringConfig>(),
+        items: [] as DepartmentScoringConfig[],
+      };
+    }
+    throw error;
+  }
 
   const mapped: DepartmentScoringConfig[] = records.map((record) => {
     const high = clamp(Number(record.riskThresholdHigh || 65), 40, 95);
