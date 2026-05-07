@@ -19,6 +19,13 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
                                 name: true,
                             },
                         },
+                        companies: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                            take: 1,
+                        },
                         employeeProfile: {
                             select: {
                                 employeeId: true,

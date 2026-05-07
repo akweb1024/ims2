@@ -41,10 +41,22 @@ function getPreviousMonth() {
     return { month: prevMonth, year: prevYear };
 }
 
+function getCompanyName(record: any, fallbackUser?: any): string {
+    return (
+        record?.user?.company?.name ||
+        record?.user?.companies?.[0]?.name ||
+        fallbackUser?.company?.name ||
+        fallbackUser?.companies?.[0]?.name ||
+        fallbackUser?.companyName ||
+        fallbackUser?.employeeProfile?.company?.name ||
+        'N/A'
+    );
+}
+
 // ─── PDF / DOCX generation helpers ───────────────────────────────────────────
 function buildDocxContent(r: any, userName: string, empId: string): string {
     const monthName = MONTH_NAMES[(r.month ?? 1) - 1];
-    const companyName = r.user?.company?.name || 'N/A';
+    const companyName = getCompanyName(r);
     const approvalInfo = getApprovalInfo(r);
     return `
 REIMBURSEMENT DECLARATION FORM
@@ -91,7 +103,7 @@ function downloadDocx(r: any, userName: string, empId: string) {
 
 async function downloadPDF(r: any, userName: string, empId: string) {
     const monthName = MONTH_NAMES[(r.month ?? 1) - 1];
-    const companyName = r.user?.company?.name || 'N/A';
+    const companyName = getCompanyName(r);
     const approvalInfo = getApprovalInfo(r);
     // Build printable HTML and trigger browser print-to-PDF
     const html = `<!DOCTYPE html>
@@ -182,7 +194,7 @@ function downloadMonthlyPacket(records: any[], month: number, year: number, opti
     const sections = safeRecords.map((r: any) => {
         const userName = r.user?.name || r.user?.email || 'Unknown';
         const empId = r.user?.employeeProfile?.employeeId || 'N/A';
-        const companyName = r.user?.company?.name || 'N/A';
+        const companyName = getCompanyName(r);
         const approvalInfo = getApprovalInfo(r);
         const filedOn = new Date(r.createdAt).toLocaleDateString('en-IN');
         return `
@@ -429,12 +441,7 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                     <tbody className="divide-y divide-secondary-100">
                         {filtered.map((r, i) => {
                             const mn = MONTH_NAMES[(r.month ?? 1) - 1];
-                            const companyName =
-                                r.user?.company?.name ||
-                                user?.company?.name ||
-                                user?.companyName ||
-                                user?.employeeProfile?.company?.name ||
-                                '—';
+                            const companyName = getCompanyName(r, user) || '—';
                             const approvalInfo = getApprovalInfo(r);
                             return (
                                 <tr key={i} className="hover:bg-primary-50/40 transition-all group">
@@ -734,7 +741,7 @@ function HRReimbursementTable() {
 	                                const mn = MONTH_NAMES[(r.month ?? 1) - 1];
 	                                const userName = r.user?.name || r.user?.email || 'Unknown';
 	                                const empId = r.user?.employeeProfile?.employeeId || 'N/A';
-                                    const companyName = r.user?.company?.name || '—';
+                                    const companyName = getCompanyName(r) || '—';
                                     const approvalInfo = getApprovalInfo(r);
 	                                return (
 	                                    <tr key={i} className="hover:bg-primary-50/40 transition-all group">
