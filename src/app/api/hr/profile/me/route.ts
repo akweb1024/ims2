@@ -16,6 +16,7 @@ export const GET = authorizedRoute(
                             email: true,
                             role: true,
                             isActive: true,
+                            signatureUrl: true,
                             companies: { select: { name: true, website: true, address: true, logoUrl: true } },
                             department: { select: { id: true, name: true } }
                         }

@@ -44,13 +44,18 @@ function getPreviousMonth() {
 // ─── PDF / DOCX generation helpers ───────────────────────────────────────────
 function buildDocxContent(r: any, userName: string, empId: string): string {
     const monthName = MONTH_NAMES[(r.month ?? 1) - 1];
+    const companyName = r.user?.company?.name || 'N/A';
+    const approvalInfo = getApprovalInfo(r);
     return `
 REIMBURSEMENT DECLARATION FORM
 ===============================
 Employee Name  : ${userName}
 Employee ID    : ${empId || 'N/A'}
+Company        : ${companyName}
 Month          : ${monthName} ${r.year}
-Status         : ${r.status}
+Approval Status: ${r.status}
+Approved By    : ${approvalInfo.primary}
+Approval Note  : ${approvalInfo.secondary}
 Date Submitted : ${new Date(r.createdAt).toLocaleDateString('en-IN')}
 
 EXPENSE BREAKDOWN
@@ -86,6 +91,8 @@ function downloadDocx(r: any, userName: string, empId: string) {
 
 async function downloadPDF(r: any, userName: string, empId: string) {
     const monthName = MONTH_NAMES[(r.month ?? 1) - 1];
+    const companyName = r.user?.company?.name || 'N/A';
+    const approvalInfo = getApprovalInfo(r);
     // Build printable HTML and trigger browser print-to-PDF
     const html = `<!DOCTYPE html>
 <html>
@@ -115,9 +122,15 @@ async function downloadPDF(r: any, userName: string, empId: string) {
 <h1>Reimbursement Declaration</h1>
 <div class="subtitle">
   Employee: <strong>${userName}</strong> (${empId || 'N/A'}) &nbsp;|&nbsp;
+  Company: <strong>${companyName}</strong> &nbsp;|&nbsp;
   Period: <strong>${monthName} ${r.year}</strong> &nbsp;|&nbsp;
   Filed: ${new Date(r.createdAt).toLocaleDateString('en-IN')} &nbsp;|&nbsp;
   <span class="status ${r.status}">${r.status}</span>
+</div>
+
+<div style="margin-bottom: 14px; font-size: 12px; color: #374151;">
+  <strong>Approved By:</strong> ${approvalInfo.primary} &nbsp;|&nbsp;
+  <strong>Approval Note:</strong> ${approvalInfo.secondary}
 </div>
 
 <table>
@@ -169,6 +182,8 @@ function downloadMonthlyPacket(records: any[], month: number, year: number, opti
     const sections = safeRecords.map((r: any) => {
         const userName = r.user?.name || r.user?.email || 'Unknown';
         const empId = r.user?.employeeProfile?.employeeId || 'N/A';
+        const companyName = r.user?.company?.name || 'N/A';
+        const approvalInfo = getApprovalInfo(r);
         const filedOn = new Date(r.createdAt).toLocaleDateString('en-IN');
         return `
         <section class="card">
@@ -179,7 +194,10 @@ function downloadMonthlyPacket(records: any[], month: number, year: number, opti
           <div class="meta">
             <div><strong>Employee:</strong> ${userName}</div>
             <div><strong>Employee ID:</strong> ${empId}</div>
-            <div><strong>Status:</strong> ${r.status}</div>
+            <div><strong>Company:</strong> ${companyName}</div>
+            <div><strong>Approval Status:</strong> ${r.status}</div>
+            <div><strong>Approved By:</strong> ${approvalInfo.primary}</div>
+            <div><strong>Approval Note:</strong> ${approvalInfo.secondary}</div>
             <div><strong>Filed On:</strong> ${filedOn}</div>
           </div>
           <table>
@@ -411,7 +429,12 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
                     <tbody className="divide-y divide-secondary-100">
                         {filtered.map((r, i) => {
                             const mn = MONTH_NAMES[(r.month ?? 1) - 1];
-                            const companyName = r.user?.company?.name || user?.company?.name || '—';
+                            const companyName =
+                                r.user?.company?.name ||
+                                user?.company?.name ||
+                                user?.companyName ||
+                                user?.employeeProfile?.company?.name ||
+                                '—';
                             const approvalInfo = getApprovalInfo(r);
                             return (
                                 <tr key={i} className="hover:bg-primary-50/40 transition-all group">
@@ -797,10 +820,11 @@ function HRReimbursementTable() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function StaffReimbursementView({ fullProfile, user, onUpdateUser, isAdmin, defaultTab }: {
+export default function StaffReimbursementView({ fullProfile, user, onUpdateUser, onSignatureUpdated, isAdmin, defaultTab }: {
     fullProfile?: any;
     user: any;
     onUpdateUser?: () => void;
+    onSignatureUpdated?: (signatureUrl: string) => void;
     isAdmin?: boolean;
     defaultTab?: 'form' | 'history' | 'hr';
 }) {
@@ -885,6 +909,10 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
                     body: JSON.stringify({ signatureUrl: url })
                 });
                 if (signatureRes.ok) {
+                    const signatureData = await signatureRes.json();
+                    if (signatureData?.signatureUrl) {
+                        onSignatureUpdated?.(signatureData.signatureUrl);
+                    }
                     setMessage({ type: 'success', text: 'Signature uploaded successfully.' });
                     if (onUpdateUser) onUpdateUser();
                 } else {

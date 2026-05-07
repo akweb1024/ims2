@@ -647,7 +647,16 @@ export default function StaffPortalPage() {
                         <StaffReimbursementView 
                             fullProfile={fullProfile} 
                             user={user} 
-                            onUpdateUser={fetchAllData} 
+                            onUpdateUser={fetchAllData}
+                            onSignatureUpdated={(signatureUrl) => {
+                                setUser((prev: any) => {
+                                    const next = { ...(prev || {}), signatureUrl };
+                                    try {
+                                        localStorage.setItem('user', JSON.stringify(next));
+                                    } catch { }
+                                    return next;
+                                });
+                            }}
                         />
                     )}
 
