@@ -516,6 +516,8 @@ function HRReimbursementTable() {
     const [records, setRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [filterName, setFilterName] = useState('');
     const [filterEmpId, setFilterEmpId] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
@@ -579,10 +581,79 @@ function HRReimbursementTable() {
         }
     };
 
+    const toggleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(records.map((r) => r.id));
+            return;
+        }
+        setSelectedIds([]);
+    };
+
+    const toggleRowSelection = (recordId: string, checked: boolean) => {
+        setSelectedIds((prev) => {
+            if (checked) return Array.from(new Set([...prev, recordId]));
+            return prev.filter((id) => id !== recordId);
+        });
+    };
+
+    const bulkUpdateStatus = async (nextStatus: 'APPROVED' | 'PAID') => {
+        if (!selectedIds.length) {
+            toast.error('Select at least one reimbursement.');
+            return;
+        }
+        const selectedRecords = records.filter((r) => selectedIds.includes(r.id));
+        const needingUpdate = selectedRecords.filter((r) => r.status !== nextStatus);
+        if (!needingUpdate.length) {
+            toast.error(`Selected reimbursements are already ${nextStatus}.`);
+            return;
+        }
+
+        if (!confirm(`Update ${needingUpdate.length} selected reimbursement(s) to ${nextStatus}?`)) return;
+
+        setBulkUpdating(true);
+        try {
+            const token = localStorage.getItem('token');
+            const responses = await Promise.all(
+                needingUpdate.map((row) =>
+                    fetch(`/api/hr/reimbursements/${row.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ status: nextStatus }),
+                    })
+                )
+            );
+
+            const failed = responses.filter((res) => !res.ok).length;
+            const successCount = responses.length - failed;
+
+            if (successCount > 0) {
+                toast.success(`${successCount} reimbursement(s) updated to ${nextStatus}.`);
+            }
+            if (failed > 0) {
+                toast.error(`${failed} reimbursement(s) failed to update.`);
+            }
+
+            setSelectedIds([]);
+            fetchAll();
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err?.message || 'Bulk status update failed');
+        } finally {
+            setBulkUpdating(false);
+        }
+    };
+
     useEffect(() => {
         fetchAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedName, filterEmpId, filterMonth, filterYear]);
+
+    useEffect(() => {
+        setSelectedIds((prev) => prev.filter((id) => records.some((r) => r.id === id)));
+    }, [records]);
 
     const clearFilters = () => {
         setFilterName('');
@@ -594,6 +665,7 @@ function HRReimbursementTable() {
     const hasFilters = filterName || filterEmpId || filterMonth || filterYear;
     const selectedMonthNum = filterMonth ? parseInt(filterMonth) : null;
     const selectedYearNum = filterYear ? parseInt(filterYear) : null;
+    const allSelected = records.length > 0 && selectedIds.length === records.length;
 
     return (
         <div className="card-premium overflow-hidden border-t-8 border-t-primary-500">
@@ -706,6 +778,22 @@ function HRReimbursementTable() {
                     >
                         <Download size={12} /> Download Payout Packet
                     </button>
+                    <button
+                        onClick={() => bulkUpdateStatus('APPROVED')}
+                        disabled={bulkUpdating || updatingId !== null || selectedIds.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-black text-success-700 bg-success-50 rounded-xl border border-success-200 hover:bg-success-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Update selected reimbursements to APPROVED"
+                    >
+                        {bulkUpdating ? 'Updating...' : `Mark APPROVED (${selectedIds.length})`}
+                    </button>
+                    <button
+                        onClick={() => bulkUpdateStatus('PAID')}
+                        disabled={bulkUpdating || updatingId !== null || selectedIds.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-black text-blue-700 bg-blue-50 rounded-xl border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Update selected reimbursements to PAID"
+                    >
+                        {bulkUpdating ? 'Updating...' : `Mark PAID (${selectedIds.length})`}
+                    </button>
                 </div>
             </div>
 
@@ -725,6 +813,15 @@ function HRReimbursementTable() {
                     <table className="w-full text-sm text-left">
 		                        <thead className="bg-secondary-100/30 text-[10px] uppercase font-black text-secondary-400 tracking-[0.2em]">
 		                            <tr>
+                                        <th className="px-4 py-4 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                onChange={(e) => toggleSelectAll(e.target.checked)}
+                                                aria-label="Select all reimbursements"
+                                                className="w-4 h-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                                            />
+                                        </th>
 		                                <th className="px-6 py-4">Employee</th>
 		                                <th className="px-6 py-4">Emp ID</th>
 		                                <th className="px-6 py-4">Period</th>
@@ -745,6 +842,15 @@ function HRReimbursementTable() {
                                     const approvalInfo = getApprovalInfo(r);
 	                                return (
 	                                    <tr key={i} className="hover:bg-primary-50/40 transition-all group">
+                                            <td className="px-4 py-5 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(r.id)}
+                                                    onChange={(e) => toggleRowSelection(r.id, e.target.checked)}
+                                                    aria-label={`Select reimbursement for ${userName}`}
+                                                    className="w-4 h-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                                                />
+                                            </td>
 	                                        <td className="px-6 py-5">
 	                                            <div className="font-bold text-secondary-900">{userName}</div>
 	                                            <div className="text-xs text-secondary-400">{r.user?.email}</div>
@@ -780,7 +886,7 @@ function HRReimbursementTable() {
 		                                            <select
 	                                                className="bg-white border border-secondary-200 rounded-xl px-3 py-2 text-[10px] font-black tracking-widest text-secondary-700 hover:border-primary-200 transition-colors"
 	                                                value={r.status}
-	                                                disabled={updatingId === r.id}
+	                                                disabled={updatingId === r.id || bulkUpdating}
 	                                                onChange={(e) => {
 	                                                    const next = e.target.value;
 	                                                    if (next === r.status) return;
