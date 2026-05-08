@@ -10,6 +10,7 @@ import {
 import { logger } from '@/lib/logger';
 import { proformaUpdateSchema, validateData } from '@/lib/validation/schemas';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
+import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 
 const db = prisma as any;
 
@@ -111,6 +112,7 @@ export const PATCH = authorizedRoute(
                 );
             }
             const input = validation.data!;
+            const changedFields = Object.keys(body).filter((key) => body[key] !== undefined);
 
             const proforma = await db.proformaInvoice.findFirst({
                 where: { id, companyId: user.companyId, deletedAt: null }
@@ -234,6 +236,15 @@ export const PATCH = authorizedRoute(
             });
 
             logger.info('Proforma invoice updated', { proformaId: id, userId: user.id, newTotal: updated.total });
+            const automationPayload = await loadProformaAutomationPayload(updated.id);
+            if (automationPayload) {
+                await triggerDocumentAutomation({
+                    entityType: 'proforma',
+                    eventType: 'update',
+                    changedFields,
+                    payload: automationPayload,
+                });
+            }
             return NextResponse.json(updated);
         } catch (error) {
             return handleApiError(error, request.nextUrl.pathname);

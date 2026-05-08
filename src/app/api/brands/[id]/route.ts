@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
+import { parseAutomationConfigInput } from '@/lib/document-automation';
+import { ValidationError } from '@/lib/error-handler';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -15,6 +17,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const { name, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
         const normalizedEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
         const normalizedYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
+        const normalizedDocumentWebhookConfig = parseAutomationConfigInput(body.documentWebhookConfig);
+        const normalizedDocumentEmailConfig = parseAutomationConfigInput(body.documentEmailConfig);
+        const hasAutomationConfigUpdate =
+            body.documentWebhookConfig !== undefined || body.documentEmailConfig !== undefined;
+
+        if (hasAutomationConfigUpdate && decoded.role !== 'SUPER_ADMIN') {
+            throw new ValidationError('Only SUPER_ADMIN can manage document automation configuration');
+        }
 
         const before = await prisma.brand.findUnique({
             where: { id },
@@ -31,6 +41,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 invoiceEntityCode: true,
                 invoiceYearFormat: true,
                 brandRelationType: true,
+                documentWebhookConfig: true,
+                documentEmailConfig: true,
             }
         });
 
@@ -65,6 +77,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 proformaNextNumber: body.proformaNextNumber,
                 invoiceEntityCode: normalizedEntityCode,
                 invoiceYearFormat: normalizedYearFormat,
+                documentWebhookConfig: normalizedDocumentWebhookConfig,
+                documentEmailConfig: normalizedDocumentEmailConfig,
             }
         });
 
@@ -89,6 +103,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                         invoiceEntityCode: brand.invoiceEntityCode,
                         invoiceYearFormat: brand.invoiceYearFormat,
                         brandRelationType: brand.brandRelationType,
+                        documentWebhookConfig: (brand as any).documentWebhookConfig,
+                        documentEmailConfig: (brand as any).documentEmailConfig,
                     }
                 }
             }

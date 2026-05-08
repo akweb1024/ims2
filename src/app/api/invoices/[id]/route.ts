@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { releaseInvoiceStockReservations, replaceInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 import { buildTrackingMetadata } from '@/lib/dispatch';
+import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 
 export const GET = authorizedRoute(
     [],
@@ -106,6 +107,8 @@ export const PATCH = authorizedRoute(
                 throw new ValidationError('Invoices marked as PAID cannot be modified. Void and recreate if needed.');
             }
 
+            const changedFields = Object.keys(body).filter((key) => body[key] !== undefined);
+
             // Update allowed fields: dueDate, description, amount, tax, total, lineItems
             const updated = await prisma.$transaction(async (tx: any) => {
                 let nextLineItems = body.lineItems;
@@ -187,6 +190,16 @@ export const PATCH = authorizedRoute(
 
                 return updatedInvoice;
             });
+
+            const automationPayload = await loadInvoiceAutomationPayload(updated.id);
+            if (automationPayload) {
+                await triggerDocumentAutomation({
+                    entityType: 'invoice',
+                    eventType: 'update',
+                    changedFields,
+                    payload: automationPayload,
+                });
+            }
 
             return NextResponse.json(updated);
         } catch (error) {

@@ -37,6 +37,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'File Manager', href: '/dashboard/files', icon: '🗂️', roles: ['*'] },
                     { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                     { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
+                    { name: 'Automation Forms', href: '/dashboard/automation/forms', icon: '🧩', roles: ['SUPER_ADMIN'] },
                     { name: 'Team Dashboard', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
             },

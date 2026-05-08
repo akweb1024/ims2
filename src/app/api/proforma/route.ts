@@ -8,6 +8,7 @@ import {
     validateData,
 } from '@/lib/validation/schemas';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
+import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 
 const db = prisma as any;
 
@@ -256,6 +257,15 @@ export const POST = authorizedRoute(
                 userId: user.id,
                 total: financials.total,
             });
+
+            const automationPayload = await loadProformaAutomationPayload(proforma.id);
+            if (automationPayload) {
+                await triggerDocumentAutomation({
+                    entityType: 'proforma',
+                    eventType: 'create',
+                    payload: automationPayload,
+                });
+            }
 
             return NextResponse.json(proforma, { status: 201 });
         } catch (error) {

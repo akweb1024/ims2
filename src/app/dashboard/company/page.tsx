@@ -4,10 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CompanyClientLayout from "../companies/CompanyClientLayout";
+import AutomationConfigBuilder from "@/components/dashboard/company/AutomationConfigBuilder";
 import CompanyAnalyticsOverview from "@/components/dashboard/company/CompanyAnalyticsOverview";
 import WorkforceAnalytics from "@/components/dashboard/company/WorkforceAnalytics";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import RichTextEditor from "@/components/common/RichTextEditor";
+import {
+  emptyEmailConfig,
+  emptyWebhookConfig,
+  normalizeScopedRuleMap,
+} from "@/lib/document-automation-config";
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<any>(null);
@@ -58,6 +64,16 @@ export default function CompanyPage() {
     invoiceEntityCode: "",
     invoiceYearFormat: "CALENDAR",
   });
+  const [companyWebhookConfig, setCompanyWebhookConfig] = useState(
+    emptyWebhookConfig(),
+  );
+  const [companyEmailConfig, setCompanyEmailConfig] = useState(
+    emptyEmailConfig(),
+  );
+  const [brandWebhookConfig, setBrandWebhookConfig] = useState(
+    emptyWebhookConfig(),
+  );
+  const [brandEmailConfig, setBrandEmailConfig] = useState(emptyEmailConfig());
   const [invoiceSaving, setInvoiceSaving] = useState(false);
   const [invoiceSaved, setInvoiceSaved] = useState(false);
 
@@ -142,6 +158,12 @@ export default function CompanyPage() {
           invoiceEntityCode: companyData.invoiceEntityCode || "",
           invoiceYearFormat: companyData.invoiceYearFormat || "CALENDAR",
         });
+        setCompanyWebhookConfig(
+          normalizeScopedRuleMap(companyData.documentWebhookConfig),
+        );
+        setCompanyEmailConfig(
+          normalizeScopedRuleMap(companyData.documentEmailConfig),
+        );
 
         // Fetch departments for this company
         const deptRes = await fetch(
@@ -188,6 +210,16 @@ export default function CompanyPage() {
       setLoading(false);
     }
   }, [companyIdParam, fetchBrands]);
+
+  useEffect(() => {
+    if (!showBrandModal) return;
+    setBrandWebhookConfig(
+      normalizeScopedRuleMap(editingBrand?.documentWebhookConfig),
+    );
+    setBrandEmailConfig(
+      normalizeScopedRuleMap(editingBrand?.documentEmailConfig),
+    );
+  }, [showBrandModal, editingBrand]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -302,6 +334,12 @@ export default function CompanyPage() {
         proformaNextNumber:
           parseInt(invoiceSettings.proformaNextNumber as any) || 1,
         invoiceEntityCode: (invoiceSettings.invoiceEntityCode || "").toUpperCase(),
+        ...(userRole === "SUPER_ADMIN"
+          ? {
+              documentWebhookConfig: companyWebhookConfig,
+              documentEmailConfig: companyEmailConfig,
+            }
+          : {}),
       };
 
       const res = await fetch(`/api/companies/${company.id}`, {
@@ -410,50 +448,61 @@ export default function CompanyPage() {
     setActionLoading(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const payload = {
-      companyId: company.id,
-      name: formData.get("name"),
-      tagline: formData.get("tagline"),
-      address: formData.get("address"),
-      email: formData.get("email"),
-      website: formData.get("website"),
-      logoUrl: formData.get("logoUrl"),
-      companyLogoUrl: formData.get("companyLogoUrl"),
-      brandRelationType: (() => {
-        const preset = formData.get("brandRelationType") as string;
-        const custom = (
-          formData.get("brandRelationTypeCustom") as string
-        )?.trim();
-        // If user chose "Custom..." from dropdown, use the custom text box value
-        if (preset === "custom") return custom || "A Brand of";
-        // Otherwise use the preset value
-        return preset || "A Brand of";
-      })(),
-      regdOfficeAddress: formData.get("regdOfficeAddress"),
-      salesOfficeAddress: formData.get("salesOfficeAddress"),
-      invoiceTerms: formData.get("invoiceTerms"),
-      legalEntityName: formData.get("legalEntityName"),
-      gstin: formData.get("gstin"),
-      cinNo: formData.get("cinNo"),
-      panNo: formData.get("panNo"),
-      iecCode: formData.get("iecCode"),
-      bankName: formData.get("bankName"),
-      bankAccountHolder: formData.get("bankAccountHolder"),
-      bankAccountNumber: formData.get("bankAccountNumber"),
-      bankIfscCode: formData.get("bankIfscCode"),
-      bankSwiftCode: formData.get("bankSwiftCode"),
-      paymentMode: formData.get("paymentMode"),
-      invoicePrefix: formData.get("invoicePrefix"),
-      proformaPrefix: formData.get("proformaPrefix"),
-      invoiceNextNumber: formData.get("invoiceNextNumber")
-        ? parseInt(formData.get("invoiceNextNumber") as string)
-        : null,
-      proformaNextNumber: formData.get("proformaNextNumber")
-        ? parseInt(formData.get("proformaNextNumber") as string)
-        : null,
-      invoiceEntityCode: formData.get("invoiceEntityCode"),
-      invoiceYearFormat: formData.get("invoiceYearFormat"),
-    };
+    let payload: any;
+    try {
+      payload = {
+        companyId: company.id,
+        name: formData.get("name"),
+        tagline: formData.get("tagline"),
+        address: formData.get("address"),
+        email: formData.get("email"),
+        website: formData.get("website"),
+        logoUrl: formData.get("logoUrl"),
+        companyLogoUrl: formData.get("companyLogoUrl"),
+        brandRelationType: (() => {
+          const preset = formData.get("brandRelationType") as string;
+          const custom = (
+            formData.get("brandRelationTypeCustom") as string
+          )?.trim();
+          if (preset === "custom") return custom || "A Brand of";
+          return preset || "A Brand of";
+        })(),
+        regdOfficeAddress: formData.get("regdOfficeAddress"),
+        salesOfficeAddress: formData.get("salesOfficeAddress"),
+        invoiceTerms: formData.get("invoiceTerms"),
+        legalEntityName: formData.get("legalEntityName"),
+        gstin: formData.get("gstin"),
+        cinNo: formData.get("cinNo"),
+        panNo: formData.get("panNo"),
+        iecCode: formData.get("iecCode"),
+        bankName: formData.get("bankName"),
+        bankAccountHolder: formData.get("bankAccountHolder"),
+        bankAccountNumber: formData.get("bankAccountNumber"),
+        bankIfscCode: formData.get("bankIfscCode"),
+        bankSwiftCode: formData.get("bankSwiftCode"),
+        paymentMode: formData.get("paymentMode"),
+        invoicePrefix: formData.get("invoicePrefix"),
+        proformaPrefix: formData.get("proformaPrefix"),
+        invoiceNextNumber: formData.get("invoiceNextNumber")
+          ? parseInt(formData.get("invoiceNextNumber") as string)
+          : null,
+        proformaNextNumber: formData.get("proformaNextNumber")
+          ? parseInt(formData.get("proformaNextNumber") as string)
+          : null,
+        invoiceEntityCode: formData.get("invoiceEntityCode"),
+        invoiceYearFormat: formData.get("invoiceYearFormat"),
+        ...(userRole === "SUPER_ADMIN"
+          ? {
+              documentWebhookConfig: brandWebhookConfig,
+              documentEmailConfig: brandEmailConfig,
+            }
+          : {}),
+      };
+    } catch (parseError) {
+      alert("Brand automation settings could not be prepared.");
+      setActionLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -1064,6 +1113,37 @@ export default function CompanyPage() {
                     </Field>
                   </div>
 
+                  <div className="mt-12 bg-emerald-50/40 p-8 rounded-3xl border border-emerald-100/60">
+                    <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                      <span className="w-8 h-8 bg-emerald-100 flex items-center justify-center rounded-lg text-lg">
+                        🔗
+                      </span>
+                      Webhook And Email Automation
+                    </h4>
+                    {userRole === "SUPER_ADMIN" ? (
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <AutomationConfigBuilder
+                          mode="webhook"
+                          title="Webhook Rules"
+                          hint="Choose the trigger, notification URL, method, and map outgoing keys row by row."
+                          value={companyWebhookConfig}
+                          onChange={setCompanyWebhookConfig}
+                        />
+                        <AutomationConfigBuilder
+                          mode="email"
+                          title="Email Rules"
+                          hint="Set recipient paths, subject, and custom message for invoice and proforma events."
+                          value={companyEmailConfig}
+                          onChange={setCompanyEmailConfig}
+                        />
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-secondary-200 bg-white p-5 text-sm text-secondary-600">
+                        This section is restricted. Only SUPER_ADMIN can create or edit automation rules.
+                      </div>
+                    )}
+                  </div>
+
                   <div className="mt-12 bg-amber-50/30 p-8 rounded-3xl border border-amber-100/50">
                     <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
                       <span className="w-8 h-8 bg-amber-100 flex items-center justify-center rounded-lg text-lg">
@@ -1444,7 +1524,10 @@ export default function CompanyPage() {
                 </div>
                 {["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(userRole) && (
                   <button
-                    onClick={() => setShowBrandModal(true)}
+                    onClick={() => {
+                      setEditingBrand(null);
+                      setShowBrandModal(true);
+                    }}
                     className="btn btn-primary"
                   >
                     + Create New Brand
@@ -1555,7 +1638,10 @@ export default function CompanyPage() {
                     outlets, or service lines under your primary company.
                   </p>
                   <button
-                    onClick={() => setShowBrandModal(true)}
+                    onClick={() => {
+                      setEditingBrand(null);
+                      setShowBrandModal(true);
+                    }}
                     className="btn btn-primary px-8"
                   >
                     Create Your First Brand
@@ -2196,6 +2282,39 @@ export default function CompanyPage() {
                       placeholder="Standard terms specific to this brand (falls back to company terms if empty)..."
                     />
                   </div>
+                </div>
+
+                <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                  <h4 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                    🔗 Webhook & Email Automation
+                  </h4>
+                  {userRole === "SUPER_ADMIN" ? (
+                    <>
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        <AutomationConfigBuilder
+                          mode="webhook"
+                          title="Brand Webhook Rules"
+                          hint="Use these when a specific brand needs its own outbound API mapping."
+                          value={brandWebhookConfig}
+                          onChange={setBrandWebhookConfig}
+                        />
+                        <AutomationConfigBuilder
+                          mode="email"
+                          title="Brand Email Rules"
+                          hint="Use these when a specific brand needs different invoice/proforma emails."
+                          value={brandEmailConfig}
+                          onChange={setBrandEmailConfig}
+                        />
+                      </div>
+                      <p className="text-xs text-secondary-500 mt-3">
+                        Brand rules are added on top of company rules for invoices that use this brand.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-secondary-200 bg-white p-4 text-sm text-secondary-600">
+                      Locked: only SUPER_ADMIN can manage brand-level automation.
+                    </div>
+                  )}
                 </div>
 
                 <div className="md:col-span-2 pt-4 border-t border-secondary-100">

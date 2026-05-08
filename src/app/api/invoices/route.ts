@@ -9,6 +9,7 @@ import { generateInvoiceNumbers } from '@/lib/invoice-number';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { applyInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 import { validateInvoiceConfig } from '@/lib/invoice-config';
+import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 
 export const GET = authorizedRoute(
     [],
@@ -429,6 +430,15 @@ export const POST = authorizedRoute(
             }
         } catch (financeError) {
             logger.error('Failed to post invoice journal', financeError, { invoiceId: newInvoice.id });
+        }
+
+        const automationPayload = await loadInvoiceAutomationPayload(newInvoice.id);
+        if (automationPayload) {
+            await triggerDocumentAutomation({
+                entityType: 'invoice',
+                eventType: 'create',
+                payload: automationPayload,
+            });
         }
 
         logger.info('Invoice created', { invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, createdBy: user.id });

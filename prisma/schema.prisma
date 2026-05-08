@@ -42,6 +42,8 @@ model Company {
   invoiceCompanyLogoUrl       String?                      @map("invoiceCompanyLogoUrl")
   universityId                String?
   invoiceTerms                String?
+  documentWebhookConfig       Json?
+  documentEmailConfig         Json?
   regdOfficeAddress           String?
   salesOfficeAddress          String?
   invoiceNextNumber           Int                          @default(1)
@@ -1238,6 +1240,8 @@ model Brand {
   panNo              String?
   paymentMode        String?   @default("Online")
   invoiceTerms       String?
+  documentWebhookConfig Json?
+  documentEmailConfig Json?
   regdOfficeAddress  String?
   salesOfficeAddress String?
   invoiceNextNumber  Int?      @default(1)

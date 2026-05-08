@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { parseAutomationConfigInput } from '@/lib/document-automation';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
@@ -226,7 +227,8 @@ export const PATCH = authorizedRoute(
                 paymentMode, brandRelationType, invoiceCompanyLogoUrl,
                 regdOfficeAddress, salesOfficeAddress, invoiceTerms,
                 invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber,
-                invoiceEntityCode, invoiceYearFormat
+                invoiceEntityCode, invoiceYearFormat,
+                documentWebhookConfig, documentEmailConfig
             } = body;
 
             const normalizedInvoiceNextNumber =
@@ -245,6 +247,14 @@ export const PATCH = authorizedRoute(
                 invoiceYearFormat !== undefined
                     ? (invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR')
                     : undefined;
+            const normalizedDocumentWebhookConfig = parseAutomationConfigInput(documentWebhookConfig);
+            const normalizedDocumentEmailConfig = parseAutomationConfigInput(documentEmailConfig);
+            const hasAutomationConfigUpdate =
+                documentWebhookConfig !== undefined || documentEmailConfig !== undefined;
+
+            if (hasAutomationConfigUpdate && decoded.role !== 'SUPER_ADMIN') {
+                return createErrorResponse('Only SUPER_ADMIN can manage document automation configuration', 403);
+            }
 
             const before = await prisma.company.findUnique({
                 where: { id },
@@ -264,6 +274,8 @@ export const PATCH = authorizedRoute(
                     brandRelationType: true,
                     invoiceCompanyLogoUrl: true,
                     invoiceTerms: true,
+                    documentWebhookConfig: true,
+                    documentEmailConfig: true,
                 }
             });
 
@@ -305,6 +317,8 @@ export const PATCH = authorizedRoute(
                     ...(normalizedProformaNextNumber !== undefined && { proformaNextNumber: normalizedProformaNextNumber }),
                     ...(normalizedEntityCode !== undefined && { invoiceEntityCode: normalizedEntityCode }),
                     ...(normalizedYearFormat !== undefined && { invoiceYearFormat: normalizedYearFormat }),
+                    ...(normalizedDocumentWebhookConfig !== undefined && { documentWebhookConfig: normalizedDocumentWebhookConfig }),
+                    ...(normalizedDocumentEmailConfig !== undefined && { documentEmailConfig: normalizedDocumentEmailConfig }),
                 },
                 include: {
                     _count: {
@@ -351,6 +365,8 @@ export const PATCH = authorizedRoute(
                             brandRelationType: company.brandRelationType,
                             invoiceCompanyLogoUrl: company.invoiceCompanyLogoUrl,
                             invoiceTerms: (company as any).invoiceTerms,
+                            documentWebhookConfig: (company as any).documentWebhookConfig,
+                            documentEmailConfig: (company as any).documentEmailConfig,
                         }
                     }
                 }

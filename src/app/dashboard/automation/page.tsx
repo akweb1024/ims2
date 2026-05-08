@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Link from 'next/link';
 import {
     Cpu, Play, CheckCircle2, AlertCircle,
     RefreshCw, GitBranch, DollarSign, Users,
@@ -109,6 +110,12 @@ export default function AutomationPage() {
                             Monitor and trigger background intelligence jobs manually.
                             These tasks usually run on a nightly cron schedule.
                         </p>
+                        <Link
+                            href="/dashboard/automation/forms"
+                            className="mt-4 inline-flex rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-white/20"
+                        >
+                            Open Automation Forms
+                        </Link>
                     </div>
                     {/* Retro Terminal Effect */}
                     <div className="font-mono text-xs text-green-400 opacity-30 absolute top-4 right-4 text-right hidden lg:block">

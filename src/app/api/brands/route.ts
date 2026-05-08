@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
+import { parseAutomationConfigInput } from '@/lib/document-automation';
 
 export const GET = authorizedRoute(
     [],
@@ -33,8 +34,15 @@ export const POST = authorizedRoute(
             const { name, companyId, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
             const normalizedEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
             const normalizedYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
+            const normalizedDocumentWebhookConfig = parseAutomationConfigInput(body.documentWebhookConfig);
+            const normalizedDocumentEmailConfig = parseAutomationConfigInput(body.documentEmailConfig);
+            const hasAutomationConfigUpdate =
+                body.documentWebhookConfig !== undefined || body.documentEmailConfig !== undefined;
 
             if (!name || !companyId) throw new ValidationError('Name and Company ID are required');
+            if (hasAutomationConfigUpdate && user.role !== 'SUPER_ADMIN') {
+                throw new ValidationError('Only SUPER_ADMIN can manage document automation configuration');
+            }
 
             const brand = await (prisma.brand as any).create({
                 data: {
@@ -67,6 +75,8 @@ export const POST = authorizedRoute(
                     proformaNextNumber: body.proformaNextNumber,
                     invoiceEntityCode: normalizedEntityCode,
                     invoiceYearFormat: normalizedYearFormat,
+                    documentWebhookConfig: normalizedDocumentWebhookConfig,
+                    documentEmailConfig: normalizedDocumentEmailConfig,
                 }
             });
 
@@ -93,6 +103,8 @@ export const POST = authorizedRoute(
                             invoiceEntityCode: brand.invoiceEntityCode,
                             invoiceYearFormat: brand.invoiceYearFormat,
                             brandRelationType: brand.brandRelationType,
+                            documentWebhookConfig: (brand as any).documentWebhookConfig,
+                            documentEmailConfig: (brand as any).documentEmailConfig,
                         }
                     }
                 }
