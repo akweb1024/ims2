@@ -42,8 +42,8 @@ export const GET = authorizedRoute(
           brand.company?.fiscalYearStart,
           now
         );
-        const invoiceSeq = Number(brand.invoiceNextNumber || 1).toString().padStart(5, '0');
-        const proformaSeq = Number(brand.proformaNextNumber || 1).toString().padStart(5, '0');
+        const invoiceSeq = Number(brand.invoiceNextNumber || 1).toString().padStart(3, '0');
+        const proformaSeq = Number(brand.proformaNextNumber || 1).toString().padStart(3, '0');
         return NextResponse.json({
           scope: 'brand',
           scopeId: brand.id,
@@ -73,8 +73,8 @@ export const GET = authorizedRoute(
 
       const entityCode = sanitizeEntityCode(company.invoiceEntityCode) || deriveEntityCode(company.name || 'GEN');
       const yearLabel = getInvoiceYearLabel(company.invoiceYearFormat, company.fiscalYearStart, now);
-      const invoiceSeq = Number(company.invoiceNextNumber || 1).toString().padStart(5, '0');
-      const proformaSeq = Number(company.proformaNextNumber || 1).toString().padStart(5, '0');
+      const invoiceSeq = Number(company.invoiceNextNumber || 1).toString().padStart(3, '0');
+      const proformaSeq = Number(company.proformaNextNumber || 1).toString().padStart(3, '0');
 
       return NextResponse.json({
         scope: 'company',

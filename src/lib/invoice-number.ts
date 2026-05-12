@@ -2,10 +2,10 @@
  * Invoice Number Generator — Multi-Company / Multi-Brand Safe
  *
  * Format:  {PREFIX}{ENTITY_CODE}-{FISCAL_YEAR}-{SEQUENCE}
- * Example: INV-STM-2026-00001   (Company "STM Journals")
- *          INV-ANV-2026-00001   (Brand "ANV Publications")
- *          PRO-IMS-2026-00003   (Company "IMS", 3rd proforma)
- *          REN-STM-2026-00002   (Renewal invoice for STM)
+ * Example: INV-STM-2026-001     (Company "STM Journals")
+ *          INV-ANV-2026-001     (Brand "ANV Publications")
+ *          PRO-IMS-2026-003     (Company "IMS", 3rd proforma)
+ *          REN-STM-2026-002     (Renewal invoice for STM)
  *
  * The entity code is derived from the company or brand name — 2–6 uppercase
  * alphanumeric characters. This ensures GLOBAL UNIQUENESS even when two
@@ -114,8 +114,8 @@ export async function generateInvoiceNumbers(
         );
         const invPrefix = prefix ?? (updatedBrand.invoicePrefix || 'INV-');
         const proPrefix = updatedBrand.proformaPrefix || 'PRO-';
-        const invSeq = (updatedBrand.invoiceNextNumber! - 1).toString().padStart(5, '0');
-        const proSeq = (updatedBrand.proformaNextNumber! - 1).toString().padStart(5, '0');
+        const invSeq = (updatedBrand.invoiceNextNumber! - 1).toString().padStart(3, '0');
+        const proSeq = (updatedBrand.proformaNextNumber! - 1).toString().padStart(3, '0');
 
         invoiceNumber = `${invPrefix}${entityCode}-${yearLabel}-${invSeq}`;
         proformaNumber = `${proPrefix}${entityCode}-${yearLabel}-${proSeq}`;
@@ -133,8 +133,8 @@ export async function generateInvoiceNumbers(
         const yearLabel = getInvoiceYearLabel(updatedCompany.invoiceYearFormat, updatedCompany.fiscalYearStart, now);
         const invPrefix = prefix ?? (updatedCompany.invoicePrefix || 'INV-');
         const proPrefix = updatedCompany.proformaPrefix || 'PRO-';
-        const invSeq = (updatedCompany.invoiceNextNumber - 1).toString().padStart(5, '0');
-        const proSeq = (updatedCompany.proformaNextNumber - 1).toString().padStart(5, '0');
+        const invSeq = (updatedCompany.invoiceNextNumber - 1).toString().padStart(3, '0');
+        const proSeq = (updatedCompany.proformaNextNumber - 1).toString().padStart(3, '0');
 
         invoiceNumber = `${invPrefix}${entityCode}-${yearLabel}-${invSeq}`;
         proformaNumber = `${proPrefix}${entityCode}-${yearLabel}-${proSeq}`;
