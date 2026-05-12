@@ -6,6 +6,9 @@ interface EmailOptions {
     subject: string;
     text: string;
     html: string;
+    cc?: string;
+    bcc?: string;
+    replyTo?: string;
 }
 
 // Singleton transporter to avoid initialization issues during build
@@ -44,7 +47,7 @@ const getTransporter = () => {
 
 import { prisma } from './prisma';
 
-export async function sendEmail({ to, subject, text, html }: EmailOptions) {
+export async function sendEmail({ to, subject, text, html, cc, bcc, replyTo }: EmailOptions) {
     const hasAws = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
     const hasSmtp = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 
@@ -73,6 +76,9 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions) {
         const info = await transporter.sendMail({
             from: `"STM Journals" <${process.env.EMAIL_FROM || 'no-reply@stm.com'}>`,
             to,
+            cc,
+            bcc,
+            replyTo,
             subject,
             text,
             html,
