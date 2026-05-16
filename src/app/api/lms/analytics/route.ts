@@ -1,8 +1,14 @@
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
-export async function GET(req: Request) {
+const LMS_ANALYTICS_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
+export const GET = authorizedRoute(
+    LMS_ANALYTICS_ROLES,
+    async (req: NextRequest) => {
     try {
         // Total Stats
         const courses = await prisma.course.findMany({ select: { totalRevenue: true, emailCount: true, mentorReward: true } });
@@ -69,4 +75,5 @@ export async function GET(req: Request) {
         console.error('Error fetching analytics:', error);
         return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
     }
-}
+    }
+);

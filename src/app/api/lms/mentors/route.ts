@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
-export async function GET(req: Request) {
+const LMS_MENTOR_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
+export const GET = authorizedRoute(
+    LMS_MENTOR_ROLES,
+    async (req: NextRequest) => {
     try {
         const { searchParams } = new URL(req.url);
         const mentorId = searchParams.get('mentorId');
@@ -26,9 +32,10 @@ export async function GET(req: Request) {
         console.error('Error fetching mentor sessions:', error);
         return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
     }
-}
+    }
+);
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const user = await getSessionUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

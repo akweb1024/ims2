@@ -3,9 +3,26 @@ import { prisma } from '../src/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 // Removed local PrismaClient initialization to use the centralized one
+const DESTRUCTIVE_SEED_CONFIRMATION = 'DELETE_IMS_BUSINESS_DATA';
+
+function assertDestructiveSeedAllowed() {
+    if (process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+        throw new Error(
+            'Seed aborted: prisma/seed.ts deletes existing business data, including attendance, work reports, and employee profiles. Set ALLOW_DESTRUCTIVE_SEED=true only when targeting a disposable database.'
+        );
+    }
+
+    if (process.env.CONFIRM_DESTRUCTIVE_SEED !== DESTRUCTIVE_SEED_CONFIRMATION) {
+        throw new Error(
+            `Seed aborted: set CONFIRM_DESTRUCTIVE_SEED=${DESTRUCTIVE_SEED_CONFIRMATION} to confirm this disposable-database reset.`
+        );
+    }
+}
 
 async function main() {
     console.log('🌱 Starting seed...');
+
+    assertDestructiveSeedAllowed();
 
     // Clear existing data (including new modules)
     console.log('🗑️  Clearing existing data...');

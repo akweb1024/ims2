@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/error-handler';
 
+function isValidAccessCode(providedCode: string | null) {
+    const expectedCode = process.env.PUBLIC_INVOICE_ACCESS_CODE;
+    if (!expectedCode) return false;
+    return providedCode === expectedCode;
+}
+
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -9,10 +15,14 @@ export async function GET(
     try {
         const { id } = await params;
         const { searchParams } = new URL(req.url);
-        const password = searchParams.get('password');
+        const accessCode = searchParams.get('accessCode');
 
-        if (password !== '12345') {
-            return NextResponse.json({ error: 'Unauthorized. Invalid password.' }, { status: 401 });
+        if (!process.env.PUBLIC_INVOICE_ACCESS_CODE) {
+            return NextResponse.json({ error: 'Public invoice access is not configured.' }, { status: 503 });
+        }
+
+        if (!isValidAccessCode(accessCode)) {
+            return NextResponse.json({ error: 'Unauthorized. Invalid access code.' }, { status: 401 });
         }
 
         const invoice = await prisma.invoice.findUnique({

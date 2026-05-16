@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+
+const IMPORTABLE_ROLES = new Set<UserRole>([
+    UserRole.ADMIN,
+    UserRole.MANAGER,
+    UserRole.TEAM_LEADER,
+    UserRole.HR,
+    UserRole.HR_MANAGER,
+    UserRole.FINANCE_ADMIN,
+    UserRole.EXECUTIVE,
+    UserRole.CUSTOMER,
+    UserRole.AGENCY,
+    UserRole.JOURNAL_MANAGER,
+    UserRole.PLAGIARISM_CHECKER,
+    UserRole.QUALITY_CHECKER,
+    UserRole.EDITOR_IN_CHIEF,
+    UserRole.SECTION_EDITOR,
+    UserRole.REVIEWER,
+    UserRole.IT_MANAGER,
+    UserRole.IT_ADMIN,
+]);
 
 export async function POST(req: NextRequest) {
     try {
@@ -50,11 +71,17 @@ export async function POST(req: NextRequest) {
                 targetCompanyId = decoded.companyId;
             }
 
+            const requestedRole = String(item.role || UserRole.EXECUTIVE).toUpperCase() as UserRole;
+            const role =
+                decoded.role === 'SUPER_ADMIN' && IMPORTABLE_ROLES.has(requestedRole)
+                    ? requestedRole
+                    : UserRole.EXECUTIVE;
+
             await prisma.user.create({
                 data: {
                     email: email,
                     password: hashedPassword,
-                    role: item.role || 'EXECUTIVE',
+                    role,
                     companyId: targetCompanyId,
                     isActive: true,
                     emailVerified: true

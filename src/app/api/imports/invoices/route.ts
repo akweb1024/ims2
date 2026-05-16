@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
             if (!subscriptionId && (item.email || item.customeremail)) {
                 const email = item.email || item.customeremail;
                 const customer = await prisma.customerProfile.findFirst({
-                    where: { primaryEmail: email },
+                    where: {
+                        primaryEmail: email,
+                        ...(decoded.companyId ? { companyId: decoded.companyId } : {}),
+                    },
                     include: {
                         subscriptions: {
                             take: 1,
@@ -52,11 +55,25 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            const scopedSubscription = await prisma.subscription.findFirst({
+                where: {
+                    id: subscriptionId,
+                    ...(decoded.companyId ? { companyId: decoded.companyId } : {}),
+                },
+                select: { id: true }
+            });
+
+            if (!scopedSubscription) {
+                errors.push(`Subscription not found or access denied for invoice: ${item.invoicenumber || 'Unknown'}`);
+                skippedCount++;
+                continue;
+            }
+
             // Create Invoice
             try {
                 await prisma.invoice.create({
                     data: {
-                        subscriptionId: subscriptionId,
+                        subscriptionId: scopedSubscription.id,
                         invoiceNumber: item.invoicenumber || `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                         amount: parseFloat(item.amount) || 0,
                         tax: 0, // Simplified import

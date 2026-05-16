@@ -4,7 +4,7 @@ test.describe.configure({ timeout: 90000 });
 
 const loginAsAdmin = async (page: Page) => {
   await page.goto("/login");
-  await page.getByPlaceholder("you@example.com or EMP-001").fill("admin@stm.com");
+  await page.getByPlaceholder("you@example.com").fill("admin@stm.com");
   await page.getByPlaceholder("••••••••").fill("password123");
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect
@@ -160,11 +160,12 @@ test.describe("Conference Follow-up Flows", () => {
     await page.getByPlaceholder("Write the follow-up remark here...").fill(
       "Registrant follow-up remark added by automated smoke coverage.",
     );
-    await page.getByRole("combobox").nth(0).selectOption("PHONE");
-    await page.getByRole("combobox").nth(1).selectOption("FOLLOW_UP_REQUIRED");
-    await page.getByLabel(/Scheduled follow-up meeting/).check();
+    const followupForm = page.locator("form").last();
+    await followupForm.getByRole("combobox").nth(0).selectOption("Phone");
+    await followupForm.getByRole("combobox").nth(1).selectOption("Follow-up required");
+    await followupForm.getByLabel(/Scheduled follow-up meeting/).check();
 
-    const saveFollowupButton = page.getByRole("button", { name: "Save Follow-up" });
+    const saveFollowupButton = followupForm.getByRole("button", { name: "Save Follow-up" });
     await saveFollowupButton.scrollIntoViewIfNeeded();
     await saveFollowupButton.click({ force: true });
     await expect(page.locator("body")).toContainText(subject, { timeout: 60000 });

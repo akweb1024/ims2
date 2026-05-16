@@ -5,6 +5,7 @@ import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { releaseInvoiceStockReservations, replaceInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 import { buildTrackingMetadata } from '@/lib/dispatch';
 import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
+import { assertCompanyAccess } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     [],
@@ -216,7 +217,7 @@ export const DELETE = authorizedRoute(
             
             const invoice = await prisma.invoice.findUnique({
                 where: { id },
-                select: { status: true }
+                select: { status: true, companyId: true }
             });
 
             if (!invoice) {
@@ -227,22 +228,36 @@ export const DELETE = authorizedRoute(
                 throw new ValidationError('PAID Invoices cannot be deleted. VOID them instead.');
             }
 
+            await assertCompanyAccess(user, invoice.companyId, 'void this invoice');
+
             await prisma.$transaction(async (tx: any) => {
                 await releaseInvoiceStockReservations(tx, {
                     invoiceId: id,
                     userId: user.id,
-                    reason: 'Invoice deleted, reservation released',
+                    reason: 'Invoice voided, reservation released',
                 });
-                
-                // Cascade delete associated records
-                await tx.revenueTransaction.deleteMany({ where: { invoiceId: id } });
-                await tx.payment.deleteMany({ where: { invoiceId: id } });
-                await tx.dispatchOrder.deleteMany({ where: { invoiceId: id } });
 
-                await tx.invoice.delete({ where: { id } });
+                await tx.invoice.update({
+                    where: { id },
+                    data: { status: 'VOID' },
+                });
+
+                await tx.auditLog.create({
+                    data: {
+                        userId: user.id,
+                        action: 'void',
+                        entity: 'invoice',
+                        entityId: id,
+                        changes: {
+                            previousStatus: invoice.status,
+                            companyId: invoice.companyId,
+                            preservedRecords: ['revenueTransaction', 'payment', 'dispatchOrder'],
+                        },
+                    },
+                });
             });
 
-            return NextResponse.json({ message: 'Invoice deleted successfully' });
+            return NextResponse.json({ message: 'Invoice voided successfully' });
         } catch (error) {
             return handleApiError(error, 'Failed to delete invoice');
         }

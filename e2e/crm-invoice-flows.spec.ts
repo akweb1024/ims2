@@ -2,13 +2,16 @@ import { test, expect } from "@playwright/test";
 
 const loginAsAdmin = async (page: import("@playwright/test").Page) => {
   await page.goto("/login");
-  await page.getByPlaceholder("you@example.com or EMP-001").fill("admin@stm.com");
+  await page.getByPlaceholder("you@example.com").fill("admin@stm.com");
   await page.getByPlaceholder("••••••••").fill("password123");
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect
     .poll(async () => page.url(), { timeout: 30000 })
     .toMatch(/\/dashboard/);
 };
+
+const getToken = async (page: import("@playwright/test").Page) =>
+  page.evaluate(() => localStorage.getItem("token"));
 
 test.describe("CRM Invoice and Product Flows", () => {
   test.beforeEach(async ({ page }) => {
@@ -19,7 +22,7 @@ test.describe("CRM Invoice and Product Flows", () => {
     await page.goto("/dashboard/crm/invoice-products");
 
     await expect(
-      page.getByRole("heading", { name: "Invoice Product Catalogue" }),
+      page.getByRole("heading", { name: "Invoice Products" }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: /Add Product/i })).toBeVisible();
     await expect(page.getByTitle("Download CSV Template")).toBeVisible();
@@ -97,25 +100,52 @@ test.describe("CRM Invoice and Product Flows", () => {
     await expect(
       page.getByRole("heading", { name: "Create New Invoice" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /Customer Detail/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Account Detail/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Products Detail/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Summary/i })).toBeVisible();
-    await expect(page.getByText("Select Customer")).toBeVisible();
+    await expect(page.getByText("Select Account")).toBeVisible();
   });
 
   test("should not return 500 when creating invoice with inventory-tracked product", async ({
     page,
     request,
   }) => {
-    const customersRes = await request.get("/api/customers?limit=20");
+    const token = await getToken(page);
+    expect(token).toBeTruthy();
+    const authHeaders = { Authorization: `Bearer ${token}` };
+
+    const customersRes = await request.get("/api/customers?limit=20", {
+      headers: authHeaders,
+    });
     expect(customersRes.ok()).toBeTruthy();
     const customersPayload = await customersRes.json();
-    const customer = customersPayload?.data?.[0];
+    let customer = customersPayload?.data?.[0];
+
+    if (!customer?.id) {
+      const customerStamp = Date.now();
+      const customerRes = await request.post("/api/customers", {
+        headers: authHeaders,
+        data: {
+          name: `Playwright Invoice Customer ${customerStamp}`,
+          customerType: "INDIVIDUAL",
+          primaryEmail: `pw-invoice-customer-${customerStamp}@example.com`,
+          primaryPhone: "9999999999",
+          billingAddress: "Automation Street",
+          billingCity: "Noida",
+          billingState: "Uttar Pradesh",
+          billingPincode: "201301",
+          billingCountry: "India",
+        },
+      });
+      expect(customerRes.ok()).toBeTruthy();
+      customer = await customerRes.json();
+    }
     expect(customer?.id).toBeTruthy();
 
     const uniqueSuffix = Date.now();
     const sku = `PW-AUTO-${uniqueSuffix}`;
     const productRes = await request.post("/api/invoice-products", {
+      headers: authHeaders,
       data: {
         name: `Playwright Inventory Product ${uniqueSuffix}`,
         type: "SIMPLE",
@@ -142,6 +172,7 @@ test.describe("CRM Invoice and Product Flows", () => {
     const dueDateIso = dueDate.toISOString().split("T")[0];
 
     const invoiceRes = await request.post("/api/invoices", {
+      headers: authHeaders,
       data: {
         customerProfileId: customer.id,
         dueDate: dueDateIso,

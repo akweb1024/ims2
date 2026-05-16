@@ -1,8 +1,14 @@
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
-export async function GET(req: Request) {
+const LMS_CONTENT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
+export const GET = authorizedRoute(
+    LMS_CONTENT_ROLES,
+    async (req: NextRequest) => {
     try {
         const { searchParams } = new URL(req.url);
         const search = searchParams.get('search') || '';
@@ -30,9 +36,12 @@ export async function GET(req: Request) {
         console.error('Error fetching workshops:', error);
         return NextResponse.json({ error: 'Failed to fetch workshops' }, { status: 500 });
     }
-}
+    }
+);
 
-export async function POST(req: Request) {
+export const POST = authorizedRoute(
+    LMS_CONTENT_ROLES,
+    async (req: NextRequest) => {
     try {
         const body = await req.json();
         const { title, description, startDate, endDate, price, currency, mentorId, mentorEmail, mentorReward, vehicleType, duration, type } = body;
@@ -62,4 +71,5 @@ export async function POST(req: Request) {
         console.error('Error creating workshop:', error);
         return NextResponse.json({ error: 'Failed to create workshop' }, { status: 500 });
     }
-}
+    }
+);

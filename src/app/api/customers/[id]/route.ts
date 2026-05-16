@@ -416,7 +416,7 @@ export async function DELETE(
                 decoded.role === 'SUPER_ADMIN'
                     ? { id }
                     : { id, companyId: decoded.companyId },
-            select: { id: true, name: true }
+            select: { id: true, name: true, userId: true, notes: true }
         });
 
         if (!customer) {
@@ -424,20 +424,35 @@ export async function DELETE(
         }
 
         await prisma.$transaction(async (tx) => {
-            await tx.customerProfile.delete({ where: { id } });
+            if (customer.userId) {
+                await tx.user.update({
+                    where: { id: customer.userId },
+                    data: { isActive: false }
+                });
+            }
+
+            const deactivationNote = `[${new Date().toISOString()}] Customer deactivated by ${decoded.id}; profile retained for invoice, subscription, dispatch, and communication history.`;
+            await tx.customerProfile.update({
+                where: { id },
+                data: {
+                    notes: customer.notes
+                        ? `${customer.notes}\n${deactivationNote}`
+                        : deactivationNote
+                }
+            });
 
             await tx.auditLog.create({
                 data: {
                     userId: decoded.id,
-                    action: 'delete',
+                    action: 'deactivate',
                     entity: 'customer_profile',
                     entityId: id,
-                    changes: JSON.stringify({ name: customer.name, deletedBy: decoded.id })
+                    changes: JSON.stringify({ name: customer.name, deactivatedBy: decoded.id })
                 }
             });
         });
 
-        return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
+        return NextResponse.json({ success: true, message: 'Customer deactivated successfully' });
 
     } catch (error) {
         logger.error('Delete Customer Error:', error);

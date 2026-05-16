@@ -10,7 +10,7 @@ export const GET = authorizedRoute(
             if (!user.companyId) return createErrorResponse('Company association required', 403);
 
             const templates = await prisma.documentTemplate.findMany({
-                where: { companyId: user.companyId },
+                where: { companyId: user.companyId, isActive: true },
                 orderBy: { createdAt: 'desc' }
             });
 
@@ -58,13 +58,19 @@ export const PATCH = authorizedRoute(
             const { id, ...updateData } = body;
 
             if (!id) return createErrorResponse('ID is required', 400);
+            if (!user.companyId) return createErrorResponse('Company association required', 403);
 
-            const template = await prisma.documentTemplate.update({
-                where: { id },
+            const template = await prisma.documentTemplate.updateMany({
+                where: { id, companyId: user.companyId, isActive: true },
                 data: updateData
             });
 
-            return NextResponse.json(template);
+            if (template.count === 0) {
+                return createErrorResponse('Template not found', 404);
+            }
+
+            const updatedTemplate = await prisma.documentTemplate.findUnique({ where: { id } });
+            return NextResponse.json(updatedTemplate);
         } catch (error) {
             return createErrorResponse(error);
         }
@@ -79,12 +85,18 @@ export const DELETE = authorizedRoute(
             const id = searchParams.get('id');
 
             if (!id) return createErrorResponse('ID is required', 400);
+            if (!user.companyId) return createErrorResponse('Company association required', 403);
 
-            await prisma.documentTemplate.delete({
-                where: { id }
+            const template = await prisma.documentTemplate.updateMany({
+                where: { id, companyId: user.companyId, isActive: true },
+                data: { isActive: false }
             });
 
-            return NextResponse.json({ message: 'Template deleted' });
+            if (template.count === 0) {
+                return createErrorResponse('Template not found', 404);
+            }
+
+            return NextResponse.json({ message: 'Template deactivated' });
         } catch (error) {
             return createErrorResponse(error);
         }

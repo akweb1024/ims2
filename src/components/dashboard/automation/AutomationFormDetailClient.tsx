@@ -119,7 +119,7 @@ export default function AutomationFormDetailClient({ formKey }: { formKey: FormK
     setActions(actions.map((action) => (action.id === id ? { ...action, ...patch } : action)));
   };
   const removeAction = (id: string) => setActions(actions.filter((action) => action.id !== id));
-  const getPickerItems = () => {
+  const pickerItems = useMemo(() => {
     const fieldItems = fieldOptions.map((field) => ({
       id: field.key,
       label: field.label,
@@ -138,11 +138,11 @@ export default function AutomationFormDetailClient({ formKey }: { formKey: FormK
       { id: "meta-time", label: "Triggered At", token: "{{meta.triggeredAt}}", hint: "ISO timestamp" },
       { id: "meta-company", label: "Company ID", token: "{{meta.companyId}}", hint: "execution context" },
     ];
-  };
+  }, [fieldOptions, pickerTab]);
 
   const filteredPickerItems = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase();
-    return getPickerItems().filter((item) => {
+    return pickerItems.filter((item) => {
       if (!q) return true;
       return (
         item.label.toLowerCase().includes(q) ||
@@ -150,7 +150,7 @@ export default function AutomationFormDetailClient({ formKey }: { formKey: FormK
         item.hint.toLowerCase().includes(q)
       );
     });
-  }, [pickerSearch, pickerTab, fieldOptions]);
+  }, [pickerItems, pickerSearch]);
 
   const insertToken = (actionId: string, mappingIndex: number, token: string) => {
     const inputKey = `${actionId}-${mappingIndex}`;

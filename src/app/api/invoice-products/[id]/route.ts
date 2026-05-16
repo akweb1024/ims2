@@ -284,15 +284,18 @@ export const DELETE = authorizedRoute(
 
       if (!product) throw new NotFoundError("Invoice product not found");
 
-      await db.invoiceProduct.delete({ where: { id } });
+      await db.invoiceProduct.update({
+        where: { id },
+        data: { isActive: false, updatedByUserId: user.id },
+      });
 
-      logger.info("Invoice product deleted", {
+      logger.info("Invoice product deactivated", {
         productId: id,
         name: product.name,
         userId: user.id,
       });
 
-      return NextResponse.json({ success: true, deleted: id });
+      return NextResponse.json({ success: true, deactivated: id });
     } catch (error) {
       return handleApiError(error, request.nextUrl.pathname);
     }

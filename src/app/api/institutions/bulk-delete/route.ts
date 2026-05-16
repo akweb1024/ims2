@@ -16,14 +16,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'IDs are required' }, { status: 400 });
         }
 
-        // Delete institutions
-        await prisma.institution.deleteMany({
+        const result = await prisma.institution.updateMany({
             where: {
-                id: { in: ids }
-            }
+                id: { in: ids },
+                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+                isActive: true
+            },
+            data: { isActive: false }
         });
 
-        return NextResponse.json({ success: true, count: ids.length });
+        return NextResponse.json({ success: true, count: result.count, action: 'deactivated' });
     } catch (error: any) {
         console.error('Bulk Delete Institutions Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

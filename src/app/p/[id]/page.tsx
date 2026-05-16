@@ -44,7 +44,7 @@ function numberToWords(num: number, currency: string = "INR"): string {
 
 export default function PublicInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [invoice, setInvoice] = useState<any>(null);
   const [error, setError] = useState("");
@@ -52,15 +52,15 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== "12345") {
-      setError("Incorrect password. Please try again.");
+    if (!accessCode.trim()) {
+      setError("Enter the invoice access code.");
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/public/invoices/${id}?password=${password}`);
+      const res = await fetch(`/api/public/invoices/${id}?accessCode=${encodeURIComponent(accessCode.trim())}`);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to fetch invoice");
@@ -69,7 +69,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
       setInvoice(data);
       setIsUnlocked(true);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Unable to unlock invoice");
     } finally {
       setLoading(false);
     }
@@ -125,16 +125,16 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
             </svg>
           </div>
           <h1 className="text-2xl font-black mb-2 tracking-tight">Protected Invoice</h1>
-          <p className="text-primary-100/70 text-sm">Please enter the access password</p>
+          <p className="text-primary-100/70 text-sm">Please enter the invoice access code</p>
         </div>
 
         <form onSubmit={handleUnlock} className="space-y-6">
           <div className="space-y-2">
             <input
               type="password"
-              placeholder="Enter Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter Access Code"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
               className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary-400 text-center text-xl font-bold tracking-widest placeholder:text-white/20"
               autoFocus
             />

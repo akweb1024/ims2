@@ -16,26 +16,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "IDs are required" }, { status: 400 });
     }
 
-    // Delete agencies (CustomerProfiles and their Users)
-    await prisma.$transaction(async (tx: any) => {
+    // Deactivate agency users instead of hard-deleting profiles and related records.
+    const deactivatedCount = await prisma.$transaction(async (tx: any) => {
       const profiles = await tx.customerProfile.findMany({
         where: {
           id: { in: ids },
-          customerType: "AGENCY",
+          customerType: "ORGANIZATION",
+          organizationType: "AGENCY",
+          ...(user.role === "SUPER_ADMIN" ? {} : { companyId: user.companyId }),
         },
-        select: { userId: true },
+        select: { id: true, userId: true },
       });
 
-      const userIds = profiles.map((p: any) => p.userId);
+      const userIds = profiles.map((p: any) => p.userId).filter(Boolean);
 
       if (userIds.length > 0) {
-        await tx.user.deleteMany({
+        await tx.user.updateMany({
           where: { id: { in: userIds } },
+          data: { isActive: false },
         });
       }
+
+      return profiles.length;
     });
 
-    return NextResponse.json({ success: true, count: ids.length });
+    return NextResponse.json({ success: true, count: deactivatedCount, action: "deactivated" });
   } catch (error: any) {
     console.error("Bulk Delete Agencies Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

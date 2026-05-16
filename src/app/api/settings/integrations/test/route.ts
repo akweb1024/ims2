@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { SESv2Client, GetAccountCommand } from '@aws-sdk/client-sesv2';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getWhatsAppReportRecipients, sendWhatsApp } from '@/lib/whatsapp';
 
 function createUnauthorized() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -186,6 +187,45 @@ async function testPlagiarismWebhook(companyId: string) {
     };
 }
 
+async function sendWhatsAppTestMessage(companyId: string, provider: string, recipientInput?: string) {
+    const integration = await getCompanyIntegration(companyId, provider);
+    if (!integration?.isActive) {
+        return { ok: false, message: `${provider} integration is not active.` };
+    }
+
+    const recipients = recipientInput?.trim()
+        ? [recipientInput.trim()]
+        : await getWhatsAppReportRecipients(companyId);
+
+    if (!recipients.length) {
+        return {
+            ok: false,
+            message: 'No recipient found. Add a recipient in provider config JSON or pass a test recipient.'
+        };
+    }
+
+    const recipient = recipients[0];
+    const sent = await sendWhatsApp({
+        to: recipient,
+        companyId,
+        message: `Integration test from IMS (${provider}) at ${new Date().toISOString()}`
+    });
+
+    if (!sent.success) {
+        return {
+            ok: false,
+            message: sent.error || 'Failed to send test message',
+            details: sent
+        };
+    }
+
+    return {
+        ok: true,
+        message: `Test message sent to ${recipient}.`,
+        details: sent
+    };
+}
+
 export async function POST(req: NextRequest) {
     try {
         const user = await getSessionUser();
@@ -200,25 +240,38 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         const provider = String(body?.provider || '').toUpperCase();
+        const action = String(body?.action || 'test_connection').toLowerCase();
+        const recipient = typeof body?.recipient === 'string' ? body.recipient : undefined;
 
         if (!provider) {
             return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
         }
 
-        let result: { ok: boolean; message: string };
+        let result: { ok: boolean; message: string; details?: unknown };
         const integration = await getCompanyIntegration(companyId, provider);
-        if (provider === 'WHATSAPP_TWILIO') {
-            result = await testTwilioConnection(companyId);
-        } else if (provider === 'WHATSAPP_META') {
-            result = await testMetaConnection(companyId);
-        } else if (provider === 'AWS_SES') {
-            result = await testSesConnection(companyId);
-        } else if (provider === 'GEMINI') {
-            result = await testGeminiConnection(companyId);
-        } else if (provider === 'PLAGIARISM_SCANNER') {
-            result = await testPlagiarismWebhook(companyId);
+
+        if (action === 'send_test_message') {
+            if (provider !== 'WHATSAPP_META' && provider !== 'WHATSAPP_TWILIO') {
+                return NextResponse.json(
+                    { error: 'Send test message is only supported for WhatsApp providers.' },
+                    { status: 400 }
+                );
+            }
+            result = await sendWhatsAppTestMessage(companyId, provider, recipient);
         } else {
-            return NextResponse.json({ error: 'Test action is not implemented for this provider yet.' }, { status: 400 });
+            if (provider === 'WHATSAPP_TWILIO') {
+                result = await testTwilioConnection(companyId);
+            } else if (provider === 'WHATSAPP_META') {
+                result = await testMetaConnection(companyId);
+            } else if (provider === 'AWS_SES') {
+                result = await testSesConnection(companyId);
+            } else if (provider === 'GEMINI') {
+                result = await testGeminiConnection(companyId);
+            } else if (provider === 'PLAGIARISM_SCANNER') {
+                result = await testPlagiarismWebhook(companyId);
+            } else {
+                return NextResponse.json({ error: 'Test action is not implemented for this provider yet.' }, { status: 400 });
+            }
         }
 
         await prisma.auditLog.create({
@@ -228,9 +281,12 @@ export async function POST(req: NextRequest) {
                 entity: 'integration',
                 entityId: integration?.id || `${companyId}:${provider}`,
                 changes: JSON.stringify({
+                    action,
                     provider,
                     ok: result.ok,
-                    message: result.message
+                    message: result.message,
+                    recipient: recipient || null,
+                    details: result.details || null
                 })
             }
         });

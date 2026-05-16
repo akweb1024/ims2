@@ -1,10 +1,15 @@
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
 export const dynamic = 'force-dynamic';
+const LMS_FINANCE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
 
-export async function GET(req: Request) {
+export const GET = authorizedRoute(
+    LMS_FINANCE_ROLES,
+    async (req: NextRequest) => {
     try {
         // Fetch all LMS items with necessary fields
         const [courses, workshops, internships] = await Promise.all([
@@ -101,4 +106,5 @@ export async function GET(req: Request) {
         console.error('LMS Financials Error:', error);
         return NextResponse.json({ error: 'Failed to fetch financial data' }, { status: 500 });
     }
-}
+    }
+);

@@ -75,11 +75,15 @@ fi
 
 # Optional: Run database seed for first-time setup
 if [ "$RUN_SEED" = "true" ]; then
-    echo "🌱 Seeding database..."
-    if npm run seed; then
-        print_status "Database seeded successfully"
+    if [ "$ALLOW_DESTRUCTIVE_SEED" != "true" ]; then
+        print_warning "RUN_SEED=true was requested, but seed was skipped because it deletes existing business data. Set ALLOW_DESTRUCTIVE_SEED=true only for a disposable database."
     else
-        print_warning "Database seeding failed (continuing anyway)"
+        echo "🌱 Seeding database..."
+        if npm run seed; then
+            print_status "Database seeded successfully"
+        else
+            print_warning "Database seeding failed (continuing anyway)"
+        fi
     fi
 fi
 

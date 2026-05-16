@@ -1,8 +1,14 @@
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
-export async function POST(req: Request) {
+const LMS_EMAIL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
+export const POST = authorizedRoute(
+    LMS_EMAIL_ROLES,
+    async (req: NextRequest) => {
     try {
         const body = await req.json();
         const { type, id, recipient, subject, content } = body;
@@ -41,4 +47,5 @@ export async function POST(req: Request) {
         console.error('Error sending email log:', error);
         return NextResponse.json({ error: 'Failed to log email' }, { status: 500 });
     }
-}
+    }
+);

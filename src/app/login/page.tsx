@@ -24,8 +24,6 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
     const handleSelectCompany = async (companyId: string) => {
         setLoading(true);
         try {
-            // 1. Update the session with selected company
-            // We can call /api/auth/select-company which will update DB and then we tell next-auth to update
             const res = await fetch('/api/auth/select-company', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -34,13 +32,24 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
 
             const data = await res.json();
             if (res.ok) {
-                if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-                if (data.availableCompanies) localStorage.setItem('availableCompanies', JSON.stringify(data.availableCompanies));
-                
-                // In a real NextAuth v5 app, we would use update() from useSession
-                // But for now, we'll just redirect since we updated the DB and the next session fetch will get it
-                // Or we can just call signIn again with the same credentials if redirect:true
-                window.location.href = redirectUrl;
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                }
+
+                try {
+                    const contextRes = await fetch('/api/auth/me');
+                    if (contextRes.ok) {
+                        const contextData = await contextRes.json();
+                        if (contextData.user) localStorage.setItem('user', JSON.stringify(contextData.user));
+                        if (contextData.availableCompanies) {
+                            localStorage.setItem('availableCompanies', JSON.stringify(contextData.availableCompanies));
+                        }
+                    }
+                } catch (contextError) {
+                    console.error('Failed to refresh auth context after company selection', contextError);
+                }
+
+                onLoginSuccess(redirectUrl);
             } else {
                 setError(data.error || 'Selection failed');
             }
@@ -177,13 +186,13 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Email or Employee ID
+                        Email
                     </label>
                     <input
                         type="text"
                         required
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                        placeholder="you@example.com or EMP-001"
+                        placeholder="you@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />

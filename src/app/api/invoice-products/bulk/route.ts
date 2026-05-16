@@ -92,10 +92,11 @@ export const POST = authorizedRoute(
             let result: any;
 
             if (action === 'DELETE') {
-                result = await db.invoiceProduct.deleteMany({
+                result = await db.invoiceProduct.updateMany({
                     where: { id: { in: validIds } },
+                    data: { isActive: false, updatedByUserId: user.id },
                 });
-                logger.info('Bulk delete invoice products', {
+                logger.info('Bulk deactivate invoice products', {
                     count: result.count, userId: user.id,
                 });
                 return NextResponse.json({ success: true, affected: result.count, action });

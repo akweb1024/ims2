@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap } from 'lucide-react';
+import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SUPPORTED_INTEGRATION_PROVIDERS } from '@/lib/integrations';
 
@@ -19,6 +19,8 @@ export default function IntegrationsGatewayPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [testing, setTesting] = useState<string | null>(null);
+    const [sendingTestWhatsApp, setSendingTestWhatsApp] = useState<string | null>(null);
+    const [testRecipients, setTestRecipients] = useState<Record<string, string>>({});
 
     const [formStates, setFormStates] = useState<Record<string, { key: string, value: string, isActive: boolean, isSet: boolean }>>({});
 
@@ -111,6 +113,35 @@ export default function IntegrationsGatewayPage() {
             toast.error('Network error while testing integration.');
         } finally {
             setTesting(null);
+        }
+    };
+
+    const handleSendTestWhatsApp = async (provider: string) => {
+        setSendingTestWhatsApp(provider);
+        try {
+            const res = await fetch('/api/settings/integrations/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    provider,
+                    action: 'send_test_message',
+                    recipient: testRecipients[provider]?.trim() || undefined
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                const details = data?.details || {};
+                const reference = details.messageId || details.sid ? ` Ref: ${details.messageId || details.sid}` : '';
+                toast.success((data.message || 'Test WhatsApp sent.') + reference);
+            } else {
+                toast.error(data.error || data.message || 'Failed to send test WhatsApp.');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Network error while sending test WhatsApp.');
+        } finally {
+            setSendingTestWhatsApp(null);
         }
     };
 
@@ -225,6 +256,23 @@ export default function IntegrationsGatewayPage() {
                                                         Save Meta access token in the secret field above. Use JSON here for `phoneNumberId`, optional `apiVersion`, and `recipients` list.
                                                     </p>
                                                 )}
+                                                {(provider.id === 'WHATSAPP_TWILIO' || provider.id === 'WHATSAPP_META') && (
+                                                    <div className="pt-2 space-y-2">
+                                                        <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">
+                                                            Test recipient (optional)
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="+9198xxxxxx01"
+                                                            className="input-premium w-full text-sm font-medium"
+                                                            value={testRecipients[provider.id] || ''}
+                                                            onChange={e => setTestRecipients({ ...testRecipients, [provider.id]: e.target.value })}
+                                                        />
+                                                        <p className="text-xs font-medium text-secondary-500">
+                                                            Leave empty to use first configured recipient from provider JSON.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -267,6 +315,19 @@ export default function IntegrationsGatewayPage() {
                                                         <><Loader2 size={16} className="animate-spin" /> Testing...</>
                                                     ) : (
                                                         <><PlugZap size={16} /> Test Connection</>
+                                                    )}
+                                                </button>
+                                            )}
+                                            {(provider.id === 'WHATSAPP_TWILIO' || provider.id === 'WHATSAPP_META') && (
+                                                <button
+                                                    onClick={() => handleSendTestWhatsApp(provider.id)}
+                                                    disabled={sendingTestWhatsApp === provider.id}
+                                                    className="px-5 py-2 rounded-xl font-bold flex items-center gap-2 transition-all border border-primary-200 text-primary-700 hover:bg-primary-50"
+                                                >
+                                                    {sendingTestWhatsApp === provider.id ? (
+                                                        <><Loader2 size={16} className="animate-spin" /> Sending...</>
+                                                    ) : (
+                                                        <><Send size={16} /> Send Test WhatsApp</>
                                                     )}
                                                 </button>
                                             )}

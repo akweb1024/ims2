@@ -1,8 +1,14 @@
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
 
-export async function GET(req: Request) {
+const LMS_CONTENT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
+export const GET = authorizedRoute(
+    LMS_CONTENT_ROLES,
+    async (req: NextRequest) => {
     try {
         const { searchParams } = new URL(req.url);
         const search = searchParams.get('search') || '';
@@ -29,9 +35,12 @@ export async function GET(req: Request) {
         console.error('Error fetching internships:', error);
         return NextResponse.json({ error: 'Failed to fetch internships' }, { status: 500 });
     }
-}
+    }
+);
 
-export async function POST(req: Request) {
+export const POST = authorizedRoute(
+    LMS_CONTENT_ROLES,
+    async (req: NextRequest) => {
     try {
         const body = await req.json();
         const { title, description, startDate, duration, stipend, price, mentorId, mentorEmail, mentorReward, type } = body;
@@ -61,4 +70,5 @@ export async function POST(req: Request) {
         console.error('Error creating internship:', error);
         return NextResponse.json({ error: 'Failed to create internship' }, { status: 500 });
     }
-}
+    }
+);

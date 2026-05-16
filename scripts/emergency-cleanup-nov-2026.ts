@@ -1,7 +1,24 @@
 import { prisma } from '../src/lib/prisma';
 
+const CLEANUP_CONFIRMATION = 'DELETE_NOVEMBER_2026_LEAVE_LEDGER';
+
+function assertEmergencyCleanupAllowed() {
+    if (process.env.ALLOW_EMERGENCY_LEAVE_CLEANUP !== 'true') {
+        throw new Error(
+            'Emergency cleanup aborted: this script deletes leave-ledger rows and rewrites employee leave balances. Set ALLOW_EMERGENCY_LEAVE_CLEANUP=true only after taking a backup.'
+        );
+    }
+
+    if (process.env.CONFIRM_EMERGENCY_LEAVE_CLEANUP !== CLEANUP_CONFIRMATION) {
+        throw new Error(
+            `Emergency cleanup aborted: set CONFIRM_EMERGENCY_LEAVE_CLEANUP=${CLEANUP_CONFIRMATION} to confirm the targeted ledger repair.`
+        );
+    }
+}
+
 async function cleanup() {
     console.log('🧹 Starting Emergency Cleanup for November 2026...');
+    assertEmergencyCleanupAllowed();
 
     const targetYear = 2026;
     const targetMonth = 11;

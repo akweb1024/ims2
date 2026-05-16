@@ -94,18 +94,33 @@ export const DELETE = authorizedRoute(
 
             // Check ownership/access
             const lead = await prisma.customerProfile.findFirst({
-                where: { id, companyId: user.companyId, leadStatus: { not: null } }
+                where: { id, companyId: user.companyId, leadStatus: { not: null } },
+                select: { id: true, userId: true, notes: true }
             });
 
             if (!lead) {
                 return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
             }
 
-            await prisma.customerProfile.delete({
-                where: { id }
+            const archiveNote = `[${new Date().toISOString()}] Lead archived by ${user.id}; profile retained for CRM history.`;
+            await prisma.$transaction(async (tx) => {
+                await tx.customerProfile.update({
+                    where: { id },
+                    data: {
+                        leadStatus: 'LOST',
+                        notes: lead.notes ? `${lead.notes}\n${archiveNote}` : archiveNote
+                    }
+                });
+
+                if (lead.userId) {
+                    await tx.user.update({
+                        where: { id: lead.userId },
+                        data: { isActive: false }
+                    });
+                }
             });
 
-            return NextResponse.json({ message: 'Lead deleted successfully' });
+            return NextResponse.json({ message: 'Lead archived successfully' });
         } catch (error) {
             return handleApiError(error, 'Failed to delete lead');
         }

@@ -406,11 +406,20 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'Institution ID required' }, { status: 400 });
         }
 
-        await prisma.institution.delete({
-            where: { id }
+        const result = await prisma.institution.updateMany({
+            where: {
+                id,
+                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+                isActive: true
+            },
+            data: { isActive: false }
         });
 
-        return NextResponse.json({ success: true });
+        if (result.count === 0) {
+            return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, action: 'deactivated' });
     } catch (error: any) {
         console.error('Delete Institution Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

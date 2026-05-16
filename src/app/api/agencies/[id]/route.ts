@@ -145,22 +145,47 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        if (!["SUPER_ADMIN", "ADMIN"].includes(user.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         const { id } = await params;
 
-        // Try deleting from CustomerProfile
-        try {
-            await prisma.customerProfile.delete({
-                where: { id }
-            });
-            return NextResponse.json({ success: true });
-        } catch (e) {
-            // If not in CustomerProfile, try Institution
-            await prisma.institution.delete({
-                where: { id, type: 'AGENCY' }
-            });
-            return NextResponse.json({ success: true });
+        const profile = await prisma.customerProfile.findFirst({
+            where: {
+                id,
+                customerType: "ORGANIZATION",
+                organizationType: "AGENCY",
+                ...(user.role === "SUPER_ADMIN" ? {} : { companyId: user.companyId }),
+            },
+            select: { id: true, userId: true }
+        });
+
+        if (profile) {
+            if (profile.userId) {
+                await prisma.user.update({
+                    where: { id: profile.userId },
+                    data: { isActive: false }
+                });
+            }
+            return NextResponse.json({ success: true, action: 'deactivated' });
         }
+
+        const institution = await prisma.institution.updateMany({
+            where: {
+                id,
+                type: 'AGENCY',
+                ...(user.role === "SUPER_ADMIN" ? {} : { companyId: user.companyId }),
+                isActive: true
+            },
+            data: { isActive: false }
+        });
+
+        if (institution.count === 0) {
+            return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, action: 'deactivated' });
 
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
