@@ -664,6 +664,7 @@ export default function EmployeeForm({
                                 { id: 'QUALITY', label: 'Quality Control', color: 'text-teal-600' },
                                 { id: 'COMPANY', label: 'Company Management', color: 'text-slate-600' },
                                 { id: 'CRM', label: 'CRM / Sales', color: 'text-pink-600' },
+                                { id: 'ALL_COMPANIES', label: 'All Companies Scope', color: 'text-amber-600' },
                             ].map(mod => (
                                 <label
                                     key={mod.id}
@@ -684,6 +685,7 @@ export default function EmployeeForm({
                                     <div className="flex flex-col">
                                         <span className={`text-[11px] font-black uppercase tracking-tighter ${mod.color}`}>{mod.label}</span>
                                         {(mod.locked || empForm.role === 'SUPER_ADMIN') && <span className="text-[8px] font-bold text-secondary-400 uppercase italic">Mandatory</span>}
+                                        {mod.id === 'ALL_COMPANIES' && empForm.role !== 'SUPER_ADMIN' && <span className="text-[8px] font-bold text-amber-500 uppercase italic">Super Admin Grant</span>}
                                     </div>
                                 </label>
                             ))}

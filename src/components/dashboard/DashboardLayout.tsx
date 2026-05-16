@@ -11,6 +11,7 @@ import Sidebar from './Sidebar';
 import FeedbackWidget from './FeedbackWidget';
 import AIChatWidget from './AIChatWidget';
 import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
+import { CommandNexus } from '@/components/nexus/CommandNexus';
 
 
 interface DashboardLayoutProps {
@@ -234,7 +235,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 if (data.token) localStorage.setItem('token', data.token);
 
                 // Trigger NextAuth session update
-                await update({ companyId });
+                await update({ companyId: companyId === 'ALL' ? null : companyId });
 
                 // Clear client-side router cache to ensure fresh data
                 router.refresh();
@@ -254,7 +255,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const user = session?.user as any;
     const finalRole = user?.role || propUserRole;
 
-    const canUseAllCompanies = user?.role === 'SUPER_ADMIN';
+    const canUseAllCompanies = user?.role === 'SUPER_ADMIN' || user?.allowedModules?.includes('ALL_COMPANIES');
     const displayRole = mounted && user?.companyId
         ? (user.company?.name || finalRole.replace('_', ' '))
         : (mounted ? (canUseAllCompanies ? 'All Companies' : finalRole.replace('_', ' ')) : finalRole.replace('_', ' '));
@@ -380,6 +381,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
 
             {/* Global Feedback Widget */}
             <FeedbackWidget />
+
+            {/* Global Command Nexus (Sentinel AI) */}
+            <CommandNexus />
         </div>
     );
 }

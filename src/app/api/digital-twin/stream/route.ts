@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { getEmployeeTwinStatus, getInventoryTwinStatus, computeTwinSummary } from '@/lib/digital-twin/twin-engine';
+import { resolveCompanyScope } from '@/lib/access-policy';
 
 /**
  * GET /api/digital-twin/stream
@@ -23,9 +24,15 @@ export async function GET(req: NextRequest) {
         });
     }
 
-    const companyId = user.companyId;
-    if (!companyId) {
-        return new Response(JSON.stringify({ error: 'No company associated' }), {
+    let companyId: string;
+    try {
+        const resolvedCompanyId = await resolveCompanyScope(req, user);
+        if (!resolvedCompanyId) {
+            throw new Error('Select a specific company for Digital Twin streaming');
+        }
+        companyId = resolvedCompanyId;
+    } catch (error) {
+        return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Company access denied' }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' },
         });

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getISTToday, formatToISTDate } from '@/lib/date-utils';
 import { getWhatsAppReportRecipients, sendWhatsApp } from '@/lib/whatsapp';
 import { Prisma } from '@prisma/client';
+import { validateCronRequest } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,10 +30,8 @@ function isDigestSlot(value: string): value is DigestSlot {
 
 export async function GET(req: NextRequest) {
     try {
-        const authHeader = req.headers.get('authorization');
-        if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const cronAuthError = validateCronRequest(req);
+        if (cronAuthError) return cronAuthError;
 
         const { searchParams } = new URL(req.url);
         const slotParam = String(searchParams.get('slot') || '');

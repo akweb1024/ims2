@@ -6,6 +6,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { logger } from '@/lib/logger';
 import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
+import { assertCompanyAccess, canAccessAllCompanies, normalizeAllowedModulesForWrite, resolveCompanyScope } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
@@ -18,7 +19,7 @@ export const GET = authorizedRoute(
                 return NextResponse.json(data);
             }
 
-            if (!user.companyId && !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+            if (!user.companyId && !canAccessAllCompanies(user)) {
                 return createErrorResponse('Company association required', 403);
             }
 
@@ -28,24 +29,20 @@ export const GET = authorizedRoute(
             // Contextual Filtering
             const url = new URL(req.url);
             const showAll = url.searchParams.get('all') === 'true';
-
-            // Only restrict by company if NOT showing all (and user has company)
-            // Super Admin always ignores companyId unless specific filter added. 
-            // Here we allow ADMIN to see all if requested.
-            if (user.companyId && !showAll) {
-                where.user = { companyId: user.companyId };
-            } else if (showAll) {
-                // If showing all, ensure user has permission (SUPER_ADMIN or ADMIN)
-                if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
-                    where.user = { companyId: user.companyId }; // Fallback for non-privileged roles
-                }
-                // If SUPER_ADMIN/ADMIN and showAll=true, where.user is left empty (sees all)
+            const companyScope = showAll && canAccessAllCompanies(user)
+                ? null
+                : await resolveCompanyScope(req, user, {
+                    allowAll: canAccessAllCompanies(user),
+                    required: false,
+                });
+            if (companyScope) {
+                where.user = { companyId: companyScope };
             }
 
             // Role-based restrictions: Manager & Team Leader see full hierarchy (cross-company)
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 // Keep managers scoped to their company (tenant isolation)
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const subIds = await getDownlineUserIds(user.id, companyScope || user.companyId || undefined);
                 where.user = {
                     ...where.user,
                     id: { in: subIds }
@@ -202,6 +199,16 @@ export const PATCH = authorizedRoute(
                 }
 
                 if (emp) {
+                    if (validUpdates.companyId !== undefined && validUpdates.companyId) {
+                        await assertCompanyAccess(user, validUpdates.companyId, 'move this employee to this company');
+                    }
+                    if (validUpdates.companyIds !== undefined) {
+                        for (const companyId of validUpdates.companyIds) {
+                            await assertCompanyAccess(user, companyId, 'grant employee access to this company');
+                        }
+                    }
+                    const normalizedAllowedModules = normalizeAllowedModulesForWrite(user, validUpdates.allowedModules);
+
                     await prisma.user.update({
                         where: { id: emp.userId },
                         data: {
@@ -216,7 +223,7 @@ export const PATCH = authorizedRoute(
                                     set: validUpdates.companyIds.map(id => ({ id }))
                                 }
                             }),
-                            ...(validUpdates.allowedModules !== undefined && { allowedModules: validUpdates.allowedModules })
+                            ...(normalizedAllowedModules !== undefined && { allowedModules: normalizedAllowedModules })
                         } as any
                     });
                 }
@@ -418,6 +425,16 @@ export const POST = authorizedRoute(
 
             // Fetch company data to get employeeIdPrefix
             const targetCompanyId = companyId || user.companyId;
+            if (targetCompanyId) {
+                await assertCompanyAccess(user, targetCompanyId, 'create an employee in this company');
+            }
+            const normalizedCompanyIds = Array.isArray(companyIds)
+                ? Array.from(new Set(companyIds.filter(Boolean)))
+                : (targetCompanyId ? [targetCompanyId] : []);
+            for (const id of normalizedCompanyIds) {
+                await assertCompanyAccess(user, id, 'grant employee access to this company');
+            }
+            const normalizedAllowedModules = normalizeAllowedModulesForWrite(user, allowedModules) || ['CORE'];
             let employeeIdPrefix = '';
 
             if (targetCompanyId) {
@@ -477,12 +494,12 @@ export const POST = authorizedRoute(
                         role: (role || targetUser.role) as any,
                         name: name || targetUser.name,
                         departmentId: departmentId || targetUser.departmentId,
-                        ...(companyIds && {
+                        ...(normalizedCompanyIds.length > 0 && {
                             companies: {
-                                set: companyIds.map((id: string) => ({ id }))
+                                set: normalizedCompanyIds.map((id: string) => ({ id }))
                             }
                         }),
-                        ...(allowedModules && { allowedModules })
+                        allowedModules: normalizedAllowedModules
                     } as any
                 });
             } else {
@@ -495,9 +512,9 @@ export const POST = authorizedRoute(
                         role: role as any,
                         companyId: companyId || user.companyId,
                         departmentId: departmentId,
-                        allowedModules: allowedModules || ["CORE"],
+                        allowedModules: normalizedAllowedModules,
                         companies: {
-                            connect: (companyIds || []).map((id: string) => ({ id }))
+                            connect: normalizedCompanyIds.map((id: string) => ({ id }))
                         }
                     } as any
                 });

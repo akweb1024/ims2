@@ -45,7 +45,7 @@ export default function Header({
     isImpersonating
 }: HeaderProps) {
     const router = useRouter();
-    const canUseAllCompanies = user?.role === 'SUPER_ADMIN';
+    const canUseAllCompanies = user?.role === 'SUPER_ADMIN' || user?.allowedModules?.includes('ALL_COMPANIES');
     const unreadCount = notifications.filter(n => !n.isRead).length;
     const [attendance, setAttendance] = useState<any[]>([]);
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');

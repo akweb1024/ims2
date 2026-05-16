@@ -4,6 +4,8 @@ import { handleApiError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { assertCompanyAccess } from '@/lib/access-policy';
+import { emitSentinelEvent, SentinelEvent } from '@/lib/sentinel/event-bus';
 
 const DispatchSchema = z.object({
     userId: z.string().min(1, 'Employee user ID is required'),
@@ -32,15 +34,16 @@ export const POST = authorizedRoute(
 
             const { userId, inventoryItemId, title, notes } = parsed.data;
 
-            // Verify the inventory item belongs to the same company
+            // Verify the inventory item exists and the requester has access to its company
             const item = await prisma.inventoryItem.findFirst({
-                where: { id: inventoryItemId, companyId: user.companyId! },
-                select: { id: true, name: true, sku: true },
+                where: { id: inventoryItemId },
+                select: { id: true, name: true, sku: true, companyId: true },
             });
 
             if (!item) {
                 return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
             }
+            await assertCompanyAccess(user, item.companyId, 'dispatch inventory for this company');
 
             // Create the dispatched task
             const dueDate = new Date();
@@ -56,7 +59,7 @@ export const POST = authorizedRoute(
                     priority: 'HIGH',
                     status: 'IN_PROGRESS',
                     inventoryItemId: item.id,
-                    companyId: user.companyId,
+                    companyId: item.companyId,
                 },
                 select: { id: true, title: true, status: true },
             });
@@ -66,6 +69,21 @@ export const POST = authorizedRoute(
                 assignedTo: userId,
                 itemId: item.id,
                 dispatchedBy: user.id,
+            });
+
+            // Trigger real-time updates
+            emitSentinelEvent(SentinelEvent.TWIN_UPDATE, {
+                type: 'DISPATCH',
+                itemId: item.id,
+                userId: userId,
+                taskId: task.id
+            });
+
+            emitSentinelEvent(SentinelEvent.NOTIFICATION, {
+                userId: userId,
+                title: 'New Dispatch Assignment',
+                message: `You have been assigned to restock ${item.name} (${item.sku}).`,
+                type: 'INFO'
             });
 
             return NextResponse.json({ success: true, task }, { status: 201 });

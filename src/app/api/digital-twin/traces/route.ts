@@ -3,16 +3,17 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
 import { buildTwinTrace } from "@/lib/digital-twin/trace-engine";
+import { resolveCompanyScope } from "@/lib/access-policy";
 
 export const GET = authorizedRoute(
   ["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "FINANCE_ADMIN"],
   async (req: NextRequest, user) => {
     const startTime = Date.now();
     try {
-      const companyId = user.companyId;
+      const companyId = await resolveCompanyScope(req, user);
       if (!companyId) {
         return NextResponse.json(
-          { error: "User is not associated with a company" },
+          { error: "Select a specific company for Digital Twin traces" },
           { status: 400 },
         );
       }

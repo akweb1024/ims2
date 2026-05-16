@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies, getAvailableCompaniesForUser } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
@@ -12,19 +13,30 @@ export const GET = authorizedRoute(
             const limit = parseInt(searchParams.get('limit') || '12');
             const skip = (page - 1) * limit;
 
-            const [companies, total] = await Promise.all([
-                prisma.company.findMany({
-                    skip,
-                    take: limit,
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                        _count: {
-                            select: { users: true }
+            let companies;
+            let total;
+            if (canAccessAllCompanies(decoded)) {
+                [companies, total] = await Promise.all([
+                    prisma.company.findMany({
+                        skip,
+                        take: limit,
+                        orderBy: { createdAt: 'desc' },
+                        include: {
+                            _count: {
+                                select: { users: true }
+                            }
                         }
-                    }
-                }),
-                prisma.company.count()
-            ]);
+                    }),
+                    prisma.company.count()
+                ]);
+            } else {
+                const availableCompanies = await getAvailableCompaniesForUser(decoded);
+                total = availableCompanies.length;
+                companies = availableCompanies.slice(skip, skip + limit).map((company) => ({
+                    ...company,
+                    _count: { users: 0 },
+                }));
+            }
 
             return NextResponse.json({
                 data: companies,

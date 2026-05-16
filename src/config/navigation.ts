@@ -38,6 +38,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                     { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
                     { name: 'Automation Forms', href: '/dashboard/automation/forms', icon: '🧩', roles: ['SUPER_ADMIN'] },
+                    { name: 'Sentinel Automation', href: '/dashboard/sentinel/automation', icon: '🛡️', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Team Dashboard', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
             },
@@ -358,6 +359,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Configurations', href: '/dashboard/settings/configurations', icon: '🔐', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Integrations', href: '/dashboard/settings/integrations', icon: '🔌', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
+                    { name: 'Access Policy', href: '/dashboard/super-admin/access-policy', icon: '🛡️', roles: ['SUPER_ADMIN'] },
                     { name: 'Audit Logs', href: '/dashboard/super-admin/audit-logs', icon: '📝', roles: ['SUPER_ADMIN'] },
                 ]
             }

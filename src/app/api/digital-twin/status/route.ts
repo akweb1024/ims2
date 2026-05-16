@@ -3,16 +3,17 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { getEmployeeTwinStatus, getInventoryTwinStatus, computeTwinSummary } from '@/lib/digital-twin/twin-engine';
+import { resolveCompanyScope } from '@/lib/access-policy';
+import { triggerSentinelAudit } from '@/lib/sentinel/agents/sentinel-manager';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         const startTime = Date.now();
         try {
-            const companyId = user.companyId;
+            const companyId = await resolveCompanyScope(req, user);
             if (!companyId) {
-                logger.warn('Digital Twin access attempt without companyId', { userId: user.id });
-                return NextResponse.json({ error: 'User is not associated with a company' }, { status: 400 });
+                return NextResponse.json({ error: 'Select a specific company for Digital Twin status' }, { status: 400 });
             }
 
             const [employees, inventory] = await Promise.all([
@@ -22,6 +23,9 @@ export const GET = authorizedRoute(
 
             const summary = computeTwinSummary(employees, inventory);
             const duration = Date.now() - startTime;
+
+            // Trigger proactive audit in background
+            triggerSentinelAudit(companyId).catch(e => console.error('[Sentinel] Audit failed', e));
 
             logger.apiRequest('GET', req.nextUrl.pathname, 200, duration, { 
                 employeeCount: employees.length,

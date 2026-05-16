@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { TokenPayload } from '@/lib/auth-core';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { canAccessAllCompanies, userHasCompanyAccess } from '@/lib/access-policy';
 
 type ListStaffEmployeesInput = {
   user: TokenPayload;
@@ -20,11 +21,13 @@ export async function listStaffEmployees({ user, params }: ListStaffEmployeesInp
     },
   };
 
-  // Canonical tenant scoping:
-  // - SUPER_ADMIN can see all (unless companyId is specified)
-  // - Everyone else is always scoped to their session companyId
-  if (user.role === 'SUPER_ADMIN') {
-    if (companyId && companyId !== 'all') where.companyId = companyId;
+  const hasAllCompanyScope = canAccessAllCompanies(user);
+  if (hasAllCompanyScope) {
+    if (companyId && !['all', 'ALL'].includes(companyId)) {
+      const hasAccess = await userHasCompanyAccess(user, companyId);
+      if (!hasAccess) return [];
+      where.companyId = companyId;
+    }
   } else {
     if (!user.companyId) return [];
     where.companyId = user.companyId;
@@ -34,7 +37,8 @@ export async function listStaffEmployees({ user, params }: ListStaffEmployeesInp
   }
 
   if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+    const downlineCompanyId = typeof where.companyId === 'string' ? where.companyId : user.companyId || undefined;
+    const subIds = await getDownlineUserIds(user.id, downlineCompanyId);
     where.id = { in: Array.from(new Set([...subIds, user.id])) };
   }
 
@@ -131,4 +135,3 @@ export async function listStaffEmployees({ user, params }: ListStaffEmployeesInp
     };
   });
 }
-

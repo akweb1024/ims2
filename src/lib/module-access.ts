@@ -14,6 +14,10 @@ const DEFAULT_MODULES_BY_ROLE: Record<string, string[]> = {
     IT_SUPPORT: ['CORE', 'IT'],
 };
 
+export const POLICY_MODULES = [
+    { id: 'ALL_COMPANIES', label: 'All Companies Access', description: 'Allows explicit cross-company views and switching into All Companies mode.' },
+];
+
 const SENSITIVE_MODULE_ROUTES: Array<{ prefix: string; moduleId: string }> = [
     { prefix: '/api/companies', moduleId: 'COMPANY' },
     { prefix: '/api/finance', moduleId: 'FINANCE' },

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
+import { assertCompanyAccess, normalizeAllowedModulesForWrite, userHasCompanyAccess } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
@@ -29,7 +30,7 @@ export const GET = authorizedRoute(
 
             // Access control logic
             if (user.role !== 'SUPER_ADMIN') {
-                if (user.role === 'ADMIN' && targetUser.companyId !== user.companyId) {
+                if (user.role === 'ADMIN' && !(await userHasCompanyAccess(user, targetUser.companyId))) {
                     return createErrorResponse('Forbidden', 403);
                 }
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role) && targetUser.managerId !== user.id && targetUser.id !== user.id) {
@@ -51,13 +52,13 @@ export const PATCH = authorizedRoute(
         try {
             const { id } = await params;
             const body = await req.json();
-            const { role, name, isActive, password, companyId, companyIds, email, departmentId } = body;
+            const { role, name, isActive, password, companyId, companyIds, email, departmentId, allowedModules } = body;
 
             const existingUser = await prisma.user.findUnique({ where: { id } });
             if (!existingUser) return createErrorResponse('User not found', 404);
 
             if (user.role !== 'SUPER_ADMIN') {
-                if (user.role === 'ADMIN' && existingUser.companyId !== user.companyId) {
+                if (user.role === 'ADMIN' && !(await userHasCompanyAccess(user, existingUser.companyId))) {
                     return createErrorResponse('Forbidden', 403);
                 }
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role) && id !== user.id) {
@@ -107,6 +108,9 @@ export const PATCH = authorizedRoute(
             }
 
             if (companyId !== undefined && user.role === 'SUPER_ADMIN') {
+                if (companyId) {
+                    await assertCompanyAccess(user, companyId, 'move this user to this company');
+                }
                 updateData.companyId = companyId;
                 // If companyId is being changed, we should also update the EmployeeProfile
                 // to reset company-specific fields like designationId
@@ -122,9 +126,17 @@ export const PATCH = authorizedRoute(
             }
 
             if (companyIds !== undefined && user.role === 'SUPER_ADMIN') {
+                for (const cid of companyIds) {
+                    await assertCompanyAccess(user, cid, 'grant this user access to this company');
+                }
                 updateData.companies = {
                     set: companyIds.map((cid: string) => ({ id: cid }))
                 };
+            }
+
+            const normalizedAllowedModules = normalizeAllowedModulesForWrite(user, allowedModules);
+            if (normalizedAllowedModules !== undefined) {
+                updateData.allowedModules = normalizedAllowedModules;
             }
 
             const updatedUser = await prisma.user.update({
@@ -168,16 +180,30 @@ export const DELETE = authorizedRoute(
             if (!existingUser) return createErrorResponse('User not found', 404);
 
             if (user.role !== 'SUPER_ADMIN') {
-                if (user.role === 'ADMIN' && existingUser.companyId !== user.companyId) {
+                if (user.role === 'ADMIN' && !(await userHasCompanyAccess(user, existingUser.companyId))) {
                     return createErrorResponse('Forbidden', 403);
                 }
             }
 
-            await prisma.user.delete({
-                where: { id }
+            const deactivatedUser = await prisma.user.update({
+                where: { id },
+                data: { isActive: false }
             });
 
-            return NextResponse.json({ message: 'User deleted successfully' });
+            await prisma.auditLog.create({
+                data: {
+                    userId: user.id,
+                    action: 'deactivate',
+                    entity: 'user',
+                    entityId: deactivatedUser.id,
+                    changes: {
+                        previousStatus: existingUser.isActive,
+                        reason: 'Safe delete conversion: user was deactivated instead of hard-deleted',
+                    },
+                },
+            });
+
+            return NextResponse.json({ message: 'User deactivated successfully', user: { id: deactivatedUser.id, isActive: deactivatedUser.isActive } });
         } catch (error: any) {
             return createErrorResponse('Internal Server Error', 500);
         }

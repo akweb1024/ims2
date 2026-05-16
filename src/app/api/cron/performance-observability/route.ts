@@ -5,15 +5,14 @@ import {
   runPerformanceSignalRollup,
   runPerformanceSnapshotWriter,
 } from '@/lib/performance-observability/jobs';
+import { validateCronRequest } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const cronAuthError = validateCronRequest(req);
+    if (cronAuthError) return cronAuthError;
 
     const { searchParams } = new URL(req.url);
     const cadence = searchParams.get('cadence') === '60m' ? '60m' : '15m';

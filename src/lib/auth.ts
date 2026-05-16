@@ -1,6 +1,7 @@
 import { auth } from "@/lib/nextauth";
 import { headers } from "next/headers";
 import { verifyToken, TokenPayload } from "./auth-core";
+import { prisma } from "@/lib/prisma";
 
 // Re-export core utilities
 export * from "./auth-core";
@@ -35,7 +36,45 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
 
         if (token) {
             const payload = verifyToken(token);
-            if (payload) return payload;
+            if (payload) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: payload.id },
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true,
+                        isActive: true,
+                        companyId: true,
+                        allowedModules: true,
+                        companies: { select: { id: true } },
+                    },
+                });
+
+                if (!dbUser || !dbUser.isActive) {
+                    console.warn("[Auth] JWT token belongs to an inactive or missing user");
+                    return null;
+                }
+
+                const requestedCompanyId = payload.companyId;
+                const dbCompanyIds = new Set([
+                    dbUser.companyId,
+                    ...dbUser.companies.map((company) => company.id),
+                ].filter(Boolean));
+
+                const companyId = requestedCompanyId && (dbUser.role === 'SUPER_ADMIN' || dbCompanyIds.has(requestedCompanyId))
+                    ? requestedCompanyId
+                    : dbUser.companyId || dbUser.companies[0]?.id || undefined;
+
+                return {
+                    id: dbUser.id,
+                    email: dbUser.email,
+                    role: dbUser.role,
+                    companyId,
+                    allowedModules: dbUser.allowedModules || ['CORE'],
+                    isImpersonated: payload.isImpersonated,
+                    impersonatorId: payload.impersonatorId,
+                };
+            }
             console.warn("[Auth] JWT token present but verification failed");
         }
     } catch (error: any) {

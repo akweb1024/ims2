@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { createNotification } from '@/lib/system-notifications';
+import { validateCronRequest } from '@/lib/cron-auth';
 
 /**
  * API to process subscription renewals
@@ -10,11 +11,8 @@ import { createNotification } from '@/lib/system-notifications';
  */
 export async function POST(req: NextRequest) {
     try {
-        // Basic Security: Check for a Cron Key if in production
-        const authHeader = req.headers.get('authorization');
-        if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const cronAuthError = validateCronRequest(req);
+        if (cronAuthError) return cronAuthError;
 
         const now = new Date();
         const intervals = [90, 60, 30];

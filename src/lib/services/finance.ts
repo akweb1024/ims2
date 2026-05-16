@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { runFinanceSentinel } from '@/lib/sentinel/agents/sentinel-manager';
+import { emitSentinelEvent, SentinelEvent } from '@/lib/sentinel/event-bus';
 
 export class FinanceService {
     /**
@@ -58,7 +60,7 @@ export class FinanceService {
         const entryNumber = `JE-${new Date().getFullYear()}-${String(count + 1).padStart(6, '0')}`;
 
         // 4. Create Transaction
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             // Create Header
             const journalEntry = await tx.journalEntry.create({
                 data: {
@@ -72,7 +74,6 @@ export class FinanceService {
                 },
             });
 
-            // Create Lines
             await tx.journalLine.createMany({
                 data: formattedLines.map((line) => ({
                     journalEntryId: journalEntry.id,
@@ -85,6 +86,20 @@ export class FinanceService {
 
             return journalEntry;
         });
+
+        // 5. Trigger Sentinel (Post-commit)
+        emitSentinelEvent(SentinelEvent.NOTIFICATION, {
+            userId: postedBy,
+            title: 'Journal Entry Created',
+            message: `Entry ${entryNumber} has been successfully posted.`,
+            type: 'SUCCESS'
+        });
+
+        runFinanceSentinel({ ...result, amount: totalDebit.toNumber() }).catch(err => {
+            console.error('[Sentinel] Finance Agent Trigger Failed:', err);
+        });
+
+        return result;
     }
 
     /**

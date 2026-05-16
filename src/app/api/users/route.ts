@@ -3,13 +3,22 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
+import {
+    assertCompanyAccess,
+    canAccessAllCompanies,
+    normalizeAllowedModulesForWrite,
+    resolveCompanyScope,
+} from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId') || user.companyId;
+            const companyId = await resolveCompanyScope(req, user, {
+                allowAll: canAccessAllCompanies(user),
+                required: false,
+            });
             const page = parseInt(searchParams.get('page') || '1');
             const limit = parseInt(searchParams.get('limit') || '20');
             const search = searchParams.get('search') || '';
@@ -25,9 +34,7 @@ export const GET = authorizedRoute(
                 ];
             }
 
-            if (companyId && user.role !== 'SUPER_ADMIN') {
-                where.companyId = companyId;
-            } else if (companyId && user.role === 'SUPER_ADMIN') {
+            if (companyId) {
                 where.companyId = companyId;
             }
 
@@ -111,7 +118,7 @@ export const GET = authorizedRoute(
             });
         } catch (error: any) {
             console.error('Fetch Users Error:', error);
-            return createErrorResponse('Internal Server Error', 500);
+            return createErrorResponse(error);
         }
     }
 );
@@ -121,7 +128,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { email, name, password, role, managerId, companyId, companyIds, departmentId, phone, designationId, dateOfJoining } = body;
+            const { email, name, password, role, managerId, companyId, companyIds, allowedModules, departmentId, phone, designationId, dateOfJoining } = body;
 
             if (!email || !password || !role) {
                 return createErrorResponse('Missing required fields', 400);
@@ -158,6 +165,16 @@ export const POST = authorizedRoute(
 
             // Determine company context
             const targetCompanyId = companyId || user.companyId;
+            if (targetCompanyId) {
+                await assertCompanyAccess(user, targetCompanyId, 'create a user in this company');
+            }
+            const normalizedCompanyIds = Array.isArray(companyIds)
+                ? Array.from(new Set(companyIds.filter(Boolean)))
+                : (targetCompanyId ? [targetCompanyId] : []);
+            for (const id of normalizedCompanyIds) {
+                await assertCompanyAccess(user, id, 'grant user access to this company');
+            }
+            const normalizedAllowedModules = normalizeAllowedModulesForWrite(user, allowedModules) || ['CORE'];
 
             // Staff roles that should have employee profiles
             const staffRoles = ['EMPLOYEE', 'EXECUTIVE', 'TEAM_LEADER', 'MANAGER', 'ADMIN', 'HR_MANAGER', 'FINANCE_ADMIN'];
@@ -175,11 +192,10 @@ export const POST = authorizedRoute(
                         companyId: targetCompanyId,
                         departmentId,
                         managerId: managerId || (['MANAGER', 'TEAM_LEADER'].includes(user.role) ? user.id : undefined),
-                        companies: companyIds ? {
-                            connect: companyIds.map((id: string) => ({ id }))
-                        } : (targetCompanyId ? {
-                            connect: [{ id: targetCompanyId }]
-                        } : undefined)
+                        allowedModules: normalizedAllowedModules,
+                        companies: normalizedCompanyIds.length ? {
+                            connect: normalizedCompanyIds.map((id: string) => ({ id }))
+                        } : undefined
                     }
                 });
 
@@ -216,7 +232,7 @@ export const POST = authorizedRoute(
             return NextResponse.json(safeUser);
         } catch (error: any) {
             console.error('Create User Error:', error);
-            return createErrorResponse('Internal Server Error', 500);
+            return createErrorResponse(error);
         }
     }
 );

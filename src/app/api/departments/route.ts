@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { assertCompanyAccess, canAccessAllCompanies, resolveCompanyScope } from '@/lib/access-policy';
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,13 +11,14 @@ export async function GET(req: NextRequest) {
         }
 
         const { searchParams } = new URL(req.url);
-        const companyId = searchParams.get('companyId');
+        const companyId = await resolveCompanyScope(req, decoded, {
+            allowAll: canAccessAllCompanies(decoded),
+            required: false,
+        });
 
         const where: any = {};
         if (companyId) {
             where.companyId = companyId;
-        } else if (decoded.role !== 'SUPER_ADMIN' && decoded.companyId) {
-            where.companyId = decoded.companyId;
         }
 
         const departments = await prisma.department.findMany({
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
         if (!companyId || !name) {
             return NextResponse.json({ error: 'Company ID and Name are required' }, { status: 400 });
         }
+        await assertCompanyAccess(decoded, companyId, 'create a department in this company');
 
         const department = await prisma.department.create({
             data: {
