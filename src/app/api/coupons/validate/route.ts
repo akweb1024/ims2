@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { assertCompanyAccess } from '@/lib/access-policy';
 
 export async function POST(req: NextRequest) {
     try {
         const decoded = await getAuthenticatedUser();
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const companyId = (decoded as any).companyId;
         const body = await req.json();
-        const { code, subtotal, brandId } = body;
+        const { code, subtotal, brandId, companyId: companyIdInBody } = body;
+        const companyId = companyIdInBody || (decoded as any).companyId;
+
+        if (!companyId) return NextResponse.json({ error: 'Company context is required' }, { status: 400 });
+        await assertCompanyAccess(decoded as any, companyId, 'validate coupons for this company');
 
         if (!code) return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
 

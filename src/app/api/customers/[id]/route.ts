@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
 import { buildTrackingMetadata } from '@/lib/dispatch';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
+import { userHasCompanyAccess } from '@/lib/access-policy';
 
 const toNullableString = (value: unknown) => {
     if (value === undefined) return undefined;
@@ -43,14 +44,9 @@ export async function GET(
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        const customerScope =
-            decoded.role === 'SUPER_ADMIN'
-                ? { id }
-                : { id, companyId: decoded.companyId };
-
         // 2. Fetch Customer Details
         const customer = await prisma.customerProfile.findFirst({
-            where: customerScope,
+            where: { id },
             include: {
                 user: {
                     select: {
@@ -153,6 +149,11 @@ export async function GET(
 
         if (!customer) {
             return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        }
+
+        const hasCompanyAccess = await userHasCompanyAccess(decoded as any, customer.companyId);
+        if (!hasCompanyAccess) {
+            return NextResponse.json({ error: 'Forbidden: You do not have access to this company' }, { status: 403 });
         }
 
         // 3. Authorization Check (for Executives)

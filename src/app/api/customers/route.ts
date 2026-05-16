@@ -6,6 +6,7 @@ import { ConflictError, handleApiError, ValidationError } from '@/lib/error-hand
 import { logger } from '@/lib/logger';
 import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
+import { assertCompanyAccess, resolveCompanyScope } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
@@ -26,12 +27,15 @@ export const GET = authorizedRoute(
 
         const where: Prisma.CustomerProfileWhereInput = {};
         const baseWhere: Prisma.CustomerProfileWhereInput = {};
-        const userCompanyId = user.companyId;
+        const targetCompanyId = await resolveCompanyScope(req, user, {
+            required: false,
+            fallbackToActiveCompany: true,
+        });
 
-        if (userCompanyId) {
-            where.companyId = userCompanyId;
+        if (targetCompanyId) {
+            where.companyId = targetCompanyId;
             where.leadStatus = null; // Exclude leads
-            baseWhere.companyId = userCompanyId;
+            baseWhere.companyId = targetCompanyId;
             baseWhere.leadStatus = null; // Exclude leads
         }
 
@@ -269,6 +273,10 @@ export const POST = authorizedRoute(
 
         // Determine target company
         const targetCompanyId = companyId || user.companyId;
+        if (!targetCompanyId) {
+            throw new ValidationError('Company context is required');
+        }
+        await assertCompanyAccess(user, targetCompanyId, 'create customers for this company');
 
         const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists

@@ -140,6 +140,8 @@ export default function CreateInvoiceModal({
   const [searching, setSearching] = useState(false);
   const [brands, setBrands] = useState<any[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string>("");
+  const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
@@ -292,8 +294,14 @@ export default function CreateInvoiceModal({
     searchTimeout.current = setTimeout(async () => {
       try {
         const token = localStorage.getItem("token");
+        const params = new URLSearchParams({
+          q: query,
+          isActive: "true",
+          pageSize: "5",
+        });
+        if (selectedCompanyId) params.set("companyId", selectedCompanyId);
         const res = await fetch(
-          `/api/invoice-products?q=${encodeURIComponent(query)}&isActive=true&pageSize=5`,
+          `/api/invoice-products?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -317,6 +325,7 @@ export default function CreateInvoiceModal({
         isActive: "true",
         pageSize: "2000",
       });
+      if (selectedCompanyId) params.set("companyId", selectedCompanyId);
       if (catCategoryFilter) params.set("category", catCategoryFilter);
       const res = await fetch(
         `/api/invoice-products?${params.toString()}`,
@@ -331,7 +340,7 @@ export default function CreateInvoiceModal({
     } finally {
       setCatLoading(false);
     }
-  }, [catCategoryFilter]);
+  }, [catCategoryFilter, selectedCompanyId]);
 
   useEffect(() => {
     if (showProductModal || step === 2) fetchCatalogue(catSearch);
@@ -586,8 +595,13 @@ export default function CreateInvoiceModal({
       setSearching(true);
       try {
         const token = localStorage.getItem("token");
+        const params = new URLSearchParams({
+          search: customerSearch,
+          limit: "5",
+        });
+        if (selectedCompanyId) params.set("companyId", selectedCompanyId);
         const res = await fetch(
-          `/api/customers?search=${customerSearch}&limit=5`,
+          `/api/customers?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -605,13 +619,34 @@ export default function CreateInvoiceModal({
 
     const timer = setTimeout(searchCustomers, 500);
     return () => clearTimeout(timer);
-  }, [customerSearch, prefilledInstitution]);
+  }, [customerSearch, prefilledInstitution, selectedCompanyId]);
 
   useEffect(() => {
+    const fetchViewerContext = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const companies = Array.isArray(data?.availableCompanies)
+          ? data.availableCompanies
+          : [];
+        setAvailableCompanies(companies);
+        const fallbackCompanyId = data?.user?.companyId || companies[0]?.id || "";
+        setSelectedCompanyId((prev) => prev || fallbackCompanyId);
+      } catch (err) {
+        console.error("Failed to fetch user context", err);
+      }
+    };
+
     const fetchBrands = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/api/brands", {
+        const params = new URLSearchParams();
+        if (selectedCompanyId) params.set("companyId", selectedCompanyId);
+        const res = await fetch(`/api/brands?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -622,27 +657,12 @@ export default function CreateInvoiceModal({
         console.error("Failed to fetch brands", err);
       }
     };
-    const fetchCompanySettings = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const rawUser = localStorage.getItem("user");
-        const companyId = rawUser ? JSON.parse(rawUser).companyId : null;
-        if (!companyId) return;
-        const res = await fetch(`/api/companies/${companyId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCompanyStateCode(data.stateCode || "");
-        }
-      } catch (err) {
-        console.error("Failed to fetch company settings", err);
-      }
-    };
     const fetchInstitutions = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/api/institutions", {
+        const params = new URLSearchParams();
+        if (selectedCompanyId) params.set("companyId", selectedCompanyId);
+        const res = await fetch(`/api/institutions?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -655,18 +675,21 @@ export default function CreateInvoiceModal({
     };
 
     if (isOpen) {
+      fetchViewerContext();
       fetchBrands();
-      fetchCompanySettings();
       fetchInstitutions();
     }
-  }, [isOpen]);
+  }, [isOpen, selectedCompanyId]);
 
   useEffect(() => {
     const fetchPrefilledCustomer = async () => {
       if (!isOpen || editId || !prefilledCustomerId) return;
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`/api/customers/${prefilledCustomerId}`, {
+        const qs = selectedCompanyId
+          ? `?companyId=${encodeURIComponent(selectedCompanyId)}`
+          : "";
+        const res = await fetch(`/api/customers/${prefilledCustomerId}${qs}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -680,7 +703,17 @@ export default function CreateInvoiceModal({
     };
 
     fetchPrefilledCustomer();
-  }, [isOpen, editId, prefilledCustomerId]);
+  }, [isOpen, editId, prefilledCustomerId, selectedCompanyId]);
+
+  useEffect(() => {
+    if (!selectedCompanyId) return;
+    const selectedCompany = availableCompanies.find((company: any) => company.id === selectedCompanyId);
+    setCompanyStateCode(selectedCompany?.stateCode || "");
+    setSelectedBrandId("");
+    setSelectedCustomer(null);
+    setCustomerSearch("");
+    setCouponResult(null);
+  }, [selectedCompanyId, availableCompanies]);
 
   useEffect(() => {
     const fetchPrefilledInstitution = async () => {
@@ -733,7 +766,12 @@ export default function CreateInvoiceModal({
         const token = localStorage.getItem("token");
 
         // 1) Reuse any existing institution-linked customer profile first.
-        const listRes = await fetch(`/api/customers?type=INSTITUTION&limit=200`, {
+        const customerParams = new URLSearchParams({
+          type: "INSTITUTION",
+          limit: "200",
+        });
+        if (selectedCompanyId) customerParams.set("companyId", selectedCompanyId);
+        const listRes = await fetch(`/api/customers?${customerParams.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (listRes.ok) {
@@ -757,6 +795,7 @@ export default function CreateInvoiceModal({
           name: prefilledInstitution.name,
           organizationName: prefilledInstitution.name,
           customerType: "INSTITUTION",
+          companyId: selectedCompanyId || undefined,
           primaryEmail,
           primaryPhone: prefilledInstitution.primaryPhone || "",
           institutionId: prefilledInstitution.id,
@@ -813,6 +852,7 @@ export default function CreateInvoiceModal({
     prefilledInstitution,
     prefilledCustomerId,
     institutionCustomerResolved,
+    selectedCompanyId,
   ]);
 
   // Populate data for editing
@@ -965,6 +1005,7 @@ export default function CreateInvoiceModal({
         body: JSON.stringify({
           code: couponCode,
           subtotal: calculateTotal(),
+          companyId: selectedCompanyId || undefined,
           brandId: selectedBrandId || null,
         }),
       });
@@ -997,6 +1038,7 @@ export default function CreateInvoiceModal({
         },
         body: JSON.stringify({
           ...newCustomerForm,
+          companyId: selectedCompanyId || undefined,
           institutionId: newCustomerForm.institutionId || null,
           designation: normalizeCustomerDesignation(newCustomerForm.designation),
         }),
@@ -1073,6 +1115,7 @@ export default function CreateInvoiceModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            companyId: selectedCompanyId || undefined,
             customerProfileId: selectedCustomer.id,
             invoiceDate,
             dueDate,
@@ -1588,6 +1631,27 @@ export default function CreateInvoiceModal({
                     ? "← Search Existing"
                     : "+ Create New Account"}
                 </button>
+              </div>
+
+              <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <label className="label mb-2">Invoice Company</label>
+                <select
+                  className="input-premium w-full bg-white"
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                >
+                  {availableCompanies.length === 0 && (
+                    <option value="">No mapped companies found</option>
+                  )}
+                  {availableCompanies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[10px] text-gray-500">
+                  Customer, brand, products, and tax context are scoped to this company.
+                </p>
               </div>
 
               {isCreatingCustomer ? (

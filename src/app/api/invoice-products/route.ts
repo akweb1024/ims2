@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
+import { resolveCompanyScope } from "@/lib/access-policy";
 import { z } from "zod";
 
 const db = prisma as any;
@@ -89,6 +90,10 @@ export const GET = authorizedRoute(
   async (request: NextRequest, user: any) => {
     try {
       const { searchParams } = new URL(request.url);
+      const targetCompanyId = await resolveCompanyScope(request, user, {
+        required: true,
+        fallbackToActiveCompany: true,
+      });
       const q = searchParams.get("q")?.trim();
       const category = searchParams.get("category");
       const pricingModel = searchParams.get("pricingModel");
@@ -109,7 +114,7 @@ export const GET = authorizedRoute(
       const sortDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
 
       const where: any = {
-        OR: [{ companyId: user.companyId }, { companyId: null }],
+        OR: [{ companyId: targetCompanyId }, { companyId: null }],
       };
 
       if (q) {
@@ -205,7 +210,7 @@ export const GET = authorizedRoute(
       // Return category summary counts too (for filter UI)
       const categoryCounts = await db.invoiceProduct.groupBy({
         by: ["category"],
-        where: { OR: [{ companyId: user.companyId }, { companyId: null }] },
+        where: { OR: [{ companyId: targetCompanyId }, { companyId: null }] },
         _count: { id: true },
       });
 

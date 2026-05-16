@@ -4,14 +4,16 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { parseAutomationConfigInput } from '@/lib/document-automation';
+import { resolveCompanyScope } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     [],
     async (req: NextRequest, user) => {
         try {
-            const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId') || user.companyId;
-
+            const companyId = await resolveCompanyScope(req, user, {
+                required: true,
+                fallbackToActiveCompany: true,
+            });
             if (!companyId) throw new ValidationError('Company ID is required');
 
             const brands = await prisma.brand.findMany({

@@ -10,6 +10,7 @@ import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { applyInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 import { validateInvoiceConfig } from '@/lib/invoice-config';
 import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
+import { assertCompanyAccess, resolveCompanyScope } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     [],
@@ -26,10 +27,12 @@ export const GET = authorizedRoute(
 
         // 3. Build Filter
         const where: any = {};
-        const userCompanyId = user.companyId;
-
-        if (userCompanyId) {
-            where.companyId = userCompanyId;
+        const scopedCompanyId = await resolveCompanyScope(req, user, {
+            required: false,
+            fallbackToActiveCompany: true,
+        });
+        if (scopedCompanyId) {
+            where.companyId = scopedCompanyId;
         }
 
         if (status) {
@@ -118,7 +121,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
     try {
         const body = await req.json();
-        const { customerProfileId, brandId, couponId, couponCode, discountType, discountValue, discountAmount,
+        const { customerProfileId, brandId, companyId, couponId, couponCode, discountType, discountValue, discountAmount,
                 dueDate, lineItems, description, purchaseOrderNumber, invoiceDate, taxRate = 0, currency = 'INR' } = body;
 
         const normalizedPurchaseOrderNumber =
@@ -145,20 +148,25 @@ export const POST = authorizedRoute(
         });
 
         if (!customer) throw new NotFoundError('Customer');
-        if (user.role !== 'SUPER_ADMIN' && customer.companyId !== user.companyId) {
-            throw new ValidationError('Invalid customer reference for this company');
+        const targetCompanyId = companyId || customer.companyId || user.companyId;
+        if (!targetCompanyId) {
+            throw new ValidationError('Company context is required');
+        }
+        await assertCompanyAccess(user, targetCompanyId, 'create invoices for this company');
+        if (customer.companyId !== targetCompanyId) {
+            throw new ValidationError('Selected customer does not belong to the selected company');
         }
 
         // Fetch Company for Snapshots and Number Generation
         const company = await prisma.company.findUnique({
-            where: { id: (user.companyId ?? customer.companyId) as string }
+            where: { id: targetCompanyId as string }
         });
         
         if (!company) throw new NotFoundError('Company');
 
         const invoiceConfigToValidate: any = brandId
-            ? await prisma.brand.findUnique({
-                where: { id: brandId },
+            ? await prisma.brand.findFirst({
+                where: { id: brandId, companyId: targetCompanyId },
                 select: {
                     legalEntityName: true,
                     gstin: true,
@@ -222,8 +230,8 @@ export const POST = authorizedRoute(
         };
 
         if (brandId) {
-            const brand = await prisma.brand.findUnique({
-                where: { id: brandId }
+            const brand = await prisma.brand.findFirst({
+                where: { id: brandId, companyId: targetCompanyId }
             });
             if (brand) {
                 // If brand has its own details, override the defaults
@@ -425,9 +433,7 @@ export const POST = authorizedRoute(
 
         // Finance Automation (non-blocking)
         try {
-            if (user.companyId) {
-                await FinanceService.postInvoiceJournal(user.companyId, newInvoice.id);
-            }
+            await FinanceService.postInvoiceJournal(company.id, newInvoice.id);
         } catch (financeError) {
             logger.error('Failed to post invoice journal', financeError, { invoiceId: newInvoice.id });
         }
