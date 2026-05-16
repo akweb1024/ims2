@@ -57,6 +57,7 @@ import {
   resolveItemTaxCategory,
 } from "@/lib/invoice-tax";
 import { getCustomerDisplayType } from "@/lib/customer-display";
+import { deriveStateCodeFromState } from "@/lib/india-state-code";
 
 const customerDesignationOptions = [
   { value: "", label: "Select designation" },
@@ -241,19 +242,19 @@ export default function CreateInvoiceModal({
           if (target === 'billing') {
             upd.billingCity = city;
             upd.billingState = state;
-            upd.billingStateCode = detail.StateCode || "";
+            upd.billingStateCode = deriveStateCodeFromState(detail.StateCode, state);
             upd.billingCountry = 'India';
             if (isShippingSame) {
               upd.shippingCity = city;
               upd.shippingState = state;
-              upd.shippingStateCode = detail.StateCode || "";
+              upd.shippingStateCode = deriveStateCodeFromState(detail.StateCode, state);
               upd.shippingCountry = 'India';
               upd.shippingPincode = pincode;
             }
           } else {
             upd.shippingCity = city;
             upd.shippingState = state;
-            upd.shippingStateCode = detail.StateCode || "";
+            upd.shippingStateCode = deriveStateCodeFromState(detail.StateCode, state);
             upd.shippingCountry = 'India';
           }
           return upd;

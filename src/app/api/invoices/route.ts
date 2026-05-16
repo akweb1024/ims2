@@ -114,7 +114,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'ADMIN', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
     try {
         const body = await req.json();

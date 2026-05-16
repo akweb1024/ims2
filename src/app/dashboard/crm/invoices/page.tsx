@@ -148,7 +148,7 @@ export default function InvoicesPage() {
                 icon={<FileText className="w-5 h-5" />}
                 actions={
                     <div className="flex items-center gap-3">
-                        {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
+                        {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'ADMIN', 'EXECUTIVE'].includes(userRole) && (
                             <>
                                 <button
                                     onClick={handleExport}

@@ -11,6 +11,7 @@ import DesignationCombobox from '@/components/crm/DesignationCombobox';
 import { customerSchema, type CustomerFormData } from '@/lib/validation/schemas';
 import { showSuccess, showError } from '@/lib/toast';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
+import { deriveStateCodeFromState } from '@/lib/india-state-code';
 import { 
     UserPlus, ArrowLeft, Save, X, Info, ShieldCheck, 
     Globe, MapPin, Building2, CreditCard, ClipboardList,
@@ -138,7 +139,7 @@ export default function NewCustomerPage() {
                 const detail = data[0].PostOffice[0];
                 const city = detail.District;
                 const state = detail.State;
-                const stateCode = detail.StateCode || '';
+                const stateCode = deriveStateCodeFromState(detail.StateCode, state);
                 
                 if (target === 'billing') {
                     setValue('billingCity', city, { shouldValidate: true, shouldDirty: true });
