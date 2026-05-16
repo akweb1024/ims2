@@ -184,7 +184,7 @@ export const CommandNexus: React.FC = () => {
                     </div>
                     <div className="space-y-4">
                       <p className="text-slate-200 leading-relaxed italic text-lg">
-                        "{aiResponse.content}"
+                        &quot;{aiResponse.content}&quot;
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {aiResponse.suggestions.map((s, i) => (
@@ -299,7 +299,7 @@ export const CommandNexus: React.FC = () => {
                   {query.length >= 2 && results.length === 0 && !isLoading && (
                     <div className="p-12 text-center text-slate-500">
                       <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm font-medium">No results found for "{query}"</p>
+                      <p className="text-sm font-medium">No results found for &quot;{query}&quot;</p>
                       <p className="text-xs mt-1">Try switching to AI Mode for deeper insights.</p>
                     </div>
                   )}
