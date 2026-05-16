@@ -33,7 +33,7 @@ export default function EmployeeProfilePage() {
     const [growthData, setGrowthData] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     
-    const canViewSalary = currentUser && ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE', 'FINANCE_ADMIN'].includes(currentUser.role);
+    const canViewSalary = currentUser && ['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE_ADMIN'].includes(currentUser.role);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -214,8 +214,14 @@ export default function EmployeeProfilePage() {
     });
 
     useEffect(() => {
-        fetch('/api/hr/designations')
-            .then(res => res.json())
+        const token = localStorage.getItem('token');
+        fetch('/api/hr/designations', {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        })
+            .then(async (res) => {
+                if (!res.ok) throw new Error(`Failed to load designations (${res.status})`);
+                return res.json();
+            })
             .then(data => setDesignations(Array.isArray(data) ? data : []))
             .catch(err => console.error('Error fetching designations:', err));
     }, []);
@@ -395,7 +401,7 @@ export default function EmployeeProfilePage() {
                     {/* Left Sidebar - Quick Info */}
                     <div className="space-y-6">
                         <div className="card-premium p-6 text-center">
-                            <div className="w-24 h-24 rounded-full bg-primary-100 mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-primary-600 overflow-hidden border-4 border-white shadow-sm">
+                            <div className="relative w-24 h-24 rounded-full bg-primary-100 mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-primary-600 overflow-hidden border-4 border-white shadow-sm">
                                 {employee.profilePicture ? (
                                     <Image src={employee.profilePicture} alt="Profile" fill className="object-cover" />
                                 ) : (
