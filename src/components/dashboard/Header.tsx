@@ -46,6 +46,10 @@ export default function Header({
 }: HeaderProps) {
     const router = useRouter();
     const canUseAllCompanies = user?.role === 'SUPER_ADMIN' || user?.allowedModules?.includes('ALL_COMPANIES');
+    const currentCompanyName = user?.company?.name
+        || availableCompanies.find((comp) => comp.id === user?.companyId)?.name
+        || (canUseAllCompanies && !user?.companyId ? 'All Companies' : 'No company selected');
+    const registeredCompanyName = user?.companies?.[0]?.name || user?.company?.name || 'Not available';
     const unreadCount = notifications.filter(n => !n.isRead).length;
     const [attendance, setAttendance] = useState<any[]>([]);
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
@@ -364,6 +368,12 @@ export default function Header({
                                                 <p className="text-sm font-bold text-slate-900 truncate">{displayFullEmail}</p>
                                                 <p className="text-[11px] mt-0.5">
                                                     <span className="text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded text-[10px]">{displayRole}</span>
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 mt-1 truncate">
+                                                    Current: <span className="font-semibold text-slate-700">{currentCompanyName}</span>
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 truncate">
+                                                    Registered: <span className="font-semibold text-slate-700">{registeredCompanyName}</span>
                                                 </p>
                                             </div>
                                         </div>

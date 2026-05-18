@@ -54,11 +54,11 @@ export const GET = authorizedRoute(
 
             const targetUserId = searchParams.get('targetUserId');
 
-            if (user.companyId) {
-                where.companyId = user.companyId;
-            }
-
             if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                if (user.companyId) {
+                    where.companyId = user.companyId;
+                }
+
                 // Admin/Managers can request data for specific user or their hierarchy
                 if (targetUserId) {
                     // Start of Permissions Check
@@ -126,6 +126,20 @@ export const POST = authorizedRoute(
 
             const { action, workFrom, latitude, longitude, locationName } = validation.data;
 
+            const dbUser = await prisma.user.findUnique({
+                where: { id: user.id },
+                select: {
+                    companyId: true,
+                    companies: { select: { id: true } }
+                }
+            });
+
+            const registeredCompanyId =
+                dbUser?.companyId ||
+                dbUser?.companies?.[0]?.id ||
+                user.companyId ||
+                null;
+
             let profile = await prisma.employeeProfile.findUnique({
                 where: { userId: user.id }
             });
@@ -162,7 +176,7 @@ export const POST = authorizedRoute(
 
                 const record = await upsertAttendanceRecord({
                     employeeId: profile.id,
-                    companyId: user.companyId!,
+                    companyId: existing?.companyId || registeredCompanyId,
                     date: today,
                     checkIn: new Date(),
                     workFrom: (workFrom as any) || 'OFFICE',
@@ -178,7 +192,7 @@ export const POST = authorizedRoute(
 
                 const record = await upsertAttendanceRecord({
                     employeeId: profile.id,
-                    companyId: user.companyId!,
+                    companyId: existing.companyId || registeredCompanyId,
                     date: today,
                     checkOut: new Date()
                 });

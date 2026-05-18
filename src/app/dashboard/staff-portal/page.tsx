@@ -65,6 +65,8 @@ export default function StaffPortalPage() {
     const [activeSubTab, setActiveSubTab] = useState('members');
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
     const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
+    const currentCompanyName = user?.company?.name || user?.companies?.[0]?.name || 'Not selected';
+    const registeredCompanyName = fullProfile?.user?.companies?.[0]?.name || user?.companies?.[0]?.name || currentCompanyName;
 
     const todayAttendance = attendance.find(a => {
         return formatToISTDate(a.date) === formatToISTDate(new Date());
@@ -349,6 +351,11 @@ export default function StaffPortalPage() {
                                 </button>
                             </div>
                         )}
+
+                        <div className="bg-secondary-50 border border-secondary-200 rounded-xl px-3 py-2 text-[11px] text-secondary-600 leading-relaxed max-w-xs text-right">
+                            <p><span className="font-black uppercase tracking-wide text-secondary-500">Current workspace:</span> <span className="font-semibold text-secondary-800">{currentCompanyName}</span></p>
+                            <p><span className="font-black uppercase tracking-wide text-secondary-500">Attendance company:</span> <span className="font-semibold text-secondary-800">{registeredCompanyName}</span></p>
+                        </div>
 
                         {!todayAttendance?.checkIn ? (
                             <button
