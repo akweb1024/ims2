@@ -1342,7 +1342,10 @@ export default function CreateInvoiceModal({
   };
 
   const modalBody = (
-      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative text-left">
+      <div className={`${renderMode === "page"
+        ? "bg-white rounded-2xl w-full max-w-[1200px] min-h-[calc(100vh-3rem)] overflow-hidden shadow-sm border border-secondary-200 flex flex-col relative text-left mx-auto"
+        : "bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative text-left"
+      }`}>
         {/* Product Catalogue & Variants Overlay */}
         {showProductModal && (
           <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-slideIn">
@@ -1603,9 +1606,9 @@ export default function CreateInvoiceModal({
         </div>
 
         <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-hide">
             {step === 1 ? (
-            <div className="p-8 space-y-6 overflow-y-auto">
+            <div className="space-y-6 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-800">
                   {isEditingCustomer
@@ -3127,8 +3130,8 @@ export default function CreateInvoiceModal({
 
   if (renderMode === "page") {
     return (
-      <div className="min-h-screen bg-secondary-50 p-4 sm:p-6">
-        <div className="w-full max-w-none">{modalBody}</div>
+      <div className="min-h-screen bg-secondary-50 p-3 sm:p-6">
+        <div className="w-full">{modalBody}</div>
       </div>
     );
   }
