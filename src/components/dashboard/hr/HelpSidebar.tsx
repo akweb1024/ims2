@@ -7,6 +7,7 @@ type HelpContent = {
     description: string;
     steps: string[];
     tips?: string[];
+    docHref?: string;
 };
 
 const HELP_DATA: Record<string, HelpContent> = {
@@ -81,6 +82,46 @@ const HELP_DATA: Record<string, HelpContent> = {
             'Sync with biometric devices if integrated.',
             'Regularize attendance for field visits.'
         ]
+    },
+    'goals': {
+        title: 'Performance Workspace (KRA/KPI/Goals)',
+        description: 'Use one unified workspace for goals, KPIs, task templates, and monthly review instead of jumping across old screens.',
+        steps: [
+            'Open Performance Workspace from navigation.',
+            'Use the Goals tab to create or edit employee outcomes and timelines.',
+            'Use the KPI tab to define measurable targets per employee and period.',
+            'Use quick filters (employee, period, status) to find records fast.',
+            'Use Clear Filters to reset the current tab in one click.',
+            'Use Monthly Review tab for score and grade tracking.'
+        ],
+        tips: ['Keep the workflow simple: Goal -> KPI -> Task Template -> Monthly Review.'],
+        docHref: '/dashboard/performance/workspace/help'
+    },
+    'tasks': {
+        title: 'Task Templates in Performance Workspace',
+        description: 'Task templates define repeatable execution units that support KPI achievement.',
+        steps: [
+            'Go to Performance Workspace -> Task Templates.',
+            'Click New Template and set frequency, points, and target.',
+            'Assign to a specific employee only if needed, otherwise keep unassigned for reusable standards.',
+            'Use Active/Inactive status to manage lifecycle instead of deleting templates.',
+            'Use filters to quickly isolate team-specific or inactive templates.'
+        ],
+        tips: ['Prefer reusable templates first, then employee-specific templates only for exceptions.'],
+        docHref: '/dashboard/performance/workspace/help'
+    },
+    'analytics': {
+        title: 'Performance Reviews & Analytics',
+        description: 'Review monthly outcomes in one place and align future goals/KPIs using real results.',
+        steps: [
+            'Open Performance Workspace -> Monthly Review tab.',
+            'Filter by employee, period, and grade.',
+            'Use insights from score, grade, and task completion to adjust next cycle goals.',
+            'Update KPI targets before the next period starts.',
+            'Keep historical cycles consistent for easier audits.'
+        ],
+        tips: ['Run monthly review before approving next cycle goals to avoid target drift.'],
+        docHref: '/dashboard/performance/workspace/help'
     }
 };
 
@@ -134,6 +175,11 @@ export default function HelpSidebar({ isOpen, onClose, activeTab }: { isOpen: bo
                 </div>
 
                 <div className="p-6 border-t border-secondary-100 bg-secondary-50/30">
+                    {content.docHref && (
+                        <Link href={content.docHref} className="block text-center text-xs font-bold text-secondary-700 hover:underline mb-2">
+                            Open This Module Guide →
+                        </Link>
+                    )}
                     <Link href="/dashboard/knowledge-base" className="block text-center text-xs font-bold text-primary-600 hover:underline">
                         Visit Full Knowledge Base →
                     </Link>

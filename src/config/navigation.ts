@@ -63,7 +63,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Team', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Work Reports', href: '/dashboard/manager/team/work-reports', icon: '📝', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance', href: '/dashboard/manager/team/performance', icon: '📊', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
-                    { name: 'Goal Management', href: '/dashboard/performance/goals', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'] },
+                    { name: 'Performance Workspace', href: '/dashboard/performance/workspace', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Salary & Increments', href: '/dashboard/manager/team/salary', icon: '💰', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                 ]
             },
@@ -100,7 +100,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Attendance', icon: '🕒', href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Productivity', icon: '⚡', href: '/dashboard/hr-management?tab=productivity', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Monthly Performance', icon: '📊', href: '/dashboard/hr-management/performance/monthly', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Performance Workspace', icon: '📊', href: '/dashboard/performance/workspace?tab=review', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Salary Increments', icon: '💰', href: '/dashboard/hr-management/increments', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Increment 360 Analysis', icon: '📉', href: '/dashboard/hr-management/increments/analytics', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
                     { name: 'Manage Team', icon: '👥', href: '/dashboard/manager/team', roles: ['MANAGER', 'TEAM_LEADER'] },
