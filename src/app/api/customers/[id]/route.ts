@@ -30,6 +30,7 @@ const CUSTOMER_DESIGNATIONS = new Set([
     'STAFF',
     'OTHER',
 ]);
+const DISCOUNT_EDITOR_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
 export async function GET(
     _req: NextRequest,
@@ -55,6 +56,14 @@ export async function GET(
                         isActive: true,
                         lastLogin: true,
                         createdAt: true
+                    }
+                },
+                discountUpdatedBy: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
                     }
                 },
                 institutionDetails: true,
@@ -278,6 +287,7 @@ export async function PATCH(
             website, // Extracting website to omit it from profileData since it is not in the schema
             ...profileData
         } = body;
+        const canEditDefaultDiscount = DISCOUNT_EDITOR_ROLES.has(decoded.role);
 
         const cleanAssignedExecutiveIds = Array.isArray(assignedToUserIds)
             ? assignedToUserIds
@@ -313,7 +323,13 @@ export async function PATCH(
                                    toNullableString(profileData.universityCategory) === 'PRIVATE' ? 'PRIVATE_UNIVERSITY' :
                                    toNullableString(profileData.universityCategory)) as any 
             }),
-            ...(profileData.discountOffered !== undefined && { discountOffered: Number(profileData.discountOffered) }),
+            ...(canEditDefaultDiscount && profileData.discountOffered !== undefined && { discountOffered: Number(profileData.discountOffered) }),
+            ...(canEditDefaultDiscount && profileData.defaultDiscountType !== undefined && {
+                defaultDiscountType: String(profileData.defaultDiscountType).trim().toUpperCase() === 'FLAT' ? 'FLAT' : 'PERCENTAGE'
+            }),
+            ...(canEditDefaultDiscount && profileData.defaultDiscountValue !== undefined && {
+                defaultDiscountValue: Number(profileData.defaultDiscountValue) || 0
+            }),
             ...(profileData.region !== undefined && { region: toNullableString(profileData.region) }),
 
             ...(profileData.billingAddress !== undefined && { billingAddress: toNullableString(profileData.billingAddress) }),
@@ -383,6 +399,10 @@ export async function PATCH(
                     }),
                     ...(normalizedSharedCompanyIds !== undefined && {
                         sharedCompanyIds: normalizedSharedCompanyIds
+                    }),
+                    ...(canEditDefaultDiscount && (profileData.defaultDiscountType !== undefined || profileData.defaultDiscountValue !== undefined) && {
+                        discountUpdatedAt: new Date(),
+                        discountUpdatedById: decoded.id
                     })
                 }
             });

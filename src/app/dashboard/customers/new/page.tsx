@@ -21,6 +21,7 @@ import {
 export default function NewCustomerPage() {
     const router = useRouter();
     const [userRole, setUserRole] = useState('CUSTOMER');
+    const [actorRole, setActorRole] = useState('CUSTOMER');
     const [loading, setLoading] = useState(false);
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [agencies, setAgencies] = useState<any[]>([]);
@@ -77,6 +78,7 @@ export default function NewCustomerPage() {
     });
 
     const customerType = watch('type', 'INDIVIDUAL');
+    const canManageDefaultDiscount = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(actorRole);
     const billingAddress = watch('billingAddress');
 
     useEffect(() => {
@@ -104,6 +106,7 @@ export default function NewCustomerPage() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
+            setActorRole(user.role);
             if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'].includes(user.role)) {
                 router.push('/dashboard/customers');
             }
@@ -190,6 +193,8 @@ export default function NewCustomerPage() {
                 affiliatedUniversityId: affiliatedUniversityId || null,
                 associatedAgencyId: hasAgency ? associatedAgencyId : null,
                 discountOffered: discountOffered,
+                defaultDiscountType: 'PERCENTAGE',
+                defaultDiscountValue: canManageDefaultDiscount ? discountOffered : 0,
                 region: region || null,
                 
                 organizationName: data.organizationName || null,
@@ -451,10 +456,10 @@ export default function NewCustomerPage() {
                                               </div>
                                           )}
 
-                                          {organizationType === 'AGENCY' && (
+                                          {organizationType === 'AGENCY' && canManageDefaultDiscount && (
                                               <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                   <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Agency Discount (%)</label>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Default Discount (%)</label>
                                                       <input type="number" step="0.1" value={discountOffered} onChange={(e)=>setDiscountOffered(parseFloat(e.target.value)||0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
                                                   </div>
                                                   <div>

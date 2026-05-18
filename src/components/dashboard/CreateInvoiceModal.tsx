@@ -132,6 +132,7 @@ export default function CreateInvoiceModal({
   const invoiceContext = searchParams.get("context");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [actorRole, setActorRole] = useState("CUSTOMER");
 
   // Step 1: Customer Selection
   const [customerSearch, setCustomerSearch] = useState("");
@@ -214,6 +215,19 @@ export default function CreateInvoiceModal({
   const [prefilledInstitution, setPrefilledInstitution] = useState<any>(null);
   const [institutionCustomerResolved, setInstitutionCustomerResolved] =
     useState(false);
+  const isAgencyUser = actorRole === "AGENCY";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const rawUser = localStorage.getItem("user");
+    if (!rawUser) return;
+    try {
+      const parsed = JSON.parse(rawUser);
+      setActorRole(String(parsed?.role || "CUSTOMER"));
+    } catch {
+      setActorRole("CUSTOMER");
+    }
+  }, [isOpen]);
 
   const handleTaxTypeChange = (type: "DOMESTIC" | "INTERNATIONAL") => {
     setTaxType(type);
@@ -965,8 +979,17 @@ export default function CreateInvoiceModal({
   }, [items]);
 
   const calculateDiscount = useCallback(
-    () => couponResult?.discountAmount || 0,
-    [couponResult],
+    () => {
+      if (couponResult?.discountAmount) return couponResult.discountAmount;
+      const defaultType =
+        String(selectedCustomer?.defaultDiscountType || "PERCENTAGE").toUpperCase() === "FLAT"
+          ? "FLAT"
+          : "PERCENTAGE";
+      const defaultValue = Number(selectedCustomer?.defaultDiscountValue || 0) || 0;
+      const subtotal = calculateTotal();
+      return defaultType === "FLAT" ? Math.max(0, defaultValue) : Math.max(0, subtotal * (defaultValue / 100));
+    },
+    [couponResult, selectedCustomer, calculateTotal],
   );
 
   const calculateTaxableAmount = useCallback(
@@ -1157,9 +1180,9 @@ export default function CreateInvoiceModal({
             // Coupon
             couponId: couponResult?.coupon?.id || null,
             couponCode: couponResult?.coupon?.code || null,
-            discountType: couponResult?.coupon?.discountType || null,
-            discountValue: couponResult?.coupon?.discountValue || 0,
-            discountAmount: couponResult?.discountAmount || 0,
+            discountType: couponResult?.coupon?.discountType || selectedCustomer?.defaultDiscountType || null,
+            discountValue: couponResult?.coupon?.discountValue || selectedCustomer?.defaultDiscountValue || 0,
+            discountAmount: calculateDiscount(),
             
             // Tax Breakdown
             cgst: taxBreakdown.cgst,
@@ -2881,62 +2904,63 @@ export default function CreateInvoiceModal({
                 ))}
               </div>
 
-              {/* Coupon / Discount */}
-              <div className="space-y-2">
-                <label className="label">Discount Coupon (Optional)</label>
-                {!couponResult ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="input-premium flex-1 uppercase tracking-widest font-mono"
-                      placeholder="ENTER COUPON CODE"
-                      value={couponCode}
-                      onChange={(e) => {
-                        setCouponCode(e.target.value.toUpperCase());
-                        setCouponError("");
-                      }}
-                      onKeyDown={(e) => e.key === "Enter" && applyScoupon()}
-                    />
-                    <button
-                      type="button"
-                      onClick={applyScoupon}
-                      disabled={couponLoading || !couponCode.trim()}
-                      className="btn btn-secondary px-5 font-bold disabled:opacity-50"
-                    >
-                      {couponLoading ? "..." : "Apply"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-600 text-lg">🎟️</span>
-                      <div>
-                        <p className="font-bold text-green-800 text-sm font-mono tracking-wider">
-                          {couponResult.coupon.code}
-                        </p>
-                        <p className="text-xs text-green-600">
-                          {couponResult.coupon.discountType === "PERCENTAGE"
-                            ? `${couponResult.coupon.discountValue}% off`
-                            : `${getCurrencySymbol(currency)}${couponResult.coupon.discountValue} flat off`}
-                          {couponResult.coupon.description &&
-                            ` — ${couponResult.coupon.description}`}
-                        </p>
-                      </div>
+              {!isAgencyUser && (
+                <div className="space-y-2">
+                  <label className="label">Discount Coupon (Optional)</label>
+                  {!couponResult ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="input-premium flex-1 uppercase tracking-widest font-mono"
+                        placeholder="ENTER COUPON CODE"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponError("");
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && applyScoupon()}
+                      />
+                      <button
+                        type="button"
+                        onClick={applyScoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="btn btn-secondary px-5 font-bold disabled:opacity-50"
+                      >
+                        {couponLoading ? "..." : "Apply"}
+                      </button>
                     </div>
-                    <button
-                      onClick={removeCoupon}
-                      className="text-xs text-red-500 font-bold hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-                {couponError && (
-                  <p className="text-xs text-red-500 font-medium">
-                    {couponError}
-                  </p>
-                )}
-              </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600 text-lg">🎟️</span>
+                        <div>
+                          <p className="font-bold text-green-800 text-sm font-mono tracking-wider">
+                            {couponResult.coupon.code}
+                          </p>
+                          <p className="text-xs text-green-600">
+                            {couponResult.coupon.discountType === "PERCENTAGE"
+                              ? `${couponResult.coupon.discountValue}% off`
+                              : `${getCurrencySymbol(currency)}${couponResult.coupon.discountValue} flat off`}
+                            {couponResult.coupon.description &&
+                              ` — ${couponResult.coupon.description}`}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={removeCoupon}
+                        className="text-xs text-red-500 font-bold hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="text-xs text-red-500 font-medium">
+                      {couponError}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="bg-gray-50 p-6 rounded-2xl space-y-3">
                 <div className="flex justify-between items-center text-sm">
@@ -2948,10 +2972,10 @@ export default function CreateInvoiceModal({
                     {calculateTotal().toLocaleString()}
                   </span>
                 </div>
-                {couponResult && (
+                {calculateDiscount() > 0 && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-green-600 font-bold uppercase tracking-wider">
-                      🎟️ Coupon Discount
+                      {couponResult ? "🎟️ Coupon Discount" : "Default Discount"}
                     </span>
                     <span className="text-green-600 font-bold">
                       − {getCurrencySymbol(currency)}{" "}

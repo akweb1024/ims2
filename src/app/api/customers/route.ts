@@ -8,6 +8,8 @@ import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
 import { assertCompanyAccess, resolveCompanyScope } from '@/lib/access-policy';
 
+const DISCOUNT_EDITOR_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
+
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
@@ -363,6 +365,13 @@ export const POST = authorizedRoute(
                 }
             }
 
+            const canEditDefaultDiscount = DISCOUNT_EDITOR_ROLES.has(user.role);
+            const incomingDefaultDiscountType = typeof body.defaultDiscountType === 'string'
+                ? body.defaultDiscountType.trim().toUpperCase()
+                : null;
+            const normalizedDefaultDiscountType = incomingDefaultDiscountType === 'FLAT' ? 'FLAT' : 'PERCENTAGE';
+            const normalizedDefaultDiscountValue = Number(body.defaultDiscountValue ?? body.discountOffered ?? 0) || 0;
+
             const customer = await tx.customerProfile.create({
                 data: {
                     userId: user.id,
@@ -409,6 +418,10 @@ export const POST = authorizedRoute(
                     agencyId: finalAgencyId || null,
                     designation: designation || null,
                     leadStatus: null,
+                    defaultDiscountType: canEditDefaultDiscount ? normalizedDefaultDiscountType : 'PERCENTAGE',
+                    defaultDiscountValue: canEditDefaultDiscount ? normalizedDefaultDiscountValue : 0,
+                    discountUpdatedAt: canEditDefaultDiscount ? new Date() : null,
+                    discountUpdatedById: canEditDefaultDiscount ? user.id : null,
                 } as any
             });
 
@@ -435,7 +448,9 @@ export const POST = authorizedRoute(
                         territory: body.territory || body.region || null,
                         region: body.region || null,
                         primaryContact: body.primaryContact || name,
-                        discountRate: body.discountOffered ? parseFloat(body.discountOffered) : (body.discountRate ? parseFloat(body.discountRate) : 0),
+                        discountRate: canEditDefaultDiscount
+                            ? (body.discountOffered ? parseFloat(body.discountOffered) : (body.discountRate ? parseFloat(body.discountRate) : 0))
+                            : 0,
                         discountTier: body.discountTier || 'GOLD'
                     }
                 });

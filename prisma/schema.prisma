@@ -276,6 +276,7 @@ model User {
   courseNotes                    CourseNote[]
   customerAssignments            CustomerAssignment[]             @relation("EmployeeAssignments")
   assignedCustomers              CustomerProfile[]                @relation("AssignedCustomers")
+  customerDiscountUpdates        CustomerProfile[]                @relation("CustomerDiscountUpdatedBy")
   customerProfile                CustomerProfile?
   deals                          Deal[]
   headOfDepartments              Department[]                     @relation("DepartmentHead")
@@ -509,6 +510,10 @@ model CustomerProfile {
   affiliatedUniversityId String?
   associatedAgencyId     String?
   discountOffered     Float?               @default(10)
+  defaultDiscountType String?              @default("PERCENTAGE")
+  defaultDiscountValue Float?              @default(0)
+  discountUpdatedAt   DateTime?
+  discountUpdatedById String?
   region              String?
   assignedToUserId    String?
   name                String
@@ -556,6 +561,7 @@ model CustomerProfile {
   agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
   subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
   assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
+  discountUpdatedBy   User?                @relation("CustomerDiscountUpdatedBy", fields: [discountUpdatedById], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
   institution         Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
   user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -582,6 +588,7 @@ model CustomerProfile {
   @@index([institutionId])
   @@index([agencyId])
   @@index([designation])
+  @@index([discountUpdatedById])
 }
 
 model CommissionPayout {

@@ -45,6 +45,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [region, setRegion] = useState('');
     const [designationEditValue, setDesignationEditValue] = useState('');
     const [sharedCompanyIds, setSharedCompanyIds] = useState<string[]>([]);
+    const canManageDefaultDiscount = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -291,6 +292,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             affiliatedUniversityId: affiliatedUniversityId || null,
             associatedAgencyId: hasAgency ? associatedAgencyId : null,
             discountOffered: discountOffered,
+            defaultDiscountType: 'PERCENTAGE',
+            defaultDiscountValue: canManageDefaultDiscount ? discountOffered : undefined,
             region: region || null,
             
             // Structured Fields
@@ -607,16 +610,22 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             </div>
                                         )}
 
-                                        {organizationType === 'AGENCY' && (
+                                        {organizationType === 'AGENCY' && canManageDefaultDiscount && (
                                             <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Agency Discount (%)</label>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Default Discount (%)</label>
                                                     <input type="number" step="0.1" value={discountOffered} onChange={e => setDiscountOffered(parseFloat(e.target.value) || 0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-bold text-gray-700 mb-2">Territory / Region</label>
                                                     <input type="text" placeholder="e.g. APAC" value={region} onChange={e => setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
                                                 </div>
+                                            </div>
+                                        )}
+                                        {organizationType === 'AGENCY' && customer?.discountUpdatedAt && (
+                                            <div className="pt-4 border-t border-indigo-100 text-xs text-secondary-600">
+                                                Discount updated by {(customer as any)?.discountUpdatedBy?.name || (customer as any)?.discountUpdatedBy?.email || 'Unknown'} on{' '}
+                                                <FormattedDate date={(customer as any).discountUpdatedAt} />
                                             </div>
                                         )}
                                     </div>

@@ -175,6 +175,13 @@ export const POST = authorizedRoute(
         });
 
         if (!customer) throw new NotFoundError('Customer');
+        const parsedIncomingDiscountAmount = Number(discountAmount);
+        const hasExplicitDiscountAmount = Number.isFinite(parsedIncomingDiscountAmount) && parsedIncomingDiscountAmount > 0;
+        const customerDefaultDiscountType =
+            String((customer as any).defaultDiscountType || 'PERCENTAGE').trim().toUpperCase() === 'FLAT'
+                ? 'FLAT'
+                : 'PERCENTAGE';
+        const customerDefaultDiscountValue = Number((customer as any).defaultDiscountValue || 0) || 0;
         const targetCompanyId = companyId || customer.companyId || user.companyId;
         if (!targetCompanyId) {
             throw new ValidationError('Company context is required');
@@ -322,11 +329,21 @@ export const POST = authorizedRoute(
             });
         }
 
+        const subtotalBeforeDiscount = processedItems.reduce(
+            (acc: number, item: any) => acc + Number(item.quantity) * Number(item.price),
+            0,
+        );
+        const resolvedDiscountAmount = hasExplicitDiscountAmount
+            ? parsedIncomingDiscountAmount
+            : customerDefaultDiscountType === 'PERCENTAGE'
+                ? Math.max(0, subtotalBeforeDiscount * (customerDefaultDiscountValue / 100))
+                : Math.max(0, customerDefaultDiscountValue);
+
         const taxBreakdown = calculateInvoiceTaxBreakdown({
             customer: { ...customer, currency },
             company,
             items: processedItems,
-            discountAmount: Number(discountAmount || 0),
+            discountAmount: resolvedDiscountAmount,
             defaultTaxRate: Number(taxRate) || 18,
             productMetadata,
         });
@@ -417,9 +434,9 @@ export const POST = authorizedRoute(
                 // Coupon / Discount
                 couponId: couponId || null,
                 couponCode: couponCode || null,
-                discountType: discountType || null,
-                discountValue: discountValue ? Number(discountValue) : 0,
-                discountAmount: discountAmount ? Number(discountAmount) : 0,
+                discountType: discountType || (resolvedDiscountAmount > 0 ? customerDefaultDiscountType : null),
+                discountValue: discountValue ? Number(discountValue) : (resolvedDiscountAmount > 0 ? customerDefaultDiscountValue : 0),
+                discountAmount: resolvedDiscountAmount,
                 }
             });
 
