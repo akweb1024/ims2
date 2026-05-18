@@ -22,6 +22,8 @@ export const GET = authorizedRoute(
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10')));
         const status = searchParams.get('status') as InvoiceStatus | null;
         const search = searchParams.get('search') || '';
+        const companyId = searchParams.get('companyId') || '';
+        const brandId = searchParams.get('brandId') || '';
 
         const skip = (page - 1) * limit;
 
@@ -31,12 +33,28 @@ export const GET = authorizedRoute(
             required: false,
             fallbackToActiveCompany: true,
         });
-        if (scopedCompanyId) {
+        if (companyId) {
+            await assertCompanyAccess(user, companyId, 'view invoices for this company');
+            where.companyId = companyId;
+        } else if (scopedCompanyId) {
             where.companyId = scopedCompanyId;
         }
 
         if (status) {
             where.status = status;
+        }
+
+        if (brandId) {
+            const brand = await prisma.brand.findUnique({
+                where: { id: brandId },
+                select: { id: true, companyId: true },
+            });
+            if (!brand) throw new NotFoundError('Brand');
+            await assertCompanyAccess(user, brand.companyId, 'view invoices for this brand');
+            where.brandId = brandId;
+            if (!companyId) {
+                where.companyId = brand.companyId;
+            }
         }
 
         const andFilters: any[] = [];
@@ -45,10 +63,13 @@ export const GET = authorizedRoute(
             andFilters.push({
                 OR: [
                     { invoiceNumber: { contains: search, mode: 'insensitive' } },
+                    { proformaNumber: { contains: search, mode: 'insensitive' } },
                     { subscription: { customerProfile: { name: { contains: search, mode: 'insensitive' } } } },
                     { subscription: { customerProfile: { organizationName: { contains: search, mode: 'insensitive' } } } },
                     { customerProfile: { name: { contains: search, mode: 'insensitive' } } },
-                    { customerProfile: { organizationName: { contains: search, mode: 'insensitive' } } }
+                    { customerProfile: { organizationName: { contains: search, mode: 'insensitive' } } },
+                    { company: { name: { contains: search, mode: 'insensitive' } } },
+                    { brand: { name: { contains: search, mode: 'insensitive' } } },
                 ]
             });
         }
@@ -88,6 +109,12 @@ export const GET = authorizedRoute(
                         }
                     },
                     brand: true,
+                    company: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
                     subscription: {
                         include: {
                             customerProfile: {

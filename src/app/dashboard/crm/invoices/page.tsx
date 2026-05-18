@@ -28,6 +28,8 @@ type BadgeVariant = 'success' | 'warning' | 'danger' | 'secondary' | 'info';
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<any[]>([]);
+    const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
+    const [availableBrands, setAvailableBrands] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -35,6 +37,8 @@ export default function InvoicesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [companyFilter, setCompanyFilter] = useState('');
+    const [brandFilter, setBrandFilter] = useState('');
     const searchParams = useSearchParams();
     const openedFromQuery = useRef(false);
     const activeRequestRef = useRef(0);
@@ -52,6 +56,8 @@ export default function InvoicesPage() {
                 status: statusFilter,
                 search: debouncedSearchTerm
             });
+            if (companyFilter) params.set('companyId', companyFilter);
+            if (brandFilter) params.set('brandId', brandFilter);
 
             const res = await fetch(`/api/invoices?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -75,13 +81,22 @@ export default function InvoicesPage() {
                 setLoading(false);
             }
         }
-    }, [pagination.page, statusFilter, debouncedSearchTerm]);
+    }, [pagination.page, statusFilter, debouncedSearchTerm, companyFilter, brandFilter]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
+        }
+        const companiesData = localStorage.getItem('availableCompanies');
+        if (companiesData) {
+            try {
+                const parsed = JSON.parse(companiesData);
+                if (Array.isArray(parsed)) setAvailableCompanies(parsed);
+            } catch {
+                // Ignore invalid local storage payload
+            }
         }
     }, []);
 
@@ -90,6 +105,34 @@ export default function InvoicesPage() {
         fetchInvoices(controller.signal);
         return () => controller.abort();
     }, [fetchInvoices]);
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            if (!companyFilter) {
+                setAvailableBrands([]);
+                setBrandFilter('');
+                return;
+            }
+            try {
+                const token = localStorage.getItem('token');
+                const params = new URLSearchParams({ companyId: companyFilter });
+                const res = await fetch(`/api/brands?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                    setAvailableBrands([]);
+                    setBrandFilter('');
+                    return;
+                }
+                const data = await res.json();
+                setAvailableBrands(Array.isArray(data) ? data : []);
+            } catch {
+                setAvailableBrands([]);
+                setBrandFilter('');
+            }
+        };
+        fetchBrands();
+    }, [companyFilter]);
 
     useEffect(() => {
         if (openedFromQuery.current) return;
@@ -174,7 +217,7 @@ export default function InvoicesPage() {
                     <CRMSearchInput
                         value={searchTerm}
                         onChange={setSearchTerm}
-                        placeholder="Search IDs or profiles..."
+                        placeholder="Search invoice, proforma, customer, company or brand..."
                     />
                     <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-secondary-200/60 shadow-sm md:w-auto w-full">
                         <div className="pl-3 text-secondary-400">
@@ -183,7 +226,10 @@ export default function InvoicesPage() {
                         <select
                             className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer pr-10 py-1"
                             value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
+                            onChange={e => {
+                                setStatusFilter(e.target.value);
+                                setPagination(prev => ({ ...prev, page: 1 }));
+                            }}
                         >
                             <option value="">Status: All</option>
                             <option value="PAID">Paid</option>
@@ -191,6 +237,48 @@ export default function InvoicesPage() {
                             <option value="PARTIALLY_PAID">Partially Paid</option>
                             <option value="OVERDUE">Overdue</option>
                             <option value="VOID">Void</option>
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-secondary-200/60 shadow-sm md:w-auto w-full">
+                        <div className="pl-3 text-secondary-400">
+                             <Filter size={14} />
+                        </div>
+                        <select
+                            className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer pr-10 py-1"
+                            value={companyFilter}
+                            onChange={e => {
+                                setCompanyFilter(e.target.value);
+                                setBrandFilter('');
+                                setPagination(prev => ({ ...prev, page: 1 }));
+                            }}
+                        >
+                            <option value="">Company: All</option>
+                            {availableCompanies.map((company) => (
+                                <option key={company.id} value={company.id}>
+                                    {company.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-secondary-200/60 shadow-sm md:w-auto w-full">
+                        <div className="pl-3 text-secondary-400">
+                             <Filter size={14} />
+                        </div>
+                        <select
+                            className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer pr-10 py-1"
+                            value={brandFilter}
+                            onChange={e => {
+                                setBrandFilter(e.target.value);
+                                setPagination(prev => ({ ...prev, page: 1 }));
+                            }}
+                            disabled={!companyFilter}
+                        >
+                            <option value="">{companyFilter ? 'Brand: All' : 'Brand: Select Company First'}</option>
+                            {availableBrands.map((brand) => (
+                                <option key={brand.id} value={brand.id}>
+                                    {brand.name}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </CRMFilterBar>
@@ -260,15 +348,20 @@ export default function InvoicesPage() {
                                             </CRMBadge>
                                         </td>
                                         <td className="py-5">
-                                            {inv.brand ? (
-                                                <div className="flex items-center gap-2 bg-secondary-100/50 px-2 py-1 rounded-lg border border-secondary-200/40 w-fit">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-secondary-600 truncate max-w-[80px]">
-                                                        {inv.brand.name}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-secondary-700">
+                                                    {inv.company?.name || 'Global'}
+                                                </span>
+                                                {inv.brand?.name ? (
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-secondary-500">
+                                                        Brand: {inv.brand.name}
                                                     </span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest">Global</span>
-                                            )}
+                                                ) : (
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-secondary-300">
+                                                        Brand: Default
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="text-right py-5 px-6">
                                             <CRMRowAction href={`/dashboard/crm/invoices/${inv.id}`} variant="primary" title="Access Ledger Detail">
