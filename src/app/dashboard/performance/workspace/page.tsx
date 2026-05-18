@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -18,7 +19,7 @@ function toTab(value: string | null): TabKey {
   return 'goals';
 }
 
-export default function PerformanceWorkspacePage() {
+function PerformanceWorkspaceClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>('goals');
@@ -794,5 +795,19 @@ export default function PerformanceWorkspacePage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function PerformanceWorkspacePage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="p-8">
+          <div className="card-premium p-8 text-center text-secondary-500 font-bold">Loading performance workspace...</div>
+        </div>
+      </DashboardLayout>
+    }>
+      <PerformanceWorkspaceClient />
+    </Suspense>
   );
 }
