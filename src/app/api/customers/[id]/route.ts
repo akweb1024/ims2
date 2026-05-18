@@ -151,7 +151,11 @@ export async function GET(
             return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
         }
 
-        const hasCompanyAccess = await userHasCompanyAccess(decoded as any, customer.companyId);
+        const hasPrimaryCompanyAccess = await userHasCompanyAccess(decoded as any, customer.companyId);
+        const hasSharedCompanyAccess = Array.isArray((customer as any).sharedCompanyIds)
+            ? await Promise.all((customer as any).sharedCompanyIds.map((companyId: string) => userHasCompanyAccess(decoded as any, companyId)))
+            : [];
+        const hasCompanyAccess = hasPrimaryCompanyAccess || hasSharedCompanyAccess.some(Boolean);
         if (!hasCompanyAccess) {
             return NextResponse.json({ error: 'Forbidden: You do not have access to this company' }, { status: 403 });
         }
@@ -236,11 +240,19 @@ export async function PATCH(
             where:
                 decoded.role === 'SUPER_ADMIN'
                     ? { id }
-                    : { id, companyId: decoded.companyId },
+                    : {
+                        id,
+                        OR: [
+                            { companyId: decoded.companyId || undefined },
+                            decoded.companyId ? { sharedCompanyIds: { has: decoded.companyId } } : undefined
+                        ].filter(Boolean) as any
+                    },
             select: {
                 id: true,
                 assignedToUserId: true,
                 assignedExecutives: { select: { id: true } },
+                companyId: true,
+                sharedCompanyIds: true,
             },
         });
 
@@ -262,6 +274,7 @@ export async function PATCH(
             institutionDetails,
             assignedToUserId,
             assignedToUserIds, // Array of IDs
+            sharedCompanyIds,
             website, // Extracting website to omit it from profileData since it is not in the schema
             ...profileData
         } = body;
@@ -271,6 +284,18 @@ export async function PATCH(
                 .map((value: unknown) => String(value).trim())
                 .filter((value: string) => value.length > 0)
             : undefined;
+        const normalizedSharedCompanyIds = Array.isArray(sharedCompanyIds)
+            ? Array.from(new Set(sharedCompanyIds.map((value: unknown) => String(value).trim()).filter(Boolean)))
+                .filter((companyId) => companyId !== existingCustomer.companyId)
+            : undefined;
+        if (normalizedSharedCompanyIds) {
+            for (const sharedCompanyId of normalizedSharedCompanyIds) {
+                const hasAccess = await userHasCompanyAccess(decoded as any, sharedCompanyId);
+                if (!hasAccess) {
+                    return NextResponse.json({ error: `Forbidden: You do not have access to company ${sharedCompanyId}` }, { status: 403 });
+                }
+            }
+        }
 
         const customerProfileData = {
             ...(profileData.name !== undefined && { name: String(profileData.name) }),
@@ -355,6 +380,9 @@ export async function PATCH(
                         assignedExecutives: {
                             set: cleanAssignedExecutiveIds.map((uid: string) => ({ id: uid }))
                         }
+                    }),
+                    ...(normalizedSharedCompanyIds !== undefined && {
+                        sharedCompanyIds: normalizedSharedCompanyIds
                     })
                 }
             });

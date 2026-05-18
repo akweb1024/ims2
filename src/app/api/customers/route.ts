@@ -33,9 +33,15 @@ export const GET = authorizedRoute(
         });
 
         if (targetCompanyId) {
-            where.companyId = targetCompanyId;
+            where.OR = [
+                { companyId: targetCompanyId },
+                { sharedCompanyIds: { has: targetCompanyId } }
+            ];
             where.leadStatus = null; // Exclude leads
-            baseWhere.companyId = targetCompanyId;
+            baseWhere.OR = [
+                { companyId: targetCompanyId },
+                { sharedCompanyIds: { has: targetCompanyId } }
+            ];
             baseWhere.leadStatus = null; // Exclude leads
         }
 
@@ -226,6 +232,7 @@ export const POST = authorizedRoute(
             designation, 
             assignedToUserId,
             companyId,
+            sharedCompanyIds,
             idempotent: idempotentInBody
         } = body;
 
@@ -277,13 +284,23 @@ export const POST = authorizedRoute(
             throw new ValidationError('Company context is required');
         }
         await assertCompanyAccess(user, targetCompanyId, 'create customers for this company');
+        const normalizedSharedCompanyIds = Array.isArray(sharedCompanyIds)
+            ? Array.from(new Set(sharedCompanyIds.map((id: unknown) => String(id).trim()).filter(Boolean)))
+                .filter((id: string) => id !== targetCompanyId)
+            : [];
+        for (const sharedCompanyId of normalizedSharedCompanyIds) {
+            await assertCompanyAccess(user, sharedCompanyId, 'share customers with this company');
+        }
 
         const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists
             const existing = await tx.customerProfile.findFirst({
                 where: {
                     primaryEmail,
-                    companyId: targetCompanyId || undefined,
+                    OR: [
+                        { companyId: targetCompanyId || undefined },
+                        { sharedCompanyIds: { has: targetCompanyId } },
+                    ],
                 }
             });
             if (existing) {
@@ -354,6 +371,7 @@ export const POST = authorizedRoute(
                         connect: { id: assignedToUserId }
                     } : undefined,
                     companyId: targetCompanyId,
+                    sharedCompanyIds: normalizedSharedCompanyIds,
                     name,
                     organizationName,
                     customerType: actualCustomerType,

@@ -27,6 +27,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [editingLog, setEditingLog] = useState<any>(null);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [institutions, setInstitutions] = useState<any[]>([]);
+    const [companies, setCompanies] = useState<any[]>([]);
     const [activeFollowUpId, setActiveFollowUpId] = useState<string | null>(null);
     const [isShippingSame, setIsShippingSame] = useState(true);
     const [dispatchDrafts, setDispatchDrafts] = useState<Record<string, any>>({});
@@ -43,6 +44,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [discountOffered, setDiscountOffered] = useState<number>(10);
     const [region, setRegion] = useState('');
     const [designationEditValue, setDesignationEditValue] = useState('');
+    const [sharedCompanyIds, setSharedCompanyIds] = useState<string[]>([]);
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +64,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
             .then(data => setInstitutions(Array.isArray(data) ? data : (data.data || [])));
+
+        fetch('/api/companies?limit=1000', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => setCompanies(Array.isArray(data) ? data : (data.data || [])));
             
         fetch('/api/agencies', { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
@@ -81,6 +87,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         setDiscountOffered(customer.discountOffered || customer.agencyDetails?.discountRate || 10);
         setRegion(customer.region || customer.agencyDetails?.territory || '');
         setDesignationEditValue(customer.designation || '');
+        setSharedCompanyIds(Array.isArray((customer as any).sharedCompanyIds) ? (customer as any).sharedCompanyIds : []);
 
         // Set initial same as billing state
         const isSame = !customer.shippingAddress || (
@@ -274,6 +281,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             designation: formData.get('designation') || null,
             assignedToUserId: formData.get('assignedToUserId') || null,
             assignedToUserIds: formData.getAll('assignedToUserIds'),
+            sharedCompanyIds,
             
             // Core Identity Classification
             customerType: customerTypeType,
@@ -499,6 +507,34 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             value={designationEditValue}
                                             onChange={setDesignationEditValue}
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-secondary-100 space-y-2">
+                                    <label className="label">Share This Customer With Other Companies</label>
+                                    <p className="text-xs text-secondary-500">
+                                        Employees of selected companies will also be able to view and manage this customer.
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-secondary-200 rounded-xl p-3 bg-secondary-50/40">
+                                        {companies
+                                            .filter((company) => company.id !== customer.companyId)
+                                            .map((company) => (
+                                                <label key={company.id} className="flex items-center gap-2 text-sm font-medium text-secondary-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="h-4 w-4"
+                                                        checked={sharedCompanyIds.includes(company.id)}
+                                                        onChange={(e) => {
+                                                            setSharedCompanyIds((prev) =>
+                                                                e.target.checked
+                                                                    ? [...prev, company.id]
+                                                                    : prev.filter((id) => id !== company.id)
+                                                            );
+                                                        }}
+                                                    />
+                                                    {company.name}
+                                                </label>
+                                            ))}
                                     </div>
                                 </div>
 

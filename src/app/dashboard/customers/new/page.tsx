@@ -24,6 +24,8 @@ export default function NewCustomerPage() {
     const [loading, setLoading] = useState(false);
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [agencies, setAgencies] = useState<any[]>([]);
+    const [companies, setCompanies] = useState<any[]>([]);
+    const [sharedCompanyIds, setSharedCompanyIds] = useState<string[]>([]);
     const [isShippingSame, setIsShippingSame] = useState(true);
     const [isFetchingPincode, setIsFetchingPincode] = useState(false);
     
@@ -111,9 +113,10 @@ export default function NewCustomerPage() {
 
         const fetchOrganizations = async () => {
             const token = localStorage.getItem('token');
-            const [resInst, resAgencies] = await Promise.all([
+            const [resInst, resAgencies, resCompanies] = await Promise.all([
                 fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/agencies', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/agencies', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/companies?limit=1000', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             if (resInst.ok) {
                 const data = await resInst.json();
@@ -122,6 +125,10 @@ export default function NewCustomerPage() {
             if (resAgencies.ok) {
                 const data = await resAgencies.json();
                 setAgencies(Array.isArray(data) ? data : (data.data || []));
+            }
+            if (resCompanies.ok) {
+                const data = await resCompanies.json();
+                setCompanies(Array.isArray(data) ? data : (data.data || []));
             }
         };
         fetchOrganizations();
@@ -207,6 +214,7 @@ export default function NewCustomerPage() {
                 
                 gstVatTaxId: data.gstVatTaxId || null,
                 notes: data.notes || null,
+                sharedCompanyIds,
                 
                 // Cleaned legacy fields
             };
@@ -271,6 +279,32 @@ export default function NewCustomerPage() {
                 }
             >
                 <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto space-y-12 pb-32">
+                    <div className="bg-white rounded-[2rem] border border-secondary-100 shadow-sm p-6 space-y-3">
+                        <label className="label">Share Customer With Other Companies</label>
+                        <p className="text-xs text-secondary-500">
+                            Optional. Users in selected companies can also view and manage this customer.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-secondary-200 rounded-xl p-3 bg-secondary-50/40">
+                            {companies.map((company) => (
+                                <label key={company.id} className="flex items-center gap-2 text-sm font-medium text-secondary-700">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4"
+                                        checked={sharedCompanyIds.includes(company.id)}
+                                        onChange={(e) =>
+                                            setSharedCompanyIds((prev) =>
+                                                e.target.checked
+                                                    ? [...prev, company.id]
+                                                    : prev.filter((id) => id !== company.id)
+                                            )
+                                        }
+                                    />
+                                    {company.name}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Customer Details */}
                     <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 relative overflow-hidden group">
                          {/* Header */}
