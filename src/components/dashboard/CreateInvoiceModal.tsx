@@ -3091,7 +3091,9 @@ export default function CreateInvoiceModal({
                 </div>
               )}
 
-              <div className="bg-gray-50 p-5 rounded-2xl space-y-2.5 border border-gray-200">
+              <div className={`bg-gray-50 p-5 rounded-2xl space-y-2.5 border border-gray-200 ${
+                step === 3 ? "sticky top-4 z-10" : ""
+              }`}>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-secondary-500 font-medium uppercase tracking-wider">
                     Subtotal
@@ -3179,7 +3181,7 @@ export default function CreateInvoiceModal({
                     {taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}
                   </div>
                   <div className="mt-1">
-                    {taxContext.isDomestic ? (taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State") : "Jurisdiction"}: {taxContext.jurisdictionLabel}
+                    {taxContext.isDomestic ? (taxContext.isSameStateSupply ? "Same State" : "Other State") : "Jurisdiction"}: {taxContext.jurisdictionLabel}
                   </div>
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
@@ -3260,7 +3262,7 @@ export default function CreateInvoiceModal({
 
         <div className={`px-5 py-3.5 border-t sticky bottom-0 z-[100] shadow-[0_-10px_20px_rgba(0,0,0,0.02)] ${
           step === 3
-            ? "border-blue-100 bg-[#f4f7ff] flex flex-wrap justify-center gap-2.5"
+            ? "border-blue-100 bg-[#f4f7ff] flex flex-wrap justify-between gap-2.5"
             : "border-gray-100 bg-gray-50 flex justify-end gap-3"
         }`}>
           <button
@@ -3301,7 +3303,7 @@ export default function CreateInvoiceModal({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] transition-colors"
+                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-[#2f5ec4] border border-[#2f5ec4]/30 bg-white hover:bg-blue-50 transition-colors"
               >
                 ← Back To Selection
               </button>
@@ -3309,7 +3311,7 @@ export default function CreateInvoiceModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors"
+                className="h-11 rounded-[10px] px-6 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors shadow-lg shadow-primary-200"
               >
                 {loading ? "Saving..." : "💾 Save Invoice"}
               </button>

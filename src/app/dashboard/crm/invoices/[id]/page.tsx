@@ -970,7 +970,7 @@ export default function InvoiceDetailPage({
             </svg>
             Exit Preview
           </button>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <label className="flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-200 bg-white text-[12px] font-semibold cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -984,6 +984,24 @@ export default function InvoiceDetailPage({
               🌐 GlobalPro Template
             </div>
             <button
+              className="btn btn-primary rounded-xl px-4 py-2"
+              onClick={() =>
+                router.push(
+                  `/dashboard/crm/invoices/new?editId=${id}&returnTo=${encodeURIComponent(`/dashboard/crm/invoices/${id}`)}`,
+                )
+              }
+            >
+              💾 Save / Edit Invoice
+            </button>
+            {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+              <button
+                className="btn btn-primary shadow-xl shadow-primary-200 rounded-xl px-5 py-2"
+                onClick={() => setShowPaymentModal(true)}
+              >
+                💳 Settle Invoice
+              </button>
+            )}
+            <button
               className="btn btn-secondary rounded-xl px-4 py-2"
               onClick={() => window.print()}
             >
@@ -996,44 +1014,14 @@ export default function InvoiceDetailPage({
             >
               {isDownloadingPdf ? "⬇ Generating PDF..." : "⬇ Download PDF"}
             </button>
-            {userRole === "SUPER_ADMIN" && (
-              <>
-                <button
-                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
-                  onClick={() =>
-                    router.push(
-                      `/dashboard/crm/invoices/new?editId=${id}&returnTo=${encodeURIComponent(`/dashboard/crm/invoices/${id}`)}`,
-                    )
-                  }
-                >
-                  📝 Admin Edit
-                </button>
-                <button
-                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-red-100 text-red-600 hover:bg-red-50 font-bold"
-                  onClick={handleDeleteInvoice}
-                >
-                  🗑️ Admin Delete
-                </button>
-              </>
-            )}
-
-            {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
-              <>
-                {userRole !== "SUPER_ADMIN" && (
-                  <button
-                    className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/crm/invoices/new?editId=${id}&returnTo=${encodeURIComponent(`/dashboard/crm/invoices/${id}`)}`,
-                      )
-                    }
-                  >
-                    📝 Edit / Modify
-                  </button>
-                )}
+            <details className="relative">
+              <summary className="list-none cursor-pointer btn btn-secondary rounded-xl px-4 py-2">
+                More Actions ▾
+              </summary>
+              <div className="absolute right-0 mt-2 z-20 w-64 rounded-xl border border-gray-200 bg-white shadow-xl p-2 flex flex-col gap-1">
                 {invoice.status === "DRAFT" && (
                   <button
-                    className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-amber-100 text-amber-600 hover:bg-amber-50"
+                    className="btn btn-secondary justify-start rounded-lg px-3 py-2 text-left border-amber-100 text-amber-700 hover:bg-amber-50"
                     onClick={handleSyncCatalogue}
                     disabled={isSyncing}
                   >
@@ -1041,22 +1029,22 @@ export default function InvoiceDetailPage({
                   </button>
                 )}
                 <button
-                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                  className="btn btn-secondary justify-start rounded-lg px-3 py-2 text-left border-emerald-100 text-emerald-700 hover:bg-emerald-50"
                   onClick={handleRecalculateTax}
                   disabled={isRecalculatingTax}
                 >
-                  {isRecalculatingTax
-                    ? "🧮 Recalculating..."
-                    : "🧮 Recalculate Tax"}
+                  {isRecalculatingTax ? "🧮 Recalculating..." : "🧮 Recalculate Tax"}
                 </button>
-                <button
-                  className="btn btn-primary shadow-xl shadow-primary-200 rounded-xl px-5 py-2"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  💳 Settle Invoice
-                </button>
-              </>
-            )}
+                {userRole === "SUPER_ADMIN" && (
+                  <button
+                    className="btn btn-secondary justify-start rounded-lg px-3 py-2 text-left border-red-100 text-red-600 hover:bg-red-50 font-bold"
+                    onClick={handleDeleteInvoice}
+                  >
+                    🗑️ Admin Delete
+                  </button>
+                )}
+              </div>
+            </details>
           </div>
         </div>
 
