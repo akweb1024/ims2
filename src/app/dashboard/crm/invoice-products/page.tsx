@@ -301,6 +301,13 @@ export default function InvoiceProductsPage() {
   const [saving, setSaving] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [showHardDeleteModal, setShowHardDeleteModal] = useState(false);
+  const [hardDeleteInput, setHardDeleteInput] = useState("");
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [hardDeleting, setHardDeleting] = useState(false);
   const [globalAttributes, setGlobalAttributes] = useState<any[]>([]);
 
   // FX converter
@@ -668,6 +675,43 @@ export default function InvoiceProductsPage() {
       console.error(e);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const openHardDeleteModal = (id: string, name: string) => {
+    setHardDeleteTarget({ id, name });
+    setHardDeleteInput("");
+    setShowHardDeleteModal(true);
+  };
+
+  const handleHardDelete = async () => {
+    if (!hardDeleteTarget) return;
+    if (hardDeleteInput.trim().toUpperCase() !== "DELETE") {
+      alert('Type DELETE to confirm permanent deletion.');
+      return;
+    }
+    setHardDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/invoice-products/${hardDeleteTarget.id}?hardDelete=true`,
+        {
+          method: "DELETE",
+          headers: authH,
+          body: JSON.stringify({ confirmDelete: "DELETE" }),
+        },
+      );
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload?.message || payload?.error || "Hard delete failed");
+      }
+      setShowHardDeleteModal(false);
+      setHardDeleteTarget(null);
+      setHardDeleteInput("");
+      fetchProducts();
+    } catch (e: any) {
+      alert(e.message || "Failed to permanently delete product");
+    } finally {
+      setHardDeleting(false);
     }
   };
 
@@ -1647,6 +1691,15 @@ export default function InvoiceProductsPage() {
                               >
                                 <Trash2 size={16} />
                               </button>
+                              {userRole === "SUPER_ADMIN" && (
+                                <button
+                                  onClick={() => openHardDeleteModal(p.id, p.name)}
+                                  className="p-3 bg-white border border-red-100 rounded-xl text-red-400 hover:text-red-700 hover:border-red-200 hover:shadow-lg transition-all"
+                                  title="Permanently Delete"
+                                >
+                                  ❌
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1725,6 +1778,55 @@ export default function InvoiceProductsPage() {
               icon: c.icon,
             }))}
           />
+        </CRMModal>
+
+        <CRMModal
+          open={showHardDeleteModal}
+          onClose={() => {
+            if (hardDeleting) return;
+            setShowHardDeleteModal(false);
+            setHardDeleteTarget(null);
+            setHardDeleteInput("");
+          }}
+          title="Permanently Delete Product"
+          subtitle="This is irreversible. It only succeeds when no invoice references this product."
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-secondary-700">
+              Type <span className="font-black text-red-700">DELETE</span> to permanently remove{" "}
+              <span className="font-bold">{hardDeleteTarget?.name || "this product"}</span>.
+            </p>
+            <input
+              type="text"
+              value={hardDeleteInput}
+              onChange={(e) => setHardDeleteInput(e.target.value)}
+              placeholder="Type DELETE"
+              className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-semibold text-secondary-800"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (hardDeleting) return;
+                  setShowHardDeleteModal(false);
+                  setHardDeleteTarget(null);
+                  setHardDeleteInput("");
+                }}
+                className="px-5 py-2.5 rounded-xl border border-secondary-200 text-sm font-semibold text-secondary-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleHardDelete}
+                disabled={hardDeleting || hardDeleteInput.trim().toUpperCase() !== "DELETE"}
+                className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold disabled:opacity-60"
+              >
+                {hardDeleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
         </CRMModal>
 
         <CRMModal

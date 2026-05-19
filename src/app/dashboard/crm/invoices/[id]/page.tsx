@@ -140,6 +140,9 @@ export default function InvoiceDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState("CUSTOMER");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showHardDeleteModal, setShowHardDeleteModal] = useState(false);
+  const [hardDeleteConfirmText, setHardDeleteConfirmText] = useState("");
+  const [isHardDeleting, setIsHardDeleting] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRecalculatingTax, setIsRecalculatingTax] = useState(false);
@@ -556,7 +559,7 @@ export default function InvoiceDetailPage({
   };
 
   const handleDeleteInvoice = async () => {
-    if (!window.confirm("WARNING: Are you sure you want to permanently delete this invoice? This action will cascade and delete associated Payments, Journals, and Dispatch records. This cannot be undone.")) {
+    if (!window.confirm("This will VOID the invoice (soft delete). Continue?")) {
       return;
     }
     
@@ -574,6 +577,37 @@ export default function InvoiceDetailPage({
       router.push("/dashboard/crm/invoices");
     } catch (error: any) {
       alert(error.message || "Failed to delete invoice");
+    }
+  };
+
+  const handleHardDeleteInvoice = async () => {
+    if (hardDeleteConfirmText.trim().toUpperCase() !== "DELETE") {
+      alert('Type DELETE to confirm permanent deletion.');
+      return;
+    }
+    setIsHardDeleting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${id}?hardDelete=true`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ confirmDelete: "DELETE" }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload?.message || payload?.error || "Hard delete failed");
+      }
+      alert(payload?.message || "Invoice permanently deleted");
+      setShowHardDeleteModal(false);
+      setHardDeleteConfirmText("");
+      router.push("/dashboard/crm/invoices");
+    } catch (error: any) {
+      alert(error.message || "Failed to permanently delete invoice");
+    } finally {
+      setIsHardDeleting(false);
     }
   };
 
@@ -1041,6 +1075,14 @@ export default function InvoiceDetailPage({
                     onClick={handleDeleteInvoice}
                   >
                     🗑️ Admin Delete
+                  </button>
+                )}
+                {userRole === "SUPER_ADMIN" && (
+                  <button
+                    className="btn btn-secondary justify-start rounded-lg px-3 py-2 text-left border-red-200 text-red-700 hover:bg-red-50 font-bold"
+                    onClick={() => setShowHardDeleteModal(true)}
+                  >
+                    ❌ Permanently Delete
                   </button>
                 )}
               </div>
@@ -1841,6 +1883,43 @@ export default function InvoiceDetailPage({
           </div>
         )}
       </div>
+
+      {showHardDeleteModal && (
+        <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white shadow-2xl p-5">
+            <h3 className="text-lg font-black text-red-700">Permanently Delete Invoice</h3>
+            <p className="mt-2 text-sm text-secondary-700">
+              This action is irreversible and only works when no linked records exist.
+              Type <span className="font-black text-red-700">DELETE</span> to continue.
+            </p>
+            <input
+              value={hardDeleteConfirmText}
+              onChange={(e) => setHardDeleteConfirmText(e.target.value)}
+              className="mt-4 w-full h-11 rounded-xl border border-secondary-200 px-3 text-sm font-semibold"
+              placeholder="Type DELETE"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="btn btn-secondary rounded-xl px-4 py-2"
+                onClick={() => {
+                  if (isHardDeleting) return;
+                  setShowHardDeleteModal(false);
+                  setHardDeleteConfirmText("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn rounded-xl px-4 py-2 bg-red-600 text-white font-bold disabled:opacity-50"
+                onClick={handleHardDeleteInvoice}
+                disabled={isHardDeleting || hardDeleteConfirmText.trim().toUpperCase() !== "DELETE"}
+              >
+                {isHardDeleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPaymentModal && (

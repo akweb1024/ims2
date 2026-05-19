@@ -214,6 +214,15 @@ export const DELETE = authorizedRoute(
     async (req, user, { params }) => {
         try {
             const { id } = await params;
+            const { searchParams } = new URL(req.url);
+            const hardDelete = searchParams.get('hardDelete') === 'true';
+            let confirmDelete = '';
+            try {
+                const body = await req.json();
+                confirmDelete = String(body?.confirmDelete || '').trim().toUpperCase();
+            } catch {
+                confirmDelete = '';
+            }
             
             const invoice = await prisma.invoice.findUnique({
                 where: { id },
@@ -229,6 +238,66 @@ export const DELETE = authorizedRoute(
             }
 
             await assertCompanyAccess(user, invoice.companyId, 'void this invoice');
+
+            if (hardDelete) {
+                if (confirmDelete !== 'DELETE') {
+                    throw new ValidationError('Hard delete requires explicit confirmation: confirmDelete=DELETE');
+                }
+
+                const [paymentCount, dispatchCount, revenueCount, projectCount] = await Promise.all([
+                    prisma.payment.count({ where: { invoiceId: id } }),
+                    prisma.dispatchOrder.count({ where: { invoiceId: id } }),
+                    prisma.revenueTransaction.count({ where: { invoiceId: id } }),
+                    prisma.iTProject.count({ where: { invoiceId: id } }),
+                ]);
+
+                const blockers = [
+                    paymentCount > 0 ? `payments(${paymentCount})` : null,
+                    dispatchCount > 0 ? `dispatchOrders(${dispatchCount})` : null,
+                    revenueCount > 0 ? `revenueTransactions(${revenueCount})` : null,
+                    projectCount > 0 ? `itProjects(${projectCount})` : null,
+                ].filter(Boolean);
+
+                if (blockers.length > 0) {
+                    throw new ValidationError(
+                        `Hard delete blocked. Linked records exist: ${blockers.join(', ')}`,
+                    );
+                }
+
+                await prisma.$transaction(async (tx: any) => {
+                    await releaseInvoiceStockReservations(tx, {
+                        invoiceId: id,
+                        userId: user.id,
+                        reason: 'Invoice hard deleted, reservation released',
+                    });
+
+                    await tx.invoice.delete({
+                        where: { id },
+                    });
+
+                    await tx.auditLog.create({
+                        data: {
+                            userId: user.id,
+                            action: 'hard_delete',
+                            entity: 'invoice',
+                            entityId: id,
+                            changes: {
+                                previousStatus: invoice.status,
+                                companyId: invoice.companyId,
+                                confirmation: 'DELETE',
+                                blockersChecked: {
+                                    payments: paymentCount,
+                                    dispatchOrders: dispatchCount,
+                                    revenueTransactions: revenueCount,
+                                    itProjects: projectCount,
+                                },
+                            },
+                        },
+                    });
+                });
+
+                return NextResponse.json({ message: 'Invoice permanently deleted' });
+            }
 
             await prisma.$transaction(async (tx: any) => {
                 await releaseInvoiceStockReservations(tx, {

@@ -274,6 +274,15 @@ export const DELETE = authorizedRoute(
   async (request: NextRequest, user: any, context?: any) => {
     try {
       const { id } = await context.params;
+      const { searchParams } = new URL(request.url);
+      const hardDelete = searchParams.get("hardDelete") === "true";
+      let confirmDelete = "";
+      try {
+        const body = await request.json();
+        confirmDelete = String(body?.confirmDelete || "").trim().toUpperCase();
+      } catch {
+        confirmDelete = "";
+      }
 
       const product = await db.invoiceProduct.findFirst({
         where: {
@@ -283,6 +292,69 @@ export const DELETE = authorizedRoute(
       });
 
       if (!product) throw new NotFoundError("Invoice product not found");
+
+      if (hardDelete) {
+        if (confirmDelete !== "DELETE") {
+          throw new ValidationError(
+            "Hard delete requires explicit confirmation: confirmDelete=DELETE",
+          );
+        }
+
+        // Block hard delete when product is referenced in any invoice line items.
+        const candidateInvoices = await db.invoice.findMany({
+          where: {
+            companyId: product.companyId || user.companyId,
+            lineItems: { not: null },
+          },
+          select: {
+            id: true,
+            invoiceNumber: true,
+            lineItems: true,
+          },
+        });
+
+        const linkedInvoices = candidateInvoices.filter((inv: any) =>
+          Array.isArray(inv.lineItems)
+            ? inv.lineItems.some(
+                (line: any) =>
+                  String(line?.productId || "") === id,
+              )
+            : false,
+        );
+
+        if (linkedInvoices.length > 0) {
+          throw new ValidationError(
+            `Hard delete blocked. Product is referenced in ${linkedInvoices.length} invoice(s).`,
+          );
+        }
+
+        await db.$transaction(async (tx: any) => {
+          await tx.productVariant.deleteMany({ where: { productId: id } });
+          await tx.invoiceProduct.delete({ where: { id } });
+          await tx.auditLog.create({
+            data: {
+              userId: user.id,
+              action: "hard_delete",
+              entity: "invoice_product",
+              entityId: id,
+              changes: {
+                name: product.name,
+                companyId: product.companyId,
+                confirmation: "DELETE",
+                linkedInvoicesChecked: candidateInvoices.length,
+              },
+            },
+          });
+        });
+
+        logger.info("Invoice product permanently deleted", {
+          productId: id,
+          name: product.name,
+          userId: user.id,
+        });
+
+        return NextResponse.json({ success: true, deleted: id });
+      }
 
       await db.invoiceProduct.update({
         where: { id },
