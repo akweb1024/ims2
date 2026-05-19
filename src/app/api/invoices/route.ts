@@ -190,7 +190,12 @@ export const POST = authorizedRoute(
 
         const requestedCompany = await prisma.company.findUnique({
             where: { id: requestedCompanyId as string },
-            select: { id: true, allowCrossCompanyCustomerInvoices: true },
+            select: {
+                id: true,
+                allowCrossCompanyCustomerInvoices: true,
+                allowedInvoiceCustomerCompanyIds: true,
+                defaultInvoiceBrandId: true,
+            },
         });
         if (!requestedCompany) throw new NotFoundError('Company');
 
@@ -202,9 +207,17 @@ export const POST = authorizedRoute(
             if (!requestedCompany.allowCrossCompanyCustomerInvoices) {
                 throw new ValidationError('Cross-company customer invoicing is disabled for the selected invoice company');
             }
+            const allowedCompanyIds = Array.isArray((requestedCompany as any).allowedInvoiceCustomerCompanyIds)
+                ? (requestedCompany as any).allowedInvoiceCustomerCompanyIds
+                : [];
+            if (allowedCompanyIds.length > 0 && !allowedCompanyIds.includes(customer.companyId)) {
+                throw new ValidationError('Selected customer company is not permitted by this company policy');
+            }
             await assertCompanyAccess(user, customer.companyId, 'create invoices for this customer company');
             targetCompanyId = customer.companyId;
         }
+
+        const effectiveBrandId = brandId || (requestedCompany as any).defaultInvoiceBrandId || null;
 
         // Fetch Company for Snapshots and Number Generation
         const company = await prisma.company.findUnique({
@@ -213,9 +226,9 @@ export const POST = authorizedRoute(
         
         if (!company) throw new NotFoundError('Company');
 
-        const invoiceConfigToValidate: any = brandId
+        const invoiceConfigToValidate: any = effectiveBrandId
             ? await prisma.brand.findFirst({
-                where: { id: brandId, companyId: targetCompanyId },
+                where: { id: effectiveBrandId, companyId: targetCompanyId },
                 select: {
                     legalEntityName: true,
                     gstin: true,
@@ -241,10 +254,10 @@ export const POST = authorizedRoute(
                 proformaNextNumber: company.proformaNextNumber,
             };
 
-        if (brandId && !invoiceConfigToValidate) {
+        if (effectiveBrandId && !invoiceConfigToValidate) {
             throw new ValidationError('Selected brand for invoice was not found');
         }
-        if (brandId && invoiceConfigToValidate) {
+        if (effectiveBrandId && invoiceConfigToValidate) {
             invoiceConfigToValidate.stateCode = company.stateCode;
         }
         const configCheck = validateInvoiceConfig(invoiceConfigToValidate);
@@ -278,9 +291,9 @@ export const POST = authorizedRoute(
             brandInvoiceTerms: (company as any)?.invoiceTerms || null
         };
 
-        if (brandId) {
+        if (effectiveBrandId) {
             const brand = await prisma.brand.findFirst({
-                where: { id: brandId, companyId: targetCompanyId }
+                where: { id: effectiveBrandId, companyId: targetCompanyId }
             });
             if (brand) {
                 // If brand has its own details, override the defaults
@@ -445,7 +458,7 @@ export const POST = authorizedRoute(
                 currency,
                 lineItems: finalProcessedItems,
                 companyId: company.id,
-                brandId: brandId || null,
+                brandId: effectiveBrandId,
                 // Coupon / Discount
                 couponId: couponId || null,
                 couponCode: couponCode || null,

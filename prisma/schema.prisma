@@ -51,6 +51,8 @@ model Company {
   invoiceEntityCode           String?
   invoiceYearFormat           String?                      @default("CALENDAR")
   allowCrossCompanyCustomerInvoices Boolean                @default(false)
+  allowedInvoiceCustomerCompanyIds String[]                @default([])
+  defaultInvoiceBrandId        String?
   proformaNextNumber          Int                          @default(1)
   proformaPrefix              String?                      @default("PRO-")
   accounts                    Account[]

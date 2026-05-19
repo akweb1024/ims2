@@ -157,6 +157,8 @@ export default function CreateInvoiceModal({
     useState(false);
   const [crossCompanyCustomerPolicyEnabled, setCrossCompanyCustomerPolicyEnabled] =
     useState(false);
+  const [selectedCompanyDefaultBrandId, setSelectedCompanyDefaultBrandId] =
+    useState<string>("");
   const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
@@ -267,9 +269,13 @@ export default function CreateInvoiceModal({
         setCrossCompanyCustomerPolicyEnabled(
           Boolean(data?.allowCrossCompanyCustomerInvoices),
         );
+        setSelectedCompanyDefaultBrandId(
+          String(data?.defaultInvoiceBrandId || ""),
+        );
       } catch (err) {
         console.error("Failed to fetch company policy", err);
         setCrossCompanyCustomerPolicyEnabled(false);
+        setSelectedCompanyDefaultBrandId("");
       }
     };
 
@@ -775,7 +781,15 @@ export default function CreateInvoiceModal({
     setCustomerSearch("");
     setCouponResult(null);
     setAllowCrossCompanyCustomer(false);
+    setSelectedCompanyDefaultBrandId("");
   }, [selectedCompanyId, availableCompanies]);
+
+  useEffect(() => {
+    if (!selectedCompanyDefaultBrandId) return;
+    if (!brands.some((b: any) => b.id === selectedCompanyDefaultBrandId)) return;
+    if (selectedBrandId) return;
+    setSelectedBrandId(selectedCompanyDefaultBrandId);
+  }, [selectedCompanyDefaultBrandId, brands, selectedBrandId]);
 
   useEffect(() => {
     const fetchPrefilledInstitution = async () => {
@@ -3297,22 +3311,7 @@ export default function CreateInvoiceModal({
                 disabled={loading}
                 className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors"
               >
-                {loading ? "Creating..." : "↓ Print / Save As PDF"}
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors"
-              >
-                ✉ Send Email
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="h-11 rounded-[10px] px-6 text-[13px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 transition-colors"
-              >
-                ⚡ Pay Now
+                {loading ? "Saving..." : "💾 Save Invoice"}
               </button>
             </>
           )}

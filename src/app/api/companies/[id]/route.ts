@@ -229,6 +229,8 @@ export const PATCH = authorizedRoute(
                 invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber,
                 invoiceEntityCode, invoiceYearFormat,
                 allowCrossCompanyCustomerInvoices,
+                allowedInvoiceCustomerCompanyIds,
+                defaultInvoiceBrandId,
                 documentWebhookConfig, documentEmailConfig
             } = body;
 
@@ -250,11 +252,33 @@ export const PATCH = authorizedRoute(
                     : undefined;
             const normalizedDocumentWebhookConfig = parseAutomationConfigInput(documentWebhookConfig);
             const normalizedDocumentEmailConfig = parseAutomationConfigInput(documentEmailConfig);
+            const normalizedAllowedCustomerCompanyIds =
+                Array.isArray(allowedInvoiceCustomerCompanyIds)
+                    ? [...new Set(
+                        allowedInvoiceCustomerCompanyIds
+                            .map((value: any) => String(value || '').trim())
+                            .filter(Boolean),
+                    )]
+                    : undefined;
+            const normalizedDefaultInvoiceBrandId =
+                defaultInvoiceBrandId !== undefined
+                    ? (String(defaultInvoiceBrandId || '').trim() || null)
+                    : undefined;
             const hasAutomationConfigUpdate =
                 documentWebhookConfig !== undefined || documentEmailConfig !== undefined;
 
             if (hasAutomationConfigUpdate && decoded.role !== 'SUPER_ADMIN') {
                 return createErrorResponse('Only SUPER_ADMIN can manage document automation configuration', 403);
+            }
+
+            if (normalizedDefaultInvoiceBrandId) {
+                const defaultBrand = await prisma.brand.findFirst({
+                    where: { id: normalizedDefaultInvoiceBrandId, companyId: id },
+                    select: { id: true },
+                });
+                if (!defaultBrand) {
+                    return createErrorResponse('Default invoice brand must belong to this company', 400);
+                }
             }
 
             const before = await prisma.company.findUnique({
@@ -273,6 +297,8 @@ export const PATCH = authorizedRoute(
                     invoiceEntityCode: true,
                     invoiceYearFormat: true,
                     allowCrossCompanyCustomerInvoices: true,
+                    allowedInvoiceCustomerCompanyIds: true,
+                    defaultInvoiceBrandId: true,
                     brandRelationType: true,
                     invoiceCompanyLogoUrl: true,
                     invoiceTerms: true,
@@ -322,6 +348,12 @@ export const PATCH = authorizedRoute(
                     ...(allowCrossCompanyCustomerInvoices !== undefined && {
                         allowCrossCompanyCustomerInvoices: Boolean(allowCrossCompanyCustomerInvoices),
                     }),
+                    ...(normalizedAllowedCustomerCompanyIds !== undefined && {
+                        allowedInvoiceCustomerCompanyIds: normalizedAllowedCustomerCompanyIds,
+                    }),
+                    ...(normalizedDefaultInvoiceBrandId !== undefined && {
+                        defaultInvoiceBrandId: normalizedDefaultInvoiceBrandId,
+                    }),
                     ...(normalizedDocumentWebhookConfig !== undefined && { documentWebhookConfig: normalizedDocumentWebhookConfig }),
                     ...(normalizedDocumentEmailConfig !== undefined && { documentEmailConfig: normalizedDocumentEmailConfig }),
                 },
@@ -368,6 +400,8 @@ export const PATCH = authorizedRoute(
                             invoiceEntityCode: company.invoiceEntityCode,
                             invoiceYearFormat: company.invoiceYearFormat,
                             allowCrossCompanyCustomerInvoices: (company as any).allowCrossCompanyCustomerInvoices,
+                            allowedInvoiceCustomerCompanyIds: (company as any).allowedInvoiceCustomerCompanyIds,
+                            defaultInvoiceBrandId: (company as any).defaultInvoiceBrandId,
                             brandRelationType: company.brandRelationType,
                             invoiceCompanyLogoUrl: company.invoiceCompanyLogoUrl,
                             invoiceTerms: (company as any).invoiceTerms,

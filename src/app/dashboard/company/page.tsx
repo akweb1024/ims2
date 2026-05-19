@@ -33,6 +33,7 @@ export default function CompanyPage() {
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any>(null);
   const [brands, setBrands] = useState<any[]>([]);
+  const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -64,6 +65,8 @@ export default function CompanyPage() {
     invoiceEntityCode: "",
     invoiceYearFormat: "CALENDAR",
     allowCrossCompanyCustomerInvoices: false,
+    allowedInvoiceCustomerCompanyIds: [] as string[],
+    defaultInvoiceBrandId: "",
   });
   const [companyWebhookConfig, setCompanyWebhookConfig] = useState(
     emptyWebhookConfig(),
@@ -105,6 +108,16 @@ export default function CompanyPage() {
       const token = localStorage.getItem("token");
 
       let companyData: any = null;
+      const companiesRes = await fetch("/api/companies", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (companiesRes.ok) {
+        const companiesPayload = await companiesRes.json();
+        const companiesList = Array.isArray(companiesPayload)
+          ? companiesPayload
+          : companiesPayload.data || [];
+        setAvailableCompanies(companiesList);
+      }
       if (companyIdParam) {
         const res = await fetch(`/api/companies/${companyIdParam}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -160,6 +173,12 @@ export default function CompanyPage() {
           invoiceYearFormat: companyData.invoiceYearFormat || "CALENDAR",
           allowCrossCompanyCustomerInvoices:
             Boolean(companyData.allowCrossCompanyCustomerInvoices),
+          allowedInvoiceCustomerCompanyIds: Array.isArray(
+            companyData.allowedInvoiceCustomerCompanyIds,
+          )
+            ? companyData.allowedInvoiceCustomerCompanyIds
+            : [],
+          defaultInvoiceBrandId: companyData.defaultInvoiceBrandId || "",
         });
         setCompanyWebhookConfig(
           normalizeScopedRuleMap(companyData.documentWebhookConfig),
@@ -1138,6 +1157,86 @@ export default function CompanyPage() {
                         customers belonging to other accessible companies.
                       </span>
                     </label>
+                    <div className="mt-4 border-t border-amber-200 pt-4">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-amber-800 mb-2">
+                        Allowed Customer Companies
+                      </p>
+                      <p className="text-xs text-amber-900 mb-3">
+                        Select which external companies can share customers with this invoice company.
+                        Leave blank to allow all accessible companies.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {availableCompanies
+                          .filter((c: any) => c.id !== company?.id)
+                          .map((candidate: any) => {
+                            const selected = (
+                              invoiceSettings.allowedInvoiceCustomerCompanyIds ||
+                              []
+                            ).includes(candidate.id);
+                            return (
+                              <label
+                                key={candidate.id}
+                                className="flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs text-amber-900"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  disabled={
+                                    !invoiceSettings.allowCrossCompanyCustomerInvoices
+                                  }
+                                  onChange={(e) =>
+                                    setInvoiceSettings((prev: any) => {
+                                      const current = Array.isArray(
+                                        prev.allowedInvoiceCustomerCompanyIds,
+                                      )
+                                        ? prev.allowedInvoiceCustomerCompanyIds
+                                        : [];
+                                      const next = e.target.checked
+                                        ? [...current, candidate.id]
+                                        : current.filter(
+                                            (id: string) => id !== candidate.id,
+                                          );
+                                      return {
+                                        ...prev,
+                                        allowedInvoiceCustomerCompanyIds: [
+                                          ...new Set(next),
+                                        ],
+                                      };
+                                    })
+                                  }
+                                />
+                                <span className="font-semibold">
+                                  {candidate.name}
+                                </span>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl border border-primary-200 bg-primary-50 p-5">
+                    <label className="label mb-2">Default Invoice Brand</label>
+                    <select
+                      className="input-premium bg-white"
+                      value={invoiceSettings.defaultInvoiceBrandId || ""}
+                      onChange={(e) =>
+                        setInvoiceSettings({
+                          ...invoiceSettings,
+                          defaultInvoiceBrandId: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">No default brand</option>
+                      {brands.map((brand: any) => (
+                        <option key={brand.id} value={brand.id}>
+                          {brand.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-secondary-600">
+                      If set, this brand auto-selects in invoice creation for this company.
+                    </p>
                   </div>
 
                   <div className="mt-12 bg-emerald-50/40 p-8 rounded-3xl border border-emerald-100/60">
