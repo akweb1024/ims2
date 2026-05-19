@@ -228,6 +228,7 @@ export const PATCH = authorizedRoute(
                 regdOfficeAddress, salesOfficeAddress, invoiceTerms,
                 invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber,
                 invoiceEntityCode, invoiceYearFormat,
+                allowCrossCompanyCustomerInvoices,
                 documentWebhookConfig, documentEmailConfig
             } = body;
 
@@ -271,6 +272,7 @@ export const PATCH = authorizedRoute(
                     proformaNextNumber: true,
                     invoiceEntityCode: true,
                     invoiceYearFormat: true,
+                    allowCrossCompanyCustomerInvoices: true,
                     brandRelationType: true,
                     invoiceCompanyLogoUrl: true,
                     invoiceTerms: true,
@@ -317,6 +319,9 @@ export const PATCH = authorizedRoute(
                     ...(normalizedProformaNextNumber !== undefined && { proformaNextNumber: normalizedProformaNextNumber }),
                     ...(normalizedEntityCode !== undefined && { invoiceEntityCode: normalizedEntityCode }),
                     ...(normalizedYearFormat !== undefined && { invoiceYearFormat: normalizedYearFormat }),
+                    ...(allowCrossCompanyCustomerInvoices !== undefined && {
+                        allowCrossCompanyCustomerInvoices: Boolean(allowCrossCompanyCustomerInvoices),
+                    }),
                     ...(normalizedDocumentWebhookConfig !== undefined && { documentWebhookConfig: normalizedDocumentWebhookConfig }),
                     ...(normalizedDocumentEmailConfig !== undefined && { documentEmailConfig: normalizedDocumentEmailConfig }),
                 },
@@ -362,6 +367,7 @@ export const PATCH = authorizedRoute(
                             proformaNextNumber: company.proformaNextNumber,
                             invoiceEntityCode: company.invoiceEntityCode,
                             invoiceYearFormat: company.invoiceYearFormat,
+                            allowCrossCompanyCustomerInvoices: (company as any).allowCrossCompanyCustomerInvoices,
                             brandRelationType: company.brandRelationType,
                             invoiceCompanyLogoUrl: company.invoiceCompanyLogoUrl,
                             invoiceTerms: (company as any).invoiceTerms,

@@ -148,7 +148,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
     try {
         const body = await req.json();
-        const { customerProfileId, brandId, companyId, couponId, couponCode, discountType, discountValue, discountAmount,
+        const { customerProfileId, brandId, companyId, allowCrossCompanyCustomer, couponId, couponCode, discountType, discountValue, discountAmount,
                 dueDate, lineItems, description, purchaseOrderNumber, invoiceDate, taxRate = 0, currency = 'INR' } = body;
 
         const normalizedPurchaseOrderNumber =
@@ -182,13 +182,28 @@ export const POST = authorizedRoute(
                 ? 'FLAT'
                 : 'PERCENTAGE';
         const customerDefaultDiscountValue = Number((customer as any).defaultDiscountValue || 0) || 0;
-        const targetCompanyId = companyId || customer.companyId || user.companyId;
-        if (!targetCompanyId) {
+        const requestedCompanyId = companyId || customer.companyId || user.companyId;
+        if (!requestedCompanyId) {
             throw new ValidationError('Company context is required');
         }
-        await assertCompanyAccess(user, targetCompanyId, 'create invoices for this company');
-        if (customer.companyId !== targetCompanyId) {
-            throw new ValidationError('Selected customer does not belong to the selected company');
+        await assertCompanyAccess(user, requestedCompanyId, 'create invoices for this company');
+
+        const requestedCompany = await prisma.company.findUnique({
+            where: { id: requestedCompanyId as string },
+            select: { id: true, allowCrossCompanyCustomerInvoices: true },
+        });
+        if (!requestedCompany) throw new NotFoundError('Company');
+
+        let targetCompanyId = requestedCompanyId;
+        if (customer.companyId !== requestedCompanyId) {
+            if (!allowCrossCompanyCustomer) {
+                throw new ValidationError('Selected customer does not belong to the selected company');
+            }
+            if (!requestedCompany.allowCrossCompanyCustomerInvoices) {
+                throw new ValidationError('Cross-company customer invoicing is disabled for the selected invoice company');
+            }
+            await assertCompanyAccess(user, customer.companyId, 'create invoices for this customer company');
+            targetCompanyId = customer.companyId;
         }
 
         // Fetch Company for Snapshots and Number Generation

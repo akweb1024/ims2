@@ -78,6 +78,16 @@ const customerDesignationOptions = [
   { value: "OTHER", label: "Other" },
 ];
 
+const subscriberCategoryPills: Array<{
+  value: CustomerType;
+  key: string;
+  label: string;
+}> = [
+  { key: "COLLEGE_UNIVERSITY", value: "ORGANIZATION", label: "COLLEGE / UNIVERSITY" },
+  { key: "SUBSCRIPTION_AGENCY", value: "ORGANIZATION", label: "SUBSCRIPTION AGENCY" },
+  { key: "INDIVIDUAL_SCHOLAR", value: "INDIVIDUAL", label: "INDIVIDUAL SCHOLAR" },
+];
+
 const normalizeCustomerDesignation = (value: string) => {
   const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, "_");
   if (!normalized) return null;
@@ -143,6 +153,10 @@ export default function CreateInvoiceModal({
   const [selectedBrandId, setSelectedBrandId] = useState<string>("");
   const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [allowCrossCompanyCustomer, setAllowCrossCompanyCustomer] =
+    useState(false);
+  const [crossCompanyCustomerPolicyEnabled, setCrossCompanyCustomerPolicyEnabled] =
+    useState(false);
   const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
@@ -208,6 +222,7 @@ export default function CreateInvoiceModal({
     notes: "",
   });
   const [isShippingSame, setIsShippingSame] = useState(true);
+  const [subscriberCategory, setSubscriberCategory] = useState<string>("COLLEGE_UNIVERSITY");
   const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
@@ -216,6 +231,10 @@ export default function CreateInvoiceModal({
   const [institutionCustomerResolved, setInstitutionCustomerResolved] =
     useState(false);
   const isAgencyUser = actorRole === "AGENCY";
+  const customerCompanyMismatch =
+    Boolean(selectedCustomer?.companyId) &&
+    Boolean(selectedCompanyId) &&
+    selectedCustomer.companyId !== selectedCompanyId;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -228,6 +247,34 @@ export default function CreateInvoiceModal({
       setActorRole("CUSTOMER");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const fetchCompanyPolicy = async () => {
+      if (!selectedCompanyId) {
+        setCrossCompanyCustomerPolicyEnabled(false);
+        return;
+      }
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/companies/${selectedCompanyId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setCrossCompanyCustomerPolicyEnabled(false);
+          return;
+        }
+        const data = await res.json();
+        setCrossCompanyCustomerPolicyEnabled(
+          Boolean(data?.allowCrossCompanyCustomerInvoices),
+        );
+      } catch (err) {
+        console.error("Failed to fetch company policy", err);
+        setCrossCompanyCustomerPolicyEnabled(false);
+      }
+    };
+
+    fetchCompanyPolicy();
+  }, [selectedCompanyId]);
 
   const handleTaxTypeChange = (type: "DOMESTIC" | "INTERNATIONAL") => {
     setTaxType(type);
@@ -727,6 +774,7 @@ export default function CreateInvoiceModal({
     setSelectedCustomer(null);
     setCustomerSearch("");
     setCouponResult(null);
+    setAllowCrossCompanyCustomer(false);
   }, [selectedCompanyId, availableCompanies]);
 
   useEffect(() => {
@@ -1125,6 +1173,16 @@ export default function CreateInvoiceModal({
       alert("Please fill in all required fields");
       return;
     }
+    if (
+      customerCompanyMismatch &&
+      allowCrossCompanyCustomer &&
+      !crossCompanyCustomerPolicyEnabled
+    ) {
+      alert(
+        "Cross-company customer invoicing is disabled for the selected invoice company.",
+      );
+      return;
+    }
 
     setLoading(true);
     try {
@@ -1139,6 +1197,8 @@ export default function CreateInvoiceModal({
           },
           body: JSON.stringify({
             companyId: selectedCompanyId || undefined,
+            allowCrossCompanyCustomer:
+              allowCrossCompanyCustomer || undefined,
             customerProfileId: selectedCustomer.id,
             invoiceDate,
             dueDate,
@@ -1571,7 +1631,7 @@ export default function CreateInvoiceModal({
               {editId ? "Edit Invoice" : "Create New Invoice"}
             </h2>
             <p className="text-sm text-gray-500">
-              Step {step}: {step === 1 ? "Account Detail" : step === 2 ? "Products Detail" : "Summary"}
+              Step {step}: {step === 1 ? "Subscriber Info" : step === 2 ? "Journal Cart" : "Preview"}
             </p>
           </div>
           <button
@@ -1585,9 +1645,9 @@ export default function CreateInvoiceModal({
         <div className="border-b border-gray-100 bg-white/80 px-4 py-4 sm:px-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
-              { id: 1, title: "Account Detail", hint: selectedCustomer ? selectedCustomer.name : "Choose account" },
-              { id: 2, title: "Products Detail", hint: hasSelectedProducts ? `${selectedProductCount} selected` : "Pick products" },
-              { id: 3, title: "Summary", hint: "Review and create" },
+              { id: 1, title: "Subscriber Info", hint: selectedCustomer ? selectedCustomer.name : "Choose subscriber" },
+              { id: 2, title: "Journal Cart", hint: hasSelectedProducts ? `${selectedProductCount} selected` : "Select publications" },
+              { id: 3, title: "Preview", hint: "Review quotation" },
             ].map((phase) => (
               <button
                 key={phase.id}
@@ -1678,6 +1738,31 @@ export default function CreateInvoiceModal({
                 <p className="mt-1 text-[10px] text-gray-500">
                   Customer, brand, products, and tax context are scoped to this company.
                 </p>
+                {selectedCustomer && customerCompanyMismatch && (
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <label className="flex items-start gap-2 text-xs text-amber-900">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        disabled={!crossCompanyCustomerPolicyEnabled}
+                        checked={allowCrossCompanyCustomer}
+                        onChange={(e) =>
+                          setAllowCrossCompanyCustomer(e.target.checked)
+                        }
+                      />
+                      <span>
+                        Allow invoice creation using the selected customer&apos;s
+                        company (you must have access to that company).
+                      </span>
+                    </label>
+                    {!crossCompanyCustomerPolicyEnabled && (
+                      <p className="mt-2 text-[11px] text-amber-800">
+                        Disabled by company policy. Enable it in Company Settings
+                        under Invoice Configuration.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {isCreatingCustomer ? (
@@ -1685,6 +1770,34 @@ export default function CreateInvoiceModal({
                   onSubmit={handleCreateCustomer}
                   className="space-y-8 animate-fadeIn"
                 >
+                  <div className="rounded-2xl border border-primary-100 bg-primary-50/40 p-4">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-primary-700 mb-3">
+                      Subscriber Category
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                      {subscriberCategoryPills.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => {
+                            setSubscriberCategory(option.key);
+                            setNewCustomerForm((prev) => ({
+                              ...prev,
+                              customerType: option.value,
+                            }));
+                          }}
+                          className={`rounded-xl border px-3 py-2 text-xs font-black tracking-wide transition-colors ${
+                            subscriberCategory === option.key
+                              ? "border-primary-500 bg-white text-primary-700"
+                              : "border-primary-200 bg-white/80 text-gray-600 hover:border-primary-300"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Basic Intel Section */}
                   <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 space-y-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -2274,7 +2387,7 @@ export default function CreateInvoiceModal({
               )}
             </div>
           ) : step === 2 ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {renderSelectedCustomer()}
 
               {invoiceContext === "agency" && selectedCustomer && (
@@ -2289,16 +2402,18 @@ export default function CreateInvoiceModal({
                   {selectedCustomer ? ` for ${selectedCustomer.name}.` : "."}
                 </div>
               )}
-              <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4">
+              <div className="rounded-[14px] border border-primary-100 bg-primary-50/70 px-4 py-3.5">
                 <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-gray-900">Products Detail</h3>
+                    <h3 className="text-[48px] leading-[1.01] tracking-[-0.022em] font-black text-[#1d315f]">
+                      Select Publications
+                    </h3>
                     <p className="text-[13px] leading-snug text-gray-500">
-                      Filter the catalogue and select multiple products with one pass. Selected items will be added to the invoice summary.
+                      Search journals, pick subscription variants, and build the quotation cart.
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <div className="rounded-xl bg-white p-1 border border-primary-100 flex items-center shadow-sm">
+                    <div className="rounded-[10px] bg-white p-1 border border-primary-100 flex items-center shadow-sm">
                       <button
                         title="Tabular View"
                         type="button"
@@ -2446,7 +2561,7 @@ export default function CreateInvoiceModal({
                             setSubscriptionYearFilter("");
                             setSubscriptionPublisherFilter("");
                           }}
-                          className="h-11 px-3.5 text-[11px] font-medium text-secondary-500 bg-secondary-50 hover:bg-secondary-100 hover:text-secondary-700 rounded-lg border border-secondary-200 transition-colors shrink-0"
+                          className="h-10 px-3.5 text-[11px] font-semibold text-secondary-500 bg-secondary-50 hover:bg-secondary-100 hover:text-secondary-700 rounded-[10px] border border-secondary-200 transition-colors shrink-0"
                         >
                           Clear Filters
                         </button>
@@ -2455,7 +2570,7 @@ export default function CreateInvoiceModal({
                   </div>
                 )}
 
-                  <div className={productViewFormat === 'grid' ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "flex flex-col gap-2"}>
+                  <div className={productViewFormat === 'grid' ? "grid grid-cols-1 gap-2.5 xl:grid-cols-2" : "flex flex-col gap-1.5"}>
                     {catLoading ? (
                       <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-5 py-8 text-center text-sm text-gray-500">
                         Loading product catalogue...
@@ -2476,7 +2591,7 @@ export default function CreateInvoiceModal({
                             type="button"
                             onClick={() => toggleCatalogueProduct(product)}
                             className={`border text-left transition-all ${
-                              productViewFormat === "grid" ? "rounded-2xl p-4 flex flex-col justify-between" : "rounded-xl p-3 flex flex-col justify-center"
+                              productViewFormat === "grid" ? "rounded-[14px] p-3.5 flex flex-col justify-between" : "rounded-[10px] px-3 py-2.5 flex flex-col justify-center"
                             } ${
                               selected
                                 ? "border-primary-300 bg-primary-50 shadow-sm"
@@ -2566,7 +2681,7 @@ export default function CreateInvoiceModal({
                                   />
                                   <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
                                      <div className="min-w-0 flex-1">
-                                        <div className="font-bold text-gray-900 truncate pr-4">{product.name}</div>
+                                        <div className="font-semibold text-[15px] text-gray-900 truncate pr-4 leading-tight">{product.name}</div>
                                         <div className="flex items-center flex-wrap gap-2 mt-0.5">
                                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
                                              {product.category?.replace(/_/g, " ")}
@@ -2598,7 +2713,7 @@ export default function CreateInvoiceModal({
                                           </div>
                                         )}
                                         <div className="text-right shrink-0 w-24">
-                                          <div className="text-sm font-black text-primary-700 whitespace-nowrap">
+                                          <div className="text-[15px] font-black text-primary-700 whitespace-nowrap leading-none">
                                             {getCurrencySymbol(currency)}{Number(displayPrice || 0).toLocaleString()}
                                           </div>
                                           <div className="text-[9px] text-gray-400">
@@ -2619,10 +2734,10 @@ export default function CreateInvoiceModal({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {renderSelectedCustomer()}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="label">Invoice Date</label>
                   <input
@@ -2680,7 +2795,7 @@ export default function CreateInvoiceModal({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="label mb-0">Region & Tax Type</label>
@@ -2728,7 +2843,7 @@ export default function CreateInvoiceModal({
                 ></textarea>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <label className="label mb-0 uppercase tracking-widest text-[10px] font-black text-gray-400">
@@ -2753,12 +2868,12 @@ export default function CreateInvoiceModal({
                   </div>
                 </div>
                 {items.map((item, index) => (
-                  <div key={item.id} className="space-y-2">
-                    <div className="flex gap-3 items-start animate-fade-in-up">
+                  <div key={item.id} className="space-y-1.5">
+                    <div className="flex gap-2.5 items-start animate-fade-in-up">
                       <div className="flex-1 relative">
                         <input
                           type="text"
-                          className="input-premium text-sm"
+                          className="input-premium h-10 text-[13px]"
                           placeholder="Description (e.g. Consulting Fee)"
                           value={item.description}
                           onBlur={() => {
@@ -2795,11 +2910,11 @@ export default function CreateInvoiceModal({
                                   onClick={() =>
                                     handleSelectProductClick(p, item.id)
                                   }
-                                  className="w-full text-left px-4 py-3 hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-0 group"
+                                  className="w-full text-left px-3 py-2.5 hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-0 group"
                                 >
                                   <div className="flex justify-between items-start">
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-bold text-gray-900 truncate">
+                                      <p className="text-[13px] font-semibold text-gray-900 truncate">
                                         {p.name}
                                       </p>
                                       <p className="text-[9px] text-gray-400 font-mono">
@@ -2860,7 +2975,7 @@ export default function CreateInvoiceModal({
                       <div className="w-24">
                         <input
                           type="text"
-                          className="input-premium text-sm text-center"
+                          className="input-premium h-10 text-[13px] text-center"
                           placeholder="HSN/SAC"
                           value={item.hsnCode || ""}
                           onChange={(e) =>
@@ -2871,7 +2986,7 @@ export default function CreateInvoiceModal({
                       <div className="w-20">
                         <input
                           type="number"
-                          className="input-premium text-sm text-center"
+                          className="input-premium h-10 text-[13px] text-center"
                           placeholder="Qty"
                           min="1"
                           value={item.quantity}
@@ -2883,7 +2998,7 @@ export default function CreateInvoiceModal({
                       <div className="w-28">
                         <input
                           type="number"
-                          className="input-premium text-sm text-right font-mono"
+                          className="input-premium h-10 text-[13px] text-right font-mono"
                           placeholder="Price"
                           min="0"
                           value={item.price}
@@ -2894,7 +3009,7 @@ export default function CreateInvoiceModal({
                       </div>
                       <button
                         onClick={() => handleRemoveItem(item.id)}
-                        className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-[1px]"
+                        className="h-10 w-10 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-[1px]"
                         title="Remove Item"
                       >
                         <Trash2 size={16} />
@@ -2962,7 +3077,7 @@ export default function CreateInvoiceModal({
                 </div>
               )}
 
-              <div className="bg-gray-50 p-6 rounded-2xl space-y-3">
+              <div className="bg-gray-50 p-5 rounded-2xl space-y-2.5 border border-gray-200">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-secondary-500 font-medium uppercase tracking-wider">
                     Subtotal
@@ -3039,7 +3154,7 @@ export default function CreateInvoiceModal({
                     )}
                   </>
                 )}
-                <div className="rounded-2xl border border-primary-100 bg-primary-50/60 px-4 py-3 text-xs text-primary-900">
+                <div className="rounded-[12px] border border-primary-100 bg-primary-50/60 px-4 py-3 text-xs text-primary-900">
                   <div className="font-black uppercase tracking-widest text-[10px]">
                     Tax Rule Summary
                   </div>
@@ -3054,10 +3169,10 @@ export default function CreateInvoiceModal({
                   </div>
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
-                  <span className="text-base font-black text-gray-900 uppercase">
+                  <span className="text-[15px] font-black text-gray-900 uppercase">
                     Total Amount
                   </span>
-                  <span className="text-2xl font-black text-primary-600">
+                  <span className="text-[34px] leading-none font-black text-primary-700">
                     {getCurrencySymbol(currency)}{" "}
                     {taxBreakdown.total.toLocaleString()}
                   </span>
@@ -3069,50 +3184,78 @@ export default function CreateInvoiceModal({
 
           {/* Side popup for selected items */}
           {step === 2 && hasSelectedProducts && (
-            <div className="absolute right-0 top-0 bottom-0 w-[300px] md:w-[360px] shrink-0 border-l border-gray-200 bg-white flex flex-col z-40 lg:relative shadow-[-10px_0_30px_rgba(0,0,0,0.05)] lg:shadow-none animate-slideInRight">
-              <div className="p-5 border-b border-gray-200 bg-gray-50 shrink-0">
+            <div className="absolute right-0 top-0 bottom-0 w-[320px] md:w-[384px] shrink-0 border-l border-primary-800 bg-[#1e3270] text-white flex flex-col z-40 lg:relative shadow-[-10px_0_30px_rgba(0,0,0,0.12)] lg:shadow-none animate-slideInRight">
+              <div className="p-5 border-b border-white/15 bg-[#1b2d66] shrink-0">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Package size={16} className="text-primary-600" />
-                    <h4 className="font-bold text-gray-900 text-sm">Selected Items</h4>
+                    <Package size={16} className="text-blue-200" />
+                    <h4 className="font-bold text-white text-sm">Quote Summary</h4>
                   </div>
-                  <span className="text-[10px] font-black bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full uppercase tracking-widest">{selectedProductCount} Products</span>
+                  <span className="text-[10px] font-black bg-white/15 text-blue-100 px-2 py-0.5 rounded-full uppercase tracking-widest">{selectedProductCount} Selected</span>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Account</div>
-                  <div className="font-bold text-gray-900 text-xs truncate">{selectedCustomer?.name}</div>
+                <div className="rounded-[10px] border border-white/20 bg-white/10 px-3 py-2 shadow-sm">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-blue-100/70 mb-1">Subscriber</div>
+                  <div className="font-bold text-white text-xs truncate">{selectedCustomer?.name}</div>
                 </div>
               </div>
-              <div className="p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                 {items.filter((item) => item.productId).map((item) => (
-                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-3 hover:border-red-200 group transition-all shadow-sm hover:shadow-md relative overflow-hidden flex flex-col justify-between">
+                  <div key={item.id} className="rounded-[10px] border border-white/20 bg-white/10 px-3 py-2.5 hover:border-white/40 group transition-all relative overflow-hidden flex flex-col justify-between">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 pr-6">
-                        <div className="font-bold text-gray-900 text-xs line-clamp-2 leading-snug">{item.description}</div>
-                        <div className="mt-1.5 flex items-center gap-2">
-                           <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded uppercase">Qty {item.quantity}</span>
-                           <span className="text-[10px] font-black text-primary-600 uppercase">{getCurrencySymbol(currency)} {Number(item.price || 0).toLocaleString()}</span>
+                        <div className="font-semibold text-white text-[12px] line-clamp-2 leading-snug">{item.description}</div>
+                        <div className="mt-1 flex items-center gap-2">
+                           <span className="text-[10px] font-black text-blue-100 bg-white/15 px-1.5 py-0.5 rounded uppercase">Qty {item.quantity}</span>
+                           <span className="text-[10px] font-black text-white uppercase">{getCurrencySymbol(currency)} {Number(item.price || 0).toLocaleString()}</span>
                         </div>
                       </div>
-                      <button type="button" onClick={(e) => { e.preventDefault(); handleRemoveItem(item.id); }} className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                      <button type="button" onClick={(e) => { e.preventDefault(); handleRemoveItem(item.id); }} className="absolute top-2 right-2 p-1.5 text-blue-100/80 hover:text-white hover:bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+              <div className="border-t border-white/15 p-4">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-blue-100/80">Subtotal</span>
+                  <span className="font-bold text-white">
+                    {getCurrencySymbol(currency)} {calculateTotal().toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm mb-3">
+                  <span className="text-blue-100/80">GST</span>
+                  <span className="font-bold text-white">
+                    {getCurrencySymbol(currency)} {taxBreakdown.tax.toLocaleString()}
+                  </span>
+                </div>
+                <div className="text-3xl font-black leading-none text-white mb-3">
+                  {getCurrencySymbol(currency)} {taxBreakdown.total.toLocaleString()}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="w-full h-11 rounded-full bg-white text-[#1e3270] text-[14px] font-bold hover:bg-blue-50 transition-colors"
+                >
+                  Review Quotation →
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 sticky bottom-0 z-[100] shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+        <div className={`px-5 py-3.5 border-t sticky bottom-0 z-[100] shadow-[0_-10px_20px_rgba(0,0,0,0.02)] ${
+          step === 3
+            ? "border-blue-100 bg-[#f4f7ff] flex flex-wrap justify-center gap-2.5"
+            : "border-gray-100 bg-gray-50 flex justify-end gap-3"
+        }`}>
           <button
             onClick={onClose}
             className="btn bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
           >
             Cancel
           </button>
-          {step > 1 && (
+          {step > 1 && step !== 3 && (
             <button
               type="button"
               onClick={() => setStep((current) => Math.max(1, current - 1))}
@@ -3127,7 +3270,7 @@ export default function CreateInvoiceModal({
               onClick={() => setStep(2)}
               className="btn btn-primary px-8 disabled:opacity-50"
             >
-              Next: Products
+              Continue To Journal Cart →
             </button>
           )}
           {step === 2 && (
@@ -3136,17 +3279,42 @@ export default function CreateInvoiceModal({
               onClick={() => setStep(3)}
               className="btn btn-primary px-8 disabled:opacity-50"
             >
-              Next: Summary
+              Continue To Preview →
             </button>
           )}
           {step === 3 && (
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="btn btn-primary px-8 flex items-center gap-2"
-            >
-              {loading ? "Creating..." : "Create Invoice"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] transition-colors"
+              >
+                ← Back To Selection
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors"
+              >
+                {loading ? "Creating..." : "↓ Print / Save As PDF"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="h-11 rounded-[10px] px-5 text-[13px] font-bold text-white bg-[#2f5ec4] hover:bg-[#274da2] disabled:opacity-60 transition-colors"
+              >
+                ✉ Send Email
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="h-11 rounded-[10px] px-6 text-[13px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 transition-colors"
+              >
+                ⚡ Pay Now
+              </button>
+            </>
           )}
         </div>
       </div>

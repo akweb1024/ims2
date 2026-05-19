@@ -63,6 +63,7 @@ export default function CompanyPage() {
     proformaNextNumber: 1,
     invoiceEntityCode: "",
     invoiceYearFormat: "CALENDAR",
+    allowCrossCompanyCustomerInvoices: false,
   });
   const [companyWebhookConfig, setCompanyWebhookConfig] = useState(
     emptyWebhookConfig(),
@@ -157,6 +158,8 @@ export default function CompanyPage() {
           proformaNextNumber: companyData.proformaNextNumber || 1,
           invoiceEntityCode: companyData.invoiceEntityCode || "",
           invoiceYearFormat: companyData.invoiceYearFormat || "CALENDAR",
+          allowCrossCompanyCustomerInvoices:
+            Boolean(companyData.allowCrossCompanyCustomerInvoices),
         });
         setCompanyWebhookConfig(
           normalizeScopedRuleMap(companyData.documentWebhookConfig),
@@ -1111,6 +1114,30 @@ export default function CompanyPage() {
                         placeholder="1. Payment is due within... 2. All disputes subject to..."
                       />
                     </Field>
+                  </div>
+
+                  <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                    <label className="flex items-start gap-3 text-sm text-amber-900">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        checked={Boolean(
+                          invoiceSettings.allowCrossCompanyCustomerInvoices,
+                        )}
+                        onChange={(e) =>
+                          setInvoiceSettings({
+                            ...invoiceSettings,
+                            allowCrossCompanyCustomerInvoices:
+                              e.target.checked,
+                          })
+                        }
+                      />
+                      <span>
+                        Allow cross-company customer invoicing. When enabled,
+                        users can create invoices from this company context for
+                        customers belonging to other accessible companies.
+                      </span>
+                    </label>
                   </div>
 
                   <div className="mt-12 bg-emerald-50/40 p-8 rounded-3xl border border-emerald-100/60">
