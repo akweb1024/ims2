@@ -111,6 +111,11 @@ export async function GET(req: NextRequest) {
                     actualValue: true,
                     itRevenueEarned: true,
                     isPaid: true,
+                    status: true,
+                    category: true,
+                    createdAt: true,
+                    completedAt: true,
+                    assignedToId: true,
                 }
             });
 
@@ -176,9 +181,20 @@ export async function GET(req: NextRequest) {
 
             const monthly = last6Months.map(m => {
                 const found = historicalRevenue.find(hr => hr.month === m.monthNum && hr.year === m.year);
+                const monthTasks = tasks.filter((t) => {
+                    const completedDate = (t as any).completedAt || (t as any).createdAt;
+                    if (!completedDate) return false;
+                    const d = new Date(completedDate);
+                    return d.getMonth() + 1 === m.monthNum && d.getFullYear() === m.year;
+                });
+                const monthDeployments = monthTasks.filter((t) =>
+                    String((t as any).category || '').toUpperCase() === 'DEPLOYMENT'
+                ).length;
                 return {
                     month: m.month,
-                    amount: found ? found.totalRevenue : (m.monthNum === new Date().getMonth() + 1 ? Math.round((totalProjectITRevenue + totalTaskITRevenue) * 100) / 100 : 0)
+                    amount: found ? found.totalRevenue : (m.monthNum === new Date().getMonth() + 1 ? Math.round((totalProjectITRevenue + totalTaskITRevenue) * 100) / 100 : 0),
+                    commits: monthTasks.length,
+                    deployments: monthDeployments
                 };
             });
 
@@ -203,8 +219,57 @@ export async function GET(req: NextRequest) {
                 id: t.id,
                 feature: t.title,
                 revenueImpact: t.itRevenueEarned,
-                size: Math.round((t.estimatedHours || 10) * (20 + Math.random() * 30)) // Proxy: 20-50 LOC per hour
+                // deterministic proxy to avoid non-repeatable analytics points
+                size: Math.max(50, Math.round((t.estimatedHours || 10) * 35))
             }));
+
+            const contributingUsers = await prisma.iTTask.groupBy({
+                by: ['assignedToId'],
+                where: {
+                    ...taskWhere,
+                    isRevenueBased: true,
+                    itRevenueEarned: { gt: 0 },
+                    assignedToId: { not: null },
+                },
+                _sum: { itRevenueEarned: true },
+                _count: { _all: true },
+                orderBy: { _sum: { itRevenueEarned: 'desc' } },
+                take: 5,
+            });
+
+            const contributorIds = contributingUsers
+                .map((c) => c.assignedToId)
+                .filter((id): id is string => Boolean(id));
+            const contributorUsers = contributorIds.length
+                ? await prisma.user.findMany({
+                    where: { id: { in: contributorIds } },
+                    select: { id: true, name: true, role: true },
+                })
+                : [];
+            const contributorMap = new Map(contributorUsers.map((u) => [u.id, u]));
+
+            const topContributors = contributingUsers.map((c) => {
+                const userInfo = c.assignedToId ? contributorMap.get(c.assignedToId) : null;
+                return {
+                    id: c.assignedToId,
+                    name: userInfo?.name || 'Unassigned',
+                    role: userInfo?.role || 'ENGINEER',
+                    impact: Math.round((c._sum.itRevenueEarned || 0) * 100) / 100,
+                    commits: c._count._all,
+                };
+            });
+
+            const totalCommitCount = tasks.length;
+            const completedRevenueTasks = tasks.filter((t) => t.isPaid || (t as any).status === 'COMPLETED').length;
+            const deploymentTasks = tasks.filter((t) => String((t as any).category || '').toUpperCase() === 'DEPLOYMENT');
+            const successfulDeployments = deploymentTasks.filter((t) => String((t as any).status || '').toUpperCase() === 'COMPLETED').length;
+            const effectiveDeployments = deploymentTasks.length || completedRevenueTasks || 1;
+
+            const efficiency = {
+                revPerCommit: totalCommitCount > 0 ? Math.round(((totalProjectITRevenue + totalTaskITRevenue) / totalCommitCount) * 100) / 100 : 0,
+                revPerStoryPoint: completedRevenueTasks > 0 ? Math.round(((totalProjectITRevenue + totalTaskITRevenue) / completedRevenueTasks) * 100) / 100 : 0,
+                deploymentSuccessRate: Math.round((successfulDeployments / effectiveDeployments) * 10000) / 100,
+            };
 
             revenueStats = {
                 totalRevenue: Math.round((totalProjectRevenue + totalTaskRevenue) * 100) / 100,
@@ -215,7 +280,9 @@ export async function GET(req: NextRequest) {
                 taskRevenue: Math.round(totalTaskITRevenue * 100) / 100,
                 byCategory,
                 monthly,
-                commitImpact
+                commitImpact,
+                topContributors,
+                efficiency
             };
         }
 

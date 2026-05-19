@@ -24,7 +24,7 @@ interface KPIMetric {
     icon: any;
     color: string;
     bg: string;
-    trend: number;
+    trend?: number;
     trendLabel: string;
 }
 
@@ -54,8 +54,8 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             icon: Activity,
             color: "text-indigo-600",
             bg: "bg-indigo-50",
-            trend: data.netProfitEstimate > 0 ? 15 : -5,
-            trendLabel: "profit margin"
+            trend: data.totalRevenue > 0 ? Number(((data.netProfitEstimate / data.totalRevenue) * 100).toFixed(1)) : 0,
+            trendLabel: "margin"
         },
         {
             label: "Monthly Burn Rate",
@@ -64,8 +64,7 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             icon: Flame,
             color: "text-rose-600",
             bg: "bg-rose-50",
-            trend: -2,
-            trendLabel: "optimization"
+            trendLabel: "cost base"
         },
         {
             label: "Total Workforce",
@@ -74,8 +73,7 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             icon: Users,
             color: "text-blue-600",
             bg: "bg-blue-50",
-            trend: 8,
-            trendLabel: "new hires"
+            trendLabel: "current size"
         },
         {
             label: "Active Companies",
@@ -94,8 +92,7 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             icon: Target,
             color: "text-amber-600",
             bg: "bg-amber-50",
-            trend: 5,
-            trendLabel: "growth"
+            trendLabel: "distribution"
         },
         {
             label: "Revenue / Employee",
@@ -104,7 +101,6 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             icon: TrendingUp,
             color: "text-primary-600",
             bg: "bg-primary-50",
-            trend: 12,
             trendLabel: "efficiency"
         }
     ];
@@ -124,7 +120,7 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
 
                         <div className="mt-3 flex items-center justify-between">
                             <span className="text-xs text-secondary-400">{metric.subtext}</span>
-                            {metric.trend !== 0 && (
+                            {typeof metric.trend === 'number' && metric.trend !== 0 && (
                                 <div className={`flex items-center gap-1 text-xs font-bold ${metric.trend > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                     {metric.trend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                     {metric.trend > 0 ? '+' : ''}{metric.trend}%

@@ -51,18 +51,31 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
         </div>
     );
 
+    const perksTrendLabel = stats.totalApprovedPerksImpact > 0
+        ? `+${formatCurrency(stats.totalApprovedPerksImpact)}`
+        : stats.totalApprovedPerksImpact < 0
+            ? `-${formatCurrency(Math.abs(stats.totalApprovedPerksImpact))}`
+            : 'No change';
+    const roiTrendLabel = stats.roiMultiplier > 1 ? `+${stats.roiMultiplier.toFixed(1)}x` : `${stats.roiMultiplier.toFixed(1)}x`;
+    const futureLiability = forecast?.projectedBudget && stats.totalApprovedBudgetImpact > 0
+        ? Math.max(0, forecast.projectedBudget - stats.totalApprovedBudgetImpact)
+        : 0;
+    const recruitmentBudget = forecast?.projectedBudget
+        ? Math.max(0, forecast.projectedBudget - (stats.totalApprovedBudgetImpact || 0))
+        : 0;
+
     const currentStats = [
         { title: "Total Budget Impact", value: formatCurrency(stats.totalApprovedBudgetImpact), sub: `${stats.approvedCount} approved increments`, trend: `+${stats.averagePercentage.toFixed(1)}% Avg.`, icon: DollarSign, color: "primary" },
-        { title: "Perks Impact", value: formatCurrency(stats.totalApprovedPerksImpact), sub: "Sec-10 Exemp changes", trend: stats.totalApprovedPerksImpact >= 0 ? "+Perks Added" : "Perks Reduced", icon: TrendingUp, color: "success" },
+        { title: "Perks Impact", value: formatCurrency(stats.totalApprovedPerksImpact), sub: "Sec-10 Exemp changes", trend: perksTrendLabel, icon: TrendingUp, color: "success" },
         { title: "Pending Cycle Impact", value: formatCurrency(stats.totalPendingBudgetImpact), sub: `${stats.pendingCount} approvals required`, trend: "Needs Review", icon: Activity, color: "orange" },
-        { title: "Effective ROI Multiplier", value: `${stats.roiMultiplier.toFixed(1)}x`, sub: "Revenue vs Payroll cost", trend: "+0.4x improve", icon: TrendingUp, color: "indigo" }
+        { title: "Effective ROI Multiplier", value: `${stats.roiMultiplier.toFixed(1)}x`, sub: "Revenue vs Payroll cost", trend: roiTrendLabel, icon: TrendingUp, color: "indigo" }
     ];
 
     const forecastStats = forecast ? [
         { title: "Projected Budget (FY)", value: formatCurrency(forecast.projectedBudget), sub: "Based on current run rate", trend: "Artificial Intelligence", icon: BarChart3, color: "purple" },
         { title: "Confidence Score", value: `${(forecast.confidenceScore * 100).toFixed(0)}%`, sub: "Algorithm reliability", trend: "High Confidence", icon: Target, color: "emerald" },
-        { title: "Future Liabilities", value: formatCurrency(forecast.projectedBudget * 0.12), sub: "Estimated statutory overhead", trend: "+12% projected", icon: TrendingDown, color: "rose" },
-        { title: "Recruitment Budget", value: formatCurrency(stats.totalApprovedBudgetImpact * 0.3), sub: "30% of increment budget", trend: "Allocation", icon: Users, color: "blue" }
+        { title: "Future Liabilities", value: formatCurrency(futureLiability), sub: "Projected gap over approved budget", trend: futureLiability > 0 ? "Above approved baseline" : "Within approved baseline", icon: TrendingDown, color: "rose" },
+        { title: "Recruitment Budget", value: formatCurrency(recruitmentBudget), sub: "Residual planning capacity", trend: "Allocation", icon: Users, color: "blue" }
     ] : [];
 
     const displayStats = view === 'FORECAST' ? forecastStats : currentStats;

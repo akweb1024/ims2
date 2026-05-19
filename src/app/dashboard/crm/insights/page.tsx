@@ -21,12 +21,13 @@ export default function CRMInsightsPage() {
             fetch('/api/customers?limit=1&type=INDIVIDUAL').then(r => r.json()),
             fetch('/api/customers?limit=1&type=INSTITUTION').then(r => r.json()),
             fetch('/api/customers?limit=1&type=AGENCY').then(r => r.json()),
-        ]).then(([inds, insts, ags]) => {
+            fetch('/api/subscriptions?limit=1&status=ACTIVE').then(r => r.json()),
+        ]).then(([inds, insts, ags, subs]) => {
             setStats({
                 customers: inds.pagination?.total || 0,
                 institutions: insts.pagination?.total || 0,
                 agencies: ags.pagination?.total || 0,
-                subscriptions: 0, // Mocked for now; real tracking requires complex queries across user scope
+                subscriptions: subs.pagination?.total || 0,
                 loading: false
             });
         }).catch(() => {
@@ -42,7 +43,7 @@ export default function CRMInsightsPage() {
                 icon={<BarChart3 className="w-5 h-5" />}
                 breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Insights' }]}
             >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white rounded-3xl p-6 border border-secondary-100 shadow-xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-6 text-primary-100 transform group-hover:scale-125 transition-transform opacity-30">
                             <Users size={64} />
@@ -73,6 +74,17 @@ export default function CRMInsightsPage() {
                         <p className="text-4xl font-black text-secondary-900">{stats.loading ? '--' : stats.agencies}</p>
                         <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-amber-600">
                             <TrendingUp size={12} /> Channel partners
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-3xl p-6 border border-secondary-100 shadow-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 text-indigo-100 transform group-hover:scale-125 transition-transform opacity-30">
+                            <TrendingUp size={64} />
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400 mb-1">Active Subscriptions</p>
+                        <p className="text-4xl font-black text-secondary-900">{stats.loading ? '--' : stats.subscriptions}</p>
+                        <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-indigo-600">
+                            <TrendingUp size={12} /> Active contracts
                         </div>
                     </div>
                 </div>

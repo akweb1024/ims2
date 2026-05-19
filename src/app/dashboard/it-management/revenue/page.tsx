@@ -21,6 +21,7 @@ interface RevenueStats {
     monthly: Array<{ month: string; amount: number; commits: number; deployments: number }>;
     efficiency: { revPerCommit: number; revPerStoryPoint: number; deploymentSuccessRate: number };
     commitImpact: Array<{ id: string; size: number; revenueImpact: number; feature: string }>;
+    topContributors?: Array<{ id: string; name: string; role: string; impact: number; commits: number }>;
 }
 
 export default function RevenuePage() {
@@ -32,43 +33,24 @@ export default function RevenuePage() {
     const fetchRevenueStats = async () => {
         try {
             setLoading(true);
-            const mockMonthly = [
-                { month: 'Jan', amount: 450000, commits: 120, deployments: 4 },
-                { month: 'Feb', amount: 520000, commits: 145, deployments: 6 },
-                { month: 'Mar', amount: 480000, commits: 132, deployments: 5 },
-                { month: 'Apr', amount: 610000, commits: 190, deployments: 8 },
-                { month: 'May', amount: 580000, commits: 165, deployments: 6 },
-                { month: 'Jun', amount: 750000, commits: 210, deployments: 12 },
-            ];
-            const mockImpact = [
-                { id: '1', size: 400, revenueImpact: 5000, feature: 'Payment Gateway' },
-                { id: '2', size: 120, revenueImpact: 1200, feature: 'UI Update' },
-                { id: '3', size: 850, revenueImpact: 15000, feature: 'New Module' },
-                { id: '4', size: 300, revenueImpact: 4500, feature: 'Bug Fixes' },
-                { id: '5', size: 600, revenueImpact: 8200, feature: 'API 2.0' },
-            ];
             const response = await fetch('/api/it/analytics/dashboard?view=all');
             if (response.ok) {
                 const data = await response.json();
                 setStats({
-                    totalRevenue: data.revenue?.totalRevenue || 4500000,
-                    itRevenue: data.revenue?.itRevenue || 1200000,
-                    paidRevenue: data.revenue?.paidRevenue || 3800000,
-                    unpaidRevenue: data.revenue?.unpaidRevenue || 700000,
+                    totalRevenue: data.revenue?.totalRevenue || 0,
+                    itRevenue: data.revenue?.itRevenue || 0,
+                    paidRevenue: data.revenue?.paidRevenue || 0,
+                    unpaidRevenue: data.revenue?.unpaidRevenue || 0,
                     projectRevenue: data.revenue?.projectRevenue || 0,
                     taskRevenue: data.revenue?.taskRevenue || 0,
                     byCategory: data.revenue?.byCategory || [],
-                    monthly: (data.revenue?.monthly?.length > 0) ? data.revenue.monthly : mockMonthly,
-                    efficiency: { revPerCommit: 3500, revPerStoryPoint: 12000, deploymentSuccessRate: 98.5 },
-                    commitImpact: (data.revenue?.commitImpact?.length > 0) ? data.revenue.commitImpact : mockImpact,
+                    monthly: data.revenue?.monthly || [],
+                    efficiency: data.revenue?.efficiency || { revPerCommit: 0, revPerStoryPoint: 0, deploymentSuccessRate: 0 },
+                    commitImpact: data.revenue?.commitImpact || [],
+                    topContributors: data.revenue?.topContributors || [],
                 });
             } else {
-                setStats({
-                    totalRevenue: 4500000, itRevenue: 1200000, paidRevenue: 3800000,
-                    unpaidRevenue: 700000, projectRevenue: 0, taskRevenue: 0, byCategory: [],
-                    monthly: mockMonthly, efficiency: { revPerCommit: 3500, revPerStoryPoint: 12000, deploymentSuccessRate: 98.5 },
-                    commitImpact: mockImpact,
-                });
+                setStats(null);
             }
         } catch (error) { console.error('Data pull failed'); }
         finally { setLoading(false); }
@@ -89,6 +71,21 @@ export default function RevenuePage() {
             </DashboardLayout>
         );
     }
+
+    const statColorClasses: Record<string, { bubble: string; progress: string }> = {
+        emerald: { bubble: 'bg-emerald-500/5', progress: 'bg-emerald-500' },
+        indigo: { bubble: 'bg-indigo-500/5', progress: 'bg-indigo-500' },
+        amber: { bubble: 'bg-amber-500/5', progress: 'bg-amber-500' },
+        rose: { bubble: 'bg-rose-500/5', progress: 'bg-rose-500' },
+    };
+
+    const contributors = stats?.topContributors || [];
+    const formatMoney = (value: number) =>
+        new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0,
+        }).format(value || 0);
 
     return (
         <DashboardLayout>
@@ -134,7 +131,7 @@ export default function RevenuePage() {
                                 key={stat.label}
                                 className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white shadow-2xl shadow-slate-200/50 group relative overflow-hidden hover:scale-[1.02] transition-all"
                             >
-                                <div className={`absolute -top-4 -right-4 w-24 h-24 bg-${stat.color}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform`} />
+                                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full blur-2xl group-hover:scale-150 transition-transform ${statColorClasses[stat.color]?.bubble || 'bg-slate-200'}`} />
                                 <div className="flex justify-between items-start mb-6">
                                     <div className={`p-4 rounded-2xl bg-slate-50 text-slate-900 shadow-inner group-hover:bg-slate-900 group-hover:text-white transition-all`}>
                                         <stat.icon className="w-5 h-5" />
@@ -157,7 +154,7 @@ export default function RevenuePage() {
                                 <div className="mt-6 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                                     <motion.div 
                                         initial={{ width: 0 }} animate={{ width: '70%' }} 
-                                        className={`h-full bg-${stat.color}-500`} 
+                                        className={`h-full ${statColorClasses[stat.color]?.progress || 'bg-slate-400'}`} 
                                     />
                                 </div>
                             </motion.div>
@@ -319,13 +316,9 @@ export default function RevenuePage() {
                                 </button>
                             </div>
                             <div className="grid grid-cols-1 gap-4">
-                                {[
-                                    { name: 'Sarah Connor', role: 'Interface Lead', impact: '₹125,000', commits: 45, status: 'Peak' },
-                                    { name: 'John Smith', role: 'Nexus Dev', impact: '₹98,000', commits: 38, status: 'Steady' },
-                                    { name: 'Emily Chen', role: 'Ops / Scaling', impact: '₹85,000', commits: 22, status: 'Rising' },
-                                ].map((dev, i) => (
+                                {(contributors.length > 0 ? contributors : []).map((dev, i) => (
                                     <motion.div 
-                                        key={i} 
+                                        key={dev.id || i} 
                                         whileHover={{ x: 12, backgroundColor: 'rgba(255,255,255,1)' }} 
                                         className="flex flex-col md:flex-row items-center justify-between p-8 bg-slate-50/50 border border-slate-100/30 rounded-[2.5rem] transition-all cursor-pointer group"
                                     >
@@ -335,7 +328,7 @@ export default function RevenuePage() {
                                                     {dev.name.charAt(0)}
                                                 </div>
                                                 <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-4 border-white ${
-                                                    dev.status === 'Peak' ? 'bg-emerald-500' : dev.status === 'Steady' ? 'bg-indigo-500' : 'bg-amber-500'
+                                                    i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-indigo-500' : 'bg-amber-500'
                                                 }`} />
                                             </div>
                                             <div>
@@ -346,7 +339,7 @@ export default function RevenuePage() {
                                         <div className="flex items-center gap-12 w-full md:w-auto justify-between md:justify-end">
                                             <div className="text-right">
                                                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 opacity-60">Yield Contribution</p>
-                                                <p className="text-2xl font-black text-emerald-600 tabular-nums">{dev.impact}</p>
+                                                <p className="text-2xl font-black text-emerald-600 tabular-nums">{formatMoney(dev.impact)}</p>
                                             </div>
                                             <div className="text-right hidden sm:block">
                                                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 opacity-60">Activity Pulse</p>
@@ -354,7 +347,7 @@ export default function RevenuePage() {
                                                     <span className="text-sm font-black text-slate-900">{dev.commits} Commits</span>
                                                     <div className="flex gap-0.5">
                                                         {[1,2,3,4,5].map(b => (
-                                                            <div key={b} className={`w-1 h-4 rounded-full ${b <= (dev.commits/10) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                                                            <div key={b} className={`w-1 h-4 rounded-full ${b <= Math.ceil(dev.commits / 10) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                                                         ))}
                                                     </div>
                                                 </div>
@@ -362,6 +355,11 @@ export default function RevenuePage() {
                                         </div>
                                     </motion.div>
                                 ))}
+                                {contributors.length === 0 && (
+                                    <div className="p-8 bg-slate-50/70 border border-slate-100 rounded-[2.5rem] text-center text-slate-500 text-sm font-semibold">
+                                        No contributor analytics found for current scope.
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

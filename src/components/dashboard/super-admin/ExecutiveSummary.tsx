@@ -10,6 +10,15 @@ interface ExecutiveData {
 }
 
 export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
+    const profitMargin =
+        data.totalRevenue > 0
+            ? Number(((data.netProfitEstimate / data.totalRevenue) * 100).toFixed(1))
+            : 0;
+    const avgWorkforcePerCompany =
+        data.activeCompanies > 0
+            ? Math.round(data.totalHeadcount / data.activeCompanies)
+            : 0;
+
     const metrics = [
         {
             label: "Total Group Revenue",
@@ -18,7 +27,7 @@ export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
             icon: Wallet,
             color: "text-emerald-600",
             bg: "bg-emerald-50",
-            trend: "+12%" // Mock trend
+            trend: `${profitMargin >= 0 ? "+" : ""}${profitMargin}% margin`
         },
         {
             label: "Net Profit (Est.)",
@@ -27,7 +36,7 @@ export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
             icon: TrendingUp,
             color: "text-indigo-600",
             bg: "bg-indigo-50",
-            trend: "+5%"
+            trend: data.netProfitEstimate >= 0 ? "+Profitable" : "-Loss Position"
         },
         {
             label: "Monthly Burn Rate",
@@ -36,7 +45,7 @@ export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
             icon: Flame,
             color: "text-rose-600",
             bg: "bg-rose-50",
-            trend: "-2%"
+            trend: "+Baseline"
         },
         {
             label: "Total Workforce",
@@ -45,7 +54,7 @@ export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
             icon: Users,
             color: "text-blue-600",
             bg: "bg-blue-50",
-            trend: "+8"
+            trend: data.activeCompanies > 0 ? `+${avgWorkforcePerCompany} avg/company` : "0 avg/company"
         }
     ];
 

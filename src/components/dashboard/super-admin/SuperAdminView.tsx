@@ -40,6 +40,7 @@ export default function SuperAdminView() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>("overview");
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState("");
     const router = useRouter();
 
@@ -56,6 +57,7 @@ export default function SuperAdminView() {
             if (!res.ok) throw new Error("Failed to fetch data");
             const json = await res.json();
             setData(json);
+            setLastUpdated(new Date());
         } catch (err) {
             console.error(err);
             setError("Failed to load dashboard data");
@@ -222,7 +224,7 @@ export default function SuperAdminView() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {data.financials.sort((a, b) => b.totalRevenue - a.totalRevenue).map((item, i) => (
+                                            {[...(data.financials || [])].sort((a, b) => b.totalRevenue - a.totalRevenue).map((item, i) => (
                                                 <div key={i} className="flex items-center justify-between">
                                                     <span className="text-sm font-bold text-secondary-700">{item.companyName}</span>
                                                     <span className="text-sm font-black text-primary-600">₹{(item.totalRevenue / 100000).toFixed(1)}L</span>
@@ -265,7 +267,7 @@ export default function SuperAdminView() {
             {/* 5. Footer Info */}
             <div className="flex items-center justify-between text-[10px] text-secondary-400 pt-8 border-t border-secondary-100">
                 <p>System Status: <span className="text-success-500 font-bold">ONLINE</span> • {data.executive?.totalRevenue > 0 ? 'Revenue Verified' : 'Checking Financials'}</p>
-                <p>Last updated: {new Date().toLocaleString()} • Auto-refreshes every 300s</p>
+                <p>Last updated: {lastUpdated ? lastUpdated.toLocaleString() : '--'} • Auto-refreshes every 300s</p>
             </div>
         </div>
     );

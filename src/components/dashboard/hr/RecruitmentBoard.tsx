@@ -21,7 +21,7 @@ export default function RecruitmentBoard({ jobs, applications, onCreateJob, onEd
             <div className="space-y-6">
                 <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-secondary-100 shadow-sm">
                     <div>
-                        <h3 className="text-xl font-bold text-secondary-900">Active Job Postings</h3>
+                        <h3 className="text-xl font-bold text-secondary-900">Job Postings</h3>
                         <p className="text-secondary-500 text-sm">Manage open positions ({filteredJobs.length})</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -143,9 +143,8 @@ export default function RecruitmentBoard({ jobs, applications, onCreateJob, onEd
                                 </td>
                                 <td className="p-4 font-bold text-secondary-600 text-xs">{app.jobPosting.title}</td>
                                 <td className="p-4 text-center">
-                                    {/* Simulated AI Score */}
                                     <div className="inline-flex items-center gap-1 px-2 py-1 rounded bg-accent-50 text-accent-700 text-xs font-black border border-accent-100">
-                                        <span>🤖</span> {Math.floor(Math.random() * (98 - 70) + 70)}%
+                                        <span>🤖</span> {Math.max(0, Math.min(100, Number(app.aiMatchScore || 0)))}%
                                     </div>
                                 </td>
                                 <td className="p-4 text-center">

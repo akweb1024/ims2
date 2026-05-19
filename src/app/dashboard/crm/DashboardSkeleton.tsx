@@ -1,6 +1,8 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 
 export default function DashboardSkeleton() {
+    const chartBars = [24, 38, 52, 44, 68, 56, 72];
+
     return (
         <div className="space-y-8 animate-pulse">
             <div className="flex items-center justify-between">
@@ -33,8 +35,8 @@ export default function DashboardSkeleton() {
                         <div className="h-6 w-32 bg-secondary-200 rounded"></div>
                     </CardHeader>
                     <CardContent className="h-[300px] flex items-end justify-between px-4 pb-4 gap-2">
-                        {[...Array(7)].map((_, i) => (
-                            <div key={i} className="w-full bg-secondary-100 rounded-t" style={{ height: `${Math.random() * 80 + 20}%` }}></div>
+                        {chartBars.map((height, i) => (
+                            <div key={i} className="w-full bg-secondary-100 rounded-t" style={{ height: `${height}%` }}></div>
                         ))}
                     </CardContent>
                 </Card>
