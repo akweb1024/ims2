@@ -1,5 +1,13 @@
 export const SUPPORTED_INTEGRATION_PROVIDERS = [
   {
+    id: "RAZORPAY",
+    name: "Razorpay Payments",
+    desc: "Company-level Razorpay gateway credentials for payment tracking and reconciliation.",
+    type: "Payments",
+    valueLabel: "Provider Config JSON",
+    valuePlaceholder: '{"keyId":"rzp_live_xxx","webhookSecret":"optional","accountLabel":"Main Account"}',
+  },
+  {
     id: "GEMINI",
     name: "Google Gemini AI",
     desc: "Used for intelligent Document OCR and chat.",

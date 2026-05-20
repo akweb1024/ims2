@@ -17,6 +17,7 @@ export default function EmployeeTransactions() {
     const [companyLoading, setCompanyLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [selectedCompanyId, setSelectedCompanyId] = useState('ALL');
 
     // Personal payroll state
     const [salarySlips, setSalarySlips] = useState<any[]>([]);
@@ -30,17 +31,23 @@ export default function EmployeeTransactions() {
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) setUserRole(JSON.parse(userData).role || '');
-        fetchCompany();
+        fetchCompany('ALL');
     }, []);
 
-    const fetchCompany = async () => {
+    const fetchCompany = async (companyId: string = selectedCompanyId) => {
         setCompanyLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/payments/razorpay', {
+            const params = new URLSearchParams();
+            if (companyId && companyId !== 'ALL') params.set('companyId', companyId);
+            const res = await fetch(`/api/payments/razorpay${params.toString() ? `?${params.toString()}` : ''}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) setCompanyData(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setCompanyData(data);
+                if (data?.selectedCompanyId) setSelectedCompanyId(data.selectedCompanyId);
+            }
         } catch (err) {
             console.error('Failed to fetch company transactions', err);
         } finally {
@@ -207,6 +214,25 @@ export default function EmployeeTransactions() {
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+                                        {(companyData?.availableCompanies?.length || 0) > 1 && (
+                                            <div className="relative">
+                                                <Building2 size={13} className="absolute left-3.5 top-3.5 text-gray-400" />
+                                                <select
+                                                    className="pl-9 pr-8 py-3 text-[10px] font-black uppercase tracking-widest border border-gray-200 rounded-xl bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                                    value={selectedCompanyId}
+                                                    onChange={(e) => {
+                                                        const nextCompanyId = e.target.value;
+                                                        setSelectedCompanyId(nextCompanyId);
+                                                        fetchCompany(nextCompanyId);
+                                                    }}
+                                                >
+                                                    <option value="ALL">All Companies</option>
+                                                    {companyData.availableCompanies.map((company: any) => (
+                                                        <option key={company.id} value={company.id}>{company.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                         <div className="relative flex-1 lg:min-w-[280px]">
                                             <Search size={14} className="absolute left-4 top-3.5 text-gray-400" />
                                             <input
@@ -238,9 +264,10 @@ export default function EmployeeTransactions() {
                                         <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                                             <tr>
                                                 <th className="px-6 py-4 text-left">Transaction ID</th>
-                                                <th className="px-6 py-4 text-left">Customer / Service</th>
-                                                <th className="px-6 py-4 text-left">Date &amp; Time</th>
-                                                <th className="px-6 py-4 text-right">Amount</th>
+                                                        <th className="px-6 py-4 text-left">Customer / Service</th>
+                                                        <th className="px-6 py-4 text-left">Company</th>
+                                                        <th className="px-6 py-4 text-left">Date &amp; Time</th>
+                                                        <th className="px-6 py-4 text-right">Amount</th>
                                                 <th className="px-6 py-4 text-center">Status</th>
                                                 <th className="px-6 py-4 text-center">Method</th>
                                                 {['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(userRole) && (
@@ -251,7 +278,7 @@ export default function EmployeeTransactions() {
                                         <tbody className="divide-y divide-gray-50 bg-white">
                                             {filteredPayments.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={7} className="px-6 py-20 text-center">
+                                                    <td colSpan={8} className="px-6 py-20 text-center">
                                                         <div className="flex flex-col items-center gap-3 text-gray-300">
                                                             <Search size={48} />
                                                             <p className="font-black text-xs uppercase tracking-widest">No matching transactions</p>
@@ -276,6 +303,11 @@ export default function EmployeeTransactions() {
                                                             <div className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[180px] mt-0.5">
                                                                 {p.description || 'System Subscription'}
                                                             </div>
+                                                        </td>
+                                                        <td className="px-6 py-5">
+                                                            <span className="text-xs font-bold text-gray-700">
+                                                                {p.company?.name || 'Unmapped'}
+                                                            </span>
                                                         </td>
                                                         <td className="px-6 py-5">
                                                             <div className="text-xs font-black text-gray-700">

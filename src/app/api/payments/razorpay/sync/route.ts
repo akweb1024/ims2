@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
+import { getRazorpaySyncAccounts } from '@/lib/razorpay';
 
 export async function POST() {
     try {
@@ -15,52 +16,7 @@ export async function POST() {
         const currentSyncAt = new Date();
         let totalSynced = 0;
 
-        // 1. Fetch ALL Razorpay Configurations (Company-specific)
-        // We look for any key that starts with RAZORPAY_KEY_ID
-        const allConfigs = await prisma.appConfiguration.findMany({
-            where: {
-                category: 'PAYMENT_GATEWAY',
-                key: { startsWith: 'RAZORPAY_KEY_ID' },
-                isActive: true
-            }
-        });
-
-        // If no DB configs, try one fallback with ENV vars
-        const accountsToSync = [];
-
-        if (allConfigs.length > 0) {
-            for (const config of allConfigs) {
-                // Find matching secret
-                // Convention: RAZORPAY_KEY_ID -> RAZORPAY_KEY_SECRET
-                //             RAZORPAY_KEY_ID_2 -> RAZORPAY_KEY_SECRET_2
-                const secretKey = config.key.replace('ID', 'SECRET');
-
-                const secretConfig = await prisma.appConfiguration.findFirst({
-                    where: {
-                        companyId: config.companyId,
-                        category: 'PAYMENT_GATEWAY',
-                        key: secretKey,
-                        isActive: true
-                    }
-                });
-
-                if (secretConfig) {
-                    accountsToSync.push({
-                        key_id: config.value,
-                        key_secret: secretConfig.value,
-                        companyId: config.companyId,
-                        alias: config.key // To track which account
-                    });
-                }
-            }
-        } else if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-            accountsToSync.push({
-                key_id: process.env.RAZORPAY_KEY_ID,
-                key_secret: process.env.RAZORPAY_KEY_SECRET,
-                companyId: null, // Global env fallback
-                alias: 'ENV_DEFAULT'
-            });
-        }
+        const accountsToSync = await getRazorpaySyncAccounts();
 
         if (accountsToSync.length === 0) {
             return NextResponse.json({ error: 'No Razorpay credentials found' }, { status: 404 });

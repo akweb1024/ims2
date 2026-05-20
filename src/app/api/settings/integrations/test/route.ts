@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session';
 import { SESv2Client, GetAccountCommand } from '@aws-sdk/client-sesv2';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getWhatsAppReportRecipients, sendWhatsApp } from '@/lib/whatsapp';
+import Razorpay from 'razorpay';
 
 function createUnauthorized() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -187,6 +188,42 @@ async function testPlagiarismWebhook(companyId: string) {
     };
 }
 
+async function testRazorpayConnection(companyId: string) {
+    const integration = await getCompanyIntegration(companyId, 'RAZORPAY');
+    if (!integration?.isActive || !integration.key) {
+        return { ok: false, message: 'Razorpay integration is not active or missing Key Secret.' };
+    }
+
+    let parsedValue: Record<string, string> = {};
+    try {
+        parsedValue = integration.value ? JSON.parse(integration.value) : {};
+    } catch {
+        parsedValue = { keyId: integration.value || '' };
+    }
+
+    const keyId = parsedValue.keyId;
+    if (!keyId) {
+        return { ok: false, message: 'Razorpay config JSON must include keyId.' };
+    }
+
+    try {
+        const instance = new Razorpay({
+            key_id: keyId,
+            key_secret: integration.key,
+        });
+        await instance.payments.all({ count: 1 });
+        return {
+            ok: true,
+            message: `Razorpay connection verified for key ${keyId}.`,
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            message: error instanceof Error ? error.message : 'Failed to connect to Razorpay.',
+        };
+    }
+}
+
 async function sendWhatsAppTestMessage(companyId: string, provider: string, recipientInput?: string) {
     const integration = await getCompanyIntegration(companyId, provider);
     if (!integration?.isActive) {
@@ -269,6 +306,8 @@ export async function POST(req: NextRequest) {
                 result = await testGeminiConnection(companyId);
             } else if (provider === 'PLAGIARISM_SCANNER') {
                 result = await testPlagiarismWebhook(companyId);
+            } else if (provider === 'RAZORPAY') {
+                result = await testRazorpayConnection(companyId);
             } else {
                 return NextResponse.json({ error: 'Test action is not implemented for this provider yet.' }, { status: 400 });
             }

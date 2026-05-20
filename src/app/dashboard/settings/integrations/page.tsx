@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap, Send } from 'lucide-react';
+import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap, Send, BadgeDollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SUPPORTED_INTEGRATION_PROVIDERS } from '@/lib/integrations';
 
 const PROVIDER_ICONS = {
+    RAZORPAY: BadgeDollarSign,
     GEMINI: Cpu,
     PLAGIARISM_SCANNER: Webhook,
     AWS_SES: KeyRound,
@@ -234,7 +235,7 @@ export default function IntegrationsGatewayPage() {
                                             </div>
                                         </div>
 
-                                        {(provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO' || provider.id === 'WHATSAPP_META') && (
+                                        {(provider.id === 'RAZORPAY' || provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO' || provider.id === 'WHATSAPP_META') && (
                                             <div className="space-y-2 mt-4">
                                                 <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">
                                                     {provider.valueLabel}
@@ -273,6 +274,11 @@ export default function IntegrationsGatewayPage() {
                                                         </p>
                                                     </div>
                                                 )}
+                                                {provider.id === 'RAZORPAY' && (
+                                                    <p className="text-xs font-medium text-secondary-500">
+                                                        Save Razorpay Key Secret in the secret field above. Use JSON here for `keyId`, optional `webhookSecret`, and `accountLabel`.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 
@@ -305,7 +311,7 @@ export default function IntegrationsGatewayPage() {
                                         )}
 
                                         <div className="flex justify-end gap-3 pt-2">
-                                            {['GEMINI', 'PLAGIARISM_SCANNER', 'AWS_SES', 'WHATSAPP_TWILIO', 'WHATSAPP_META'].includes(provider.id) && (
+                                            {['RAZORPAY', 'GEMINI', 'PLAGIARISM_SCANNER', 'AWS_SES', 'WHATSAPP_TWILIO', 'WHATSAPP_META'].includes(provider.id) && (
                                                 <button
                                                     onClick={() => handleTest(provider.id)}
                                                     disabled={testing === provider.id}

@@ -1,12 +1,52 @@
 import Razorpay from 'razorpay';
 import prisma from '@/lib/prisma';
 
+type RazorpayIntegrationConfig = {
+    keyId?: string;
+    webhookSecret?: string;
+    accountLabel?: string;
+};
+
+function parseRazorpayIntegrationValue(raw: string | null | undefined): RazorpayIntegrationConfig {
+    if (!raw) return {};
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed as RazorpayIntegrationConfig;
+    } catch {
+        // Backward-compatible fallback: value may be plain keyId
+        return { keyId: raw };
+    }
+    return {};
+}
+
 /**
  * Get Razorpay credentials for a specific company
  * Falls back to environment variables if company-specific credentials are not found
  */
 export async function getRazorpayCredentials(companyId: string) {
     try {
+        // Preferred source: CompanyIntegration provider="RAZORPAY"
+        const razorpayIntegration = await (prisma as any).companyIntegration.findUnique({
+            where: {
+                companyId_provider: {
+                    companyId,
+                    provider: 'RAZORPAY',
+                },
+            },
+        });
+
+        if (razorpayIntegration?.isActive && razorpayIntegration?.key) {
+            const integrationConfig = parseRazorpayIntegrationValue(razorpayIntegration.value);
+            const keyId = integrationConfig.keyId;
+            if (keyId) {
+                return {
+                    key_id: keyId,
+                    key_secret: razorpayIntegration.key,
+                    source: 'integration' as const,
+                };
+            }
+        }
+
         // Fetch company-specific Razorpay credentials from database
         const configs = await prisma.appConfiguration.findMany({
             where: {
@@ -57,6 +97,82 @@ export async function getRazorpayInstance(companyId: string): Promise<Razorpay> 
         key_id: credentials.key_id,
         key_secret: credentials.key_secret,
     });
+}
+
+export async function getRazorpaySyncAccounts() {
+    const accountsToSync: Array<{
+        key_id: string;
+        key_secret: string;
+        companyId: string | null;
+        alias: string;
+        source: 'integration' | 'appConfiguration' | 'env';
+    }> = [];
+
+    const integrations = await (prisma as any).companyIntegration.findMany({
+        where: {
+            provider: 'RAZORPAY',
+            isActive: true,
+        },
+    });
+
+    for (const integration of integrations) {
+        const parsedValue = parseRazorpayIntegrationValue(integration.value);
+        if (!integration.key || !parsedValue.keyId) continue;
+        accountsToSync.push({
+            key_id: parsedValue.keyId,
+            key_secret: integration.key,
+            companyId: integration.companyId,
+            alias: `RAZORPAY:${integration.companyId}`,
+            source: 'integration',
+        });
+    }
+
+    // Legacy compatibility: AppConfiguration-based Razorpay credentials
+    const allConfigs = await prisma.appConfiguration.findMany({
+        where: {
+            category: 'PAYMENT_GATEWAY',
+            key: { startsWith: 'RAZORPAY_KEY_ID' },
+            isActive: true,
+        },
+    });
+
+    for (const config of allConfigs) {
+        const secretKey = config.key.replace('ID', 'SECRET');
+        const secretConfig = await prisma.appConfiguration.findFirst({
+            where: {
+                companyId: config.companyId,
+                category: 'PAYMENT_GATEWAY',
+                key: secretKey,
+                isActive: true,
+            },
+        });
+        if (!secretConfig) continue;
+
+        const alreadyExists = accountsToSync.some(
+            (account) => account.companyId === config.companyId && account.key_id === config.value,
+        );
+        if (alreadyExists) continue;
+
+        accountsToSync.push({
+            key_id: config.value,
+            key_secret: secretConfig.value,
+            companyId: config.companyId,
+            alias: config.key,
+            source: 'appConfiguration',
+        });
+    }
+
+    if (accountsToSync.length === 0 && process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+        accountsToSync.push({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+            companyId: null,
+            alias: 'ENV_DEFAULT',
+            source: 'env',
+        });
+    }
+
+    return accountsToSync;
 }
 
 /**

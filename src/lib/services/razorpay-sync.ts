@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
+import { getRazorpaySyncAccounts } from '@/lib/razorpay';
 
 const SYNC_INTERVAL_MS = Number(process.env.RAZORPAY_SYNC_INTERVAL_MS || 60 * 60 * 1000);
 const ADVISORY_LOCK_KEY = 987654321;
@@ -44,52 +45,7 @@ async function releaseSyncLock() {
 }
 
 async function getAccountsToSync() {
-    const allConfigs = await prisma.appConfiguration.findMany({
-        where: {
-            category: 'PAYMENT_GATEWAY',
-            key: { startsWith: 'RAZORPAY_KEY_ID' },
-            isActive: true,
-        },
-    });
-
-    const accountsToSync: Array<{
-        key_id: string;
-        key_secret: string;
-        companyId: string | null;
-        alias: string;
-    }> = [];
-
-    if (allConfigs.length > 0) {
-        for (const config of allConfigs) {
-            const secretKey = config.key.replace('ID', 'SECRET');
-            const secretConfig = await prisma.appConfiguration.findFirst({
-                where: {
-                    companyId: config.companyId,
-                    category: 'PAYMENT_GATEWAY',
-                    key: secretKey,
-                    isActive: true,
-                },
-            });
-
-            if (secretConfig) {
-                accountsToSync.push({
-                    key_id: config.value,
-                    key_secret: secretConfig.value,
-                    companyId: config.companyId,
-                    alias: config.key,
-                });
-            }
-        }
-    } else if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-        accountsToSync.push({
-            key_id: process.env.RAZORPAY_KEY_ID,
-            key_secret: process.env.RAZORPAY_KEY_SECRET,
-            companyId: null,
-            alias: 'ENV_DEFAULT',
-        });
-    }
-
-    return accountsToSync;
+    return getRazorpaySyncAccounts();
 }
 
 async function shouldSkipSync(force = false) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { assertCompanyAccess, canAccessAllCompanies, getAvailableCompaniesForUser } from '@/lib/access-policy';
 
 export async function GET(req: NextRequest) {
     try {
@@ -15,10 +16,21 @@ export async function GET(req: NextRequest) {
         const offset = parseInt(searchParams.get('offset') || '0');
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
+        const requestedCompanyId = searchParams.get('companyId');
 
         const where: any = {
             razorpayPaymentId: { not: null }
         };
+
+        if (requestedCompanyId && requestedCompanyId !== 'ALL') {
+            await assertCompanyAccess(user, requestedCompanyId, 'view company payment transactions');
+            where.companyId = requestedCompanyId;
+        } else if (!canAccessAllCompanies(user)) {
+            if (!user.companyId) {
+                return NextResponse.json({ error: 'No company context found for this user' }, { status: 400 });
+            }
+            where.companyId = user.companyId;
+        }
 
         if (startDate || endDate) {
             where.paymentDate = {};
@@ -127,6 +139,10 @@ export async function GET(req: NextRequest) {
             };
         });
 
+        const sqlWhereByCompany = where.companyId
+            ? Prisma.sql` AND "companyId" = ${where.companyId}`
+            : Prisma.empty;
+
         // Aggregations for Monthly/Yearly tables
         const [monthlyAggRaw, yearlyAggRaw] = await Promise.all([
             prisma.$queryRaw`
@@ -138,6 +154,7 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
+                ${sqlWhereByCompany}
                 GROUP BY period
                 ORDER BY period DESC
             `,
@@ -150,6 +167,7 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
+                ${sqlWhereByCompany}
                 GROUP BY period
                 ORDER BY period DESC
             `
@@ -238,6 +256,7 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
+                ${sqlWhereByCompany}
                 GROUP BY date
                 ORDER BY date DESC
                 LIMIT 60
@@ -248,12 +267,18 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as last_month_captured
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
+                  ${sqlWhereByCompany}
                   AND "paymentDate" >= ${startOfLastMonth}
                   AND "paymentDate" <= ${endOfLastMonth}
                 GROUP BY day_of_month
                 ORDER BY day_of_month ASC
             `
         ]);
+
+        const availableCompanies = (await getAvailableCompaniesForUser(user)).map((company) => ({
+            id: company.id,
+            name: company.name,
+        }));
 
         // Build a day-of-month -> lastMonthCaptured lookup
         const lastMonthMap = new Map<number, number>();
@@ -288,7 +313,9 @@ export async function GET(req: NextRequest) {
             monthlySummaries: monthlyAgg.map((m: any) => ({ ...m, total: Number(m.total), captured: Number(m.captured), failed: Number(m.failed) })),
             yearlySummaries: yearlyAgg.map((y: any) => ({ ...y, total: Number(y.total), captured: Number(y.captured), failed: Number(y.failed) })),
             lastSync,
-            dailyRevenue: processedDaily
+            dailyRevenue: processedDaily,
+            selectedCompanyId: where.companyId || 'ALL',
+            availableCompanies,
         });
 
     } catch (error: any) {
