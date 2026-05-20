@@ -100,9 +100,10 @@ test.describe("CRM Invoice and Product Flows", () => {
     await expect(
       page.getByRole("heading", { name: "Create New Invoice" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /Account Detail/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Products Detail/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Summary/i })).toBeVisible();
+    const stepper = page.locator("div.grid.grid-cols-1.gap-3.sm\\:grid-cols-3").first();
+    await expect(stepper.getByRole("button", { name: /Subscriber Info/i })).toBeVisible();
+    await expect(stepper.getByRole("button", { name: /Journal Cart/i })).toBeVisible();
+    await expect(stepper.getByRole("button", { name: /Preview/i })).toBeVisible();
     await expect(page.getByText("Select Account")).toBeVisible();
   });
 
