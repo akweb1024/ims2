@@ -307,7 +307,7 @@ export default function CRMInsightsPage() {
                                     <div className="bg-secondary-50 p-4 border border-secondary-100 rounded-2xl">
                                         <h4 className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1.5">Analysis Summary</h4>
                                         <p className="text-sm font-bold text-secondary-800 leading-relaxed italic">
-                                            "{retentionPlan.summary}"
+                                            &quot;{retentionPlan.summary}&quot;
                                         </p>
                                     </div>
 
@@ -370,4 +370,3 @@ export default function CRMInsightsPage() {
         </CRMClientLayout>
     );
 }
-
