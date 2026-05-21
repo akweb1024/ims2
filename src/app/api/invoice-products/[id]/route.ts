@@ -304,14 +304,13 @@ export const DELETE = authorizedRoute(
         const candidateInvoices = await db.invoice.findMany({
           where: {
             companyId: product.companyId || user.companyId,
-            lineItems: { not: null },
           },
           select: {
             id: true,
             invoiceNumber: true,
             lineItems: true,
           },
-        });
+        }).then(invoices => invoices.filter(inv => inv.lineItems));
 
         const linkedInvoices = candidateInvoices.filter((inv: any) =>
           Array.isArray(inv.lineItems)

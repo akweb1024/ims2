@@ -163,11 +163,11 @@ export const POST = authorizedRoute(
               if (existing) {
                 await db.invoiceProduct.update({
                   where: { id },
-                  data: dataToSave,
+                  data: dataToSave as any,
                 });
               } else {
                 await db.invoiceProduct.create({
-                  data: { ...dataToSave, createdByUserId: user.id },
+                  data: { ...dataToSave, createdByUserId: user.id } as any,
                 });
               }
             } else if (skuCleaned) {
@@ -175,16 +175,16 @@ export const POST = authorizedRoute(
               if (existingSku) {
                 await db.invoiceProduct.update({
                   where: { sku: skuCleaned },
-                  data: dataToSave,
+                  data: dataToSave as any,
                 });
               } else {
                 await db.invoiceProduct.create({
-                  data: { ...dataToSave, createdByUserId: user.id },
+                  data: { ...dataToSave, createdByUserId: user.id } as any,
                 });
               }
             } else {
               await db.invoiceProduct.create({
-                data: { ...dataToSave, createdByUserId: user.id },
+                data: { ...dataToSave, createdByUserId: user.id } as any,
               });
             }
             count++;

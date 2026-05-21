@@ -38,8 +38,7 @@ export const POST = authorizedRoute(
             const template = await prisma.emailTemplate.create({
                 data: {
                     companyId: user.companyId,
-                    ...validated,
-                    designState: validated.designState || {}
+                    ...(validated as any),
                 }
             });
 

@@ -39,10 +39,10 @@ export async function ensureAutomationJobs(companyId?: string | null) {
             prisma.automationJob.upsert({
                 where: {
                     companyId_key: {
-                        companyId: companyId ?? null,
+                        companyId: companyId as string,
                         key: job.key,
                     },
-                },
+                } as any,
                 update: {
                     title: job.title,
                     description: job.description,

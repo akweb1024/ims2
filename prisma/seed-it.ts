@@ -149,7 +149,7 @@ async function main() {
                 companyId: company.id,
                 taskCode: `TSK-IT-${Math.floor(1000 + Math.random() * 9000)}`,
                 createdById: itManager.id
-            }
+            } as any
         });
     }
 

@@ -133,7 +133,7 @@ export const POST = authorizedRoute(
                 );
 
                 // a. Build subscription items
-                const lineItems: any[] = proforma.lineItems || [];
+                const lineItems: any[] = (proforma.lineItems as any[]) || [];
                 const subscriptionItems = lineItems
                     .filter((item: any) => item.description) // skip empty items
                     .map((item: any) => ({

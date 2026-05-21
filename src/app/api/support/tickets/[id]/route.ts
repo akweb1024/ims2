@@ -89,7 +89,7 @@ export async function PATCH(
         });
 
         // 1. Notify Customer of Status change
-        if (status && status !== ticket.status) {
+        if (status && status !== ticket.status && ticket.customerProfile.userId) {
             await createNotification({
                 userId: ticket.customerProfile.userId,
                 title: `Ticket Status Updated`,

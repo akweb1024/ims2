@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         }
 
         // If milestone was paid, decrement project revenue
-        if (milestone.isPaid && milestone.paymentAmount > 0) {
+        if (milestone.isPaid && milestone.paymentAmount && milestone.paymentAmount > 0) {
             await prisma.iTProject.update({
                 where: { id: milestone.projectId },
                 data: {

@@ -20,15 +20,18 @@ export const POST = authorizedRoute(
       if (invoice.status === "PAID")
         throw new ValidationError("Cannot update a PAID invoice.");
 
+      if (!invoice.lineItems) throw new ValidationError("Invoice has no line items");
+
       // Fetch current product catalog details for all linked products
+      const lineItems = invoice.lineItems as any[];
       const productIds = Array.from(
         new Set(
-          invoice.lineItems.map((item: any) => item.productId).filter(Boolean),
+          lineItems.map((item: any) => item.productId).filter(Boolean),
         ),
       );
       const variantIds = Array.from(
         new Set(
-          invoice.lineItems.map((item: any) => item.variantId).filter(Boolean),
+          lineItems.map((item: any) => item.variantId).filter(Boolean),
         ),
       );
 
@@ -51,7 +54,7 @@ export const POST = authorizedRoute(
       const variantMap = new Map(variants.map((v: any) => [v.id, v]));
 
       let updatedCount = 0;
-      const updatedItems = invoice.lineItems.map((item: any) => {
+      const updatedItems = lineItems.map((item: any) => {
         const updated = { ...item };
 
         if (item.variantId && variantMap.has(item.variantId)) {

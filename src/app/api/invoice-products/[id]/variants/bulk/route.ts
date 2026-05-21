@@ -41,7 +41,7 @@ export const PATCH = authorizedRoute(
             if (product.type !== 'VARIABLE') throw new ValidationError('Product must be of type VARIABLE to configure variants');
 
             // Unique SKU validation
-            const skus = updates.map(u => u.sku).filter(Boolean);
+            const skus = updates.map(u => u.sku).filter((sku): sku is string => Boolean(sku));
             if (new Set(skus).size !== skus.length) {
                 throw new ValidationError('Duplicate SKUs found in update payload');
             }
