@@ -21,7 +21,8 @@ import {
     Activity,
     ClipboardCheck,
     Cpu,
-    ShieldCheck
+    ShieldCheck,
+    RotateCcw
 } from 'lucide-react';
 import { 
     ResponsiveContainer, 
@@ -254,6 +255,14 @@ export default function SuperAdminOverhaulDashboard() {
                         <ShieldCheck size={18} />
                         {stats?.health.overall === 'watch' ? 'Attention Needed' : 'Systems Healthy'}
                     </div>
+
+                    <Link
+                        href="/dashboard/super-admin/invoicing-reset"
+                        className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-rose-100 transition-all hover:bg-rose-700 active:scale-95"
+                    >
+                        <RotateCcw size={18} />
+                        Reset Invoices
+                    </Link>
                 </div>
             </header>
 
