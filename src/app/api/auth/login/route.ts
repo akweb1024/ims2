@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     try {
@@ -92,7 +93,20 @@ export async function POST(request: NextRequest) {
         });
 
         // Return user data (exclude password)
-        const { password: _, ...userWithoutPassword } = user;
+        const userWithoutPassword = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            isActive: user.isActive,
+            lastLogin: user.lastLogin,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            companyId: user.companyId,
+            company: user.company,
+            companies: user.companies,
+            customerProfile: user.customerProfile,
+        };
 
         return NextResponse.json(
             {
@@ -106,7 +120,7 @@ export async function POST(request: NextRequest) {
             { status: 200 }
         );
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error', error);
         return NextResponse.json(
             { error: 'An error occurred during login' },
             { status: 500 }

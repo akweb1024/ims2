@@ -12,22 +12,20 @@ const getClient = () => {
         throw new Error('DATABASE_URL is not defined');
     }
 
-    // Standard Postgres connection via adapter
-    // Manual parsing to ensure password is a string
-    const match = url.match(/postgresql:\/\/([^:]+):(.*)@([^:]+):(\d+)\/(.+)/);
-
+    // Use URL parser for safe credential extraction (handles special chars in passwords)
     let pool;
-    if (match) {
-        const [, user, password, host, port, database] = match;
+    try {
+        const parsedUrl = new URL(url);
         pool = new Pool({
-            user,
-            password: decodeURIComponent(password),
-            host,
-            port: parseInt(port),
-            database: database.split('?')[0],
+            user: parsedUrl.username,
+            password: decodeURIComponent(parsedUrl.password),
+            host: parsedUrl.hostname,
+            port: parseInt(parsedUrl.port),
+            database: parsedUrl.pathname.slice(1).split('?')[0],
             ssl: url.includes('sslmode=require') || url.includes('ssl=true') ? { rejectUnauthorized: false } : false
         });
-    } else {
+    } catch {
+        // Fallback for connection strings that aren't valid URLs
         pool = new Pool({ connectionString: url });
     }
 

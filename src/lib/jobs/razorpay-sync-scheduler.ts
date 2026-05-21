@@ -6,6 +6,7 @@ const INITIAL_DELAY_MS = Number(process.env.RAZORPAY_SYNC_INITIAL_DELAY_MS || 60
 
 declare global {
     var __razorpaySyncSchedulerStarted: boolean | undefined;
+    var __razorpaySyncSchedulerCleanup: (() => void) | undefined;
 }
 
 export function startRazorpaySyncScheduler() {
@@ -25,6 +26,9 @@ export function startRazorpaySyncScheduler() {
 
     globalThis.__razorpaySyncSchedulerStarted = true;
 
+    let intervalId: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const tick = async () => {
         try {
             const result = await performRazorpaySync({ trigger: 'scheduler' });
@@ -36,12 +40,28 @@ export function startRazorpaySyncScheduler() {
         }
     };
 
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
         void tick();
-        setInterval(() => {
+        intervalId = setInterval(() => {
             void tick();
         }, SCHEDULER_TICK_MS);
     }, INITIAL_DELAY_MS);
+
+    // Cleanup function for graceful shutdown
+    const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (intervalId) clearInterval(intervalId);
+        globalThis.__razorpaySyncSchedulerStarted = false;
+        logger.info('Razorpay scheduler stopped');
+    };
+
+    globalThis.__razorpaySyncSchedulerCleanup = cleanup;
+
+    // Register cleanup on process termination
+    if (typeof process !== 'undefined') {
+        process.on('SIGTERM', cleanup);
+        process.on('SIGINT', cleanup);
+    }
 
     logger.info('Razorpay scheduler started', {
         tickMs: SCHEDULER_TICK_MS,

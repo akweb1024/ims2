@@ -296,7 +296,7 @@ export default function Home() {
                     </div>
 
                     <div className="border-t border-secondary-800 mt-8 pt-8 text-center text-secondary-400 text-sm">
-                        <p>&copy; 2025 STM Customer Management System. All rights reserved.</p>
+                        <p>&copy; {new Date().getFullYear()} STM Customer Management System. All rights reserved.</p>
                     </div>
                 </div>
             </footer>

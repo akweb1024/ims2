@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +43,7 @@ export default function RegisterPage() {
             const data = await res.json();
 
             if (res.ok) {
-                // Auto login after register
+                // TODO: Migrate to httpOnly cookies for better security
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 window.location.href = '/dashboard';

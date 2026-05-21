@@ -10,6 +10,8 @@ import {
     resolveCompanyScope,
 } from '@/lib/access-policy';
 
+const DEFAULT_LEAVE_BALANCE = parseInt(process.env.DEFAULT_LEAVE_BALANCE || '20', 10);
+
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
@@ -117,7 +119,6 @@ export const GET = authorizedRoute(
                 }
             });
         } catch (error: any) {
-            console.error('Fetch Users Error:', error);
             return createErrorResponse(error);
         }
     }
@@ -204,13 +205,13 @@ export const POST = authorizedRoute(
                     await tx.employeeProfile.create({
                         data: {
                             userId: createdUser.id,
-                            employeeId: `EMP${Date.now()}`, // Generate unique employee ID
+                            employeeId: `EMP${Date.now()}`,
                             phoneNumber: phone || null,
                             designationId: designationId || null,
                             dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : new Date(),
-                            leaveBalance: 20, // Default annual leave
-                            currentLeaveBalance: 20,
-                            initialLeaveBalance: 20
+                            leaveBalance: DEFAULT_LEAVE_BALANCE,
+                            currentLeaveBalance: DEFAULT_LEAVE_BALANCE,
+                            initialLeaveBalance: DEFAULT_LEAVE_BALANCE
                         }
                     });
                 }
@@ -231,7 +232,6 @@ export const POST = authorizedRoute(
             const { password: _, ...safeUser } = newUser;
             return NextResponse.json(safeUser);
         } catch (error: any) {
-            console.error('Create User Error:', error);
             return createErrorResponse(error);
         }
     }

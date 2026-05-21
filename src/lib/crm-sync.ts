@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import { CustomerType } from '@prisma/client';
 import { updateLeadScore } from './crm-scoring';
+import { logger } from './logger';
 
 type LeadSource = 'CONFERENCE_REGISTRATION' | 'COURSE_ENROLLMENT' | 'MANUAL' | 'EXTERNAL_API';
 
@@ -55,10 +56,7 @@ export async function syncToCrmLead(data: LeadData) {
         const user = await prisma.user.findUnique({ where: { email: data.email } });
         
         if (!user) {
-            // If no user exists, we can't create a CustomerProfile in THIS schema because of the required userId.
-            // FIX: We must either create a guest user or ensure the registration flow creates a user first.
-            // For now, let's assume we create a minimal guest user if needed or the caller provides the userId.
-            console.warn(`CRM Sync: User with email ${data.email} not found. Cannot create CustomerProfile lead.`);
+            logger.warn(`CRM Sync: User with email ${data.email} not found. Cannot create CustomerProfile lead.`);
             return null;
         }
 
@@ -83,7 +81,7 @@ export async function syncToCrmLead(data: LeadData) {
 
         return lead;
     } catch (error) {
-        console.error('CRM Sync Error:', error);
+        logger.error('CRM Sync Error', error as Error);
         return null;
     }
 }
@@ -148,7 +146,7 @@ async function getNextExecutiveId(companyId: string): Promise<string | null> {
 
         return nextExecutive.id;
     } catch (error) {
-        console.error('Round-Robin Assignment Error:', error);
+        logger.error('Round-Robin Assignment Error', error as Error);
         return null;
     }
 }

@@ -9,33 +9,24 @@ import { handleApiError } from '@/lib/error-handler';
 // ============================================================================
 export function createErrorResponse(
     error: unknown,
-    statusOrPath: number | string = 500
+    status: number = 500
 ): NextResponse {
-    if (typeof statusOrPath === 'number') {
-        const status = statusOrPath;
-        const message =
-            typeof error === 'string'
-                ? error
-                : error instanceof Error
-                    ? error.message
-                    : 'Internal Server Error';
+    const message =
+        typeof error === 'string'
+            ? error
+            : error instanceof Error
+                ? error.message
+                : 'Internal Server Error';
 
-        return NextResponse.json(
-            {
-                error: message,
-                message,
-                statusCode: status,
-                timestamp: new Date().toISOString(),
-            },
-            { status }
-        );
-    }
-
-    // If called with a numeric status (legacy: createErrorResponse(error, 404))
-    // we wrap the error in a form handleApiError understands, or we can just
-    // call handleApiError with a synthetic path.
-    const path = statusOrPath;
-    return handleApiError(error, path);
+    return NextResponse.json(
+        {
+            error: message,
+            message,
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+        },
+        { status }
+    );
 }
 
 export function createSuccessResponse<T>(data: T, status: number = 200): NextResponse {

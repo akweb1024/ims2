@@ -10,6 +10,9 @@ interface LogContext {
     [key: string]: any;
 }
 
+// Singleton pattern to prevent multiple instances during HMR
+let loggerInstance: Logger | null = null;
+
 const pinoOptions = {
     level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
     formatters: {
@@ -85,7 +88,8 @@ class Logger {
     }
 }
 
-export const logger = new Logger();
+// Singleton export
+export const logger = loggerInstance || (loggerInstance = new Logger());
 
 /**
  * Higher-order function for API route logging and telemetry

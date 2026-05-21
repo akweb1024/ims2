@@ -1,5 +1,7 @@
 import Razorpay from 'razorpay';
 import prisma from '@/lib/prisma';
+import { logger } from '@/lib/logger';
+import { PrismaClient } from '@prisma/client';
 
 type RazorpayIntegrationConfig = {
     keyId?: string;
@@ -25,8 +27,9 @@ function parseRazorpayIntegrationValue(raw: string | null | undefined): Razorpay
  */
 export async function getRazorpayCredentials(companyId: string) {
     try {
+        const prismaTyped = prisma as PrismaClient;
         // Preferred source: CompanyIntegration provider="RAZORPAY"
-        const razorpayIntegration = await (prisma as any).companyIntegration.findUnique({
+        const razorpayIntegration = await (prismaTyped as any).companyIntegration.findUnique({
             where: {
                 companyId_provider: {
                     companyId,
@@ -82,7 +85,7 @@ export async function getRazorpayCredentials(companyId: string) {
 
         throw new Error('Razorpay credentials not found for this company');
     } catch (error) {
-        console.error('Error fetching Razorpay credentials:', error);
+        logger.error('Error fetching Razorpay credentials', error as Error);
         throw error;
     }
 }
@@ -108,7 +111,7 @@ export async function getRazorpaySyncAccounts() {
         source: 'integration' | 'appConfiguration' | 'env';
     }> = [];
 
-    const integrations = await (prisma as any).companyIntegration.findMany({
+    const integrations = await (prisma as PrismaClient as any).companyIntegration.findMany({
         where: {
             provider: 'RAZORPAY',
             isActive: true,
@@ -216,7 +219,7 @@ export async function getCompanyConfig(companyId: string, category: string, key:
 
         return config?.value || null;
     } catch (error) {
-        console.error(`Error fetching config ${category}:${key}:`, error);
+        logger.error(`Error fetching config ${category}:${key}`, error as Error);
         return null;
     }
 }
@@ -240,7 +243,7 @@ export async function getCompanyConfigs(companyId: string, category: string, key
             return acc;
         }, {} as Record<string, string>);
     } catch (error) {
-        console.error(`Error fetching configs ${category}:`, error);
+        logger.error(`Error fetching configs ${category}`, error as Error);
         return {};
     }
 }

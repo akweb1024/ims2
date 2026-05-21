@@ -2,10 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, generateToken } from '@/lib/auth-legacy';
 import { UserRole, CustomerType } from '@/types';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+const registerSchema = z.object({
+    email: z.string().email('Invalid email format'),
+    password: z.string().min(8, 'Password must be at least 8 characters').regex(/[A-Z]/, 'Password must contain at least one uppercase letter').regex(/[a-z]/, 'Password must contain at least one lowercase letter').regex(/[0-9]/, 'Password must contain at least one number'),
+    customerType: z.enum(['AGENCY', 'INSTITUTION', 'UNIVERSITY', 'COMPANY', 'ORGANIZATION', 'INDIVIDUAL']),
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    organizationName: z.string().optional(),
+    primaryPhone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
+    country: z.string().optional(),
+    category: z.string().optional(),
+    territory: z.string().optional(),
+});
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        const validation = registerSchema.safeParse(body);
+
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            );
+        }
+
         const {
             email,
             password,
@@ -16,7 +39,7 @@ export async function POST(request: NextRequest) {
             country,
             category,
             territory,
-        } = body;
+        } = validation.data;
 
         // Validation
         if (!email || !password || !customerType || !name || !primaryPhone) {
@@ -154,7 +177,7 @@ export async function POST(request: NextRequest) {
             { status: 201 }
         );
     } catch (error: any) {
-        console.error('Registration error:', error);
+        logger.error('Registration error', error);
         return NextResponse.json(
             { error: 'An error occurred during registration' },
             { status: 500 }

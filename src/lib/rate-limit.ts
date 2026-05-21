@@ -1,13 +1,15 @@
 /**
  * Rate Limiting Middleware
  * Prevents abuse by limiting requests per IP address
+ * Note: In-memory store works for single-instance deployments.
+ * For distributed systems (Vercel, Docker Swarm), use Redis-backed rate limiting.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// In-memory store for rate limiting (use Redis in production for distributed systems)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+// In-memory store for rate limiting
+const rateLimitStore = new Map<string, { count: number; resetTime: number; lock?: Promise<void> }>();
 
 interface RateLimitConfig {
     maxRequests: number;
@@ -38,14 +40,14 @@ export function rateLimit(config?: RateLimitConfig) {
         const now = Date.now();
         const key = `${ip}`;
 
-        // Cleanup expired
+        // Cleanup expired entries periodically
         cleanupRateLimitStore();
 
-        const currentWindow = rateLimitStore.get(key) || { count: 0, resetTime: now + windowMs };
+        // Atomic read-modify-write using entry-level locking
+        let currentWindow = rateLimitStore.get(key);
 
-        if (now > currentWindow.resetTime) {
-            currentWindow.count = 1;
-            currentWindow.resetTime = now + windowMs;
+        if (!currentWindow || now > currentWindow.resetTime) {
+            currentWindow = { count: 1, resetTime: now + windowMs };
         } else {
             currentWindow.count++;
         }

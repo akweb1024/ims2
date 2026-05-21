@@ -24,9 +24,6 @@ const nextConfig = {
         ]
     },
     outputFileTracingRoot: __dirname,
-    experimental: {
-        // experimental options
-    },
     eslint: {
         ignoreDuringBuilds: false,
     },

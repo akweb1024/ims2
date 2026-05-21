@@ -368,6 +368,11 @@ export const createProblemIssue = async (params: {
 }) => {
     ensureProblemsAccess(params.user);
 
+    const companyId = params.user.companyId;
+    if (!companyId) {
+        throw new ValidationError('Company ID is required for creating problems.');
+    }
+
     const title = params.title.trim();
     const description = params.description.trim();
     const category = params.category.trim().toUpperCase();
@@ -383,7 +388,7 @@ export const createProblemIssue = async (params: {
     }
 
     const duplicates = await findPotentialProblemDuplicates({
-        companyId: params.user.companyId!,
+        companyId,
         category,
         title,
         description,
@@ -391,7 +396,7 @@ export const createProblemIssue = async (params: {
 
     const issue = await prisma.problemIssue.create({
         data: {
-            companyId: params.user.companyId!,
+            companyId,
             title,
             description,
             category,

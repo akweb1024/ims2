@@ -33,6 +33,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
             const data = await res.json();
             if (res.ok) {
                 if (data.token) {
+                    // TODO: Migrate to httpOnly cookies for better security
                     localStorage.setItem('token', data.token);
                 }
 
@@ -111,6 +112,8 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
             const requiresSelection = Array.isArray(availableCompanies) && availableCompanies.length > 1 && !user.companyId;
 
             if (token) {
+                // TODO: Migrate to httpOnly cookies for better security
+                // localStorage is vulnerable to XSS attacks
                 localStorage.setItem('token', token);
             }
 

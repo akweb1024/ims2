@@ -2,6 +2,7 @@ import { join } from 'path';
 import { mkdir, writeFile, readFile, stat, unlink } from 'fs/promises';
 import { createHash } from 'crypto';
 import { prisma } from './prisma';
+import { logger } from './logger';
 
 export type FileCategory =
     | 'profile_pictures'
@@ -363,7 +364,7 @@ export class StorageService {
 
             return newUrl;
         } catch (error) {
-            console.error('Storage moveFile error:', error);
+            logger.error('Storage moveFile error', error as Error);
             return oldUrl;
         }
     }

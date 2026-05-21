@@ -82,6 +82,19 @@ function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function isValidWebhookUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0") return false;
+    if (hostname.startsWith("10.") || hostname.startsWith("192.168.") || hostname.startsWith("172.16.")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function buildWebhookBody(rule: WebhookRule, payload: JsonRecord, meta: JsonRecord) {
   const mappings = Array.isArray(rule.mappings) ? rule.mappings : [];
   const mappedData = mappings.length > 0
@@ -107,6 +120,9 @@ function buildWebhookBody(rule: WebhookRule, payload: JsonRecord, meta: JsonReco
 }
 
 async function sendWebhookRule(rule: WebhookRule, payload: JsonRecord, meta: JsonRecord) {
+  if (!isValidWebhookUrl(rule.url)) {
+    throw new Error(`Invalid or blocked webhook URL: ${rule.url}`);
+  }
   const headers = {
     "Content-Type": "application/json",
     ...(rule.headers || {}),
@@ -177,6 +193,9 @@ function buildMappedPayload(action: AutomationFormAction, payload: JsonRecord, m
 
 async function sendWebhookAction(action: AutomationFormAction, payload: JsonRecord, meta: JsonRecord) {
   if (!action.endpointUrl) return;
+  if (!isValidWebhookUrl(action.endpointUrl)) {
+    throw new Error(`Invalid or blocked webhook URL: ${action.endpointUrl}`);
+  }
   const response = await fetch(action.endpointUrl, {
     method: (action.method || "POST").toUpperCase(),
     headers: {

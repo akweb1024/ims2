@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import { prisma } from './prisma';
+import { logger } from './logger';
 
 interface EmailOptions {
     to: string;
@@ -45,7 +47,14 @@ const getTransporter = () => {
     return transporterInstance;
 };
 
-import { prisma } from './prisma';
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
 
 export async function sendEmail({ to, subject, text, html, cc, bcc, replyTo }: EmailOptions) {
     const hasAws = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
@@ -65,7 +74,7 @@ export async function sendEmail({ to, subject, text, html, cc, bcc, replyTo }: E
                 }
             });
         } catch (err) {
-            console.error('Failed to log mock email:', err);
+            logger.error('Failed to log mock email', err as Error);
         }
 
         return { success: true, message: 'Mock email logged' };
@@ -98,7 +107,7 @@ export async function sendEmail({ to, subject, text, html, cc, bcc, replyTo }: E
 
         return { success: true, messageId: info.messageId };
     } catch (error: any) {
-        console.error('❌ Email sending failed:', error);
+        logger.error('Email sending failed', error);
 
         // Log Failure
         try {
@@ -112,7 +121,7 @@ export async function sendEmail({ to, subject, text, html, cc, bcc, replyTo }: E
                 }
             });
         } catch (logErr) {
-            console.error('Failed to log email error:', logErr);
+            logger.error('Failed to log email error', logErr as Error);
         }
 
         return { success: false, error: error.message };
@@ -127,11 +136,11 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">Request Received</h1>
-                <p>Dear <strong>${customerName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(customerName)}</strong>,</p>
                 <p>Thank you for submitting a new subscription request to <strong>STM Journals</strong>.</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 20px 0;">
                     <p style="margin: 5px 0;"><strong>Journals:</strong> ${itemsCount}</p>
-                    <p style="margin: 5px 0;"><strong>Estimated Total:</strong> ${total}</p>
+                    <p style="margin: 5px 0;"><strong>Estimated Total:</strong> ${escapeHtml(total)}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> Pending Review</p>
                 </div>
                 <p>Our team is currently reviewing your request. You will receive an update once it is approved and ready for payment.</p>
@@ -146,16 +155,16 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Subscription Approved</h1>
-                <p>Dear <strong>${customerName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(customerName)}</strong>,</p>
                 <p>Great news! Your subscription request has been approved.</p>
                 <p>To activate your subscription, please log in to your dashboard and complete the payment for the generated invoice.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${subId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${escapeHtml(subId)}" 
                        style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        View Subscription & Pay
                     </a>
                 </div>
-                <p>Reference ID: ${subId}</p>
+                <p>Reference ID: ${escapeHtml(subId)}</p>
                 <p>Best regards,<br/>The STM Team</p>
             </div>
         `
@@ -167,11 +176,11 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Payment Confirmed</h1>
-                <p>Dear <strong>${customerName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(customerName)}</strong>,</p>
                 <p>This is to confirm that we have successfully received your payment.</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                    <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${invoiceNum}</p>
-                    <p style="margin: 5px 0;"><strong>Amount Paid:</strong> ${amount}</p>
+                    <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${escapeHtml(invoiceNum)}</p>
+                    <p style="margin: 5px 0;"><strong>Amount Paid:</strong> ${escapeHtml(amount)}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> Completed</p>
                 </div>
                 <p>Your subscription is now active. You can access your journals through the portal.</p>
@@ -187,16 +196,16 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #ea580c;">Subscription Expiring Soon</h1>
-                <p>Dear <strong>${customerName}</strong>,</p>
-                <p>This is a reminder that your subscription for <strong>${journalName}</strong> is set to expire in <strong>${daysLeft} days</strong>.</p>
+                <p>Dear <strong>${escapeHtml(customerName)}</strong>,</p>
+                <p>This is a reminder that your subscription for <strong>${escapeHtml(journalName)}</strong> is set to expire in <strong>${daysLeft} days</strong>.</p>
                 <p>To ensure uninterrupted access to your research and journals, please renew your subscription today.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${subId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${escapeHtml(subId)}" 
                        style="background: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        Renew Subscription Now
                     </a>
                 </div>
-                <p>Stay updated with the latest in ${journalName}!</p>
+                <p>Stay updated with the latest in ${escapeHtml(journalName)}!</p>
                 <p>Best regards,<br/>The STM Team</p>
             </div>
         `
@@ -208,16 +217,16 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">New Review Assignment</h1>
-                <p>Dear <strong>${reviewerName}</strong>,</p>
-                <p>You have been selected to review a new manuscript for <strong>${journalName}</strong>.</p>
+                <p>Dear <strong>${escapeHtml(reviewerName)}</strong>,</p>
+                <p>You have been selected to review a new manuscript for <strong>${escapeHtml(journalName)}</strong>.</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2563eb;">
-                    <p style="margin: 5px 0;"><strong>Manuscript:</strong> ${articleTitle}</p>
-                    <p style="margin: 5px 0;"><strong>Journal:</strong> ${journalName}</p>
-                    <p style="margin: 5px 0;"><strong>Due Date:</strong> ${dueDate}</p>
+                    <p style="margin: 5px 0;"><strong>Manuscript:</strong> ${escapeHtml(articleTitle)}</p>
+                    <p style="margin: 5px 0;"><strong>Journal:</strong> ${escapeHtml(journalName)}</p>
+                    <p style="margin: 5px 0;"><strong>Due Date:</strong> ${escapeHtml(dueDate)}</p>
                 </div>
                 <p>Your expertise is vital to maintaining the high quality of our publications. Please log in to your dashboard to access the manuscript and submit your evaluation.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/assignments/${assignmentId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/assignments/${escapeHtml(assignmentId)}" 
                        style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        Review Manuscript
                     </a>
@@ -233,12 +242,12 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #7c3aed;">New Review Report</h1>
-                <p>Dear <strong>${editorName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(editorName)}</strong>,</p>
                 <p>A review report has been submitted for a manuscript under your management.</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                    <p style="margin: 5px 0;"><strong>Manuscript:</strong> ${articleTitle}</p>
-                    <p style="margin: 5px 0;"><strong>Reviewer:</strong> ${reviewerName}</p>
-                    <p style="margin: 5px 0;"><strong>Recommendation:</strong> <span style="font-weight: bold; color: #7c3aed;">${recommendation}</span></p>
+                    <p style="margin: 5px 0;"><strong>Manuscript:</strong> ${escapeHtml(articleTitle)}</p>
+                    <p style="margin: 5px 0;"><strong>Reviewer:</strong> ${escapeHtml(reviewerName)}</p>
+                    <p style="margin: 5px 0;"><strong>Recommendation:</strong> <span style="font-weight: bold; color: #7c3aed;">${escapeHtml(recommendation)}</span></p>
                 </div>
                 <p>Please log in to the editorial workflow to evaluate this report and make a decision.</p>
                 <div style="text-align: center; margin: 30px 0;">
@@ -258,8 +267,8 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Review Validated & Certified</h1>
-                <p>Dear <strong>${reviewerName}</strong>,</p>
-                <p>The editorial team has validated your review report for <strong>"${articleTitle}"</strong>.</p>
+                <p>Dear <strong>${escapeHtml(reviewerName)}</strong>,</p>
+                <p>The editorial team has validated your review report for <strong>"${escapeHtml(articleTitle)}"</strong>.</p>
                 <p>We sincerely appreciate your contribution to the scientific community. A digital certificate of excellence has been issued and added to your profile.</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/certificates" 
@@ -267,7 +276,7 @@ export const EmailTemplates = {
                        View My Certificate
                     </a>
                 </div>
-                <p>Certificate Reference: ${certificateId}</p>
+                <p>Certificate Reference: ${escapeHtml(certificateId)}</p>
                 <p>Best regards,<br/>The Editorial Team</p>
             </div>
         `
@@ -279,10 +288,10 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #dc2626;">Review Revision Requested</h1>
-                <p>Dear <strong>${reviewerName}</strong>,</p>
-                <p>The editorial team has reviewed your report for <strong>"${articleTitle}"</strong> and requires some additional details or clarifications.</p>
+                <p>Dear <strong>${escapeHtml(reviewerName)}</strong>,</p>
+                <p>The editorial team has reviewed your report for <strong>"${escapeHtml(articleTitle)}"</strong> and requires some additional details or clarifications.</p>
                 <div style="background: #fef2f2; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #dc2626;">
-                    <p style="margin: 5px 0;"><strong>Feedback:</strong> ${reason}</p>
+                    <p style="margin: 5px 0;"><strong>Feedback:</strong> ${escapeHtml(reason)}</p>
                 </div>
                 <p>Please log in and update your report accordingly so we can proceed with the validation.</p>
                 <p>Best regards,<br/>The Editorial Team</p>
@@ -296,11 +305,11 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">Increment Approved by Manager</h1>
-                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(employeeName)}</strong>,</p>
                 <p>Great news! Your salary increment request has been approved by your manager.</p>
                 <div style="background: #eff6ff; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2563eb;">
-                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${amount}</p>
-                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${percentage}</p>
+                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${escapeHtml(amount)}</p>
+                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${escapeHtml(percentage)}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> Pending Admin Approval</p>
                 </div>
                 <p>Your increment is now awaiting final approval from the admin team. You will be notified once the process is complete.</p>
@@ -310,17 +319,17 @@ export const EmailTemplates = {
     }),
 
     incrementApproved: (employeeName: string, amount: string, percentage: string, effectiveDate: string) => ({
-        subject: `🎉 Salary Increment Approved! - STM`,
+        subject: `Salary Increment Approved! - STM`,
         text: `Dear ${employeeName}, congratulations! Your salary increment of ${amount} (${percentage}) has been fully approved and will be effective from ${effectiveDate}.`,
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-                <h1 style="color: #16a34a;">🎉 Salary Increment Approved!</h1>
-                <p>Dear <strong>${employeeName}</strong>,</p>
+                <h1 style="color: #16a34a;">Salary Increment Approved!</h1>
+                <p>Dear <strong>${escapeHtml(employeeName)}</strong>,</p>
                 <p>Congratulations! We are pleased to inform you that your salary increment has been fully approved.</p>
                 <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #16a34a;">
-                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${amount}</p>
-                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${percentage}</p>
-                    <p style="margin: 5px 0;"><strong>Effective Date:</strong> ${effectiveDate}</p>
+                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${escapeHtml(amount)}</p>
+                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${escapeHtml(percentage)}</p>
+                    <p style="margin: 5px 0;"><strong>Effective Date:</strong> ${escapeHtml(effectiveDate)}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: bold;">APPROVED</span></p>
                 </div>
                 <p>Your new salary will be reflected in your payroll starting from the effective date mentioned above.</p>
@@ -336,11 +345,11 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #dc2626;">Increment Request Update</h1>
-                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(employeeName)}</strong>,</p>
                 <p>We regret to inform you that your salary increment request has not been approved at this time.</p>
                 <div style="background: #fef2f2; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #dc2626;">
-                    <p style="margin: 5px 0;"><strong>Rejected By:</strong> ${rejectedBy}</p>
-                    <p style="margin: 5px 0;"><strong>Reason:</strong> ${reason}</p>
+                    <p style="margin: 5px 0;"><strong>Rejected By:</strong> ${escapeHtml(rejectedBy)}</p>
+                    <p style="margin: 5px 0;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
                 </div>
                 <p>If you have any questions or would like to discuss this decision, please feel free to reach out to your manager or the HR department.</p>
                 <p>Best regards,<br/>The HR Team</p>
@@ -354,12 +363,12 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">Performance Goal Evaluated</h1>
-                <p>Dear <strong>${employeeName}</strong>,</p>
-                <p>Your manager has completed the evaluation for your goal: <strong>${goalTitle}</strong>.</p>
+                <p>Dear <strong>${escapeHtml(employeeName)}</strong>,</p>
+                <p>Your manager has completed the evaluation for your goal: <strong>${escapeHtml(goalTitle)}</strong>.</p>
                 <div style="background: #eff6ff; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2563eb;">
-                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${goalTitle}</p>
+                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${escapeHtml(goalTitle)}</p>
                     <p style="margin: 5px 0;"><strong>Performance Score:</strong> <span style="font-size: 1.25rem; font-bold; color: #2563eb;">${score}/10</span></p>
-                    ${feedback ? `<p style="margin: 15px 0 5px 0;"><strong>Manager's Feedback:</strong></p><p style="font-style: italic; color: #4b5563;">"${feedback}"</p>` : ''}
+                    ${feedback ? `<p style="margin: 15px 0 5px 0;"><strong>Manager's Feedback:</strong></p><p style="font-style: italic; color: #4b5563;">"${escapeHtml(feedback)}"</p>` : ''}
                 </div>
                 <p>You can view the full details and history in your performance dashboard.</p>
                 <p>Best regards,<br/>The STM Management</p>
@@ -373,11 +382,11 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Goal Marked as Completed</h1>
-                <p>Dear <strong>${managerName}</strong>,</p>
-                <p><strong>${employeeName}</strong> has marked the following goal as completed:</p>
+                <p>Dear <strong>${escapeHtml(managerName)}</strong>,</p>
+                <p><strong>${escapeHtml(employeeName)}</strong> has marked the following goal as completed:</p>
                 <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #16a34a;">
-                    <p style="margin: 5px 0;"><strong>Employee:</strong> ${employeeName}</p>
-                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${goalTitle}</p>
+                    <p style="margin: 5px 0;"><strong>Employee:</strong> ${escapeHtml(employeeName)}</p>
+                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${escapeHtml(goalTitle)}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> COMPLETED</p>
                 </div>
                 <p>This goal is now ready for your formal evaluation and scoring. Please log in to your manager dashboard to review and provide feedback.</p>
@@ -398,7 +407,7 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">Password Reset Request</h1>
-                <p>Dear <strong>${userName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(userName)}</strong>,</p>
                 <p>You requested to reset your password for your account at <strong>STM Journals</strong>.</p>
                 <p>Click the button below to set a new password. This link is only valid for <strong>1 hour</strong>.</p>
                 <div style="text-align: center; margin: 30px 0;">
@@ -419,7 +428,7 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Password Reset Successful</h1>
-                <p>Dear <strong>${userName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(userName)}</strong>,</p>
                 <p>This is to confirm that your password for <strong>STM Journals</strong> has been successfully updated.</p>
                 <p>If you did not perform this action, please contact our support team immediately to secure your account.</p>
                 <div style="text-align: center; margin: 30px 0;">
@@ -439,15 +448,15 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #f59e0b;">Review Reminder</h1>
-                <p>Dear <strong>${reviewerName}</strong>,</p>
+                <p>Dear <strong>${escapeHtml(reviewerName)}</strong>,</p>
                 <p>This is a friendly reminder regarding your pending review assignment for the manuscript:</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-                    <strong style="display: block; color: #1e293b;">${articleTitle}</strong>
+                    <strong style="display: block; color: #1e293b;">${escapeHtml(articleTitle)}</strong>
                 </div>
-                <p>The review is due by: <strong style="color: #e11d48;">${dueDate}</strong></p>
+                <p>The review is due by: <strong style="color: #e11d48;">${escapeHtml(dueDate)}</strong></p>
                 <p>Please log in to the reviewer portal to submit your report or request an extension if needed.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/assignments/${assignmentId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/assignments/${escapeHtml(assignmentId)}" 
                        style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        Access Reviewer Portal
                     </a>
@@ -459,17 +468,17 @@ export const EmailTemplates = {
     }),
  
     reviewCertificateIssued: (reviewerName: string, journalName: string, certNumber: string) => ({
-        subject: 'Certificate Issued: Thank you for your Review - ${journalName}',
+        subject: `Certificate Issued: Thank you for your Review - ${journalName}`,
         text: `Dear ${reviewerName}, a certificate for your review contribution has been issued. Certificate Number: ${certNumber}`,
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #16a34a;">Certificate Issued</h1>
-                <p>Dear <strong>${reviewerName}</strong>,</p>
-                <p>On behalf of <strong>${journalName}</strong>, we would like to thank you for your commitment and the quality of your recent review service.</p>
+                <p>Dear <strong>${escapeHtml(reviewerName)}</strong>,</p>
+                <p>On behalf of <strong>${escapeHtml(journalName)}</strong>, we would like to thank you for your commitment and the quality of your recent review service.</p>
                 <p>A digital certificate acknowledging your contribution has been issued and is now available in your researcher profile.</p>
                 <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; border: 1px solid #bbf7d0; margin: 20px 0; text-align: center;">
                     <p style="margin: 0; font-size: 14px; color: #166534;">Certificate Reference:</p>
-                    <strong style="font-size: 20px; color: #15803d; font-family: monospace;">${certNumber}</strong>
+                    <strong style="font-size: 20px; color: #15803d; font-family: monospace;">${escapeHtml(certNumber)}</strong>
                 </div>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/certificates" 
@@ -489,8 +498,8 @@ export const EmailTemplates = {
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #0ea5e9;">Welcome to the Course!</h1>
-                <p>Dear <strong>${userName}</strong>,</p>
-                <p>We are excited to confirm that your enrollment for the course <strong>"${courseTitle}"</strong> is now <strong>ACTIVE</strong>.</p>
+                <p>Dear <strong>${escapeHtml(userName)}</strong>,</p>
+                <p>We are excited to confirm that your enrollment for the course <strong>"${escapeHtml(courseTitle)}"</strong> is now <strong>ACTIVE</strong>.</p>
                 <p>You can now access all course materials, lessons, and quizzes directly from your student dashboard.</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${dashboardUrl}" 

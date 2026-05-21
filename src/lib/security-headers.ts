@@ -12,9 +12,9 @@ export function securityHeaders(request: NextRequest) {
     // Content Security Policy
     const cspHeader = `
         default-src 'self';
-        script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        img-src 'self' data: blob: https: http:;
+        script-src 'self' https://checkout.razorpay.com;
+        style-src 'self' https://fonts.googleapis.com;
+        img-src 'self' data: blob: https:;
         font-src 'self' data: https://fonts.gstatic.com;
         connect-src 'self' https://api.razorpay.com wss: ws:;
         frame-src 'self' https://api.razorpay.com;
@@ -32,9 +32,6 @@ export function securityHeaders(request: NextRequest) {
 
         // Prevent MIME type sniffing
         'X-Content-Type-Options': 'nosniff',
-
-        // Enable XSS protection
-        'X-XSS-Protection': '1; mode=block',
 
         // Referrer policy
         'Referrer-Policy': 'strict-origin-when-cross-origin',

@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { logger } from './logger';
 interface WhatsAppMessage {
     to: string;
     message: string;
@@ -70,7 +71,7 @@ async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise
                 try {
                     parsedValue = JSON.parse(metaIntegration.value);
                 } catch (error) {
-                    console.warn('WhatsApp Meta integration value is not valid JSON, falling back to env config');
+                    logger.warn('WhatsApp Meta integration value is not valid JSON, falling back to env config', error as Error);
                 }
             }
 
@@ -93,7 +94,7 @@ async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise
                 try {
                     parsedValue = JSON.parse(twilioIntegration.value);
                 } catch (error) {
-                    console.warn('WhatsApp integration value is not valid JSON, falling back to env config');
+                    logger.warn('WhatsApp integration value is not valid JSON, falling back to env config', error as Error);
                 }
             }
 
@@ -156,7 +157,7 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
     const providerConfig = await resolveWhatsAppProviderConfig(companyId);
 
     if (providerConfig.provider === 'mock') {
-        console.info('Mock WhatsApp message', {
+        logger.info('Mock WhatsApp message', {
             to,
             companyId,
             hasMedia: Boolean(mediaUrl)
@@ -191,7 +192,7 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
 
             const result = await response.json();
             if (!response.ok) {
-                console.error('Meta WhatsApp Error:', result);
+                logger.error('Meta WhatsApp Error', new Error(result?.error?.message || 'Failed to send WhatsApp message via Meta'));
                 return { success: false, mode: 'meta', error: result?.error?.message || 'Failed to send WhatsApp message via Meta' };
             }
 
@@ -201,7 +202,7 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
                 messageId: result?.messages?.[0]?.id
             };
         } catch (error) {
-            console.error('Meta WhatsApp Error:', error);
+            logger.error('Meta WhatsApp Error', error as Error);
             return { success: false, mode: 'meta', error: error instanceof Error ? error.message : 'Unknown WhatsApp provider error' };
         }
     }
@@ -231,7 +232,7 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
             const result = await response.json();
 
             if (!response.ok) {
-                console.error('Twilio WhatsApp Error:', result);
+                logger.error('Twilio WhatsApp Error', new Error(result?.message || 'Failed to send WhatsApp message'));
                 return { success: false, mode: 'twilio', error: result?.message || 'Failed to send WhatsApp message' };
             }
 
@@ -242,7 +243,7 @@ export async function sendWhatsApp({ to, message, mediaUrl, companyId }: WhatsAp
                 status: result.status,
             };
         } catch (error) {
-            console.error('Twilio WhatsApp Error:', error);
+            logger.error('Twilio WhatsApp Error', error as Error);
             return { success: false, mode: 'twilio', error: error instanceof Error ? error.message : 'Unknown WhatsApp provider error' };
         }
     }
