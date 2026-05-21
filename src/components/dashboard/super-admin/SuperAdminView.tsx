@@ -14,6 +14,7 @@ import QuickActions from "./QuickActions";
 import AlertsWidget from "./AlertsWidget";
 import AuditLogFeed from "./AuditLogFeed";
 import SystemSettingsControl from "./SystemSettingsControl";
+import InvoicingResetControl from "./InvoicingResetControl";
 
 // Existing Components (enhanced versions)
 import CompanyPerformanceGrid from "./CompanyPerformanceGrid";
@@ -242,6 +243,7 @@ export default function SuperAdminView() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 space-y-6">
                             <SystemSettingsControl settings={data.system?.settings} />
+                            <InvoicingResetControl />
                             <div className="card-premium p-6 bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
                                 <h3 className="text-xl font-black mb-2 italic">Broadcast Message</h3>
                                 <p className="text-white/80 text-sm mb-6 font-medium">Send a global notification to all active companies and employees.</p>
