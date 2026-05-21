@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         const type = searchParams.get('type');
         const categoryId = searchParams.get('categoryId');
 
-        const products = await (prisma as any).product.findMany({
+        const products = await prisma.product.findMany({
             where: {
                 isActive: true,
                 ...(type ? { type } : {}),
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { name, type, categoryId, priceINR, priceUSD, metadata } = body;
 
-        const product = await (prisma as any).product.create({
+        const product = await prisma.product.create({
             data: {
                 name,
                 type,

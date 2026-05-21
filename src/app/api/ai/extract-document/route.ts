@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         const companyId = user.companyId || (await req.formData()).get('companyId') as string;
 
         // Fetch the Gemini API Key strictly securely via integration Gateway
-        const aiIntegration = await (prisma as any).companyIntegration.findUnique({
+        const aiIntegration = await prisma.companyIntegration.findUnique({
             where: {
                 companyId_provider: {
                     companyId: companyId,

@@ -18,7 +18,7 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req, user) => {
         try {
-            const campaigns = await (prisma as any).marketingCampaign.findMany({
+            const campaigns = await prisma.marketingCampaign.findMany({
                 where: { companyId: user.companyId },
                 include: {
                     audience: true,
@@ -41,7 +41,7 @@ export const POST = authorizedRoute(
             const body = await req.json();
             const validated = campaignSchema.parse(body);
 
-            const campaign = await (prisma as any).marketingCampaign.create({
+            const campaign = await prisma.marketingCampaign.create({
                 data: {
                     companyId: user.companyId,
                     ...validated,

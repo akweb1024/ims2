@@ -15,7 +15,7 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req, user) => {
         try {
-            const templates = await (prisma as any).emailTemplate.findMany({
+            const templates = await prisma.emailTemplate.findMany({
                 where: { companyId: user.companyId },
                 include: { _count: { select: { campaigns: true } } },
                 orderBy: { createdAt: 'desc' }
@@ -35,7 +35,7 @@ export const POST = authorizedRoute(
             const body = await req.json();
             const validated = templateSchema.parse(body);
 
-            const template = await (prisma as any).emailTemplate.create({
+            const template = await prisma.emailTemplate.create({
                 data: {
                     companyId: user.companyId,
                     ...validated,

@@ -14,7 +14,7 @@ export const GET = authorizedRoute(
         const search = searchParams.get('search') || '';
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        const workshops = await (prisma as any).workshop.findMany({
+        const workshops = await prisma.workshop.findMany({
             where: {
                 title: { contains: search, mode: 'insensitive' },
             },
@@ -52,7 +52,7 @@ export const POST = authorizedRoute(
             if (mentor) resolvedMentorId = mentor.id;
         }
 
-        const workshop = await (prisma as any).workshop.create({
+        const workshop = await prisma.workshop.create({
             data: {
                 title,
                 description,

@@ -15,7 +15,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         const documentId = id;
 
         // Fetch to get URL for potential file deletion if needed
-        const document = await (prisma as any).iTProjectDocument.findUnique({
+        const document = await prisma.iTProjectDocument.findUnique({
             where: { id: documentId }
         });
 
@@ -25,7 +25,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
         // Check if user has access to company
         const companyId = (user as any).companyId;
-        const project = await (prisma as any).iTProject.findUnique({
+        const project = await prisma.iTProject.findUnique({
             where: { id: document.projectId },
             select: { companyId: true }
         });
@@ -35,7 +35,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         }
 
         // Delete from DB (File cleanup could be added here later)
-        await (prisma as any).iTProjectDocument.delete({
+        await prisma.iTProjectDocument.delete({
             where: { id: documentId }
         });
 

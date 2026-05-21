@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 import { resolveCompanyScope } from "@/lib/access-policy";
 import { z } from "zod";
 
-const db = prisma as any;
+const db = prisma;
 
 // ─── Validation ────────────────────────────────────────────────────────────
 const CATEGORIES = [

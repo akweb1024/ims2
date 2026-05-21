@@ -10,7 +10,7 @@ import {
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 
-const db = prisma as any;
+const db = prisma;
 
 // ─── Shared helpers ────────────────────────────────────────────────────────
 

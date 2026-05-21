@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
             { pendingCount: 0, unmatchedCount: 0 }
         );
 
-        const session = await (prisma as any).bankReconciliationSession.create({
+        const session = await prisma.bankReconciliationSession.create({
             data: {
                 companyId: user.companyId,
                 uploadedByUserId: user.id,

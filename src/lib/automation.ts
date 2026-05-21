@@ -36,7 +36,7 @@ export const DEFAULT_AUTOMATION_JOBS = [
 export async function ensureAutomationJobs(companyId?: string | null) {
     await Promise.all(
         DEFAULT_AUTOMATION_JOBS.map((job) =>
-            (prisma as any).automationJob.upsert({
+            prisma.automationJob.upsert({
                 where: {
                     companyId_key: {
                         companyId: companyId ?? null,

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
             prisma.customerProfile.count({
                 where: decoded.role === 'SUPER_ADMIN' ? {} : { companyId: decoded.companyId }
             }),
-            (prisma as any).institution.count({
+            prisma.institution.count({
                 where: decoded.role === 'SUPER_ADMIN' ? {} : { companyId: decoded.companyId }
             })
         ]);

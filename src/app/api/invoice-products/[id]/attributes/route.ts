@@ -5,7 +5,7 @@ import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-hand
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
-const db = prisma as any;
+const db = prisma;
 
 const createAttributeSchema = z.object({
     name: z.string().min(1).max(100),

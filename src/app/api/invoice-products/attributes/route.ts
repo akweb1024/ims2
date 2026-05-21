@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError } from '@/lib/error-handler';
 
-const db = prisma as any;
+const db = prisma;
 
 /**
  * GET /api/invoice-products/attributes

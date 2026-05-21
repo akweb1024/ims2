@@ -29,7 +29,7 @@ export async function getRazorpayCredentials(companyId: string) {
     try {
         const prismaTyped = prisma as PrismaClient;
         // Preferred source: CompanyIntegration provider="RAZORPAY"
-        const razorpayIntegration = await (prismaTyped as any).companyIntegration.findUnique({
+        const razorpayIntegration = await prisma.companyIntegration.findUnique({
             where: {
                 companyId_provider: {
                     companyId,
@@ -111,7 +111,7 @@ export async function getRazorpaySyncAccounts() {
         source: 'integration' | 'appConfiguration' | 'env';
     }> = [];
 
-    const integrations = await (prisma as PrismaClient as any).companyIntegration.findMany({
+    const integrations = await prisma.companyIntegration.findMany({
         where: {
             provider: 'RAZORPAY',
             isActive: true,

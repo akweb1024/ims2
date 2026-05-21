@@ -63,7 +63,7 @@ async function main() {
 
     // 3. Create Projects
     console.log('📂 Creating Projects...');
-    const project1 = await (prisma as any).iTProject.create({
+    const project1 = await prisma.iTProject.create({
         data: {
             companyId: company.id,
             projectCode: 'PRJ-PORTAL-001',
@@ -83,7 +83,7 @@ async function main() {
         }
     });
 
-    const project2 = await (prisma as any).iTProject.create({
+    const project2 = await prisma.iTProject.create({
         data: {
             companyId: company.id,
             projectCode: 'PRJ-INFRA-002',
@@ -143,7 +143,7 @@ async function main() {
     ];
 
     for (const task of tasks) {
-        await (prisma as any).iTTask.create({
+        await prisma.iTTask.create({
             data: {
                 ...task,
                 companyId: company.id,
@@ -160,7 +160,7 @@ async function main() {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
 
-        await (prisma as any).iTTimeEntry.create({
+        await prisma.iTTimeEntry.create({
             data: {
                 companyId: company.id,
                 userId: i % 2 === 0 ? dev1.id : dev2.id,

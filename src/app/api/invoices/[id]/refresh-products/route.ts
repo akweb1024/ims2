@@ -4,7 +4,7 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
 
-const db = prisma as any;
+const db = prisma;
 
 export const POST = authorizedRoute(
   ["SUPER_ADMIN", "ADMIN", "MANAGER", "FINANCE_ADMIN"],

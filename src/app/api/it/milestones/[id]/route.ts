@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         const body = await req.json();
 
         // Get current state to check if we need to update revenue and verify access
-        const currentMilestone = await (prisma as any).iTProjectMilestone.findFirst({
+        const currentMilestone = await prisma.iTProjectMilestone.findFirst({
             where: { id: milestoneId },
             include: {
                 project: {
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         if (body.paymentAmount !== undefined) data.paymentAmount = body.paymentAmount;
         if (body.isPaid !== undefined) data.isPaid = body.isPaid;
 
-        const updated = await (prisma as any).iTProjectMilestone.update({
+        const updated = await prisma.iTProjectMilestone.update({
             where: { id: milestoneId },
             data
         });
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         }
 
         if (revenueAdjustment !== 0) {
-            await (prisma as any).iTProject.update({
+            await prisma.iTProject.update({
                 where: { id: currentMilestone.projectId },
                 data: {
                     itRevenueEarned: { increment: revenueAdjustment }
@@ -104,7 +104,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         const milestoneId = id;
 
         // Get current state to check revenue and verify access
-        const milestone = await (prisma as any).iTProjectMilestone.findUnique({
+        const milestone = await prisma.iTProjectMilestone.findUnique({
             where: { id: milestoneId },
             include: {
                 project: {
@@ -125,7 +125,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
         // If milestone was paid, decrement project revenue
         if (milestone.isPaid && milestone.paymentAmount > 0) {
-            await (prisma as any).iTProject.update({
+            await prisma.iTProject.update({
                 where: { id: milestone.projectId },
                 data: {
                     itRevenueEarned: { decrement: milestone.paymentAmount }
@@ -133,7 +133,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
             });
         }
 
-        await (prisma as any).iTProjectMilestone.delete({
+        await prisma.iTProjectMilestone.delete({
             where: { id: milestoneId }
         });
 

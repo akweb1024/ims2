@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
 export async function GET(req: NextRequest) {
     try {
-        const settings = await (prisma as any).systemSettings.upsert({
+        const settings = await prisma.systemSettings.upsert({
             where: { id: 'singleton' },
             update: {},
             create: {
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json();
         const { companyName, supportEmail, defaultCurrency, maintenanceMode } = body;
 
-        const settings = await (prisma as any).systemSettings.update({
+        const settings = await prisma.systemSettings.update({
             where: { id: 'singleton' },
             data: {
                 ...(companyName && { companyName }),

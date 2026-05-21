@@ -5,7 +5,7 @@ import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-hand
 import { logger } from '@/lib/logger';
 import { proformaStatusSchema, validateData } from '@/lib/validation/schemas';
 
-const db = prisma as any;
+const db = prisma;
 
 // Allowed FSM transitions (CONVERTED + CANCELLED are terminal = not in map)
 const VALID_TRANSITIONS: Record<string, string[]> = {

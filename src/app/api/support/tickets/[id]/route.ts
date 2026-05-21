@@ -12,7 +12,7 @@ export async function GET(
         const decoded = await getAuthenticatedUser();
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const ticket = await (prisma as any).supportTicket.findUnique({
+        const ticket = await prisma.supportTicket.findUnique({
             where: { id },
             include: {
                 customerProfile: {
@@ -65,7 +65,7 @@ export async function PATCH(
         const body = await req.json();
         const { status, assignedToId, priority } = body;
 
-        const ticket = await (prisma as any).supportTicket.findUnique({
+        const ticket = await prisma.supportTicket.findUnique({
             where: { id },
             include: { customerProfile: { select: { userId: true } } }
         });
@@ -79,7 +79,7 @@ export async function PATCH(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const updatedTicket = await (prisma as any).supportTicket.update({
+        const updatedTicket = await prisma.supportTicket.update({
             where: { id },
             data: {
                 ...(status && { status }),
@@ -111,7 +111,7 @@ export async function PATCH(
 
             // If assigned, add the staff member to the chat room participants
             if (ticket.chatRoomId) {
-                await (prisma as any).chatParticipant.upsert({
+                await prisma.chatParticipant.upsert({
                     where: {
                         roomId_userId: {
                             roomId: ticket.chatRoomId,

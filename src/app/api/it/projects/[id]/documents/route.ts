@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         }
 
         const projectId = id;
-        const documents = await (prisma as any).iTProjectDocument.findMany({
+        const documents = await prisma.iTProjectDocument.findMany({
             where: { projectId },
             orderBy: { createdAt: 'desc' }
         });
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
             fileSize = file.size;
         }
 
-        const document = await (prisma as any).iTProjectDocument.create({
+        const document = await prisma.iTProjectDocument.create({
             data: {
                 projectId,
                 name: name || (file ? file.name : 'Untitled Text'),

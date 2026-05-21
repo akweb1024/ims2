@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
         await ensureAutomationJobs(user.companyId);
 
-        const jobs = await (prisma as any).automationJob.findMany({
+        const jobs = await prisma.automationJob.findMany({
             where: { companyId: user.companyId ?? null },
             include: {
                 runs: {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'asc' },
         });
 
-        const recentRuns = await (prisma as any).automationRun.findMany({
+        const recentRuns = await prisma.automationRun.findMany({
             where: { companyId: user.companyId ?? null },
             include: {
                 job: {

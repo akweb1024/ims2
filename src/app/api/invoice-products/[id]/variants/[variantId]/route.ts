@@ -5,7 +5,7 @@ import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-hand
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
-const db = prisma as any;
+const db = prisma;
 
 const variantUpdateSchema = z.object({
     priceINR: z.number().min(0).optional().nullable(),

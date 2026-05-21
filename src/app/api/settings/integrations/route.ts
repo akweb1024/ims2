@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         const companyId = user.companyId;
         if (!companyId) return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
 
-        const integrations = await (prisma as any).companyIntegration.findMany({
+        const integrations = await prisma.companyIntegration.findMany({
             where: { companyId },
             orderBy: { provider: 'asc' }
         });
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Upsert the integration key securely
-        const integration = await (prisma as any).companyIntegration.upsert({
+        const integration = await prisma.companyIntegration.upsert({
             where: {
                 companyId_provider: {
                     companyId,

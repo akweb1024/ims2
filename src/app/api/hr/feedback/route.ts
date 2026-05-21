@@ -11,7 +11,7 @@ export async function GET(req: Request) {
         if (!employeeId) return NextResponse.json({ error: 'Employee ID required' }, { status: 400 });
 
         const [peerReviews, anonymousFeedback] = await Promise.all([
-            (prisma as any).peerReview.findMany({
+            prisma.peerReview.findMany({
                 where: { performanceReview: { employeeId } },
                 include: {
                     peer: { select: { id: true, name: true, email: true } },
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
                 },
                 orderBy: { createdAt: 'desc' }
             }),
-            (prisma as any).anonymousFeedback.findMany({
+            prisma.anonymousFeedback.findMany({
                 where: { performanceReview: { employeeId } },
                 include: { performanceReview: true },
                 orderBy: { createdAt: 'desc' }
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         }
 
         // Verify that the performance review exists
-        const review = await (prisma as any).performanceReview.findUnique({
+        const review = await prisma.performanceReview.findUnique({
             where: { id: performanceReviewId },
             include: { employee: true }
         });
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
         let result;
         if (type === 'PEER') {
-            result = await (prisma as any).peerReview.create({
+            result = await prisma.peerReview.create({
                 data: {
                     performanceReviewId,
                     peerId: user.id, // Current logged in user is the peer
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
                 }
             });
         } else if (type === 'ANONYMOUS') {
-            result = await (prisma as any).anonymousFeedback.create({
+            result = await prisma.anonymousFeedback.create({
                 data: {
                     performanceReviewId,
                     feedback,

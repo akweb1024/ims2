@@ -4,9 +4,9 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
 async function recomputeSession(sessionId: string) {
     const [matchedCount, pendingCount, unmatchedCount] = await Promise.all([
-        (prisma as any).bankReconciliationLine.count({ where: { sessionId, status: 'MATCHED' } }),
-        (prisma as any).bankReconciliationLine.count({ where: { sessionId, status: 'PENDING' } }),
-        (prisma as any).bankReconciliationLine.count({ where: { sessionId, status: 'UNMATCHED' } }),
+        prisma.bankReconciliationLine.count({ where: { sessionId, status: 'MATCHED' } }),
+        prisma.bankReconciliationLine.count({ where: { sessionId, status: 'PENDING' } }),
+        prisma.bankReconciliationLine.count({ where: { sessionId, status: 'UNMATCHED' } }),
     ]);
 
     const status =
@@ -18,7 +18,7 @@ async function recomputeSession(sessionId: string) {
                     ? 'RECONCILED'
                     : 'ANALYZED';
 
-    return (prisma as any).bankReconciliationSession.update({
+    return prisma.bankReconciliationSession.update({
         where: { id: sessionId },
         data: {
             matchedCount,
@@ -45,7 +45,7 @@ export async function PATCH(
             return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
 
-        const line = await (prisma as any).bankReconciliationLine.findUnique({
+        const line = await prisma.bankReconciliationLine.findUnique({
             where: { id },
             include: {
                 session: true,

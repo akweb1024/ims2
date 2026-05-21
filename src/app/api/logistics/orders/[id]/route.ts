@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const order = await (prisma as any).dispatchOrder.findFirst({
+        const order = await prisma.dispatchOrder.findFirst({
             where: {
                 id,
                 ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         }
 
         const body = await req.json();
-        const existing = await (prisma as any).dispatchOrder.findFirst({
+        const existing = await prisma.dispatchOrder.findFirst({
             where: {
                 id,
                 ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         const nextStatus = body.status || existing.status;
         const dates = deriveDispatchDates(nextStatus, existing);
 
-        const order = await (prisma as any).dispatchOrder.update({
+        const order = await prisma.dispatchOrder.update({
             where: { id },
             data: {
                 status: body.status || undefined,

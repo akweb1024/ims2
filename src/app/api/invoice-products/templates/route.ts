@@ -4,7 +4,7 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import { z } from "zod";
 
-const db = prisma as any;
+const db = prisma;
 
 const templateVariantSchema = z.object({
   name: z.string().min(1),

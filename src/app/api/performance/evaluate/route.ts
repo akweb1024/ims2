@@ -38,7 +38,7 @@ export const POST = authorizedRoute(
                 return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
             }
 
-            const evaluation = await (prisma as any).goalEvaluation.create({
+            const evaluation = await prisma.goalEvaluation.create({
                 data: {
                     goalId,
                     evaluatorId: user.id,

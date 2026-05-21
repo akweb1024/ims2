@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         if (!user.companyId) return NextResponse.json({ error: 'No company' }, { status: 400 });
 
-        const sessions = await (prisma as any).bankReconciliationSession.findMany({
+        const sessions = await prisma.bankReconciliationSession.findMany({
             where: {
                 companyId: user.companyId,
             },

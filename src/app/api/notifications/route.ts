@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
         const decoded = await getAuthenticatedUser();
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const notificationModel = (prisma as any).notification || (prisma as any).Notification;
+        const notificationModel = prisma.notification;
         if (!notificationModel) {
             console.error('Prisma Notification model not found');
             return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest) {
         const decoded = await getAuthenticatedUser();
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const notificationModel = (prisma as any).notification || (prisma as any).Notification;
+        const notificationModel = prisma.notification;
         if (!notificationModel) throw new Error('Notification model not found');
 
         // Mark all as read

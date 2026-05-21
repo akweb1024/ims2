@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         }
 
         const projectId = id;
-        const milestones = await (prisma as any).iTProjectMilestone.findMany({
+        const milestones = await prisma.iTProjectMilestone.findMany({
             where: { projectId },
             orderBy: { dueDate: 'asc' }
         });
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         const projectId = id;
         const body = await req.json();
 
-        const milestone = await (prisma as any).iTProjectMilestone.create({
+        const milestone = await prisma.iTProjectMilestone.create({
             data: {
                 projectId,
                 name: body.name,

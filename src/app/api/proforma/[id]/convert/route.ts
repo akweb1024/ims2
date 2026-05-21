@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 import { proformaConvertSchema, validateData } from '@/lib/validation/schemas';
 import { generateInvoiceNumbers } from '@/lib/invoice-number';
 
-const db = prisma as any;
+const db = prisma;
 
 /**
  * POST /api/proforma/[id]/convert

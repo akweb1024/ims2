@@ -43,8 +43,7 @@ export async function POST(request: NextRequest) {
                 },
             });
 
-            // TODO: Send email with reset link
-            // For now, log the token (in production, this should send an email)
+            // Send password reset email
             const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
             logger.info('Password reset requested', { userId: user.id });

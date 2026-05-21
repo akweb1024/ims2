@@ -67,15 +67,15 @@ async function main() {
     await prisma.institutionDetails.deleteMany();
     await prisma.customerProfile.deleteMany();
     await prisma.user.deleteMany();
-    await (prisma as any).department.deleteMany();
-    await (prisma as any).company.deleteMany();
+    await prisma.department.deleteMany();
+    await prisma.company.deleteMany();
 
     // Hash password for all users
     const hashedPassword = await bcrypt.hash('password123', 12);
 
     // 34. Create Company
     console.log('🏢 Creating company...');
-    const company = await (prisma as any).company.create({
+    const company = await prisma.company.create({
         data: {
             name: 'STM Journals Inc',
             domain: 'stm.com',
@@ -233,7 +233,7 @@ async function main() {
 
     // 6. Create Departments
     console.log('🏢 Creating departments...');
-    const salesDept = await (prisma as any).department.create({
+    const salesDept = await prisma.department.create({
         data: {
             companyId: company.id,
             name: 'Sales Department',
@@ -244,7 +244,7 @@ async function main() {
         }
     });
 
-    const financeDept = await (prisma as any).department.create({
+    const financeDept = await prisma.department.create({
         data: {
             companyId: company.id,
             name: 'Finance Department',
@@ -255,7 +255,7 @@ async function main() {
         }
     });
 
-    const supportDept = await (prisma as any).department.create({
+    const supportDept = await prisma.department.create({
         data: {
             companyId: company.id,
             name: 'Customer Support',

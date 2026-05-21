@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         // 2. Optimized Data Fetching (Use companyId instead of 'in' list to avoid parameter limits)
         const [allTasksInCompany, allTimeEntriesInCompany] = await Promise.all([
             // Get all completed tasks for this company in range
-            (prisma as any).iTTask.findMany({
+            prisma.iTTask.findMany({
                 where: {
                     companyId,
                     status: 'COMPLETED',
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
                 select: { assignedToId: true, itRevenueEarned: true }
             }),
             // Get all time entries for this company in range
-            (prisma as any).iTTimeEntry.findMany({
+            prisma.iTTimeEntry.findMany({
                 where: {
                     companyId,
                     date: { gte: startDate, lte: endDate }
@@ -100,16 +100,16 @@ export async function GET(req: NextRequest) {
 
             // Since trends might need more history than the 'months' param, let's keep the aggregate queries for now
             // but optimize them to be safe.
-            const mTasksCount = await (prisma as any).iTTask.count({
+            const mTasksCount = await prisma.iTTask.count({
                 where: { companyId, status: 'COMPLETED', updatedAt: { gte: mStart, lte: mEnd } }
             });
 
-            const mRev = await (prisma as any).iTTask.aggregate({
+            const mRev = await prisma.iTTask.aggregate({
                 where: { companyId, isRevenueBased: true, status: 'COMPLETED', updatedAt: { gte: mStart, lte: mEnd } },
                 _sum: { itRevenueEarned: true }
             });
 
-            const mHrs = await (prisma as any).iTTimeEntry.aggregate({
+            const mHrs = await prisma.iTTimeEntry.aggregate({
                 where: { companyId, date: { gte: mStart, lte: mEnd } },
                 _sum: { hours: true }
             });
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Service Popularity Data
-        const serviceStats = await (prisma as any).iTTask.groupBy({
+        const serviceStats = await prisma.iTTask.groupBy({
             by: ['serviceId'],
             where: {
                 companyId,
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
         });
 
         const sIds = serviceStats.map((s: any) => s.serviceId).filter(Boolean);
-        const serviceDefs = await (prisma as any).iTServiceDefinition.findMany({
+        const serviceDefs = await prisma.iTServiceDefinition.findMany({
             where: { id: { in: sIds } },
             select: { id: true, name: true }
         });

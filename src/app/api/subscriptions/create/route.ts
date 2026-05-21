@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
                 pUSD = 0;
                 description = `Workshop: ${workshop.title}`;
             } else if (item.productId) {
-                const product = await (prisma as any).product.findUnique({ where: { id: item.productId } });
+                const product = await prisma.product.findUnique({ where: { id: item.productId } });
                 if (!product) return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 404 });
                 pINR = product.priceINR;
                 pUSD = product.priceUSD;

@@ -18,7 +18,7 @@ export const GET = authorizedRoute(
         if (mentorId) whereClause.mentorId = mentorId;
         if (workshopId) whereClause.workshopId = workshopId;
 
-        const sessions = await (prisma as any).mentorSession.findMany({
+        const sessions = await prisma.mentorSession.findMany({
             where: whereClause,
             include: {
                 mentor: { select: { id: true, name: true, email: true } },
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
              return NextResponse.json({ error: 'Only admins or the specific mentor can schedule sessions' }, { status: 403 });
         }
 
-        const session = await (prisma as any).mentorSession.create({
+        const session = await prisma.mentorSession.create({
             data: {
                 workshopId,
                 mentorId,

@@ -5,7 +5,7 @@ import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-hand
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
-const db = prisma as any;
+const db = prisma;
 
 const generateVariantsSchema = z.object({
     overwrite: z.boolean().optional().default(false),

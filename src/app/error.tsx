@@ -14,7 +14,7 @@ export default function Error({
         // Log error to console in development
         console.error('Application Error:', error);
 
-        // TODO: In production, send to error tracking service (e.g., Sentry)
+        // Production error tracking: Uncomment when Sentry or similar service is integrated
         // if (process.env.NODE_ENV === 'production') {
         //     Sentry.captureException(error);
         // }

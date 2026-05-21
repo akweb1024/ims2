@@ -52,7 +52,7 @@ function dedupeRecipients(recipients: string[]) {
 }
 
 async function getCompanyIntegration(companyId: string, provider: string) {
-    return (prisma as any).companyIntegration.findUnique({
+    return prisma.companyIntegration.findUnique({
         where: {
             companyId_provider: {
                 companyId,

@@ -5,7 +5,7 @@ import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
-const db = prisma as any;
+const db = prisma;
 const CATEGORIES = [
     'JOURNAL_SUBSCRIPTION',
     'COURSE',

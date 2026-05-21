@@ -34,7 +34,7 @@ async function sanityCheck() {
         if (!testAuthor) {
             console.log('👤 Creating test author user...');
             // Need a company to link to
-            const company = await (prisma as any).company.findFirst();
+            const company = await prisma.company.findFirst();
             if (!company) {
                 throw new Error('No company found to link test author. Run main seed first.');
             }

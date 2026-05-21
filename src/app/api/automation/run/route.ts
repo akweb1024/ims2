@@ -4,16 +4,16 @@ import { getSessionUser } from '@/lib/session';
 import { ensureAutomationJobs } from '@/lib/automation';
 
 async function runAutoReconcile(companyId?: string | null) {
-    const latestSession = await (prisma as any).bankReconciliationSession.findFirst({
+    const latestSession = await prisma.bankReconciliationSession.findFirst({
         where: companyId ? { companyId } : {},
         orderBy: { createdAt: 'desc' },
     });
 
     const lineWhere = latestSession ? { sessionId: latestSession.id } : undefined;
     const [matched, unmatched, pending] = await Promise.all([
-        lineWhere ? (prisma as any).bankReconciliationLine.count({ where: { ...lineWhere, status: 'MATCHED' } }) : 0,
-        lineWhere ? (prisma as any).bankReconciliationLine.count({ where: { ...lineWhere, status: 'UNMATCHED' } }) : 0,
-        lineWhere ? (prisma as any).bankReconciliationLine.count({ where: { ...lineWhere, status: 'PENDING' } }) : 0,
+        lineWhere ? prisma.bankReconciliationLine.count({ where: { ...lineWhere, status: 'MATCHED' } }) : 0,
+        lineWhere ? prisma.bankReconciliationLine.count({ where: { ...lineWhere, status: 'UNMATCHED' } }) : 0,
+        lineWhere ? prisma.bankReconciliationLine.count({ where: { ...lineWhere, status: 'PENDING' } }) : 0,
     ]);
 
     return {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         await ensureAutomationJobs(user.companyId);
 
         const { action } = await req.json();
-        const job = await (prisma as any).automationJob.findFirst({
+        const job = await prisma.automationJob.findFirst({
             where: {
                 companyId: user.companyId ?? null,
                 action,
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         }
 
         const startedAt = Date.now();
-        const runRecord = await (prisma as any).automationRun.create({
+        const runRecord = await prisma.automationRun.create({
             data: {
                 jobId: job.id,
                 companyId: user.companyId ?? null,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
             }
 
             const completedAt = new Date();
-            await (prisma as any).automationRun.update({
+            await prisma.automationRun.update({
                 where: { id: runRecord.id },
                 data: {
                     status: 'SUCCESS',
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
                 runId: runRecord.id,
             });
         } catch (error: any) {
-            await (prisma as any).automationRun.update({
+            await prisma.automationRun.update({
                 where: { id: runRecord.id },
                 data: {
                     status: 'FAILED',

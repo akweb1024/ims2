@@ -115,7 +115,7 @@ export const GET = authorizedRoute(
 
             // F. Open Tickets
 
-            const openTicketsCount = await (prisma as any).supportTicket.count({
+            const openTicketsCount = await prisma.supportTicket.count({
                 where: {
                     companyId: userCompanyId,
                     status: 'OPEN',
@@ -142,7 +142,7 @@ export const GET = authorizedRoute(
                 dispatchWhere.subscriptionId = { in: subIds };
             }
 
-            const pendingDispatches = await (prisma as any).dispatchOrder.count({
+            const pendingDispatches = await prisma.dispatchOrder.count({
                 where: dispatchWhere
             });
 
@@ -150,16 +150,16 @@ export const GET = authorizedRoute(
 
             let activeCourses = 0;
             if (role === 'CUSTOMER') {
-                activeCourses = await (prisma as any).courseEnrollment.count({ where: { userId } });
+                activeCourses = await prisma.courseEnrollment.count({ where: { userId } });
             } else {
-                activeCourses = await (prisma as any).course.count({
+                activeCourses = await prisma.course.count({
                     where: { isPublished: true, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
                 });
             }
 
             const [articlesInReview, upcomingEvents] = await Promise.all([
-                (prisma as any).article.count({ where: { status: 'UNDER_REVIEW' } }),
-                (prisma as any).conference.count({
+                prisma.article.count({ where: { status: 'UNDER_REVIEW' } }),
+                prisma.conference.count({
                     where: { startDate: { gte: new Date() }, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
                 })
             ]);

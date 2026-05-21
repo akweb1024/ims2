@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Create a Chat Room for this ticket
-        const chatRoom = await (prisma as any).chatRoom.create({
+        const chatRoom = await prisma.chatRoom.create({
             data: {
                 name: `Support: ${subject}`,
                 isGroup: true,
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 2. Create the Support Ticket
-        const ticket = await (prisma as any).supportTicket.create({
+        const ticket = await prisma.supportTicket.create({
             data: {
                 subject,
                 description,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 3. Post first message
-        await (prisma as any).chatMessage.create({
+        await prisma.chatMessage.create({
             data: {
                 roomId: chatRoom.id,
                 senderId: decoded.id,
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         const skip = (page - 1) * limit;
 
         const [tickets, total, stats] = await Promise.all([
-            (prisma as any).supportTicket.findMany({
+            prisma.supportTicket.findMany({
                 where,
                 skip,
                 take: limit,
@@ -138,8 +138,8 @@ export async function GET(req: NextRequest) {
                 },
                 orderBy: { updatedAt: 'desc' }
             }),
-            (prisma as any).supportTicket.count({ where }),
-            (prisma as any).supportTicket.groupBy({
+            prisma.supportTicket.count({ where }),
+            prisma.supportTicket.groupBy({
                 by: ['status'],
                 where: { companyId: where.companyId },
                 _count: { id: true }

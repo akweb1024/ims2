@@ -28,13 +28,7 @@ export default function EmployeeTransactions() {
     // User info
     const [userRole, setUserRole] = useState<string>('');
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) setUserRole(JSON.parse(userData).role || '');
-        fetchCompany('ALL');
-    }, []);
-
-    const fetchCompany = async (companyId: string = selectedCompanyId) => {
+    const fetchCompany = async (companyId: string) => {
         setCompanyLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -54,6 +48,12 @@ export default function EmployeeTransactions() {
             setCompanyLoading(false);
         }
     };
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) setUserRole(JSON.parse(userData).role || '');
+        fetchCompany('ALL');
+    }, []);
 
     const fetchSalarySlips = async () => {
         if (slipsFetched) return;
@@ -88,7 +88,7 @@ export default function EmployeeTransactions() {
             });
             if (res.ok) {
                 alert('Claim submitted successfully!');
-                fetchCompany();
+                fetchCompany('ALL');
             } else {
                 const err = await res.json();
                 alert(`Failed: ${err.error}`);

@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
             // Handle Institution Link
             let institutionId: string | null = null;
             if (item.institutioncode) {
-                const inst = await (prisma as any).institution.findUnique({
+                const inst = await prisma.institution.findUnique({
                     where: { code: item.institutioncode }
                 });
                 if (inst) institutionId = inst.id;

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 
-const db = prisma as any;
+const db = prisma;
 
 const CATEGORIES = [
   "JOURNAL_SUBSCRIPTION",

@@ -34,7 +34,7 @@ export const POST = authorizedRoute(
             });
 
             if (plan && plan.employee.userId !== user.id) {
-                await (prisma as any).notification.create({
+                await prisma.notification.create({
                     data: {
                         userId: plan.employee.userId,
                         title: 'New Comment on Work Plan',

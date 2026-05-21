@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Authenticate Request via configured active keys
-        const integration = await (prisma as any).companyIntegration.findUnique({
+        const integration = await prisma.companyIntegration.findUnique({
             where: {
                 companyId_provider: {
                     companyId,
