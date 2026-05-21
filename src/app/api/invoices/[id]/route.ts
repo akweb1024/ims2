@@ -260,7 +260,7 @@ export const DELETE = authorizedRoute(
 
                 if (blockers.length > 0) {
                     throw new ValidationError(
-                        `Hard delete blocked. Linked records exist: ${blockers.join(', ')}`,
+                        `Hard delete blocked. Linked records exist: ${blockers.join(', ')}. Void this invoice instead to preserve linked records.`,
                     );
                 }
 

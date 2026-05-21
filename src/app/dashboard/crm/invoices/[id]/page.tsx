@@ -188,6 +188,15 @@ export default function InvoiceDetailPage({
     dispatchRecords.find((dispatch: any) => dispatch.id === selectedDispatchId) ||
     dispatchRecords[0] ||
     null;
+  const knownHardDeleteBlockers = useMemo(() => {
+    const paymentCount = Array.isArray(invoice?.payments) ? invoice.payments.length : 0;
+    const dispatchCount = dispatchRecords.length;
+
+    return [
+      paymentCount > 0 ? `payments (${paymentCount})` : null,
+      dispatchCount > 0 ? `dispatch orders (${dispatchCount})` : null,
+    ].filter(Boolean) as string[];
+  }, [dispatchRecords.length, invoice?.payments]);
 
   const fetchInvoice = useCallback(async () => {
     setLoading(true);
@@ -569,11 +578,11 @@ export default function InvoiceDetailPage({
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to delete invoice");
+        throw new Error(payload?.message || payload?.error || "Failed to delete invoice");
       }
-      alert("Invoice deleted successfully");
+      alert(payload?.message || "Invoice voided successfully");
       router.push("/dashboard/crm/invoices");
     } catch (error: any) {
       alert(error.message || "Failed to delete invoice");
@@ -1074,7 +1083,7 @@ export default function InvoiceDetailPage({
                     className="btn btn-secondary justify-start rounded-lg px-3 py-2 text-left border-red-100 text-red-600 hover:bg-red-50 font-bold"
                     onClick={handleDeleteInvoice}
                   >
-                    🗑️ Admin Delete
+                    🗑️ Void Invoice
                   </button>
                 )}
                 {userRole === "SUPER_ADMIN" && (
@@ -1888,16 +1897,25 @@ export default function InvoiceDetailPage({
         <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-sm flex items-center justify-center p-4 no-print">
           <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white shadow-2xl p-5">
             <h3 className="text-lg font-black text-red-700">Permanently Delete Invoice</h3>
-            <p className="mt-2 text-sm text-secondary-700">
-              This action is irreversible and only works when no linked records exist.
-              Type <span className="font-black text-red-700">DELETE</span> to continue.
-            </p>
-            <input
-              value={hardDeleteConfirmText}
-              onChange={(e) => setHardDeleteConfirmText(e.target.value)}
-              className="mt-4 w-full h-11 rounded-xl border border-secondary-200 px-3 text-sm font-semibold"
-              placeholder="Type DELETE"
-            />
+            {knownHardDeleteBlockers.length > 0 ? (
+              <p className="mt-2 text-sm text-secondary-700">
+                Permanent deletion is blocked because this invoice has linked {knownHardDeleteBlockers.join(" and ")}.
+                Void it instead so those records stay traceable.
+              </p>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-secondary-700">
+                  This action is irreversible and only works when no linked records exist.
+                  Type <span className="font-black text-red-700">DELETE</span> to continue.
+                </p>
+                <input
+                  value={hardDeleteConfirmText}
+                  onChange={(e) => setHardDeleteConfirmText(e.target.value)}
+                  className="mt-4 w-full h-11 rounded-xl border border-secondary-200 px-3 text-sm font-semibold"
+                  placeholder="Type DELETE"
+                />
+              </>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 className="btn btn-secondary rounded-xl px-4 py-2"
@@ -1909,13 +1927,22 @@ export default function InvoiceDetailPage({
               >
                 Cancel
               </button>
-              <button
-                className="btn rounded-xl px-4 py-2 bg-red-600 text-white font-bold disabled:opacity-50"
-                onClick={handleHardDeleteInvoice}
-                disabled={isHardDeleting || hardDeleteConfirmText.trim().toUpperCase() !== "DELETE"}
-              >
-                {isHardDeleting ? "Deleting..." : "Permanently Delete"}
-              </button>
+              {knownHardDeleteBlockers.length > 0 ? (
+                <button
+                  className="btn rounded-xl px-4 py-2 bg-red-600 text-white font-bold"
+                  onClick={handleDeleteInvoice}
+                >
+                  Void Invoice Instead
+                </button>
+              ) : (
+                <button
+                  className="btn rounded-xl px-4 py-2 bg-red-600 text-white font-bold disabled:opacity-50"
+                  onClick={handleHardDeleteInvoice}
+                  disabled={isHardDeleting || hardDeleteConfirmText.trim().toUpperCase() !== "DELETE"}
+                >
+                  {isHardDeleting ? "Deleting..." : "Permanently Delete"}
+                </button>
+              )}
             </div>
           </div>
         </div>
