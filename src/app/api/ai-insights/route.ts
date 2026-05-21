@@ -640,3 +640,49 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (
+      !user ||
+      !["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "HR_ADMIN"].includes(
+        user.role,
+      )
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { type, changes } = body;
+
+    if (type === "consultant") {
+      const { StrategyOrchestrator } = await import("@/lib/ai/orchestrator");
+      const { StrategyEngine } = await import("@/lib/ai/strategy-engine");
+
+      const profile = await StrategyOrchestrator.getBusinessProfile(
+        user.companyId || "",
+      );
+
+      const result = StrategyEngine.simulateSpeculativeScenario(
+        profile,
+        changes || { marketingSpendChange: 0, supportStaffChange: 0, discountRateChange: 0 }
+      );
+
+      return NextResponse.json({
+        profile: result.simulatedProfile,
+        insights: result.insights,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return NextResponse.json({ error: "Unsupported operation" }, { status: 400 });
+  } catch (error) {
+    console.error("AI Insights Simulator Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+

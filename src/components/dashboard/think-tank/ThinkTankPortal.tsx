@@ -9,6 +9,7 @@ import AIInsightsPanel from './AIInsightsPanel';
 import IdeaSubmissionForm from './IdeaSubmissionForm';
 import { showError, showInfo, showWarning } from '@/lib/toast';
 import ReactMarkdown from 'react-markdown';
+import { Sparkles, BrainCircuit } from 'lucide-react';
 
 // Animation and Design Tokens - Swiss-Bauhaus Remix
 const TT_ANIMATIONS = `
@@ -85,6 +86,7 @@ type Idea = {
     vetoReason?: string | null;
     createdAt: string;
     revealedAt?: string | null;
+    metadata?: any;
     executionLink?: { type: string; id: string; title: string; convertedAt?: string; convertedById?: string } | null;
     author?: { id: string; name?: string | null; email?: string | null } | null;
     decisionBy?: { id: string; name?: string | null; email?: string | null } | null;
@@ -632,7 +634,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     };
 
     const handleConvertIdea = async (ideaId: string, payload: {
-        mode: 'PROJECT' | 'TASK';
+        mode: 'PROJECT' | 'TASK' | 'JOB';
         ownerUserId?: string;
         memberIds?: string[];
         title?: string;
@@ -641,16 +643,20 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         startDate?: string;
         endDate?: string;
         dueDate?: string;
+        requirements?: string;
     }) => {
         setError('');
-        const response = await fetch(`/api/think-tank/ideas/${ideaId}/convert`, {
+        const response = await fetch(`/api/think-tank/promote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                ideaId,
+                ...payload
+            }),
         });
         const body = await response.json();
         if (!response.ok) {
-            setError(body.error || 'Failed to convert idea into execution work.');
+            setError(body.error || 'Failed to promote/convert idea.');
             return;
         }
         await refresh();
@@ -2204,7 +2210,7 @@ function ReviewBoard({
     }) => Promise<void>;
     onVetoIdea: (ideaId: string, reason: string) => Promise<void>;
     onConvertIdea: (ideaId: string, payload: {
-        mode: 'PROJECT' | 'TASK';
+        mode: 'PROJECT' | 'TASK' | 'JOB';
         ownerUserId?: string;
         memberIds?: string[];
         title?: string;
@@ -2213,6 +2219,7 @@ function ReviewBoard({
         startDate?: string;
         endDate?: string;
         dueDate?: string;
+        requirements?: string;
     }) => Promise<void>;
 }) {
     const [notes, setNotes] = useState<Record<string, string>>({});
@@ -2224,8 +2231,32 @@ function ReviewBoard({
     const [reviewStageFilter, setReviewStageFilter] = useState('ALL');
     const [expandedIdeaId, setExpandedIdeaId] = useState<string | null>(null);
     const [convertingIdeaId, setConvertingIdeaId] = useState<string | null>(null);
+    const [themes, setThemes] = useState<any[]>([]);
+    const [evaluations, setEvaluations] = useState<Record<string, { estimatedBudget: string; projectedROI: string; readinessScore: number }>>({});
+    const [loadingEvaluate, setLoadingEvaluate] = useState(false);
+    const [showEvaluateWorkspace, setShowEvaluateWorkspace] = useState(false);
+
+    const handleRunEvaluation = async () => {
+        setLoadingEvaluate(true);
+        try {
+            const res = await fetch('/api/think-tank/evaluate', { method: 'POST' });
+            const data = await res.json();
+            if (data.themes) {
+                setThemes(data.themes);
+                setEvaluations(data.evaluations || {});
+                setShowEvaluateWorkspace(true);
+                showInfo('AI clustering analysis completed!');
+            } else {
+                showError('Evaluation completed but returned empty themes.');
+            }
+        } catch (err) {
+            showError('Failed to analyze and cluster ideas.');
+        } finally {
+            setLoadingEvaluate(false);
+        }
+    };
     const [conversionForms, setConversionForms] = useState<Record<string, {
-        mode: 'PROJECT' | 'TASK';
+        mode: 'PROJECT' | 'TASK' | 'JOB';
         ownerUserId: string;
         memberIds: string;
         title: string;
@@ -2234,6 +2265,7 @@ function ReviewBoard({
         startDate: string;
         endDate: string;
         dueDate: string;
+        requirements: string;
     }>>({});
 
     const getConversionForm = (idea: Idea) => {
@@ -2247,6 +2279,7 @@ function ReviewBoard({
             startDate: '',
             endDate: '',
             dueDate: '',
+            requirements: '',
         };
     };
 
@@ -2288,10 +2321,68 @@ function ReviewBoard({
                     <h2 className="text-lg font-semibold text-slate-900">Review Board</h2>
                     <p className="mt-1 text-sm text-slate-600">Review ideas in a compact queue, then open the full detail page for deeper discussion and activity history.</p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    {filteredIdeas.length} of {ideas.length} ideas
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleRunEvaluation}
+                        disabled={loadingEvaluate}
+                        className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white shadow-md hover:from-slate-800 hover:to-indigo-900 disabled:opacity-60 transition-all border border-indigo-900"
+                    >
+                        <Sparkles size={14} className="text-amber-400 animate-pulse" />
+                        {loadingEvaluate ? 'Clustering...' : 'AI Cluster & Budget Engine'}
+                    </button>
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        {filteredIdeas.length} of {ideas.length} ideas
+                    </div>
                 </div>
             </div>
+
+            {showEvaluateWorkspace && themes.length > 0 && (
+                <div className="mb-8 p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-3xl border border-indigo-800 shadow-2xl relative overflow-hidden">
+                    <div className="absolute -top-12 -right-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="flex justify-between items-center mb-6 border-b border-indigo-800/60 pb-3">
+                        <div>
+                            <h3 className="text-sm font-black tracking-widest flex items-center gap-2 uppercase text-white">
+                                <Sparkles className="text-amber-400" size={16} />
+                                Strategic AI Innovation Clusters
+                            </h3>
+                            <p className="text-xs text-indigo-300">Gemini categorized submitted proposals and estimated feasibility indices.</p>
+                        </div>
+                        <button
+                            onClick={() => setShowEvaluateWorkspace(false)}
+                            className="text-xs font-black uppercase text-indigo-300 hover:text-white transition-colors"
+                        >
+                            Close Workspace
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {themes.map((theme, idx) => (
+                            <div key={idx} className="bg-slate-900/60 backdrop-blur-md rounded-2xl p-5 border border-indigo-900/40 shadow-lg space-y-3">
+                                <div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-amber-400 text-slate-950 px-2.5 py-1 rounded-full">
+                                        Cluster {idx + 1}
+                                    </span>
+                                    <h4 className="text-base font-black text-white mt-2">{theme.name}</h4>
+                                    <p className="text-xs text-indigo-200 mt-1 leading-relaxed">{theme.description}</p>
+                                </div>
+                                <div className="space-y-2 border-t border-indigo-800/40 pt-3">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-300">Target Ideas</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {theme.ideaIds.map((id: string) => {
+                                            const match = ideas.find(i => i.id === id);
+                                            return match ? (
+                                                <span key={id} className="bg-indigo-950/80 text-indigo-200 text-[10px] font-bold px-2.5 py-1 rounded-xl border border-indigo-800">
+                                                    {match.topic}
+                                                </span>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_220px]">
                 <input
                     className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
@@ -2331,6 +2422,42 @@ function ReviewBoard({
                                     </span>
                                 </div>
                                 <h3 className="mt-3 text-lg font-semibold text-slate-950">{idea.topic}</h3>
+                                {(() => {
+                                    let metadataObj: any = {};
+                                    try {
+                                        metadataObj = typeof idea.metadata === 'string'
+                                            ? JSON.parse(idea.metadata)
+                                            : idea.metadata || {};
+                                    } catch (e) {}
+                                    const budget = metadataObj?.estimatedBudget || evaluations[idea.id]?.estimatedBudget;
+                                    const roi = metadataObj?.projectedROI || evaluations[idea.id]?.projectedROI;
+                                    const readiness = idea.ideaReadinessScore || metadataObj?.readinessScore || evaluations[idea.id]?.readinessScore;
+
+                                    if (!budget && !roi && !readiness) return null;
+
+                                    return (
+                                        <div className="mt-2 flex flex-wrap gap-2 items-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                <Sparkles size={10} className="text-indigo-500" /> AI Insights:
+                                            </span>
+                                            {readiness && (
+                                                <span className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-xl">
+                                                    Readiness: {readiness}%
+                                                </span>
+                                            )}
+                                            {budget && (
+                                                <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-xl">
+                                                    Budget: {budget}
+                                                </span>
+                                            )}
+                                            {roi && (
+                                                <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-xl">
+                                                    ROI: {roi}
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                                 <div className="mt-2 line-clamp-2 text-sm prose prose-sm prose-slate text-slate-600"><ReactMarkdown>{idea.description}</ReactMarkdown></div>
                                 <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
                                     <span>Author: {idea.author?.name || idea.author?.email || 'Hidden'}</span>
@@ -2541,45 +2668,48 @@ function ReviewBoard({
                             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-sm font-semibold text-slate-900">Convert to project or task</div>
-                                        <p className="mt-1 text-sm text-slate-600">Move this approved idea into tracked execution without leaving the Think Tank review board.</p>
+                                        <div className="text-sm font-semibold text-slate-900">Promote & Incubation Center</div>
+                                        <p className="mt-1 text-sm text-slate-600">Promote this approved innovation directly into a Tracked Project, a Task, or a Recruitment Job Posting.</p>
                                     </div>
                                 </div>
                                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                                     <label className="grid gap-2 text-sm text-slate-700">
-                                        <span className="font-medium">Execution type</span>
+                                        <span className="font-medium">Incubation Mode</span>
                                         <select
                                             className="rounded-2xl border border-slate-200 px-4 py-3"
                                             value={getConversionForm(idea).mode}
                                             onChange={(event) => setConversionForms((current) => ({
                                                 ...current,
-                                                [idea.id]: { ...getConversionForm(idea), mode: event.target.value as 'PROJECT' | 'TASK' },
+                                                [idea.id]: { ...getConversionForm(idea), mode: event.target.value as 'PROJECT' | 'TASK' | 'JOB' },
                                             }))}
                                         >
                                             <option value="PROJECT">Project</option>
                                             <option value="TASK">Task</option>
+                                            <option value="JOB">Recruitment Job</option>
                                         </select>
                                     </label>
+                                    {getConversionForm(idea).mode !== 'JOB' && (
+                                        <label className="grid gap-2 text-sm text-slate-700">
+                                            <span className="font-medium">Owner</span>
+                                            <select
+                                                className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                value={getConversionForm(idea).ownerUserId}
+                                                onChange={(event) => setConversionForms((current) => ({
+                                                    ...current,
+                                                    [idea.id]: { ...getConversionForm(idea), ownerUserId: event.target.value },
+                                                }))}
+                                            >
+                                                <option value="">Assign to current reviewer</option>
+                                                {assignees.map((assignee) => (
+                                                    <option key={assignee.id} value={assignee.id}>
+                                                        {(assignee.name || assignee.email || assignee.id)}{assignee.designation ? ` • ${assignee.designation}` : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                    )}
                                     <label className="grid gap-2 text-sm text-slate-700">
-                                        <span className="font-medium">Owner</span>
-                                        <select
-                                            className="rounded-2xl border border-slate-200 px-4 py-3"
-                                            value={getConversionForm(idea).ownerUserId}
-                                            onChange={(event) => setConversionForms((current) => ({
-                                                ...current,
-                                                [idea.id]: { ...getConversionForm(idea), ownerUserId: event.target.value },
-                                            }))}
-                                        >
-                                            <option value="">Assign to current reviewer</option>
-                                            {assignees.map((assignee) => (
-                                                <option key={assignee.id} value={assignee.id}>
-                                                    {(assignee.name || assignee.email || assignee.id)}{assignee.designation ? ` • ${assignee.designation}` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <label className="grid gap-2 text-sm text-slate-700">
-                                        <span className="font-medium">Execution title</span>
+                                        <span className="font-medium">Incubated Title</span>
                                         <input
                                             className="rounded-2xl border border-slate-200 px-4 py-3"
                                             placeholder={idea.topic}
@@ -2590,24 +2720,26 @@ function ReviewBoard({
                                             }))}
                                         />
                                     </label>
-                                    <label className="grid gap-2 text-sm text-slate-700">
-                                        <span className="font-medium">Priority</span>
-                                        <select
-                                            className="rounded-2xl border border-slate-200 px-4 py-3"
-                                            value={getConversionForm(idea).priority}
-                                            onChange={(event) => setConversionForms((current) => ({
-                                                ...current,
-                                                [idea.id]: { ...getConversionForm(idea), priority: event.target.value },
-                                            }))}
-                                        >
-                                            <option value="LOW">Low</option>
-                                            <option value="MEDIUM">Medium</option>
-                                            <option value="HIGH">High</option>
-                                            <option value="URGENT">Urgent</option>
-                                        </select>
-                                    </label>
+                                    {getConversionForm(idea).mode !== 'JOB' && (
+                                        <label className="grid gap-2 text-sm text-slate-700">
+                                            <span className="font-medium">Priority</span>
+                                            <select
+                                                className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                value={getConversionForm(idea).priority}
+                                                onChange={(event) => setConversionForms((current) => ({
+                                                    ...current,
+                                                    [idea.id]: { ...getConversionForm(idea), priority: event.target.value },
+                                                }))}
+                                            >
+                                                <option value="LOW">Low</option>
+                                                <option value="MEDIUM">Medium</option>
+                                                <option value="HIGH">High</option>
+                                                <option value="URGENT">Urgent</option>
+                                            </select>
+                                        </label>
+                                    )}
                                     <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
-                                        <span className="font-medium">Execution description override</span>
+                                        <span className="font-medium">Incubation description override</span>
                                         <textarea
                                             className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3"
                                             placeholder="Leave blank to use the original idea description."
@@ -2618,7 +2750,7 @@ function ReviewBoard({
                                             }))}
                                         />
                                     </label>
-                                    {getConversionForm(idea).mode === 'PROJECT' ? (
+                                    {getConversionForm(idea).mode === 'PROJECT' && (
                                         <>
                                             <label className="grid gap-2 text-sm text-slate-700">
                                                 <span className="font-medium">Start date</span>
@@ -2657,7 +2789,8 @@ function ReviewBoard({
                                                 />
                                             </label>
                                         </>
-                                    ) : (
+                                    )}
+                                    {getConversionForm(idea).mode === 'TASK' && (
                                         <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
                                             <span className="font-medium">Due date</span>
                                             <input
@@ -2667,6 +2800,20 @@ function ReviewBoard({
                                                 onChange={(event) => setConversionForms((current) => ({
                                                     ...current,
                                                     [idea.id]: { ...getConversionForm(idea), dueDate: event.target.value },
+                                                }))}
+                                            />
+                                        </label>
+                                    )}
+                                    {getConversionForm(idea).mode === 'JOB' && (
+                                        <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
+                                            <span className="font-medium">Hiring / Role Requirements</span>
+                                            <textarea
+                                                className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3"
+                                                placeholder="Enter job requirements (e.g. required skills, qualifications, work pattern)."
+                                                value={getConversionForm(idea).requirements}
+                                                onChange={(event) => setConversionForms((current) => ({
+                                                    ...current,
+                                                    [idea.id]: { ...getConversionForm(idea), requirements: event.target.value },
                                                 }))}
                                             />
                                         </label>
@@ -2688,6 +2835,7 @@ function ReviewBoard({
                                                     startDate: form.startDate || undefined,
                                                     endDate: form.endDate || undefined,
                                                     dueDate: form.dueDate || undefined,
+                                                    requirements: form.requirements || undefined,
                                                 });
                                             } finally {
                                                 setConvertingIdeaId(null);
@@ -2696,7 +2844,9 @@ function ReviewBoard({
                                         disabled={convertingIdeaId === idea.id}
                                         className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                                     >
-                                        {convertingIdeaId === idea.id ? 'Converting…' : `Convert to ${getConversionForm(idea).mode === 'PROJECT' ? 'Project' : 'Task'}`}
+                                        {convertingIdeaId === idea.id ? 'Incubating…' : `Promote to ${
+                                            getConversionForm(idea).mode === 'PROJECT' ? 'Project' : getConversionForm(idea).mode === 'TASK' ? 'Task' : 'Job Listing'
+                                        }`}
                                     </button>
                                 </div>
                             </div>
