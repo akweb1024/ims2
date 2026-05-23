@@ -77,9 +77,19 @@ export class RateLimitError extends AppError {
  */
 export function handleApiError(error: unknown, path?: string): NextResponse<ErrorResponse> {
     const timestamp = new Date().toISOString();
-    
-    // Log the error using our structured logger
-    logger.error(`API Error on ${path || 'unknown path'}`, error, { path });
+
+    // Expected auth failures should not be emitted as high-severity errors.
+    if (error instanceof AuthenticationError || error instanceof AuthorizationError) {
+        logger.warn(`API Access Denied on ${path || 'unknown path'}`, {
+            path,
+            errorName: error.name,
+            message: error.message,
+            statusCode: error.statusCode,
+        });
+    } else {
+        // Log unexpected failures using error severity.
+        logger.error(`API Error on ${path || 'unknown path'}`, error, { path });
+    }
 
     // Handle custom app errors
     if (error instanceof AppError) {

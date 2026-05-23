@@ -12,6 +12,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import QueryProvider from '@/components/providers/QueryProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
 import ToastProvider from '@/components/providers/ToastProvider';
+import StaleClientBuildGuard from '@/components/providers/StaleClientBuildGuard';
 import SkipNavigation from '@/components/ui/SkipNavigation';
 
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({
                         <ThemeProvider>
                             {children}
                             <ToastProvider />
+                            <StaleClientBuildGuard />
                         </ThemeProvider>
                     </AuthProvider>
                 </QueryProvider>
