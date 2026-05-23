@@ -34,7 +34,7 @@ const STATUS_CONFIG = {
     COMPLETED:   { icon: CheckCircle2, barColor: 'bg-emerald-400', badgeBg: 'bg-emerald-500/20', badgeText: 'text-emerald-300', badgeBorder: 'border-emerald-500/30', dot: 'bg-emerald-400',  accentBar: 'bg-emerald-500',  label: 'Completed',   accent: 'from-emerald-500/10' },
     IN_PROGRESS: { icon: TrendingUp,   barColor: 'bg-blue-400',    badgeBg: 'bg-blue-500/20',    badgeText: 'text-blue-300',    badgeBorder: 'border-blue-500/30',    dot: 'bg-blue-400',    accentBar: 'bg-blue-500',    label: 'In Progress', accent: 'from-blue-500/10' },
     ON_HOLD:     { icon: Pause,        barColor: 'bg-amber-400',   badgeBg: 'bg-amber-500/20',   badgeText: 'text-amber-300',   badgeBorder: 'border-amber-500/30',   dot: 'bg-amber-400',   accentBar: 'bg-amber-500',   label: 'On Hold',     accent: 'from-amber-500/10' },
-    PLANNING:    { icon: Target,       barColor: 'bg-violet-400',  badgeBg: 'bg-violet-500/20',  badgeText: 'text-violet-300',  badgeBorder: 'border-violet-500/30',  dot: 'bg-violet-400',  accentBar: 'bg-violet-500',  label: 'Planning',    accent: 'from-violet-500/10' },
+    PLANNING:    { icon: Target,       barColor: 'bg-indigo-400',  badgeBg: 'bg-indigo-500/20',  badgeText: 'text-indigo-300',  badgeBorder: 'border-indigo-500/30',  dot: 'bg-indigo-400',  accentBar: 'bg-indigo-500',  label: 'Planning',    accent: 'from-indigo-500/10' },
     TESTING:     { icon: Zap,          barColor: 'bg-orange-400',  badgeBg: 'bg-orange-500/20',  badgeText: 'text-orange-300',  badgeBorder: 'border-orange-500/30',  dot: 'bg-orange-400',  accentBar: 'bg-orange-500',  label: 'Testing',     accent: 'from-orange-500/10' },
     CANCELLED:   { icon: X,            barColor: 'bg-rose-400',    badgeBg: 'bg-rose-500/20',    badgeText: 'text-rose-300',    badgeBorder: 'border-rose-500/30',    dot: 'bg-rose-400',    accentBar: 'bg-rose-500',    label: 'Cancelled',   accent: 'from-rose-500/10' },
     ARCHIVED:    { icon: AlertCircle,  barColor: 'bg-slate-400',   badgeBg: 'bg-slate-500/20',   badgeText: 'text-slate-300',   badgeBorder: 'border-slate-500/30',   dot: 'bg-slate-400',   accentBar: 'bg-slate-500',   label: 'Archived',    accent: 'from-slate-500/10' },
@@ -557,7 +557,7 @@ export default function ProjectsPage() {
                                                 {p.teamLead && p.teamLead.id !== p.projectManager?.id && (
                                                     <>
                                                         <div className="h-3 w-px bg-white/10" />
-                                                        <Avatar person={p.teamLead} color="bg-violet-600" />
+                                                        <Avatar person={p.teamLead} color="bg-indigo-600" />
                                                     </>
                                                 )}
                                             </div>

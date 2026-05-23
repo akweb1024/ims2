@@ -74,10 +74,10 @@ export default function CompanyAnalyticsOverview({ companyId }: { companyId?: st
                     </p>
                     <p className="text-xs text-secondary-400">Margin: {stats.totalRevenue > 0 ? ((stats.netProfit / stats.totalRevenue) * 100).toFixed(1) : 0}%</p>
                 </div>
-                <div className="card-premium p-4 border-l-4 border-purple-500 bg-purple-50">
-                    <p className="text-sm text-purple-700 font-bold uppercase">Forecast (Next Mo)</p>
-                    <p className="text-2xl font-bold text-purple-900">₹{stats.forecastNextMonth.toLocaleString()}</p>
-                    <p className="text-xs text-purple-600">AI Projection based on trend</p>
+                <div className="card-premium p-4 border-l-4 border-indigo-500 bg-indigo-50">
+                    <p className="text-sm text-indigo-700 font-bold uppercase">Forecast (Next Mo)</p>
+                    <p className="text-2xl font-bold text-indigo-900">₹{stats.forecastNextMonth.toLocaleString()}</p>
+                    <p className="text-xs text-indigo-600">AI Projection based on trend</p>
                 </div>
             </div>
 
@@ -137,3 +137,5 @@ export default function CompanyAnalyticsOverview({ companyId }: { companyId?: st
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

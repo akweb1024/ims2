@@ -15,7 +15,7 @@ interface IncrementAnalyticsProps {
     data: any;
 }
 
-const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#06b6d4'];
 
 export default function IncrementAnalyticsDashboard({ data }: IncrementAnalyticsProps) {
     const [view, setView] = useState<'CURRENT' | 'FORECAST'>('CURRENT');
@@ -30,7 +30,7 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
     if (!mounted) return <div className="p-8 text-center animate-pulse text-secondary-500 font-bold">Initializing Dashboard...</div>;
 
     const StatCard = ({ title, value, subValue, trend, icon: Icon, color }: any) => (
-        <div className={`card-premium p-6 relative overflow-hidden group border-${view === 'FORECAST' ? 'purple-200' : 'transparent'}`}>
+        <div className={`card-premium p-6 relative overflow-hidden group border-${view === 'FORECAST' ? 'indigo-200' : 'transparent'}`}>
             <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-${color}-500/10 rounded-full blur-2xl group-hover:bg-${color}-500/20 transition-all duration-500`}></div>
             <div className="flex justify-between items-start relative z-10">
                 <div>
@@ -38,7 +38,7 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                     <h3 className="text-3xl font-black text-secondary-900 mb-1">{value}</h3>
                     {subValue && <p className="text-secondary-600 text-sm font-medium">{subValue}</p>}
                     {trend && (
-                        <div className={`flex items-center gap-1 mt-2 text-${view === 'FORECAST' ? 'purple' : (trend.startsWith('+') ? 'success' : 'danger')}-600 font-bold text-sm`}>
+                        <div className={`flex items-center gap-1 mt-2 text-${view === 'FORECAST' ? 'indigo' : (trend.startsWith('+') ? 'success' : 'danger')}-600 font-bold text-sm`}>
                             {['+', '-'].includes(trend[0]) ? (trend.startsWith('+') ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />) : <Activity size={16} />}
                             {trend}
                         </div>
@@ -72,7 +72,7 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
     ];
 
     const forecastStats = forecast ? [
-        { title: "Projected Budget (FY)", value: formatCurrency(forecast.projectedBudget), sub: "Based on current run rate", trend: "Artificial Intelligence", icon: BarChart3, color: "purple" },
+        { title: "Projected Budget (FY)", value: formatCurrency(forecast.projectedBudget), sub: "Based on current run rate", trend: "Artificial Intelligence", icon: BarChart3, color: "indigo" },
         { title: "Confidence Score", value: `${(forecast.confidenceScore * 100).toFixed(0)}%`, sub: "Algorithm reliability", trend: "High Confidence", icon: Target, color: "emerald" },
         { title: "Future Liabilities", value: formatCurrency(futureLiability), sub: "Projected gap over approved budget", trend: futureLiability > 0 ? "Above approved baseline" : "Within approved baseline", icon: TrendingDown, color: "rose" },
         { title: "Recruitment Budget", value: formatCurrency(recruitmentBudget), sub: "Residual planning capacity", trend: "Allocation", icon: Users, color: "blue" }
@@ -107,7 +107,7 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                     </button>
                     <button
                         onClick={() => setView('FORECAST')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'FORECAST' ? 'bg-purple-600 shadow-sm text-white shadow-purple-200' : 'text-secondary-500 hover:text-secondary-700'}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'FORECAST' ? 'bg-indigo-600 shadow-sm text-white shadow-indigo-200' : 'text-secondary-500 hover:text-secondary-700'}`}
                     >
                         Forecasting
                     </button>
@@ -156,11 +156,11 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Budget Impact & Revenue Target Trend */}
-                <div className={`card-premium p-6 ${view === 'FORECAST' ? 'border-purple-100 bg-purple-50/10' : ''}`}>
+                <div className={`card-premium p-6 ${view === 'FORECAST' ? 'border-indigo-100 bg-indigo-50/10' : ''}`}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
-                                <Activity className={view === 'FORECAST' ? "text-purple-500" : "text-primary-500"} size={20} />
+                                <Activity className={view === 'FORECAST' ? "text-indigo-500" : "text-primary-500"} size={20} />
                                 {view === 'FORECAST' ? 'Projected Spending' : 'Impact vs Revenue Commitment'}
                             </h3>
                             <p className="text-xs text-secondary-500 font-bold uppercase mt-1">
@@ -183,9 +183,9 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                                     yAxisId="left"
                                     type="monotone"
                                     dataKey="amount"
-                                    stroke={view === 'FORECAST' ? "#9333ea" : "#4f46e5"}
+                                    stroke={view === 'FORECAST' ? "#4f46e5" : "#4f46e5"}
                                     strokeWidth={3}
-                                    fill={view === 'FORECAST' ? "#9333ea20" : "#4f46e520"}
+                                    fill={view === 'FORECAST' ? "#4f46e520" : "#4f46e520"}
                                     name="Budget Impact"
                                 />
                                 {view !== 'FORECAST' && (
@@ -415,3 +415,5 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

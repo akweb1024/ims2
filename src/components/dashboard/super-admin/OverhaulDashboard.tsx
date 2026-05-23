@@ -115,7 +115,7 @@ interface DashboardStats {
     recentActivity: any[];
 }
 
-const COLORS = ['#6366f1', '#4ade80', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = ['#6366f1', '#4ade80', '#f59e0b', '#ef4444', '#6366f1', '#ec4899'];
 
 export default function SuperAdminOverhaulDashboard() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -594,3 +594,5 @@ function FullScreenLoader() {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

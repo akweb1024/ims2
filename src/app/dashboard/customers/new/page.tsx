@@ -626,12 +626,12 @@ export default function NewCustomerPage() {
 
                     {/* Notes */}
                     <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 relative overflow-hidden">
-                         <div className="p-8 border-b border-secondary-50 bg-purple-50/20 flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-100">
+                         <div className="p-8 border-b border-secondary-50 bg-indigo-50/20 flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
                                    <ClipboardList size={24} />
                               </div>
                               <div className="flex flex-col">
-                                   <span className="text-[9px] font-black uppercase tracking-[0.3em] text-purple-600 mb-1 leading-none">Internal Archive</span>
+                                   <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-1 leading-none">Internal Archive</span>
                                    <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight italic">Strategic Intel</h3>
                               </div>
                          </div>

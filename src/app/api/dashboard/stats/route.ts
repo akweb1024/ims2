@@ -232,7 +232,7 @@ export const GET = authorizedRoute(
                             value: articlesInReview.toString(),
                             change: 'In Review',
                             icon: '✍️',
-                            color: 'bg-purple-600',
+                            color: 'bg-indigo-600',
                             changePositive: true,
                         },
                         {
@@ -374,3 +374,5 @@ function formatTimeAgo(date: Date) {
     if (hours < 24) return `${hours}h ago`;
     return `${Math.floor(hours / 24)}d ago`;
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

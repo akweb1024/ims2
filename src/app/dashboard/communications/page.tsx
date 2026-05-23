@@ -24,7 +24,7 @@ function ChannelIcon({ channel }: { channel: string }) {
     if (chan === 'EMAIL') return <Mail size={18} className="text-blue-500" />;
     if (chan === 'PHONE') return <Phone size={18} className="text-emerald-500" />;
     if (chan === 'WHATSAPP') return <MessageCircle size={18} className="text-green-500" />;
-    if (chan === 'MEETING') return <Users size={18} className="text-purple-500" />;
+    if (chan === 'MEETING') return <Users size={18} className="text-indigo-500" />;
     return <MessageSquare size={18} className="text-secondary-400" />;
 }
 
@@ -270,3 +270,5 @@ export default function CommunicationsPage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

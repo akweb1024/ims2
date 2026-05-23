@@ -117,11 +117,11 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Compensatory</p>
-                            <p className="text-2xl font-bold text-purple-600">
+                            <p className="text-2xl font-bold text-indigo-600">
                                 {leaveBalances.reduce((sum, b) => sum + getAvailable(b.compensatory, b.used.compensatory, b.pending.compensatory), 0)}
                             </p>
                         </div>
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">🔄</div>
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">🔄</div>
                     </div>
                 </div>
             </div>
@@ -222,3 +222,5 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
         </div >
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

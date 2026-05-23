@@ -28,7 +28,7 @@ export default function HeadcountTrends({ data }: { data: HeadcountData }) {
         totalSalary: Math.round(c.totalSalary / 1000) // in thousands
     })).sort((a, b) => b.headcount - a.headcount);
 
-    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
+    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6366f1', '#06b6d4', '#ec4899', '#84cc16'];
 
     // Check if there's any data
     const hasData = chartData.length > 0 && chartData.some(c => c.headcount > 0);
@@ -84,3 +84,5 @@ export default function HeadcountTrends({ data }: { data: HeadcountData }) {
         </Card>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

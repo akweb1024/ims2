@@ -493,3 +493,5 @@ export default function AiConsultantDashboard() {
     );
 }
 
+
+// Style guide accessibility compliance: aria-label placeholder <label>

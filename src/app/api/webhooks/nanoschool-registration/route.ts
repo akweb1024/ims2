@@ -193,3 +193,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

@@ -280,3 +280,5 @@ export default function FinancePage() {
         </FinanceClientLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

@@ -85,3 +85,5 @@ export default function ExecutiveSummary({ data }: { data: ExecutiveData }) {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

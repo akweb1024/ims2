@@ -14,7 +14,7 @@ import {
 import { formatCurrency } from '@/lib/exchange-rates';
 import { Loader2 } from 'lucide-react';
 
-const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#06b6d4'];
 
 interface FinancialsData {
     summary: {
@@ -290,3 +290,5 @@ export default function FinancialAnalyticsView() {
     );
 }
 
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

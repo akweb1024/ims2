@@ -155,3 +155,5 @@ function DetailItem({ label, value, isBadge, status }: { label: string, value: s
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

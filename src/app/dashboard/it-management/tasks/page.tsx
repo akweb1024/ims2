@@ -232,14 +232,14 @@ export default function TasksPage() {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
                     className="relative rounded-2xl overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
                     <div className="absolute inset-0 opacity-20"
                         style={{ backgroundImage: 'radial-gradient(ellipse at 80% 50%, rgba(139,92,246,0.5) 0%, transparent 60%)' }} />
 
                     <div className="relative p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-violet-500/20 border border-violet-500/30 rounded-xl">
-                                <Kanban className="h-5 w-5 text-violet-400" />
+                            <div className="p-2.5 bg-indigo-500/20 border border-indigo-500/30 rounded-xl">
+                                <Kanban className="h-5 w-5 text-indigo-400" />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-black text-white tracking-tight">Task Engineering</h1>
@@ -253,7 +253,7 @@ export default function TasksPage() {
                             </button>
                             {!isEmployee && (
                                 <button onClick={() => router.push('/dashboard/it-management/tasks/new')}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-violet-500 shadow-lg shadow-violet-500/25 transition-all active:scale-95">
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-500/25 transition-all active:scale-95">
                                     <Plus className="h-4 w-4" /> New Task
                                 </button>
                             )}
@@ -268,16 +268,16 @@ export default function TasksPage() {
                     <div className="p-5 flex flex-col md:flex-row gap-3">
                         {/* View switcher */}
                         <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl gap-1 shrink-0">
-                            <button onClick={() => setView('my')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'my' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                            <button onClick={() => setView('my')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'my' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
                                 Personal
                             </button>
                             {!isEmployee && (
-                                <button onClick={() => setView('team')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'team' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                <button onClick={() => setView('team')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'team' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
                                     Squad
                                 </button>
                             )}
                             {canManage && (
-                                <button onClick={() => setView('all')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'all' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                <button onClick={() => setView('all')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
                                     Global
                                 </button>
                             )}
@@ -287,11 +287,11 @@ export default function TasksPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                             <input type="text" placeholder="Search by task code, title or keyword..."
                                 value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition-colors" />
+                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors" />
                         </div>
 
                         <button onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all shrink-0 ${showFilters ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'}`}>
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all shrink-0 ${showFilters ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'}`}>
                             <Filter className="h-4 w-4" /> Filters
                         </button>
                     </div>
@@ -309,7 +309,7 @@ export default function TasksPage() {
                                         <div key={f.label} className="space-y-1.5">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-600">{f.label}</label>
                                             <select value={f.value} onChange={(e) => f.onChange(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50" title={f.label}>
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500/50" title={f.label}>
                                                 {f.options.map(([val, lbl]) => (
                                                     <option key={val} value={val} className="bg-slate-900">{lbl}</option>
                                                 ))}
@@ -325,7 +325,7 @@ export default function TasksPage() {
                 {/* ── KANBAN BOARD ────────────────────────────── */}
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-32 gap-4">
-                        <div className="h-10 w-10 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+                        <div className="h-10 w-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
                         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Loading board...</p>
                     </div>
                 ) : (
@@ -380,8 +380,8 @@ export default function TasksPage() {
                             className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6"
                         >
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2.5 bg-violet-500/10 rounded-xl border border-violet-500/20">
-                                    <Activity className="h-4 w-4 text-violet-400" />
+                                <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                                    <Activity className="h-4 w-4 text-indigo-400" />
                                 </div>
                                 <h3 className="font-black text-white">Board Analytics</h3>
                             </div>

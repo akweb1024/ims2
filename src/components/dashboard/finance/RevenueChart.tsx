@@ -6,7 +6,7 @@ interface RevenueChartProps {
     data: any[]; // { name, value }
 }
 
-const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F97316', '#10B981', '#6366F1'];
+const COLORS = ['#3B82F6', '#6366F1', '#EC4899', '#F97316', '#10B981', '#6366F1'];
 
 export default function RevenueChart({ data }: RevenueChartProps) {
     if (!data || data.length === 0) return <div className="h-full w-full flex items-center justify-center text-gray-400">No data available</div>;

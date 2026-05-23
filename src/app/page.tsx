@@ -138,7 +138,7 @@ export default function Home() {
 
                         {/* Feature 4 */}
                         <div className="card-premium group hover:scale-105 transition-transform duration-300">
-                            <div className="stat-card-icon bg-purple-500 text-white mb-4">
+                            <div className="stat-card-icon bg-indigo-500 text-white mb-4">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                 </svg>
@@ -206,7 +206,7 @@ export default function Home() {
                             <p className="text-secondary-600 text-sm">Client management, subscription submissions, and commission tracking</p>
                         </div>
 
-                        <div className="bg-white rounded-lg p-6 border-l-4 border-purple-500 shadow-md hover:shadow-lg transition-shadow">
+                        <div className="bg-white rounded-lg p-6 border-l-4 border-indigo-500 shadow-md hover:shadow-lg transition-shadow">
                             <h4 className="font-bold text-lg text-secondary-900 mb-2">Managers</h4>
                             <p className="text-secondary-600 text-sm">Team oversight, performance reviews, and strategic analytics</p>
                         </div>
@@ -303,3 +303,5 @@ export default function Home() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

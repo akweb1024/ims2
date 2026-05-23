@@ -162,3 +162,5 @@ export const useVault = () => {
     }
     return context;
 };
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

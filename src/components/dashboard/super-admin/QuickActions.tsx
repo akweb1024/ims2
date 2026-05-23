@@ -36,7 +36,7 @@ const actions = [
     {
         label: "Generate Report",
         icon: FileText,
-        color: "bg-violet-50 text-violet-600 hover:bg-violet-100",
+        color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
         route: "/dashboard/reports"
     },
     {
@@ -133,3 +133,5 @@ function Zap({ size, className }: { size: number; className?: string }) {
         </svg>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

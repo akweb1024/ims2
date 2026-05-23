@@ -90,7 +90,7 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-secondary-200 shadow-sm">
                             <p className="text-[10px] font-bold text-secondary-500 uppercase mb-1">Comp.</p>
-                            <p className="text-xl font-bold text-purple-600">
+                            <p className="text-xl font-bold text-indigo-600">
                                 {Math.max(0, (fullProfile?.metrics?.leaveBalances?.compensatory?.total || 5) - (fullProfile?.metrics?.leaveBalances?.compensatory?.used || 0))}
                             </p>
                         </div>

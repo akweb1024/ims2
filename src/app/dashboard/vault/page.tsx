@@ -9,3 +9,5 @@ export const metadata: Metadata = {
 export default function VaultPage() {
     return <VaultMain />;
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

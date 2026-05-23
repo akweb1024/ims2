@@ -18,7 +18,7 @@ interface Configuration {
 const CATEGORIES = [
     { value: 'AWS', label: 'AWS Services', icon: Cloud, color: 'orange' },
     { value: 'WHATSAPP', label: 'WhatsApp Business', icon: MessageSquare, color: 'green' },
-    { value: 'AI_MODELS', label: 'AI Models', icon: Database, color: 'purple' },
+    { value: 'AI_MODELS', label: 'AI Models', icon: Database, color: 'indigo' },
     { value: 'PAYMENT_GATEWAY', label: 'Payment Gateway', icon: CreditCard, color: 'blue' },
     { value: 'EMAIL_SERVICE', label: 'Email Service', icon: Mail, color: 'red' },
     { value: 'SMS_SERVICE', label: 'SMS Service', icon: MessageSquare, color: 'cyan' },

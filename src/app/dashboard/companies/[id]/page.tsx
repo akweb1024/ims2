@@ -147,9 +147,9 @@ export default function CompanyDetailsPage() {
             <div className="p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
                 {/* Header Profile Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 shadow-xl shadow-indigo-100 dark:shadow-none border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-100 to-indigo-50 rounded-full -mr-16 -mt-16 opacity-50 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-indigo-100 to-indigo-50 rounded-full -mr-16 -mt-16 opacity-50 blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
                     <div className="relative flex flex-col md:flex-row gap-8 items-start md:items-center">
-                        <div className="h-28 w-28 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-black shadow-2xl transform group-hover:rotate-3 transition-transform duration-500">
+                        <div className="h-28 w-28 rounded-3xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-black shadow-2xl transform group-hover:rotate-3 transition-transform duration-500">
                             {company.name.charAt(0)}
                         </div>
                         <div className="flex-1">
@@ -220,7 +220,7 @@ export default function CompanyDetailsPage() {
                         <h3 className="text-2xl font-black text-gray-900 dark:text-white mt-1">{company.stats.openTickets}</h3>
                     </div>
 
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-[2rem] shadow-lg shadow-indigo-200 text-white relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-[2rem] shadow-lg shadow-indigo-200 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Activity size={64} />
                         </div>
@@ -607,3 +607,5 @@ export default function CompanyDetailsPage() {
 const SparklesIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
 );
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

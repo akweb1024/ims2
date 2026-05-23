@@ -244,7 +244,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                             {/* Metrics */}
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {report.pointsEarned > 0 && (
-                                    <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-[10px] font-black border border-purple-200 flex items-center gap-1">
+                                    <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black border border-indigo-200 flex items-center gap-1">
                                         <Award size={12} />
                                         {report.pointsEarned} Points
                                     </span>
@@ -347,7 +347,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                             {report.tasksSnapshot?.length || 0} tasks
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="badge bg-purple-100 text-purple-700 font-black">
+                                            <span className="badge bg-indigo-100 text-indigo-700 font-black">
                                                 {report.pointsEarned || 0} pts
                                             </span>
                                         </td>
@@ -467,7 +467,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                                     <div className="flex flex-col items-end gap-1">
                                                                         {task.calculationType === 'SCALED' ? (
                                                                             <>
-                                                                                <span className="badge bg-purple-100 text-purple-700 text-[10px]">
+                                                                                <span className="badge bg-indigo-100 text-indigo-700 text-[10px]">
                                                                                     {task.quantity} units
                                                                                 </span>
                                                                                 <span className="text-xs font-black text-primary-600">

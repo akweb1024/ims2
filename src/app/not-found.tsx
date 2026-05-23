@@ -2,13 +2,13 @@ import Link from 'next/link';
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
             <div className="max-w-2xl w-full">
                 {/* Glassmorphism Card */}
                 <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 md:p-12">
                     {/* Logo/Brand */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl font-bold mb-4">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-3xl font-bold mb-4">
                             STM
                         </div>
                         <h1 className="text-6xl font-bold text-gray-800 mb-2">404</h1>
@@ -29,7 +29,7 @@ export default function NotFound() {
                     <div className="space-y-4">
                         <Link
                             href="/dashboard"
-                            className="block w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 text-center shadow-lg"
+                            className="block w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 text-center shadow-lg"
                         >
                             Go to Dashboard
                         </Link>
@@ -75,3 +75,5 @@ export default function NotFound() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

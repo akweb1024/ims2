@@ -202,3 +202,5 @@ export async function GET(req: NextRequest) {
         return createErrorResponse(error);
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

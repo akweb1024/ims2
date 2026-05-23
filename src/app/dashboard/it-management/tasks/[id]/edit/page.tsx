@@ -115,7 +115,7 @@ export default function EditTaskPage() {
         return (
             <DashboardLayout>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
-                    <div className="h-12 w-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin" />
+                    <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Recalibrating Task Data...</p>
                 </div>
             </DashboardLayout>
@@ -130,7 +130,7 @@ export default function EditTaskPage() {
                     {/* Header */}
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
                         <div className="flex items-center gap-6">
-                            <button onClick={() => router.back()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-purple-600 transition-all shadow-sm">
+                            <button onClick={() => router.back()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all shadow-sm">
                                 <ArrowLeft className="h-5 w-5" />
                             </button>
                             <div>
@@ -150,13 +150,13 @@ export default function EditTaskPage() {
                                 className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
                             >
                                 <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                                    <div className="p-2 bg-purple-600 rounded-lg"><Activity className="h-4 w-4 text-white" /></div> Identity Reconfiguration
+                                    <div className="p-2 bg-indigo-600 rounded-lg"><Activity className="h-4 w-4 text-white" /></div> Identity Reconfiguration
                                 </h2>
                                 <div className="space-y-8">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mission Moniker *</label>
                                         <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} 
-                                            className={`w-full bg-slate-50 border ${errors.title ? 'border-rose-300' : 'border-slate-100'} rounded-[1.5rem] px-8 py-5 text-lg font-black text-slate-900 focus:bg-white focus:ring-4 focus:ring-purple-600/5 transition-all outline-none`}
+                                            className={`w-full bg-slate-50 border ${errors.title ? 'border-rose-300' : 'border-slate-100'} rounded-[1.5rem] px-8 py-5 text-lg font-black text-slate-900 focus:bg-white focus:ring-4 focus:ring-indigo-600/5 transition-all outline-none`}
                                         />
                                         {errors.title && <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest ml-4">{errors.title}</p>}
                                     </div>
@@ -164,7 +164,7 @@ export default function EditTaskPage() {
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Intel Briefing</label>
                                         <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={4}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-8 py-5 text-sm leading-relaxed text-slate-600 focus:bg-white focus:ring-4 focus:ring-purple-600/5 transition-all outline-none resize-none"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-8 py-5 text-sm leading-relaxed text-slate-600 focus:bg-white focus:ring-4 focus:ring-indigo-600/5 transition-all outline-none resize-none"
                                         />
                                     </div>
 
@@ -269,7 +269,7 @@ export default function EditTaskPage() {
                             >
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
                                 <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-10 flex items-center gap-3">
-                                    <User className="h-4 w-4 text-purple-400" /> Terminal Agent
+                                    <User className="h-4 w-4 text-indigo-400" /> Terminal Agent
                                 </h3>
                                 <div className="space-y-8">
                                     <div className="space-y-3">

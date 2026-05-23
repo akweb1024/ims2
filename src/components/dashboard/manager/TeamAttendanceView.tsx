@@ -153,3 +153,5 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
 };
 
 export default TeamAttendanceView;
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

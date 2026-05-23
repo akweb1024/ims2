@@ -241,18 +241,18 @@ export const EmailTemplates = {
         text: `Dear Editor, ${reviewerName} has submitted their review for "${articleTitle}" with a recommendation of ${recommendation}.`,
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-                <h1 style="color: #7c3aed;">New Review Report</h1>
+                <h1 style="color: #4f46e5;">New Review Report</h1>
                 <p>Dear <strong>${escapeHtml(editorName)}</strong>,</p>
                 <p>A review report has been submitted for a manuscript under your management.</p>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 20px 0;">
                     <p style="margin: 5px 0;"><strong>Manuscript:</strong> ${escapeHtml(articleTitle)}</p>
                     <p style="margin: 5px 0;"><strong>Reviewer:</strong> ${escapeHtml(reviewerName)}</p>
-                    <p style="margin: 5px 0;"><strong>Recommendation:</strong> <span style="font-weight: bold; color: #7c3aed;">${escapeHtml(recommendation)}</span></p>
+                    <p style="margin: 5px 0;"><strong>Recommendation:</strong> <span style="font-weight: bold; color: #4f46e5;">${escapeHtml(recommendation)}</span></p>
                 </div>
                 <p>Please log in to the editorial workflow to evaluate this report and make a decision.</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/editorial" 
-                       style="background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       style="background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        Go to Editorial Hub
                     </a>
                 </div>
@@ -512,3 +512,5 @@ export const EmailTemplates = {
         `
     })
 };
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

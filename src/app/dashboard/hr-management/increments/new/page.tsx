@@ -478,9 +478,9 @@ function NewIncrementContent() {
                             </div>
 
                             {/* Incentive with Details */}
-                            <div className={`p-4 rounded-xl border transition-all ${form.optInIncentive ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className={`p-4 rounded-xl border transition-all ${form.optInIncentive ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-3">
-                                    <h3 className={`font-bold ${form.optInIncentive ? 'text-purple-900' : 'text-gray-500'}`}>Incentive Component</h3>
+                                    <h3 className={`font-bold ${form.optInIncentive ? 'text-indigo-900' : 'text-gray-500'}`}>Incentive Component</h3>
                                     <label className="flex items-center cursor-pointer gap-2">
                                         <input
                                             type="checkbox"
@@ -519,7 +519,7 @@ function NewIncrementContent() {
                                                     value={form.newIncentivePercentage}
                                                     onChange={(e) => setForm({ ...form, newIncentivePercentage: parseFloat(e.target.value) || 0 })}
                                                 />
-                                                <p className="text-xs text-purple-600 mt-1">% earned after reaching variable upper cap</p>
+                                                <p className="text-xs text-indigo-600 mt-1">% earned after reaching variable upper cap</p>
                                             </div>
                                         </div>
 
@@ -530,7 +530,7 @@ function NewIncrementContent() {
                                                 onChange={(value) => setForm({ ...form, incentiveDefinition: value })}
                                                 placeholder="Define how incentive is calculated, conditions, and when it applies..."
                                             />
-                                            <p className="text-xs text-purple-600 mt-1">
+                                            <p className="text-xs text-indigo-600 mt-1">
                                                 Example: &quot;{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}&quot;
                                             </p>
                                         </div>
@@ -824,18 +824,18 @@ function NewIncrementContent() {
                             {/* Monthly Salary Breakdown */}
                             <div className="mt-8 space-y-6">
                                 {/* FIXED SALARY Grid */}
-                                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                                    <h3 className="font-bold text-purple-900 mb-4 flex items-center gap-2">
+                                <div className="p-4 bg-gradient-to-r from-indigo-50 to-pink-50 rounded-xl border border-indigo-100">
+                                    <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
                                         💸 Monthly Fixed Salary Breakdown
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                         {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((month) => (
                                             <div key={`sal-fix-${month}`}>
-                                                <label className="label-premium text-xs uppercase tracking-wide text-purple-800">{month}</label>
+                                                <label className="label-premium text-xs uppercase tracking-wide text-indigo-800">{month}</label>
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    className="input-premium h-9 text-right border-purple-200 focus:ring-purple-500"
+                                                    className="input-premium h-9 text-right border-indigo-200 focus:ring-indigo-500"
                                                     placeholder="0"
                                                     value={form.monthlyFixedSalaries[month] || ''}
                                                     onChange={(e) => {
@@ -899,7 +899,7 @@ function NewIncrementContent() {
                                     <label className="label-premium">New Fix Salary (Avg/Monthly)</label>
                                     <input
                                         type="number"
-                                        className="input-premium font-bold text-purple-700"
+                                        className="input-premium font-bold text-indigo-700"
                                         value={form.newFixedSalary}
                                         readOnly
                                         title="Calculated Average from Monthly Grid"
@@ -919,7 +919,7 @@ function NewIncrementContent() {
                                 </div>
                             </div>
                             {/* Fiscal Year & Quarterly Targets */}
-                            <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                            <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-xl border border-indigo-200">
                                 <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
                                     📅 Fiscal Year & Quarterly Breakdown
                                 </h3>
@@ -973,7 +973,7 @@ function NewIncrementContent() {
                                                     title={`Fixed: ${fixSum} + Variable: ${varSum}`}
                                                 />
                                                 <div className="flex justify-between text-[10px] mt-1 px-1 text-secondary-500">
-                                                    <span>Fix: <span className="font-semibold text-purple-600">{fixSum}</span></span>
+                                                    <span>Fix: <span className="font-semibold text-indigo-600">{fixSum}</span></span>
                                                     <span>Var: <span className="font-semibold text-orange-600">{varSum}</span></span>
                                                 </div>
                                             </div>

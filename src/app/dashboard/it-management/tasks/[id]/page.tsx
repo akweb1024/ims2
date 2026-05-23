@@ -26,7 +26,7 @@ interface Task {
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
     COMPLETED: { label: 'Settled', bg: 'bg-emerald-50/50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     IN_PROGRESS: { label: 'Active', bg: 'bg-blue-50/50', text: 'text-blue-700', dot: 'bg-blue-500' },
-    TESTING: { label: 'Verification', bg: 'bg-purple-50/50', text: 'text-purple-700', dot: 'bg-purple-500' },
+    TESTING: { label: 'Verification', bg: 'bg-indigo-50/50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
     PENDING: { label: 'In Queue', bg: 'bg-amber-50/50', text: 'text-amber-700', dot: 'bg-amber-500' },
     UNDER_REVIEW: { label: 'Audit', bg: 'bg-indigo-50/50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
 };
@@ -108,7 +108,7 @@ export default function TaskDetailPage() {
         return (
             <DashboardLayout>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
-                    <div className="h-12 w-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin" />
+                    <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Task Payload...</p>
                 </div>
             </DashboardLayout>
@@ -128,17 +128,17 @@ export default function TaskDetailPage() {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
                     className="relative rounded-2xl overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
                     <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'radial-gradient(ellipse at 10% 50%, rgba(139,92,246,0.4) 0%, transparent 60%)' }} />
 
                     <div className="relative p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div className="flex items-start gap-5">
-                            <button onClick={() => router.back()} className="mt-1 p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-violet-400 hover:border-violet-500/30 transition-all shrink-0">
+                            <button onClick={() => router.back()} className="mt-1 p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all shrink-0">
                                 <ArrowLeft className="h-5 w-5" />
                             </button>
                             <div>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-3 py-1 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                    <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest">
                                         {task.taskCode}
                                     </span>
                                     <span className="h-1 w-1 rounded-full bg-slate-700" />
@@ -197,10 +197,10 @@ export default function TaskDetailPage() {
                     >
                         <div className="flex justify-between items-center mb-3">
                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Completion</p>
-                            <span className="text-base font-black text-violet-400">{task.progressPercent}%</span>
+                            <span className="text-base font-black text-indigo-400">{task.progressPercent}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className="h-full bg-violet-500 rounded-full" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className="h-full bg-indigo-500 rounded-full" />
                         </div>
                     </motion.div>
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
@@ -224,7 +224,7 @@ export default function TaskDetailPage() {
                             className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-7"
                         >
                             <h3 className="text-base font-black text-white flex items-center gap-3 mb-5">
-                                <Activity className="h-5 w-5 text-violet-400" /> Description
+                                <Activity className="h-5 w-5 text-indigo-400" /> Description
                             </h3>
                             <div className="bg-white/[0.03] rounded-xl p-5 border border-white/5">
                                 <p className="text-slate-400 text-sm leading-loose whitespace-pre-wrap">{task.description || 'No description provided.'}</p>
@@ -249,30 +249,30 @@ export default function TaskDetailPage() {
                             <AnimatePresence>
                                 {logTimeOpen && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-7">
-                                        <form onSubmit={handleLogTime} className="bg-violet-600/10 border border-violet-500/20 p-6 rounded-xl space-y-5">
+                                        <form onSubmit={handleLogTime} className="bg-indigo-600/10 border border-indigo-500/20 p-6 rounded-xl space-y-5">
                                             <div className="grid grid-cols-2 gap-5">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hours</label>
                                                     <input type="number" step="0.5" value={timeFormData.hours} onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" placeholder="0.0" required />
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50" placeholder="0.0" required />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</label>
                                                     <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-violet-500/50" />
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50" />
                                                 </div>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Description</label>
                                                 <textarea value={timeFormData.description} onChange={(e) => setTimeFormData({ ...timeFormData, description: e.target.value })} rows={2}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none" placeholder="What did you work on?" />
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 resize-none" placeholder="What did you work on?" />
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <label className="flex items-center gap-2.5 cursor-pointer text-slate-300">
                                                     <input type="checkbox" checked={timeFormData.isBillable} onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })} className="w-4 h-4 rounded" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest">Billable</span>
                                                 </label>
-                                                <button type="submit" disabled={submittingTime} className="px-6 py-2.5 bg-violet-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-500 transition-all shadow-lg shadow-violet-500/25 disabled:opacity-50">
+                                                <button type="submit" disabled={submittingTime} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50">
                                                     {submittingTime ? 'Saving...' : 'Log Time'}
                                                 </button>
                                             </div>
@@ -354,7 +354,7 @@ export default function TaskDetailPage() {
                             className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-6"
                         >
                             <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-3">
-                                <Info className="h-4 w-4 text-violet-400" /> Task Details
+                                <Info className="h-4 w-4 text-indigo-400" /> Task Details
                             </h3>
                             <div className="space-y-5">
                                 {task.project && (
@@ -371,7 +371,7 @@ export default function TaskDetailPage() {
                                     <div>
                                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><User className="h-3 w-3" /> Assigned</p>
                                         <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-xl bg-violet-600 flex items-center justify-center text-xs font-black text-white">
+                                            <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center text-xs font-black text-white">
                                                 {task.assignedTo.name.charAt(0)}
                                             </div>
                                             <div>
@@ -445,7 +445,7 @@ export default function TaskDetailPage() {
                                     <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-white/5" />
                                     {task.statusHistory.map((history, idx) => (
                                         <div key={history.id} className="relative pl-9">
-                                            <div className={`absolute left-0 top-1 w-6 h-6 rounded-lg border-2 border-slate-900 flex items-center justify-center ${idx === 0 ? 'bg-violet-600 border-violet-500' : 'bg-slate-800 border-slate-700'}`}>
+                                            <div className={`absolute left-0 top-1 w-6 h-6 rounded-lg border-2 border-slate-900 flex items-center justify-center ${idx === 0 ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-800 border-slate-700'}`}>
                                                 <div className="h-1.5 w-1.5 rounded-full bg-white" />
                                             </div>
                                             <div>

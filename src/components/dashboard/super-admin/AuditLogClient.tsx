@@ -31,7 +31,7 @@ export default function AuditLogClient({ initialLogs }: AuditLogClientProps) {
         if (a.includes('CREATE') || a.includes('ADD') || a.includes('REGISTER')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
         if (a.includes('DELETE') || a.includes('REMOVE')) return 'bg-rose-100 text-rose-700 border-rose-200';
         if (a.includes('UPDATE') || a.includes('EDIT')) return 'bg-amber-100 text-amber-700 border-amber-200';
-        if (a.includes('LOGIN') || a.includes('AUTH')) return 'bg-purple-100 text-purple-700 border-purple-200';
+        if (a.includes('LOGIN') || a.includes('AUTH')) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
         return 'bg-secondary-100 text-secondary-700 border-secondary-200';
     };
 

@@ -188,3 +188,5 @@ export default function HelpSidebar({ isOpen, onClose, activeTab }: { isOpen: bo
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

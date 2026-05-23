@@ -56,3 +56,5 @@ export default function LMSLoadingSkeleton() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

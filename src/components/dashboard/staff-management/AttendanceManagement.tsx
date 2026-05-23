@@ -242,9 +242,9 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Late</p>
-                            <p className="text-2xl font-bold text-purple-600">{summary.late}</p>
+                            <p className="text-2xl font-bold text-indigo-600">{summary.late}</p>
                         </div>
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">🕒</div>
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">🕒</div>
                     </div>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">

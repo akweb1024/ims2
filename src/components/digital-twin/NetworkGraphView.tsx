@@ -99,7 +99,7 @@ export const NetworkGraphView = ({ employees, inventory, onDispatch }: NetworkGr
             {/* Column Labels */}
             <div className="absolute top-5 left-0 w-full flex justify-between px-8 pointer-events-none">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Personnel Nodes ({employees.length})</span>
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/20">Hover to trace threads</div>

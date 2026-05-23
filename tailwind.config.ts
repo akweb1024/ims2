@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+    darkMode: ["class"],
     content: [
         "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
         "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,8 +9,21 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            borderRadius: {
+                sm: "calc(var(--radius) - 4px)",
+                md: "calc(var(--radius) - 2px)",
+                lg: "var(--radius)",
+                xl: "calc(var(--radius) + 4px)",
+            },
             colors: {
+                border: "var(--border)",
+                input: "var(--input)",
+                ring: "var(--ring)",
+                background: "var(--background)",
+                foreground: "var(--foreground)",
                 primary: {
+                    DEFAULT: "var(--primary)",
+                    foreground: "var(--primary-foreground)",
                     50: '#eff6ff',
                     100: '#dbeafe',
                     200: '#bfdbfe',
@@ -23,6 +37,8 @@ const config: Config = {
                     950: '#172554',
                 },
                 secondary: {
+                    DEFAULT: "var(--secondary)",
+                    foreground: "var(--secondary-foreground)",
                     50: '#f8fafc',
                     100: '#f1f5f9',
                     200: '#e2e8f0',
@@ -34,6 +50,36 @@ const config: Config = {
                     800: '#1e293b',
                     900: '#0f172a',
                     950: '#020617',
+                },
+                destructive: {
+                    DEFAULT: "var(--destructive)",
+                    foreground: "var(--destructive-foreground)",
+                },
+                muted: {
+                    DEFAULT: "var(--muted)",
+                    foreground: "var(--muted-foreground)",
+                },
+                accent: {
+                    DEFAULT: "var(--accent)",
+                    foreground: "var(--accent-foreground)",
+                },
+                card: {
+                    DEFAULT: "var(--card)",
+                    foreground: "var(--card-foreground)",
+                },
+                popover: {
+                    DEFAULT: "var(--popover)",
+                    foreground: "var(--popover-foreground)",
+                },
+                sidebar: {
+                    DEFAULT: "var(--sidebar)",
+                    foreground: "var(--sidebar-foreground)",
+                    primary: "var(--sidebar-primary)",
+                    "primary-foreground": "var(--sidebar-primary-foreground)",
+                    accent: "var(--sidebar-accent)",
+                    "accent-foreground": "var(--sidebar-accent-foreground)",
+                    border: "var(--sidebar-border)",
+                    ring: "var(--sidebar-ring)",
                 },
                 success: {
                     50: '#f0fdf4',

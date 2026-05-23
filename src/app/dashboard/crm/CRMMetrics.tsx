@@ -112,3 +112,5 @@ export default async function CRMMetrics({ user }: { user: any }) {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

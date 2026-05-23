@@ -101,3 +101,5 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

@@ -242,7 +242,7 @@ export function CRMPagination({
 }
 
 // ─── CRM Badge ────────────────────────────────────────────────────────────────
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'primary' | 'secondary' | 'info' | 'purple';
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'primary' | 'secondary' | 'info' | 'indigo';
 
 interface CRMBadgeProps {
     variant?: BadgeVariant;
@@ -258,7 +258,7 @@ const BADGE_VARIANTS: Record<BadgeVariant, string> = {
     primary: 'bg-primary-50 text-primary-700 border border-primary-200',
     secondary: 'bg-secondary-100 text-secondary-600 border border-secondary-200',
     info: 'bg-blue-50 text-blue-700 border border-blue-200',
-    purple: 'bg-purple-50 text-purple-700 border border-purple-200',
+    indigo: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
 };
 
 export function CRMBadge({ variant = 'secondary', children, dot, className = '' }: CRMBadgeProps) {

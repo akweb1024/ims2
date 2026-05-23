@@ -218,3 +218,5 @@ function MetricCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

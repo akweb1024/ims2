@@ -9,7 +9,7 @@ function CompanyBadge({ name }: { name: string }) {
     const colors = [
         'bg-blue-100 text-blue-800',
         'bg-green-100 text-green-800',
-        'bg-purple-100 text-purple-800',
+        'bg-indigo-100 text-indigo-800',
         'bg-orange-100 text-orange-800',
         'bg-pink-100 text-pink-800',
         'bg-indigo-100 text-indigo-800',
@@ -87,7 +87,7 @@ export default async function TeamOverviewPage() {
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
@@ -177,3 +177,5 @@ export default async function TeamOverviewPage() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

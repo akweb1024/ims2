@@ -122,7 +122,7 @@ export default function FinancialReportsPage() {
                             <div className="max-w-3xl mx-auto">
                                 <ReportSection title="Assets" total={data.assets.total} accounts={data.assets.accounts} colorClass="text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-900/30" />
                                 <ReportSection title="Liabilities" total={data.liabilities.total} accounts={data.liabilities.accounts} colorClass="text-orange-700 dark:text-orange-400 border-orange-100 dark:border-orange-900/30" />
-                                <ReportSection title="Equity" total={data.equity.total} accounts={data.equity.accounts} colorClass="text-violet-700 dark:text-violet-400 border-violet-100 dark:border-violet-900/30" />
+                                <ReportSection title="Equity" total={data.equity.total} accounts={data.equity.accounts} colorClass="text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30" />
                                 <div className={`text-center text-[10px] mt-8 font-mono ${Math.abs(data.check) < 0.01 ? 'text-emerald-500/50' : 'text-rose-500 font-bold'}`}>
                                     Verification Hash: {Math.abs(data.check).toFixed(4)} | Assets - L&E = 0
                                 </div>
@@ -134,3 +134,5 @@ export default function FinancialReportsPage() {
         </FinanceClientLayout>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

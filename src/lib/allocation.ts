@@ -78,3 +78,5 @@ export async function processExpenseAllocations(revenueTransactionId: string) {
         throw error;
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

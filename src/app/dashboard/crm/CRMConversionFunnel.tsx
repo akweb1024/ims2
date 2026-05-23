@@ -50,14 +50,14 @@ export default function CRMConversionFunnel() {
     const colors = [
         'bg-primary-600',
         'bg-indigo-600',
-        'bg-purple-600',
+        'bg-indigo-600',
         'bg-emerald-600'
     ];
 
     const lightColors = [
         'bg-primary-50 text-primary-600',
         'bg-indigo-50 text-indigo-600',
-        'bg-purple-50 text-purple-600',
+        'bg-indigo-50 text-indigo-600',
         'bg-emerald-50 text-emerald-600'
     ];
 

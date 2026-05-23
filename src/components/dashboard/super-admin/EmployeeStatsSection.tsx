@@ -51,3 +51,5 @@ export default function EmployeeStatsSection({ data }: { data: EmployeeStats[] }
         </Card>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

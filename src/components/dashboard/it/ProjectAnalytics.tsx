@@ -74,7 +74,7 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
     }, [projects]);
 
     const statusColors: Record<string, string> = {
-        PLANNING: 'bg-purple-500',
+        PLANNING: 'bg-indigo-500',
         IN_PROGRESS: 'bg-blue-500',
         TESTING: 'bg-orange-500',
         COMPLETED: 'bg-green-500',
@@ -101,12 +101,12 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
                     <p className="text-green-100 text-sm font-medium">Avg Completion</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
                     <div className="flex items-center justify-between mb-2">
                         <TrendingUp className="h-8 w-8 opacity-80" />
                         <span className="text-3xl font-bold">{analytics.completedTasks}/{analytics.totalTasks}</span>
                     </div>
-                    <p className="text-purple-100 text-sm font-medium">Tasks Completed</p>
+                    <p className="text-indigo-100 text-sm font-medium">Tasks Completed</p>
                 </div>
 
                 <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white">
@@ -254,7 +254,7 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
                                 {[
                                     { label: 'SEO Rank', score: 85, icon: TrendingUp, color: 'text-blue-400' },
                                     { label: 'Security', score: 98, icon: ShieldCheck, color: 'text-emerald-400' },
-                                    { label: 'Answer Gen', score: 72, icon: Zap, color: 'text-purple-400' },
+                                    { label: 'Answer Gen', score: 72, icon: Zap, color: 'text-indigo-400' },
                                     { label: 'Geo Reach', score: 64, icon: Globe, color: 'text-amber-400' },
                                 ].map((item, i) => (
                                     <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all text-center">

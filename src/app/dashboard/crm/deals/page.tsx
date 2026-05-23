@@ -23,7 +23,7 @@ import {
 const STAGES = [
     { id: 'DISCOVERY', label: 'New opportunity', color: 'border-primary-100/50 bg-primary-100/5', accent: 'text-primary-600', probability: '20%' },
     { id: 'PROPOSAL', label: 'Proposal sent', color: 'border-indigo-100/50 bg-indigo-100/5', accent: 'text-indigo-600', probability: '50%' },
-    { id: 'NEGOTIATION', label: 'Negotiation', color: 'border-purple-100/50 bg-purple-100/5', accent: 'text-purple-600', probability: '80%' },
+    { id: 'NEGOTIATION', label: 'Negotiation', color: 'border-indigo-100/50 bg-indigo-100/5', accent: 'text-indigo-600', probability: '80%' },
     { id: 'CLOSED_WON', label: 'Won', color: 'border-emerald-100/50 bg-emerald-100/5', accent: 'text-emerald-600', probability: '100%' },
     { id: 'CLOSED_LOST', label: 'Lost Opportunity', color: 'border-rose-100/50 bg-rose-100/5', accent: 'text-rose-600', probability: '0%' }
 ];

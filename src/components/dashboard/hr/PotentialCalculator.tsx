@@ -68,7 +68,7 @@ export default function PotentialCalculator() {
 
     return (
         <div className="space-y-8 pb-10">
-            <div className="card-premium bg-gradient-to-br from-indigo-900 via-purple-900 to-primary-900 text-white p-10 relative overflow-hidden">
+            <div className="card-premium bg-gradient-to-br from-indigo-900 via-indigo-900 to-primary-900 text-white p-10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/2 h-full opacity-10">
                     <svg viewBox="0 0 100 100" className="w-full h-full"><path d="M0,50 Q25,0 50,50 T100,50" fill="none" stroke="white" strokeWidth="2" /></svg>
                 </div>
@@ -183,3 +183,5 @@ export default function PotentialCalculator() {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

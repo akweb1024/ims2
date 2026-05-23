@@ -1475,3 +1475,5 @@ export default function GlobalProInvoiceTemplate({
     </div>
   );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

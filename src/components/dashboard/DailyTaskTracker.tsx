@@ -218,13 +218,13 @@ export default function DailyTaskTracker() {
                     </div>
                 </div>
 
-                <div className="card-premium p-3 sm:p-4 border-l-4 border-purple-500">
+                <div className="card-premium p-3 sm:p-4 border-l-4 border-indigo-500">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Points</p>
-                            <p className="text-xl sm:text-2xl font-black text-purple-600">{todayPoints}</p>
+                            <p className="text-xl sm:text-2xl font-black text-indigo-600">{todayPoints}</p>
                         </div>
-                        <Award className="text-purple-500 hidden sm:block" size={24} />
+                        <Award className="text-indigo-500 hidden sm:block" size={24} />
                     </div>
                 </div>
 
@@ -322,7 +322,7 @@ export default function DailyTaskTracker() {
 
                                                 <div className="flex flex-col items-end gap-1">
                                                     {task.calculationType === 'SCALED' ? (
-                                                        <span className="badge bg-purple-100 text-purple-700 text-xs font-black">
+                                                        <span className="badge bg-indigo-100 text-indigo-700 text-xs font-black">
                                                             {task.pointsPerUnit && task.pointsPerUnit < 1
                                                                 ? `1pt/${Math.round(1 / task.pointsPerUnit)}u`
                                                                 : `${task.pointsPerUnit || 1}pt/u`

@@ -35,7 +35,9 @@ export function useJobApplications(jobId?: string) {
     return useQuery<any[]>({
         queryKey,
         queryFn: () => {
-            const url = jobId ? `/api/recruitment/applications?jobId=${jobId}` : '/api/recruitment/applications';
+            const url = jobId
+                ? `/api/recruitment/applications?jobId=${jobId}&includeInterviews=true`
+                : '/api/recruitment/applications?includeInterviews=true';
             return fetchJson(url);
         }
     });

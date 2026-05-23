@@ -243,9 +243,9 @@ export default function PerformanceAnalyticsPage() {
                                 </h3>
                                 <p className="text-[10px] text-secondary-400 font-bold mt-1">KRA/KPI Completion</p>
                             </div>
-                            <div className="card-premium p-6 border-l-4 border-purple-500">
+                            <div className="card-premium p-6 border-l-4 border-indigo-500">
                                 <p className="text-secondary-400 text-[10px] font-black uppercase tracking-widest mb-1">Avg. Evaluation</p>
-                                <h3 className="text-2xl font-black text-purple-900">
+                                <h3 className="text-2xl font-black text-indigo-900">
                                     {analyticsData.summary.avgEvaluationScore.toFixed(1)}/10
                                 </h3>
                                 <p className="text-[10px] text-secondary-400 font-bold mt-1">Performance Rating</p>

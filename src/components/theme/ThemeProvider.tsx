@@ -14,19 +14,30 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>('light');
 
+    const applyTheme = (value: Theme) => {
+        document.documentElement.setAttribute('data-theme', value);
+        if (value === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+
     useEffect(() => {
         // Initial theme from localStorage or user profile
         const savedTheme = localStorage.getItem('app-theme') as Theme;
         if (savedTheme) {
             setTheme(savedTheme);
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            applyTheme(savedTheme);
+        } else {
+            applyTheme('light');
         }
     }, []);
 
     const updateTheme = (newTheme: Theme) => {
         setTheme(newTheme);
         localStorage.setItem('app-theme', newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
+        applyTheme(newTheme);
 
         // Also attempt to update via API if authenticated
         try {

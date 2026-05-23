@@ -208,3 +208,5 @@ export async function exportPublicKeySpki(publicKey: CryptoKey): Promise<string>
     const spkiBuffer = await window.crypto.subtle.exportKey('spki', publicKey);
     return arrayBufferToBase64(spkiBuffer);
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

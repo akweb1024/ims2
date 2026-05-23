@@ -155,16 +155,16 @@ export default function ScreeningTemplateBuilderModal({ template, onClose, onSav
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <div className="flex justify-between items-center mb-4">
                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">AI Co-Pilot</h4>
-                                <Wand2 className="h-4 w-4 text-purple-500" />
+                                <Wand2 className="h-4 w-4 text-indigo-500" />
                             </div>
                             <p className="text-xs text-gray-500 font-medium mb-4">Auto-generate customized questions using AI based on context.</p>
                             <div className="space-y-4">
-                                <textarea value={jobDescription} onChange={e => setJobDescription(e.target.value)} className="w-full h-24 bg-purple-50/30 border-purple-100 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none resize-none" placeholder="Paste job description or requirements here..." />
-                                <input value={candidateSkills} onChange={e => setCandidateSkills(e.target.value)} className="w-full bg-purple-50/30 border-purple-100 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Key skills (e.g. React, Node.js)" />
+                                <textarea value={jobDescription} onChange={e => setJobDescription(e.target.value)} className="w-full h-24 bg-indigo-50/30 border-indigo-100 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none resize-none" placeholder="Paste job description or requirements here..." />
+                                <input value={candidateSkills} onChange={e => setCandidateSkills(e.target.value)} className="w-full bg-indigo-50/30 border-indigo-100 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Key skills (e.g. React, Node.js)" />
                                 <button
                                     onClick={generateAIQuestions}
                                     disabled={generating || !jobDescription}
-                                    className="w-full bg-purple-100 text-purple-700 hover:bg-purple-200 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                                    className="w-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex justify-center items-center gap-2"
                                 >
                                     {generating ? 'Generating...' : <><Wand2 size={14} /> Generate List</>}
                                 </button>

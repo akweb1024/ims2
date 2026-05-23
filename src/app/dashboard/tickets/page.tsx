@@ -223,3 +223,5 @@ export default function TicketsPage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

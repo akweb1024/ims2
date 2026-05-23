@@ -103,7 +103,7 @@ export default function AllConferencesPage() {
             DRAFT: { bg: 'bg-slate-100', text: 'text-slate-700', icon: Clock },
             PUBLISHED: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
             ONGOING: { bg: 'bg-sky-100', text: 'text-sky-700', icon: Calendar },
-            COMPLETED: { bg: 'bg-violet-100', text: 'text-violet-700', icon: CheckCircle },
+            COMPLETED: { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: CheckCircle },
             CANCELLED: { bg: 'bg-red-100', text: 'text-red-700', icon: X }
         };
 
@@ -122,7 +122,7 @@ export default function AllConferencesPage() {
         const colors: Record<string, string> = {
             IN_PERSON: 'bg-blue-100 text-blue-700',
             VIRTUAL: 'bg-emerald-100 text-emerald-700',
-            HYBRID: 'bg-violet-100 text-violet-700'
+            HYBRID: 'bg-indigo-100 text-indigo-700'
         };
 
         return (

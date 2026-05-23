@@ -658,7 +658,7 @@ export default function SubmitReportPage() {
                                     : 'Not checked in'}
                             </span>
                         </div>
-                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
+                        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-2xl shadow-lg">
                             <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
                             <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
                         </div>
@@ -892,7 +892,7 @@ export default function SubmitReportPage() {
                                                     </h4>
                                                     <div className="flex flex-col items-end gap-1">
                                                         {task.calculationType === 'SCALED' ? (
-                                                            <span className="badge bg-purple-100 text-purple-700 text-[10px] font-black whitespace-nowrap">
+                                                            <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black whitespace-nowrap">
                                                                 {task.pointsPerUnit < 1
                                                                     ? `1pt/${Math.round(1 / task.pointsPerUnit)}u`
                                                                     : `${task.pointsPerUnit}pt/u`

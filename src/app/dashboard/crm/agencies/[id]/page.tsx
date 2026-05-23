@@ -199,7 +199,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold text-secondary-900">{customer.name}</h1>
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-black rounded uppercase tracking-wider">
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-black rounded uppercase tracking-wider">
                                     {getCustomerDisplayType(customer)}
                                 </span>
                             </div>

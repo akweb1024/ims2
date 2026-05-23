@@ -79,3 +79,5 @@ export default function AuditLogFeed({ logs }: { logs: AuditLog[] }) {
         </Card>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

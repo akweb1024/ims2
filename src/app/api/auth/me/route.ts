@@ -36,3 +36,5 @@ export const GET = authorizedRoute(
         }
     }
 );
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

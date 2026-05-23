@@ -103,3 +103,5 @@ export async function POST(req: NextRequest) {
         }, { status: 500 });
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

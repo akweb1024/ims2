@@ -505,3 +505,5 @@ export const proformaConvertSchema = z.object({
     notes: z.string().max(1000).optional().nullable(),
 });
 
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

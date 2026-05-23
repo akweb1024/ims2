@@ -35,7 +35,7 @@ const getStatusColor = (status: string) => {
             return '#3b82f6'; // blue
         case 'PENDING':
         case 'PLANNING':
-            return '#8b5cf6'; // purple
+            return '#6366f1'; // indigo
         case 'ON_HOLD':
             return '#f59e0b'; // amber
         default:
@@ -235,7 +235,7 @@ export default function ProjectTimeline({ startDate, endDate, milestones, tasks 
                     <span className="text-gray-600 dark:text-gray-400">In Progress</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                    <div className="w-3 h-3 rounded-full bg-purple-500" />
+                    <div className="w-3 h-3 rounded-full bg-indigo-500" />
                     <span className="text-gray-600 dark:text-gray-400">Planning</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">

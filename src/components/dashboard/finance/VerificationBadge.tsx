@@ -12,7 +12,7 @@ export default function VerificationBadge({ status }: VerificationBadgeProps) {
             case 'NEEDS_PROOF':
                 return 'bg-red-50 text-red-700 border-red-200';
             case 'DISPUTED':
-                return 'bg-purple-50 text-purple-700 border-purple-200';
+                return 'bg-indigo-50 text-indigo-700 border-indigo-200';
             case 'PENDING':
                 return 'bg-blue-50 text-blue-700 border-blue-200';
             default:

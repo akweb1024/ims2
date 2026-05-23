@@ -348,7 +348,7 @@ export default function NewProjectPage() {
                 className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
               >
                 <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                  <div className="p-2 bg-purple-600 rounded-lg">
+                  <div className="p-2 bg-indigo-600 rounded-lg">
                     <Calendar className="h-4 w-4 text-white" />
                   </div>{" "}
                   Timeline Matrix

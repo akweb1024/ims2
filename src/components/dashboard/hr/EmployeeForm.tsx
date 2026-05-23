@@ -655,7 +655,7 @@ export default function EmployeeForm({
                                 { id: 'CORE', label: 'Core Workspace', color: 'text-primary-600', locked: true },
                                 { id: 'HR', label: 'HR Management', color: 'text-indigo-600' },
                                 { id: 'FINANCE', label: 'Finance & Accounts', color: 'text-emerald-600' },
-                                { id: 'PUBLICATION', label: 'Publishing & Editorial', color: 'text-purple-600' },
+                                { id: 'PUBLICATION', label: 'Publishing & Editorial', color: 'text-indigo-600' },
                                 { id: 'LMS', label: 'LMS / Learning', color: 'text-orange-600' },
                                 { id: 'CONFERENCE', label: 'Conferences & Events', color: 'text-rose-600' },
                                 { id: 'LOGISTIC', label: 'Logistics & Supply', color: 'text-blue-600' },
@@ -841,7 +841,7 @@ export default function EmployeeForm({
             {/* Education & Past Experience Section */}
             <div className="card-premium p-8">
                 <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-purple-500" />
+                    <Award className="w-5 h-5 text-indigo-500" />
                     Education & Experience
                 </h2>
 

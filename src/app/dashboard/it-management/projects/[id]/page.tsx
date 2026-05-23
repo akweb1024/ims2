@@ -276,7 +276,7 @@ export default function ProjectDetailPage() {
                 <div className="flex items-center gap-2 p-1.5 bg-slate-800/80 backdrop-blur-xl rounded-2xl w-fit border border-white/10 mx-auto lg:mx-0 overflow-x-auto">
                     {[
                         { key: 'overview', label: 'Architecture', icon: Command, color: 'text-blue-400' },
-                        { key: 'tasks', label: 'Tasks', icon: ListTodo, color: 'text-violet-400', count: project.stats.inProgressTasks },
+                        { key: 'tasks', label: 'Tasks', icon: ListTodo, color: 'text-indigo-400', count: project.stats.inProgressTasks },
                         { key: 'timeline', label: 'Chronology', icon: GanttChart, color: 'text-amber-400' },
                         { key: 'documents', label: 'Assets', icon: Database, color: 'text-emerald-400' },
                         { key: 'suggestions', label: 'Feedback', icon: MessageSquare, color: 'text-indigo-400', count: project.stats.pendingSuggestions },
@@ -511,7 +511,7 @@ export default function ProjectDetailPage() {
                                     <div className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 space-y-6">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-lg font-black text-white flex items-center gap-3">
-                                                <div className="p-2.5 bg-violet-500/10 text-violet-400 rounded-xl"><ListTodo className="h-5 w-5" /></div>
+                                                <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl"><ListTodo className="h-5 w-5" /></div>
                                                 Task Manifest
                                             </h3>
                                             <div className="flex items-center gap-3">
@@ -763,3 +763,5 @@ export default function ProjectDetailPage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

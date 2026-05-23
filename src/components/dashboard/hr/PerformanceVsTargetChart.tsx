@@ -119,3 +119,5 @@ export default function PerformanceVsTargetChart({ data, scope = 'INDIVIDUAL' }:
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

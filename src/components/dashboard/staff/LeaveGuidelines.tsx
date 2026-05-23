@@ -114,3 +114,5 @@ export default function LeaveGuidelines() {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

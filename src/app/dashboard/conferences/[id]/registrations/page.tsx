@@ -226,9 +226,9 @@ export default function RegistrationManagementPage() {
                             {registrations.filter(r => r.status === 'REGISTERED').length}
                         </p>
                     </div>
-                    <div className="rounded-[1.5rem] border border-purple-200 bg-purple-50/80 p-5 shadow-sm">
-                        <div className="flex items-center gap-2 text-purple-700 text-sm"><Calendar size={16} /> Revenue</div>
-                        <p className="mt-3 text-3xl font-black text-purple-900">
+                    <div className="rounded-[1.5rem] border border-indigo-200 bg-indigo-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-indigo-700 text-sm"><Calendar size={16} /> Revenue</div>
+                        <p className="mt-3 text-3xl font-black text-indigo-900">
                             {registrations.reduce((acc, r) => acc + r.amountPaid, 0).toLocaleString()}
                         </p>
                     </div>

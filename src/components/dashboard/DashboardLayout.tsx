@@ -301,26 +301,26 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     }, [pathname, navigationModules, activeModule]);
 
     return (
-        <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main-hex, #f8fafc)' }}>
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
             <Toaster position="top-right" />
 
             {/* Background Ambient Glows */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-500/5 blur-[120px] animate-pulse"></div>
-                <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] rounded-full bg-indigo-500/5 blur-[100px]"></div>
-                <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[150px]"></div>
+                <div className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px] animate-pulse"></div>
+                <div className="absolute top-[20%] -right-[5%] h-[30%] w-[30%] rounded-full bg-chart-3/5 blur-[100px]"></div>
+                <div className="absolute -bottom-[10%] left-[20%] h-[50%] w-[50%] rounded-full bg-chart-1/5 blur-[150px]"></div>
             </div>
 
             {/* Impersonation Warning Bar */}
             {isImpersonating && (
-                <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between fixed w-full z-50 top-0 shadow-lg animate-in slide-in-from-top duration-300">
+                <div className="animate-in slide-in-from-top fixed top-0 z-50 flex w-full items-center justify-between bg-primary px-4 py-2 text-primary-foreground shadow-lg duration-300">
                     <div className="flex items-center gap-2 text-sm font-bold">
                         <span className="text-xl">👤</span>
                         <span>Impersonation Mode Active: Viewing as {mounted && user ? user.email : 'User'}</span>
                     </div>
                     <button
                         onClick={handleRevertAdmin}
-                        className="bg-white text-blue-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
+                        className="rounded-full bg-background px-4 py-1 text-xs font-black uppercase text-foreground shadow-sm transition-all hover:bg-accent"
                     >
                         Back to Admin Identity
                     </button>
@@ -349,7 +349,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             {/* Mobile Backdrop Overlay */}
             {sidebarOpen && (
                 <div 
-                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-10 lg:hidden transition-opacity duration-300 animate-in fade-in"
+                    className="animate-in fade-in fixed inset-0 z-10 bg-background/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -365,11 +365,11 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             />
 
             <main
-                className={`transition-all duration-500 relative z-10 
-                    ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} 
-                    ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}`}
+                className={`relative z-10 overflow-x-hidden transition-all duration-500
+                    ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-12'} 
+                    ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-14 lg:pt-[65px]'}`}
             >
-                <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto page-animate">
+                <div className="page-wrapper page-animate">
                     <ThanosSnapWrapper isSnapped={isInitialMount || isTerminating} snapDuration={2.5}>
                         {children}
                     </ThanosSnapWrapper>

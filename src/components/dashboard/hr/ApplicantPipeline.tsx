@@ -133,14 +133,14 @@ export default function ApplicantPipeline() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                            Talent Pipeline <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">AI Enabled</span>
+                            Talent Pipeline <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">AI Enabled</span>
                         </h3>
                         <p className="text-gray-500 font-medium">Smart candidate tracking and automated scheduling.</p>
                     </div>
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="relative group">
                             <select
-                                className="appearance-none bg-white border border-gray-200 rounded-xl py-3 pl-4 pr-10 font-bold text-sm shadow-sm hover:border-purple-300 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-purple-500"
+                                className="appearance-none bg-white border border-gray-200 rounded-xl py-3 pl-4 pr-10 font-bold text-sm shadow-sm hover:border-indigo-300 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500"
                                 value={selectedJobId}
                                 onChange={(e) => setSelectedJobId(e.target.value)}
                             >
@@ -169,9 +169,9 @@ export default function ApplicantPipeline() {
                         <p className="text-xs font-bold text-amber-600 uppercase tracking-widest">In Interview</p>
                         <p className="text-2xl font-black text-amber-700 mt-1">{metrics.interview}</p>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-xl shadow-sm border border-purple-100">
-                        <p className="text-xs font-bold text-purple-600 uppercase tracking-widest">Offers Out</p>
-                        <p className="text-2xl font-black text-purple-700 mt-1">{metrics.offer}</p>
+                    <div className="bg-indigo-50 p-4 rounded-xl shadow-sm border border-indigo-100">
+                        <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Offers Out</p>
+                        <p className="text-2xl font-black text-indigo-700 mt-1">{metrics.offer}</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-xl shadow-sm border border-green-100">
                         <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Hired</p>
@@ -222,7 +222,7 @@ export default function ApplicantPipeline() {
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, app.id)}
                                             onClick={() => setSelectedAppForProfile(app)}
-                                            className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 cursor-move transition-all active:scale-95 relative overflow-hidden"
+                                            className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-indigo-200 cursor-move transition-all active:scale-95 relative overflow-hidden"
                                         >
                                             {/* AI Match Strip */}
                                             {stage !== 'REJECTED' && (
@@ -273,7 +273,7 @@ export default function ApplicantPipeline() {
                                                                 target={resumeMeta.isInternal ? undefined : '_blank'}
                                                                 rel={resumeMeta.isInternal ? undefined : 'noopener noreferrer'}
                                                                 {...(resumeMeta.isInternal ? { download: resumeMeta.filename } : {})}
-                                                                className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                                                                className="p-1.5 rounded-lg text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                                                                 title={resumeMeta.isInternal ? 'Download Resume' : 'Open Resume Link'}
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
@@ -281,7 +281,7 @@ export default function ApplicantPipeline() {
                                                             </a>
                                                         );
                                                     })()}
-                                                    <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email" onClick={(e) => e.stopPropagation()}>
+                                                    <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors" title="Email" onClick={(e) => e.stopPropagation()}>
                                                         <Mail size={14} />
                                                     </a>
                                                 </div>
@@ -289,7 +289,7 @@ export default function ApplicantPipeline() {
                                                 {stage !== 'REJECTED' && stage !== 'HIRED' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedAppForInterview(app); setShowInterviewModal(true); }}
-                                                        className="flex items-center gap-1 text-[10px] font-bold text-purple-600 uppercase hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                                                        className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 uppercase hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
                                                     >
                                                         Schedule <ArrowRight size={10} />
                                                     </button>
@@ -346,7 +346,7 @@ export default function ApplicantPipeline() {
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Interviewer</label>
                                 <select
-                                    className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                    className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     value={interviewData.interviewerId}
                                     onChange={(e) => setInterviewData({ ...interviewData, interviewerId: e.target.value })}
                                 >
@@ -361,7 +361,7 @@ export default function ApplicantPipeline() {
                                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date & Time</label>
                                     <input
                                         type="datetime-local"
-                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                         value={interviewData.scheduledAt}
                                         onChange={(e) => setInterviewData({ ...interviewData, scheduledAt: e.target.value })}
                                     />
@@ -369,7 +369,7 @@ export default function ApplicantPipeline() {
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Type</label>
                                     <select
-                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                         value={interviewData.type}
                                         onChange={(e) => setInterviewData({ ...interviewData, type: e.target.value })}
                                     >
@@ -383,7 +383,7 @@ export default function ApplicantPipeline() {
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Interview Round</label>
                                 <select
-                                    className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                    className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     value={interviewData.roundName}
                                     onChange={(e) => setInterviewData({ ...interviewData, roundName: e.target.value, level: e.target.value === 'HR Round' ? 1 : e.target.value === 'Departmental Round' ? 2 : 3 })}
                                 >
@@ -397,7 +397,7 @@ export default function ApplicantPipeline() {
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                                     <input
-                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 pl-10 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                        className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 pl-10 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                         placeholder="https://meet.google.com/..."
                                         value={interviewData.meetingLink}
                                         onChange={(e) => setInterviewData({ ...interviewData, meetingLink: e.target.value })}
@@ -407,7 +407,7 @@ export default function ApplicantPipeline() {
                             <button
                                 onClick={handleScheduleInterview}
                                 disabled={!interviewData.interviewerId || !interviewData.scheduledAt}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-purple-200 mt-2 disabled:opacity-50 disabled:shadow-none transition-all"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-xl shadow-indigo-200 mt-2 disabled:opacity-50 disabled:shadow-none transition-all"
                             >
                                 Send Invitation
                             </button>

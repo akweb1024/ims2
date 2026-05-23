@@ -194,7 +194,7 @@ export default function OnboardingPortal() {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Step {idx + 1}</span>
-                                    <span className={`text-[10px] font-bold uppercase py-0.5 px-2 rounded ${m.type === 'COMPANY' ? 'bg-blue-100 text-blue-700' : m.type === 'ROLE' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    <span className={`text-[10px] font-bold uppercase py-0.5 px-2 rounded ${m.type === 'COMPANY' ? 'bg-blue-100 text-blue-700' : m.type === 'ROLE' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}`}>
                                         {m.type}
                                     </span>
                                 </div>

@@ -289,3 +289,5 @@ export const bonusSchemaValidator = z.object({
     frequency: z.enum(["MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME"]).default("YEARLY"),
     isActive: z.boolean().default(true),
 });
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

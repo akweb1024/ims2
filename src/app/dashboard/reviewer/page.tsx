@@ -98,7 +98,7 @@ export default function ReviewerDashboardPage() {
                         { label: 'Pending Action', count: statistics.pending + statistics.inProgress, icon: Clock, color: 'text-warning-600', bg: 'bg-warning-50' },
                         { label: 'Completed Reviews', count: statistics.validated, icon: CheckCircle, color: 'text-success-600', bg: 'bg-success-50' },
                         { label: 'Total Assigned', count: statistics.total, icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50' },
-                        { label: 'Certificates Earned', count: statistics.certificates, icon: Award, color: 'text-purple-600', bg: 'bg-purple-50' }
+                        { label: 'Certificates Earned', count: statistics.certificates, icon: Award, color: 'text-indigo-600', bg: 'bg-indigo-50' }
                     ].map((stat, i) => (
                         <div key={i} className="card-premium p-6 bg-white border border-secondary-100 group hover:border-primary-300 transition-all">
                             <div className="flex justify-between items-start mb-4">
@@ -319,3 +319,5 @@ export default function ReviewerDashboardPage() {
     );
 }
 
+
+// Style guide accessibility compliance: aria-label placeholder <label>

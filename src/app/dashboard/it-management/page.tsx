@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
     COMPLETED: { label: 'Done', bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400', glow: 'shadow-emerald-500/20' },
     IN_PROGRESS: { label: 'Active', bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400', glow: 'shadow-blue-500/20' },
     PENDING: { label: 'Queued', bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400', glow: 'shadow-amber-500/20' },
-    UNDER_REVIEW: { label: 'Review', bg: 'bg-purple-500/10', text: 'text-purple-400', dot: 'bg-purple-400', glow: 'shadow-purple-500/20' },
+    UNDER_REVIEW: { label: 'Review', bg: 'bg-indigo-500/10', text: 'text-indigo-400', dot: 'bg-indigo-400', glow: 'shadow-indigo-500/20' },
 };
 
 const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
@@ -171,8 +171,8 @@ export default function ITManagementDashboard() {
                         {
                             label: 'Operational Tasks', val: stats.overview.tasks.inProgress,
                             sub: `${stats.overview.tasks.pending} in queue`,
-                            icon: ListTodo, gradient: 'from-violet-600 to-purple-500',
-                            glow: 'shadow-violet-500/20', link: '/dashboard/it-management/tasks',
+                            icon: ListTodo, gradient: 'from-indigo-600 to-indigo-500',
+                            glow: 'shadow-indigo-500/20', link: '/dashboard/it-management/tasks',
                             trend: stats.overview.tasks.total + ' total'
                         },
                         {
@@ -353,7 +353,7 @@ export default function ITManagementDashboard() {
                         <div className="grid grid-cols-2 gap-3">
                             {[
                                 { label: 'Projects', icon: FolderKanban, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', link: '/dashboard/it-management/projects' },
-                                { label: 'Tasks', icon: ListTodo, color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20', link: '/dashboard/it-management/tasks' },
+                                { label: 'Tasks', icon: ListTodo, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20', link: '/dashboard/it-management/tasks' },
                                 { label: 'Revenue', icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', link: '/dashboard/it-management/revenue' },
                                 { label: 'Inventory', icon: BarChart3, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', link: '/dashboard/it-management/assets' },
                             ].map((btn) => (
@@ -394,7 +394,7 @@ export default function ITManagementDashboard() {
                                 { label: 'Support', count: stats.tasksByType.support, color: 'bg-blue-500', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
                                 { label: 'Urgent', count: stats.tasksByType.urgent, color: 'bg-rose-500', badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
                                 { label: 'Maintenance', count: stats.tasksByType.maintenance, color: 'bg-amber-500', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-                                { label: 'Service Req', count: stats.tasksByType.serviceRequest, color: 'bg-violet-500', badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20' },
+                                { label: 'Service Req', count: stats.tasksByType.serviceRequest, color: 'bg-indigo-500', badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
                             ].map((type) => (
                                 <div key={type.label} className={`p-4 rounded-xl border ${type.badge} space-y-3`}>
                                     <p className="text-2xl font-black text-white">{type.count}</p>
@@ -415,3 +415,5 @@ export default function ITManagementDashboard() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

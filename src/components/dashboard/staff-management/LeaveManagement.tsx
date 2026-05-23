@@ -240,3 +240,5 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

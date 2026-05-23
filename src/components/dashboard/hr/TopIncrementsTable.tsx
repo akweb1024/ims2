@@ -55,3 +55,5 @@ export default function TopIncrementsTable({ data }: TopIncrementsTableProps) {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

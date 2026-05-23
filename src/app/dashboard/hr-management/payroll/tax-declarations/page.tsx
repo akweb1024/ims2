@@ -86,7 +86,7 @@ export default function TaxDeclarationsAdminPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <FileText className="h-6 w-6 text-purple-600" />
+                            <FileText className="h-6 w-6 text-indigo-600" />
                             Tax Declarations Review
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -108,7 +108,7 @@ export default function TaxDeclarationsAdminPage() {
                             placeholder="Search by employee name or ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export default function TaxDeclarationsAdminPage() {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                         >
                             <option value="ALL">All Status</option>
                             <option value="PENDING">Pending</option>

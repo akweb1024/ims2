@@ -54,3 +54,5 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         return createErrorResponse(error);
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

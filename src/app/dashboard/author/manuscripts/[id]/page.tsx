@@ -49,7 +49,7 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {
             'SUBMITTED': 'bg-blue-100 text-blue-700 border-blue-200',
-            'UNDER_REVIEW': 'bg-purple-100 text-purple-700 border-purple-200',
+            'UNDER_REVIEW': 'bg-indigo-100 text-indigo-700 border-indigo-200',
             'REVISION_REQUIRED': 'bg-orange-100 text-orange-700 border-orange-200',
             'ACCEPTED': 'bg-green-100 text-green-700 border-green-200',
             'REJECTED': 'bg-red-100 text-red-700 border-red-200',
@@ -79,7 +79,7 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
             case 'status_change':
                 return 'bg-blue-100 text-blue-700';
             case 'revision':
-                return 'bg-purple-100 text-purple-700';
+                return 'bg-indigo-100 text-indigo-700';
             case 'communication':
                 return 'bg-green-100 text-green-700';
             case 'plagiarism_check':

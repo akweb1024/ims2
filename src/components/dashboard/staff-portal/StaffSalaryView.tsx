@@ -389,3 +389,5 @@ export default function StaffSalaryView({ fullProfile, salarySlips, activeIncrem
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

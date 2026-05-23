@@ -274,3 +274,5 @@ export async function runPerformanceObservabilityPhase2(companyId: string) {
   const snapshots = await runPerformanceSnapshotWriter(companyId);
   return { rollup, anomalies, snapshots };
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

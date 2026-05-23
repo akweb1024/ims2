@@ -113,7 +113,7 @@ export const DispatchPanel = ({
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
                                             {emp.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>

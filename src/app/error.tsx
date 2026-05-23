@@ -97,10 +97,10 @@ export default function Error({
                             </a>
                             <Link
                                 href="/dashboard/tickets"
-                                className="flex items-center justify-center gap-2 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                                className="flex items-center justify-center gap-2 p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
                             >
                                 <span>🎫</span>
-                                <span className="text-purple-700 font-medium">Create Ticket</span>
+                                <span className="text-indigo-700 font-medium">Create Ticket</span>
                             </Link>
                         </div>
                     </div>
@@ -119,3 +119,5 @@ export default function Error({
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

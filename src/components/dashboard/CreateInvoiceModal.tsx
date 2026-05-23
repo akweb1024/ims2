@@ -2264,12 +2264,12 @@ export default function CreateInvoiceModal({
                   </div>
 
                   {/* Strategic Intel Section */}
-                  <div className="bg-purple-50/30 p-6 rounded-[2rem] border border-purple-100 space-y-4">
+                  <div className="bg-indigo-50/30 p-6 rounded-[2rem] border border-indigo-100 space-y-4">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-100">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
                         <ClipboardList size={16} />
                       </div>
-                      <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest italic">
+                      <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest italic">
                         Internal Archive
                       </h4>
                     </div>

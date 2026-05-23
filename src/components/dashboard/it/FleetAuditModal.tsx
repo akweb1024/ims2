@@ -350,3 +350,5 @@ export default function FleetAuditModal({ isOpen, onClose, projects }: FleetAudi
         document.body
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

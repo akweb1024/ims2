@@ -58,7 +58,7 @@ export default function HolidayManager({ userRole }: { userRole?: string }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {holidays.map((h: any) => (
-                    <div key={h.id} className="card-premium p-6 border-l-4 group relative hover:-translate-y-1 transition-transform duration-300" style={{ borderColor: h.type === 'PUBLIC' ? '#2563eb' : '#7c3aed' }}>
+                    <div key={h.id} className="card-premium p-6 border-l-4 group relative hover:-translate-y-1 transition-transform duration-300" style={{ borderColor: h.type === 'PUBLIC' ? '#2563eb' : '#4f46e5' }}>
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => {
                                 setSelectedHoliday(h);

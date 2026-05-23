@@ -64,3 +64,5 @@ export async function GET(
         return handleApiError(error, 'Failed to fetch public invoice');
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

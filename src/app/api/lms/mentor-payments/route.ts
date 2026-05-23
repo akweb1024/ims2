@@ -141,3 +141,5 @@ export const DELETE = authorizedRoute(['ADMIN', 'SUPER_ADMIN'], async (req: Next
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 });
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

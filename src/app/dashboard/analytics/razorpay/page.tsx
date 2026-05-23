@@ -144,7 +144,7 @@ export default function RazorpayTrackerPage() {
     }, {}) || {};
 
     const methodChartData = Object.entries(methodStats).map(([name, value]) => ({ name, value }));
-    const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#f59e0b', '#10b981'];
+    const COLORS = ['#2563eb', '#4f46e5', '#db2777', '#f59e0b', '#10b981'];
 
     const filteredPayments = data?.payments?.filter((p: any) => {
         if (filterMethod !== 'ALL' && p.method !== filterMethod) return false;
@@ -347,8 +347,8 @@ export default function RazorpayTrackerPage() {
                                     {data?.payments?.filter((p: any) => p.international).length || 0}
                                 </p>
                             </div>
-                            <div className="p-3 bg-purple-50 rounded-2xl">
-                                <Globe size={24} className="text-purple-500" />
+                            <div className="p-3 bg-indigo-50 rounded-2xl">
+                                <Globe size={24} className="text-indigo-500" />
                             </div>
                         </div>
                         <div className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Non-Domestic Traffic</div>
@@ -544,7 +544,7 @@ export default function RazorpayTrackerPage() {
                                                         #{payment.razorpayPaymentId || payment.id.substring(0, 12)}
                                                     </div>
                                                     {payment.international && (
-                                                        <span className="inline-flex mt-2 px-2.5 py-1 bg-purple-100 text-purple-700 text-[8px] font-black rounded-lg uppercase tracking-widest">
+                                                        <span className="inline-flex mt-2 px-2.5 py-1 bg-indigo-100 text-indigo-700 text-[8px] font-black rounded-lg uppercase tracking-widest">
                                                             <Globe size={10} className="mr-1.5" />International
                                                         </span>
                                                     )}

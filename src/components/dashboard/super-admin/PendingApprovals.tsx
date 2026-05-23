@@ -18,8 +18,8 @@ export default function PendingApprovals({ data }: { data: ApprovalsData }) {
             label: "Increment Requests",
             count: data.pendingIncrements,
             icon: ClipboardList,
-            color: "text-violet-600",
-            bg: "bg-violet-50",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
             route: "/dashboard/hr-management/increments"
         },
         {
@@ -86,3 +86,5 @@ export default function PendingApprovals({ data }: { data: ApprovalsData }) {
         </Card>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

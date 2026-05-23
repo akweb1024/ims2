@@ -70,7 +70,7 @@ export default function ConversationChecklist({
 
             {/* Real-time Predictions */}
             {showPredictions && predictions && (
-                <div className="p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-indigo-100 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-indigo-50 rounded-xl border border-indigo-100 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center gap-2 mb-3">
                         <span className="text-lg">🎯</span>
                         <h5 className="text-sm font-black text-gray-900">AI Predictions</h5>

@@ -458,7 +458,7 @@ function UsersContent() {
                                         </td>
                                         <td>
                                             <span className={`badge ${user.role === 'SUPER_ADMIN' ? 'badge-primary' :
-                                                user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                                                user.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' :
                                                     user.role === 'MANAGER' ? 'badge-success' :
                                                         user.role === 'TEAM_LEADER' ? 'bg-indigo-100 text-indigo-700' :
                                                             'badge-secondary'

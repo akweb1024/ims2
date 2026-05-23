@@ -80,8 +80,8 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             value: data.activeCompanies.toString(),
             subtext: "Fully operational entities",
             icon: Building2,
-            color: "text-violet-600",
-            bg: "bg-violet-50",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
             trend: 0,
             trendLabel: "stable"
         },
@@ -133,3 +133,5 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

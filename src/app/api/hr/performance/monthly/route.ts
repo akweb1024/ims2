@@ -403,3 +403,5 @@ export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 });
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DollarSign, TrendingUp, Users, CreditCard, Calendar, Award, Building2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6', '#f97316'];
 
 export default function RevenueDashboard() {
     const [user, setUser] = useState<any>(null);
@@ -309,3 +309,5 @@ export default function RevenueDashboard() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

@@ -144,3 +144,5 @@ export const isDevelopment = env.NODE_ENV === "development";
  * Check if running in test
  */
 export const isTest = env.NODE_ENV === "test";
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

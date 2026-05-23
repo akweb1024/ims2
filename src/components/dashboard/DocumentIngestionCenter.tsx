@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, Check, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 
 export default function DocumentIngestionCenter() {
@@ -223,7 +224,14 @@ export default function DocumentIngestionCenter() {
                             {/* Left Side: Document Preview */}
                             <div className="border border-secondary-100 rounded-3xl overflow-hidden h-[500px] bg-secondary-50 relative flex items-center justify-center">
                                 {file.type.startsWith('image/') ? (
-                                    <img src={fileUrl || ''} alt="Document Preview" className="max-h-full object-contain" />
+                                    <Image
+                                        src={fileUrl || ''}
+                                        alt="Document Preview"
+                                        width={1200}
+                                        height={1600}
+                                        className="max-h-full w-auto object-contain"
+                                        unoptimized
+                                    />
                                 ) : (
                                     <iframe src={fileUrl || ''} className="w-full h-full border-none" title="Document Preview" />
                                 )}

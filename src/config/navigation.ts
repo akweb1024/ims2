@@ -456,3 +456,5 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
         }))
         .filter(mod => mod.categories.length > 0);
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

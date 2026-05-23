@@ -507,7 +507,7 @@ export default function TaskTemplateManager() {
                                 <h3 className="font-bold text-lg text-secondary-900 pr-8 line-clamp-2">{task.title}</h3>
                                 <div className="mt-2 flex gap-2 flex-wrap">
                                     {task.calculationType === 'SCALED' ? (
-                                        <span className="badge bg-purple-100 text-purple-700 font-black">
+                                        <span className="badge bg-indigo-100 text-indigo-700 font-black">
                                             {task.pointsPerUnit < 1
                                                 ? `1 pt / ${Math.round(1 / task.pointsPerUnit)} units`
                                                 : `${task.pointsPerUnit} pts / unit`
@@ -569,7 +569,7 @@ export default function TaskTemplateManager() {
                                         </td>
                                         <td className="px-6 py-4">
                                             {task.calculationType === 'SCALED' ? (
-                                                <span className="badge bg-purple-100 text-purple-700 font-black text-xs">
+                                                <span className="badge bg-indigo-100 text-indigo-700 font-black text-xs">
                                                     {task.pointsPerUnit < 1
                                                         ? `1pt/${Math.round(1 / task.pointsPerUnit)}u`
                                                         : `${task.pointsPerUnit}pt/u`

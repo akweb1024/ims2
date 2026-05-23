@@ -832,7 +832,7 @@ const HRManagementContent = () => {
                                 <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Reports</p>
                                 <p className="text-xl font-black text-secondary-900">{workReports.length}</p>
                             </div>
-                            <div className="card-premium p-3 border-l-4 border-purple-500">
+                            <div className="card-premium p-3 border-l-4 border-indigo-500">
                                 <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Hours</p>
                                 <p className="text-xl font-black text-secondary-900">{workReports.reduce((acc, r) => acc + (r.hoursSpent || 0), 0).toFixed(1)}</p>
                             </div>

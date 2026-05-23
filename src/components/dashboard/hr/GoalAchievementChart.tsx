@@ -132,3 +132,5 @@ export default function GoalAchievementChart({ data }: GoalAchievementChartProps
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

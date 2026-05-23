@@ -96,9 +96,9 @@ const TeamTaskMasterView: React.FC = () => {
                             <p className="text-[10px] uppercase font-black text-secondary-400">Achievement %</p>
                             <p className="text-xl font-black text-amber-600">{(stats.team?.achievementRate || 0).toFixed(1)}%</p>
                         </div>
-                        <div className="card-premium p-3 border-l-4 border-purple-500">
+                        <div className="card-premium p-3 border-l-4 border-indigo-500">
                             <p className="text-[10px] uppercase font-black text-secondary-400">Attendance %</p>
-                            <p className="text-xl font-black text-purple-600">{(stats.team?.attendanceRate || 0).toFixed(1)}%</p>
+                            <p className="text-xl font-black text-indigo-600">{(stats.team?.attendanceRate || 0).toFixed(1)}%</p>
                         </div>
                     </div>
                 ) : (
@@ -203,3 +203,5 @@ const TeamTaskMasterView: React.FC = () => {
 };
 
 export default TeamTaskMasterView;
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

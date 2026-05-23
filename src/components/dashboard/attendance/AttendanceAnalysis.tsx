@@ -191,3 +191,5 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

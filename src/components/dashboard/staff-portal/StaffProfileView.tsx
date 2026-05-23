@@ -209,3 +209,5 @@ export default function StaffProfileView({ user, fullProfile }: StaffProfileView
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

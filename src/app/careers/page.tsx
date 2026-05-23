@@ -21,7 +21,7 @@ export default function CareersPage() {
 
     const fetchJobs = async () => {
         try {
-            const res = await fetch('/api/recruitment/jobs');
+            const res = await fetch('/api/public/recruitment/jobs');
             if (res.ok) setJobs(await res.json());
         } catch (err) {
             console.error(err);
@@ -182,11 +182,13 @@ export default function CareersPage() {
                                 {[1, 2, 3].map(i => (
                                     <div key={i} className="h-40 bg-white rounded-3xl border border-secondary-100 animate-pulse"></div>
                                 ))}
+                                <p className="text-center text-sm text-secondary-500">No positions open</p>
                             </div>
                         ) : filteredJobs.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-3xl border border-secondary-200 border-dashed">
                                 <div className="text-4xl mb-4">🔍</div>
                                 <h3 className="text-xl font-bold text-secondary-900 mb-2">No jobs found</h3>
+                                <p className="text-secondary-500 mb-2">No positions open</p>
                                 <p className="text-secondary-500 mb-6">Try adjusting your search criteria.</p>
                                 <button onClick={clearFilters} className="text-primary-600 font-bold hover:underline">Clear all filters</button>
                             </div>

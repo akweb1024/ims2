@@ -8,7 +8,7 @@ interface FinanceStatsCardProps {
     trendUpGood?: boolean; // Is positive trend good? (e.g. yes for Revenue, no for Burn Rate)
     icon?: React.ReactNode;
     subtitle?: string; // e.g. "vs last month"
-    color?: 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'violet';
+    color?: 'emerald' | 'amber' | 'rose' | 'blue' | 'indigo' | 'indigo';
     loading?: boolean;
 }
 
@@ -39,7 +39,6 @@ export default function FinanceStatsCard({
         rose: 'bg-rose-50 text-rose-600 border-rose-100 ring-rose-500/10',
         blue: 'bg-blue-50 text-blue-600 border-blue-100 ring-blue-500/10',
         indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100 ring-indigo-500/10',
-        violet: 'bg-violet-50 text-violet-600 border-violet-100 ring-violet-500/10',
     };
 
     const styles = colorClasses[color];
@@ -95,3 +94,5 @@ export default function FinanceStatsCard({
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

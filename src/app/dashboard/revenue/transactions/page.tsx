@@ -13,7 +13,7 @@ import { toast } from 'react-hot-toast';
 const PAYMENT_METHODS = [
     { value: 'RAZORPAY', label: 'Razorpay', icon: CreditCard, color: 'blue' },
     { value: 'BANK_TRANSFER', label: 'Bank Transfer (IMPS/NEFT)', icon: Building2, color: 'indigo' },
-    { value: 'UPI', label: 'UPI / PhonePe / GPay', icon: Smartphone, color: 'purple' },
+    { value: 'UPI', label: 'UPI / PhonePe / GPay', icon: Smartphone, color: 'indigo' },
     { value: 'CASH', label: 'Cash Payment', icon: Banknote, color: 'green' },
     { value: 'CHEQUE', label: 'Cheque Payment', icon: FileText, color: 'orange' },
     { value: 'DD', label: 'Demand Draft (DD)', icon: FileText, color: 'yellow' },

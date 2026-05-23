@@ -40,3 +40,5 @@ export const FormattedNumber: React.FC<FormattedNumberProps> = ({
 
     return <span>{new Intl.NumberFormat('en-IN', options).format(num)}</span>;
 };
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

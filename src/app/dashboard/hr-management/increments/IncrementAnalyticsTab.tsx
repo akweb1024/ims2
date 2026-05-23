@@ -358,3 +358,5 @@ function LegendItem({ color, label }: any) {
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

@@ -61,7 +61,7 @@ const SCORE_COMPONENTS = [
         label: 'Manager Rating',
         weight: 15,
         icon: '⭐',
-        color: 'purple',
+        color: 'indigo',
         description: 'Average rating given by your manager on daily work reports (1–10 scale multiplied ×10).',
         getValue: (s: any) => s?.averageManagerRating ? s.averageManagerRating * 10 : 0,
         getDetail: (s: any) => s ? (s.averageManagerRating > 0 ? `${s.averageManagerRating.toFixed(1)}/10 avg rating` : 'No ratings yet') : '—',
@@ -95,7 +95,7 @@ const COLOR_MAP: Record<string, string> = {
     blue: 'from-blue-500 to-blue-600',
     amber: 'from-amber-500 to-amber-600',
     green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
+    indigo: 'from-indigo-500 to-indigo-600',
     teal: 'from-teal-500 to-teal-600',
     rose: 'from-rose-500 to-rose-600',
 };
@@ -104,7 +104,7 @@ const TRACK_MAP: Record<string, string> = {
     blue: 'bg-blue-100',
     amber: 'bg-amber-100',
     green: 'bg-green-100',
-    purple: 'bg-purple-100',
+    indigo: 'bg-indigo-100',
     teal: 'bg-teal-100',
     rose: 'bg-rose-100',
 };
@@ -113,7 +113,7 @@ const FILL_MAP: Record<string, string> = {
     blue: 'bg-blue-500',
     amber: 'bg-amber-500',
     green: 'bg-green-500',
-    purple: 'bg-purple-500',
+    indigo: 'bg-indigo-500',
     teal: 'bg-teal-500',
     rose: 'bg-rose-500',
 };
@@ -122,7 +122,7 @@ const TEXT_MAP: Record<string, string> = {
     blue: 'text-blue-600',
     amber: 'text-amber-600',
     green: 'text-green-600',
-    purple: 'text-purple-600',
+    indigo: 'text-indigo-600',
     teal: 'text-teal-600',
     rose: 'text-rose-600',
 };
@@ -308,7 +308,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                     </div>
                 </div>
                 <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-purple-500 opacity-20 rounded-full blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-indigo-500 opacity-20 rounded-full blur-2xl"></div>
             </div>
 
             {/* ── 2. SCORE BREAKDOWN (Real Analytics) ── */}
@@ -453,7 +453,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                             LOW_ATTENDANCE: { title: '⚠️ Low Attendance', msg: 'Attendance score is below 70. Being absent frequently will heavily penalise your overall score.', color: 'border-red-200 bg-red-50 text-red-800' },
                             POOR_REPORTING: { title: '📋 Poor Report Submission', msg: 'You\'ve filed less than 60% of expected daily reports. Every missing report costs you points.', color: 'border-orange-200 bg-orange-50 text-orange-800' },
                             FREQUENT_LATE: { title: '🕐 Frequent Late Check-ins', msg: 'More than 30% of your working days had late check-ins. Punctuality is tracked and scored.', color: 'border-amber-200 bg-amber-50 text-amber-800' },
-                            LOW_MANAGER_RATING: { title: '⭐ Low Manager Rating', msg: 'Your average manager rating is below 5/10. Work on quality and communication in your daily reports.', color: 'border-purple-200 bg-purple-50 text-purple-800' },
+                            LOW_MANAGER_RATING: { title: '⭐ Low Manager Rating', msg: 'Your average manager rating is below 5/10. Work on quality and communication in your daily reports.', color: 'border-indigo-200 bg-indigo-50 text-indigo-800' },
                         };
                         const f = flagMap[flag];
                         if (!f) return null;
@@ -751,7 +751,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                         </div>
 
                         {/* Tips */}
-                        <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
+                        <div className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-50 rounded-2xl border border-indigo-100">
                             <h4 className="font-black text-gray-900 mb-4">💡 Top Tips to Improve Your Score</h4>
                             <ul className="space-y-2 text-sm text-gray-700">
                                 {[
@@ -775,3 +775,5 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
         </div>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

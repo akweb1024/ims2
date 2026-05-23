@@ -17,11 +17,11 @@ const EmployeeCard = ({ employee, depth }: EmployeeNodeProps) => {
     return (
         <div
             className={`flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all relative group
-                ${depth === 0 ? 'border-l-4 border-l-purple-600 bg-purple-50/10' : ''}`}
+                ${depth === 0 ? 'border-l-4 border-l-indigo-600 bg-indigo-50/10' : ''}`}
         >
             <div className={`
                 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-md shrink-0
-                ${depth === 0 ? 'bg-gradient-to-br from-purple-600 to-indigo-600' :
+                ${depth === 0 ? 'bg-gradient-to-br from-indigo-600 to-indigo-600' :
                     depth === 1 ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
                         'bg-gradient-to-br from-gray-400 to-gray-500'}
             `}>
@@ -30,7 +30,7 @@ const EmployeeCard = ({ employee, depth }: EmployeeNodeProps) => {
 
             <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-gray-900 truncate">{employee.user?.name || 'Unknown'}</h4>
-                <p className="text-xs text-purple-600 font-bold uppercase tracking-wide mb-1">
+                <p className="text-xs text-indigo-600 font-bold uppercase tracking-wide mb-1">
                     {employee.designation?.title || 'Employee'}
                 </p>
                 <div className="flex flex-col gap-1 text-[11px] text-gray-500">
@@ -104,7 +104,7 @@ export default function OrgChartPage() {
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
                     <div>
                         <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-                            <span className="p-3 bg-gradient-to-br from-purple-100 to-indigo-50 rounded-2xl text-purple-600">
+                            <span className="p-3 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-2xl text-indigo-600">
                                 <Users size={32} />
                             </span>
                             Organization Chart
@@ -116,11 +116,11 @@ export default function OrgChartPage() {
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="relative group flex-1 md:w-64">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-purple-500 transition-colors" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Find people..."
-                                className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-purple-200 transition-all outline-none"
+                                className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 font-bold text-sm focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -146,7 +146,7 @@ export default function OrgChartPage() {
                 {/* Content */}
                 {(loadingEmps || loadingDepts) ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-8">

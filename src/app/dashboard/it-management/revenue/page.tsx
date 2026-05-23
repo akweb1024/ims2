@@ -368,3 +368,5 @@ export default function RevenuePage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

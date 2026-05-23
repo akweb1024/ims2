@@ -57,21 +57,21 @@ export default function CashflowWidget() {
     }).format(projectedBalance || 0);
 
     return (
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+        <div className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-chart-3 to-primary p-6 text-primary-foreground shadow-sm">
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-white/10 rounded-lg">
-                        <Target className="h-6 w-6 text-white" />
+                    <div className="rounded-lg bg-white/10 p-2">
+                        <Target className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <span className="bg-white/20 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                    <span className="rounded bg-white/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider">
                         AI Forecast
                     </span>
                 </div>
 
                 <h3 className="text-3xl font-black mb-1">{formattedProjectedBalance}</h3>
-                <p className="text-indigo-200 text-xs font-medium mb-6">Projected Balance (next 30 days)</p>
+                <p className="mb-6 text-xs font-medium text-primary-foreground/80">Projected Balance (next 30 days)</p>
 
-                <Link href="/dashboard/finance/forecasting" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:gap-3 transition-all">
+                <Link href="/dashboard/finance/forecasting" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all hover:gap-3">
                     View Analysis <ArrowRight size={14} />
                 </Link>
             </div>

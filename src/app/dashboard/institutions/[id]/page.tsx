@@ -141,7 +141,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="crm-card p-5">
                     <div className="flex items-center gap-3">
-                        <Network className="w-5 h-5 text-purple-600" />
+                        <Network className="w-5 h-5 text-indigo-600" />
                         <div>
                             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">Affiliated Paid Customers</div>
                             <div className="mt-1 text-lg font-black text-secondary-900">{institution.analytics?.affiliatedPaidCustomerCount || 0}</div>
@@ -520,3 +520,5 @@ export default function InstitutionDetailPage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

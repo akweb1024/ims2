@@ -217,7 +217,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                     label="Revenue Matrix"
                     value={`₹${Math.round(institutions.reduce((sum, inst) => sum + (inst.analytics?.totalRevenue || 0), 0)).toLocaleString()}`}
                     icon={<TrendingUp className="w-5 h-5" />}
-                    accent="bg-purple-900 shadow-purple-100"
+                    accent="bg-indigo-900 shadow-indigo-100"
                     trend={{ value: 'Live', label: 'comparison', isPositive: true }}
                 />
             </div>
@@ -368,7 +368,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                                                 institution.affiliationStatus === 'AFFILIATED'
                                                     ? 'bg-amber-50 text-amber-700 border-amber-100'
                                                     : institution.affiliationStatus === 'UNIVERSITY'
-                                                        ? 'bg-purple-50 text-purple-700 border-purple-100'
+                                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
                                                         : 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                             }`}>
                                                 {institution.affiliationStatus ? formatDisplayLabel(institution.affiliationStatus) : 'Self Affiliated'}
@@ -400,7 +400,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                                             <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">{institution.analytics?.paidCustomerCount || 0}</p>
                                             <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Paid Customers</p>
                                         </div>
-                                        <div className="p-4 bg-white border border-secondary-100 rounded-2xl text-center group-hover:border-purple-100 transition-all shadow-sm">
+                                        <div className="p-4 bg-white border border-secondary-100 rounded-2xl text-center group-hover:border-indigo-100 transition-all shadow-sm">
                                             <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">₹{Math.round(institution.analytics?.totalRevenue || 0).toLocaleString()}</p>
                                             <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Revenue</p>
                                         </div>

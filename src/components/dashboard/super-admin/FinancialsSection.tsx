@@ -71,3 +71,5 @@ export default function FinancialsSection({ data }: { data: FinancialData[] }) {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

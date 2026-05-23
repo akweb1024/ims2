@@ -29,7 +29,7 @@ interface Project {
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
     PENDING: { label: 'Pending', bg: 'bg-amber-50/50', text: 'text-amber-700', dot: 'bg-amber-500' },
     IN_PROGRESS: { label: 'Active', bg: 'bg-blue-50/50', text: 'text-blue-700', dot: 'bg-blue-500' },
-    UNDER_REVIEW: { label: 'Review', bg: 'bg-purple-50/50', text: 'text-purple-700', dot: 'bg-purple-500' },
+    UNDER_REVIEW: { label: 'Review', bg: 'bg-indigo-50/50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
     COMPLETED: { label: 'Settled', bg: 'bg-emerald-50/50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     CANCELLED: { label: 'Aborted', bg: 'bg-rose-50/50', text: 'text-rose-700', dot: 'bg-rose-500' },
 };
@@ -45,7 +45,7 @@ const STAT_FILTERS = [
     { label: 'Total', filter: 'ALL', color: 'bg-slate-900', key: 'total' as const },
     { label: 'Pending', filter: 'PENDING', color: 'bg-amber-500', key: 'pending' as const },
     { label: 'Active', filter: 'IN_PROGRESS', color: 'bg-blue-600', key: 'inProgress' as const },
-    { label: 'In Review', filter: 'UNDER_REVIEW', color: 'bg-purple-500', key: 'underReview' as const },
+    { label: 'In Review', filter: 'UNDER_REVIEW', color: 'bg-indigo-500', key: 'underReview' as const },
     { label: 'Settled', filter: 'COMPLETED', color: 'bg-emerald-600', key: 'completed' as const },
 ];
 
@@ -100,7 +100,7 @@ export default function MyTasksPage() {
         return (
             <DashboardLayout>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
-                    <div className="h-12 w-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin" />
+                    <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Workspace Intel...</p>
                 </div>
             </DashboardLayout>
@@ -117,7 +117,7 @@ export default function MyTasksPage() {
                 >
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2.5 py-1 bg-purple-600/10 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">Personal Operation</span>
+                            <span className="px-2.5 py-1 bg-indigo-600/10 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">Personal Operation</span>
                             <span className="h-1 w-1 rounded-full bg-slate-200" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Workspace</span>
                         </div>
@@ -127,7 +127,7 @@ export default function MyTasksPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button onClick={fetchData} className="p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-purple-600 hover:bg-slate-50 transition-all shadow-sm">
+                        <button onClick={fetchData} className="p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
                             <RefreshCw className="h-5 w-5" />
                         </button>
                     </div>
@@ -138,15 +138,15 @@ export default function MyTasksPage() {
                     {STAT_FILTERS.map((s, idx) => (
                         <motion.button key={s.filter} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
                             onClick={() => setActiveFilter(s.filter)}
-                            className={`group relative p-6 rounded-[2rem] border transition-all text-left overflow-hidden ${activeFilter === s.filter ? 'bg-white border-white shadow-xl ring-2 ring-purple-600/10' : 'bg-white/40 border-white/60 hover:bg-white/60 hover:border-white h-full'}`}
+                            className={`group relative p-6 rounded-[2rem] border transition-all text-left overflow-hidden ${activeFilter === s.filter ? 'bg-white border-white shadow-xl ring-2 ring-indigo-600/10' : 'bg-white/40 border-white/60 hover:bg-white/60 hover:border-white h-full'}`}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className={`h-2 w-2 rounded-full ${s.color}`} />
-                                {activeFilter === s.filter && <Sparkles className="h-4 w-4 text-purple-600" />}
+                                {activeFilter === s.filter && <Sparkles className="h-4 w-4 text-indigo-600" />}
                             </div>
                             <h3 className="text-3xl font-black text-slate-900 leading-none">{stats[s.key]}</h3>
                             <p className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
-                            {activeFilter === s.filter && <div className="absolute bottom-0 left-0 h-1 bg-purple-600 transition-all w-full" />}
+                            {activeFilter === s.filter && <div className="absolute bottom-0 left-0 h-1 bg-indigo-600 transition-all w-full" />}
                         </motion.button>
                     ))}
                 </div>
@@ -198,7 +198,7 @@ export default function MyTasksPage() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="space-y-6">
                     <div className="flex items-center justify-between px-2">
                         <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-                            <ListTodo className="h-6 w-6 text-purple-600" /> Operational Queue
+                            <ListTodo className="h-6 w-6 text-indigo-600" /> Operational Queue
                         </h2>
                         {activeFilter !== 'ALL' && (
                             <button onClick={() => setActiveFilter('ALL')} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Reset Stream Filter ×</button>
@@ -244,7 +244,7 @@ export default function MyTasksPage() {
                                                     </div>
                                                     
                                                     <div className="space-y-1">
-                                                        <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-purple-600 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}>
+                                                        <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}>
                                                             {task.title}
                                                         </h3>
                                                         <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -256,7 +256,7 @@ export default function MyTasksPage() {
 
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className={`h-full rounded-full ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-purple-600'}`} />
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className={`h-full rounded-full ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-600'}`} />
                                                         </div>
                                                         <span className="text-[10px] font-black text-slate-900 w-10 text-right">{task.progressPercent}%</span>
                                                     </div>
@@ -266,7 +266,7 @@ export default function MyTasksPage() {
                                                     <div className="space-y-1">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lifecycle</p>
                                                         <select value={task.status} onChange={(e) => handleStatusUpdate(task.id, e.target.value)} disabled={updatingTaskId === task.id}
-                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-sm disabled:opacity-50">
+                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-sm disabled:opacity-50">
                                                             <option value="PENDING">Pending</option>
                                                             <option value="IN_PROGRESS">Active</option>
                                                             <option value="UNDER_REVIEW">Review</option>
@@ -276,7 +276,7 @@ export default function MyTasksPage() {
                                                     <div className="space-y-1">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Percentile</p>
                                                         <select value={Math.round(task.progressPercent / 5) * 5} onChange={(e) => handleProgressUpdate(task.id, parseInt(e.target.value))}
-                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-sm">
+                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-sm">
                                                             {Array.from({ length: 21 }, (_, i) => i * 5).map(v => <option key={v} value={v}>{v}% Done</option>)}
                                                         </select>
                                                     </div>

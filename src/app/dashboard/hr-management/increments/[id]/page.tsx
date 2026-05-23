@@ -441,7 +441,7 @@ export default function IncrementDetailPage() {
                                         <span className="text-xs font-bold text-secondary-600">Incentive</span>
                                         <div className="flex gap-4">
                                             <span className="text-xs text-secondary-500">Old: ₹{(increment.oldIncentive || 0).toLocaleString()}</span>
-                                            <span className="text-xs font-bold text-purple-600">New: ₹{(increment.newIncentive || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-indigo-600">New: ₹{(increment.newIncentive || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                     <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
@@ -450,7 +450,7 @@ export default function IncrementDetailPage() {
                                             style={{ width: `${(increment.oldIncentive / increment.newSalary) * 100}%` }}
                                         />
                                         <div
-                                            className="absolute top-0 left-0 h-full bg-purple-500 transition-all"
+                                            className="absolute top-0 left-0 h-full bg-indigo-500 transition-all"
                                             style={{ width: `${(increment.newIncentive / increment.newSalary) * 100}%` }}
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center">
@@ -490,7 +490,7 @@ export default function IncrementDetailPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-4 h-4 bg-purple-400 rounded"></div>
+                                        <div className="w-4 h-4 bg-indigo-400 rounded"></div>
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Incentive</span>
@@ -524,7 +524,7 @@ export default function IncrementDetailPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                                        <div className="w-4 h-4 bg-indigo-500 rounded"></div>
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Incentive</span>
@@ -794,8 +794,8 @@ export default function IncrementDetailPage() {
                                         <p className="text-secondary-400 italic text-sm">No previous KPIs defined.</p>
                                     )}
                                 </div>
-                                <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-                                    <p className="text-sm font-bold text-purple-700 mb-2 uppercase">New KPI Metrics (Proposed)</p>
+                                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                                    <p className="text-sm font-bold text-indigo-700 mb-2 uppercase">New KPI Metrics (Proposed)</p>
                                     {increment.newKPI && Object.keys(increment.newKPI).length > 0 ? (
                                         <ul className="space-y-2">
                                             {Object.entries(increment.newKPI).map(([key, value]: [string, any]) => {
@@ -808,9 +808,9 @@ export default function IncrementDetailPage() {
                                                 }
 
                                                 return (
-                                                    <li key={key} className="flex justify-between items-center text-sm border-b border-purple-200 pb-1 last:border-0">
-                                                        <span className="font-semibold text-purple-800 capitalize">{key.replace(/_/g, ' ')}</span>
-                                                        <span className="font-black text-purple-900 text-right ml-4">{displayValue}</span>
+                                                    <li key={key} className="flex justify-between items-center text-sm border-b border-indigo-200 pb-1 last:border-0">
+                                                        <span className="font-semibold text-indigo-800 capitalize">{key.replace(/_/g, ' ')}</span>
+                                                        <span className="font-black text-indigo-900 text-right ml-4">{displayValue}</span>
                                                     </li>
                                                 );
                                             })}

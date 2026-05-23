@@ -571,7 +571,7 @@ export default function EmployeeProfilePage() {
                                 {canViewSalary && employee.companyDesignations && employee.companyDesignations.length > 0 && (
                                     <div className="card-premium p-6">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                            <Briefcase className="text-purple-500" size={20} />
+                                            <Briefcase className="text-indigo-500" size={20} />
                                             Company Assignments
                                         </h3>
                                         <div className="space-y-3">
@@ -1269,7 +1269,7 @@ export default function EmployeeProfilePage() {
                                 {/* Conferences Section */}
                                 <div className="space-y-4">
                                     <h3 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
-                                        <Briefcase className="text-purple-600" size={20} />
+                                        <Briefcase className="text-indigo-600" size={20} />
                                         Conferences & Papers
                                     </h3>
 

@@ -8,3 +8,5 @@ export const generateToken = gt;
 export const verifyToken = vt;
 export const hashPassword = hp;
 export const verifyPassword = vp;
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

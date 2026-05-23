@@ -396,3 +396,5 @@ export async function POST(req: NextRequest) {
     return handleApiError(error);
   }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

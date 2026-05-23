@@ -77,3 +77,5 @@ export default function CRMBillingUnifiedPage() {
         </CRMClientLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

@@ -87,7 +87,7 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
 
     const getTypeBadge = (type: string) => {
         const colors: Record<string, string> = {
-            'MONTHLY': 'bg-purple-100 text-purple-800',
+            'MONTHLY': 'bg-indigo-100 text-indigo-800',
             'QUARTERLY': 'bg-indigo-100 text-indigo-800',
             'YEARLY': 'bg-pink-100 text-pink-800'
         };
@@ -162,9 +162,9 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-secondary-500 uppercase">Avg Achievement</p>
-                            <p className="text-2xl font-black text-purple-600 mt-1">{stats.avgAchievement}%</p>
+                            <p className="text-2xl font-black text-indigo-600 mt-1">{stats.avgAchievement}%</p>
                         </div>
-                        <TrendingUp className="text-purple-600" size={32} />
+                        <TrendingUp className="text-indigo-600" size={32} />
                     </div>
                 </div>
             </div>

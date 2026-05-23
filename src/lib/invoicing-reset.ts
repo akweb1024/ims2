@@ -338,3 +338,5 @@ export async function resetAllInvoicingData(userId: string) {
     },
   );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

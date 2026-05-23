@@ -13,6 +13,7 @@ export const GET = authorizedRoute(
             const limit = parseInt(searchParams.get('limit') || '10');
             const status = searchParams.get('status') as SubscriptionStatus | null;
             const search = searchParams.get('search') || '';
+            const lightweightListMode = page === 1 && limit === 1 && !search;
 
             const skip = (page - 1) * limit;
 
@@ -51,31 +52,39 @@ export const GET = authorizedRoute(
             }
 
             const [subscriptions, total] = await Promise.all([
-                (prisma.subscription as any).findMany({
-                    where,
-                    skip,
-                    take: limit,
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                        customerProfile: {
-                            select: {
-                                id: true,
-                                name: true,
-                                organizationName: true,
-                                primaryEmail: true
-                            }
-                        },
-                        items: {
-                            include: {
-                                journal: { select: { id: true, name: true } },
-                                plan: { select: { id: true, planType: true, format: true } },
-                                course: { select: { id: true, title: true } },
-                                workshop: { select: { id: true, title: true } },
-                                product: { select: { id: true, name: true, type: true } }
+                lightweightListMode
+                    ? (prisma.subscription as any).findMany({
+                        where,
+                        skip,
+                        take: limit,
+                        orderBy: { createdAt: 'desc' },
+                        select: { id: true }
+                    })
+                    : (prisma.subscription as any).findMany({
+                        where,
+                        skip,
+                        take: limit,
+                        orderBy: { createdAt: 'desc' },
+                        include: {
+                            customerProfile: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    organizationName: true,
+                                    primaryEmail: true
+                                }
+                            },
+                            items: {
+                                include: {
+                                    journal: { select: { id: true, name: true } },
+                                    plan: { select: { id: true, planType: true, format: true } },
+                                    course: { select: { id: true, title: true } },
+                                    workshop: { select: { id: true, title: true } },
+                                    product: { select: { id: true, name: true, type: true } }
+                                }
                             }
                         }
-                    }
-                }),
+                    }),
                 prisma.subscription.count({ where })
             ]);
 

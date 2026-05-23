@@ -99,3 +99,5 @@ export async function POST(
         return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

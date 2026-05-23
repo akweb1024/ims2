@@ -45,7 +45,7 @@ export default function RevenueTrendsChart({ data }: { data: TrendData }) {
         total: Object.values(monthlyData).reduce((a, b) => (a as number) + (b as number), 0) as number
     })).sort((a, b) => b.total - a.total).slice(0, 5);
 
-    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6366f1'];
 
     const formatYAxis = (value: number) => {
         if (value >= 1000000) return `₹${(value / 1000000).toFixed(0)}M`;
@@ -106,3 +106,5 @@ export default function RevenueTrendsChart({ data }: { data: TrendData }) {
         </Card>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

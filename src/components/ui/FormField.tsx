@@ -41,14 +41,14 @@ export default function FormField({
 }: FormFieldProps) {
 
     const baseInputClasses = `
-        w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-offset-2
-        disabled:bg-gray-100 disabled:cursor-not-allowed
+        w-full h-9 px-3 rounded-md border border-input bg-background text-foreground transition-all duration-200
+        focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring
+        disabled:cursor-not-allowed disabled:opacity-50
     `;
 
     const errorClasses = error
-        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-        : 'border-gray-200 focus:border-blue-500 focus:ring-blue-500';
+        ? 'border-destructive focus-visible:ring-destructive/30'
+        : 'border-input focus-visible:ring-ring';
 
     const successClasses = '';
 
@@ -63,7 +63,7 @@ export default function FormField({
             {/* Label */}
             <label
                 htmlFor={inputId}
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="mb-2 block text-sm font-semibold text-foreground"
             >
                 {label}
                 {required && <span className="text-red-500 ml-1">*</span>}
@@ -121,14 +121,14 @@ export default function FormField({
 
             {/* Loading Indicator */}
             {loading && (
-                <div className="mt-1 flex items-center gap-2 text-[10px] text-blue-500 animate-pulse">
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-primary animate-pulse">
                     <span>⚡ Fetching details...</span>
                 </div>
             )}
 
             {/* Help Text */}
             {helpText && !error && (
-                <p id={helpId} className="mt-2 text-sm text-gray-500">
+                <p id={helpId} className="mt-2 text-sm text-muted-foreground">
                     {helpText}
                 </p>
             )}
@@ -137,7 +137,7 @@ export default function FormField({
             {error && (
                 <div
                     id={errorId}
-                    className="mt-2 flex items-start gap-2 text-sm text-red-600"
+                    className="mt-2 flex items-start gap-2 text-sm text-destructive"
                     role="alert"
                 >
                     <span className="flex-shrink-0 mt-0.5">⚠️</span>

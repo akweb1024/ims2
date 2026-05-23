@@ -148,7 +148,7 @@ export default function HolidayCalendarPage() {
 
                         <div className="flex flex-wrap gap-4 text-[10px] font-black uppercase tracking-widest text-secondary-500">
                             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-600"></span> Public</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-600"></span> Optional</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-600"></span> Optional</span>
                             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-pink-600"></span> Company</span>
                         </div>
                     </div>
@@ -186,14 +186,14 @@ export default function HolidayCalendarPage() {
                             </div>
                         ) : (
                             holidays.filter(h => h.name.toLowerCase().includes(search.toLowerCase())).map((h) => (
-                                <div key={h.id} className="card-premium group hover:border-primary-500 transition-all border-l-4" style={{ borderColor: h.type === 'PUBLIC' ? '#2563eb' : h.type === 'OPTIONAL' ? '#7c3aed' : '#db2777' }}>
+                                <div key={h.id} className="card-premium group hover:border-primary-500 transition-all border-l-4" style={{ borderColor: h.type === 'PUBLIC' ? '#2563eb' : h.type === 'OPTIONAL' ? '#4f46e5' : '#db2777' }}>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="p-3 bg-secondary-50 rounded-2xl flex flex-col items-center min-w-[60px] group-hover:bg-primary-50 transition-colors">
                                             <span className="text-[10px] font-black uppercase text-secondary-400 group-hover:text-primary-600">{new Date(h.date).toLocaleDateString(undefined, { month: 'short' })}</span>
                                             <span className="text-2xl font-black text-secondary-900">{new Date(h.date).getDate()}</span>
                                         </div>
                                         <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${h.type === 'PUBLIC' ? 'bg-blue-50 text-blue-600' :
-                                            h.type === 'OPTIONAL' ? 'bg-purple-50 text-purple-600' : 'bg-pink-50 text-pink-600'
+                                            h.type === 'OPTIONAL' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600'
                                             }`}>
                                             {h.type}
                                         </span>
@@ -234,7 +234,7 @@ export default function HolidayCalendarPage() {
                                         </td>
                                         <td className="p-6">
                                             <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${h.type === 'PUBLIC' ? 'bg-blue-50 text-blue-600' :
-                                                h.type === 'OPTIONAL' ? 'bg-purple-50 text-purple-600' : 'bg-pink-50 text-pink-600'
+                                                h.type === 'OPTIONAL' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600'
                                                 }`}>
                                                 {h.type}
                                             </span>

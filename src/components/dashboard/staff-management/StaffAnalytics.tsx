@@ -267,9 +267,9 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                                     <p className="text-sm text-blue-600">Average Salary</p>
                                     <p className="text-2xl font-bold text-blue-700">₹{(analyticsData?.stats?.salary?.average / 1000).toFixed(1)}K</p>
                                 </div>
-                                <div className="bg-purple-50 rounded-lg p-4">
-                                    <p className="text-sm text-purple-600">Highest Paid</p>
-                                    <p className="text-2xl font-bold text-purple-700">₹{(analyticsData?.stats?.salary?.highest / 1000).toFixed(1)}K</p>
+                                <div className="bg-indigo-50 rounded-lg p-4">
+                                    <p className="text-sm text-indigo-600">Highest Paid</p>
+                                    <p className="text-2xl font-bold text-indigo-700">₹{(analyticsData?.stats?.salary?.highest / 1000).toFixed(1)}K</p>
                                 </div>
                             </div>
                         </div>

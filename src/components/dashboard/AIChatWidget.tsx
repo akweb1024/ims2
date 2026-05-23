@@ -306,7 +306,7 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                     style={{
                         background: isOpen
                             ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
-                            : 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                            : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
                         boxShadow: isOpen
                             ? '0 8px 30px rgba(37, 99, 235, 0.2)'
                             : '0 8px 30px rgba(37, 99, 235, 0.4)',
@@ -335,7 +335,7 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                     </div>
                     {!isOpen && (
                         <div className="absolute inset-0 rounded-2xl animate-ping opacity-20"
-                            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', animationDuration: '2s' }} />
+                            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)', animationDuration: '2s' }} />
                     )}
                 </button>
             </div>
@@ -367,7 +367,7 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                         style={{ background: 'linear-gradient(135deg, #1e293b 0%, #1e3a5f 100%)' }}>
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)' }}>
+                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)' }}>
                                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
@@ -561,7 +561,7 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                             
                             <div className="text-center relative z-30">
                                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-2"
-                                    style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)' }}>
+                                    style={{ background: 'linear-gradient(135deg, #2563eb, #4f46e5)' }}>
                                     <svg className="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -613,7 +613,7 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 flex-shrink-0"
                                 style={{
                                     background: input.trim() && !isLoading
-                                        ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                                        ? 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)'
                                         : '#e2e8f0',
                                 }}
                             >

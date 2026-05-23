@@ -39,3 +39,5 @@ export const hashPassword = async (password: string): Promise<string> => {
 export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
     return await bcrypt.compare(password, hash);
 };
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

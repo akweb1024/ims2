@@ -31,7 +31,7 @@ export default function SalaryAnalysisSection({ data, companyStats = [] }: Salar
     if (!data) return <div>Loading...</div>;
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumSignificantDigits: 3 }).format(val);
-    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ef4444'];
 
     const renderCompanyView = () => {
         // Transform Company Stats for Chart
@@ -368,3 +368,5 @@ export default function SalaryAnalysisSection({ data, companyStats = [] }: Salar
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

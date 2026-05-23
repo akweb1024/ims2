@@ -8,11 +8,15 @@ import type { NextRequest } from 'next/server';
 
 export function securityHeaders(request: NextRequest) {
     const response = NextResponse.next();
+    const isDev = process.env.NODE_ENV !== 'production';
+    const scriptSrc = isDev
+        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://static.cloudflareinsights.com;"
+        : "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://static.cloudflareinsights.com;";
 
     // Content Security Policy
     const cspHeader = `
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://static.cloudflareinsights.com;
+        ${scriptSrc}
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src 'self' data: blob: https:;
         font-src 'self' data: https://fonts.gstatic.com;

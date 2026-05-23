@@ -57,6 +57,7 @@ export const GET = authorizedRoute(
         try {
             const { searchParams } = new URL(req.url);
             const jobId = searchParams.get('jobId');
+            const includeInterviews = searchParams.get('includeInterviews') === 'true';
 
             const where: any = {};
             // Simplified check based on updated schema where JobApplication has companyId directly?
@@ -71,11 +72,15 @@ export const GET = authorizedRoute(
                 where,
                 include: {
                     jobPosting: { select: { title: true, companyId: true } },
-                    interviews: {
-                        orderBy: { scheduledAt: 'desc' },
-                        take: 1,
-                        include: { screening: true }
-                    }
+                    ...(includeInterviews
+                        ? {
+                            interviews: {
+                                orderBy: { scheduledAt: 'desc' },
+                                take: 1,
+                                include: { screening: true }
+                            }
+                        }
+                        : {})
                 },
                 orderBy: { createdAt: 'desc' }
             });

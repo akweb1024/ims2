@@ -86,7 +86,7 @@ export default function PerformancePage() {
                         {[
                             { label: 'Tactical Wins', value: totalTasks, icon: Target, sub: '+12%', color: 'blue' },
                             { label: 'Fiscal Weight', value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, sub: '+8%', color: 'emerald' },
-                            { label: 'Logic Hours', value: `${totalHours.toLocaleString()}h`, icon: Clock, sub: 'Nominal', color: 'purple' },
+                            { label: 'Logic Hours', value: `${totalHours.toLocaleString()}h`, icon: Clock, sub: 'Nominal', color: 'indigo' },
                         ].map((stat, idx) => (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
                                 key={stat.label}
@@ -132,22 +132,22 @@ export default function PerformancePage() {
                             className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
                         >
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 flex items-center gap-3">
-                                <Clock className="h-4 w-4 text-purple-600" /> Operational Clock Cycles
+                                <Clock className="h-4 w-4 text-indigo-600" /> Operational Clock Cycles
                             </h3>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={data?.trends}>
                                         <defs>
                                             <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1} />
-                                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9 }} />
                                         <Tooltip contentStyle={{ border: 'none', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }} />
-                                        <Area type="monotone" dataKey="hours" stroke="#8b5cf6" strokeWidth={3} fill="url(#colorHours)" />
+                                        <Area type="monotone" dataKey="hours" stroke="#6366f1" strokeWidth={3} fill="url(#colorHours)" />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>

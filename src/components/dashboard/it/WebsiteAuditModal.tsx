@@ -189,7 +189,7 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
                                                 {[
                                                     { label: 'Latency', val: auditData.seo.loadTime, icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50' },
                                                     { label: 'Security Level', val: auditData.security.sslStatus, icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                                                    { label: 'Mobile Link', val: auditData.seo.mobileFriendly ? 'Active' : 'Offline', icon: MousePointer2, color: 'text-purple-500', bg: 'bg-purple-50' },
+                                                    { label: 'Mobile Link', val: auditData.seo.mobileFriendly ? 'Active' : 'Offline', icon: MousePointer2, color: 'text-indigo-500', bg: 'bg-indigo-50' },
                                                     { label: 'Growth', val: auditData.traffic.growth, icon: ArrowUpRight, color: 'text-orange-500', bg: 'bg-orange-50' }
                                                 ].map(stat => (
                                                     <div key={stat.label} className="bg-white/80 p-6 rounded-[2rem] border border-white shadow-sm flex items-center gap-5">

@@ -132,7 +132,7 @@ export default function RecruitmentBoard({ jobs, applications, onCreateJob, onEd
                             <tr key={app.id} className="hover:bg-secondary-50/50 group">
                                 <td className="p-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs">
                                             {app.applicantName[0]}
                                         </div>
                                         <div>

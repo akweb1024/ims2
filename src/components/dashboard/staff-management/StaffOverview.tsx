@@ -75,7 +75,7 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
             name: 'Approved Leaves',
             value: staffData.approvedLeaves,
             icon: '🎉',
-            color: 'bg-purple-500'
+            color: 'bg-indigo-500'
         }
     ];
 
@@ -182,10 +182,10 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                     </button>
                     <button
                         onClick={() => onAction('generate_salary')}
-                        className="flex flex-col items-center p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors"
+                        className="flex flex-col items-center p-4 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors"
                     >
                         <span className="text-3xl mb-2">💰</span>
-                        <span className="text-sm font-medium text-purple-700">Generate Salary</span>
+                        <span className="text-sm font-medium text-indigo-700">Generate Salary</span>
                     </button>
                 </div>
             </div>
@@ -200,7 +200,7 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'ATTENDANCE' ? 'bg-green-100 text-green-600' :
                                     activity.type === 'LEAVE' ? 'bg-yellow-100 text-yellow-600' :
                                         activity.type === 'WORK_REPORT' ? 'bg-blue-100 text-blue-600' :
-                                            'bg-purple-100 text-purple-600'
+                                            'bg-indigo-100 text-indigo-600'
                                     }`}>
                                     <span className="text-lg">
                                         {activity.type === 'ATTENDANCE' ? '🕒' :

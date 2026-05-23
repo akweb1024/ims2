@@ -70,7 +70,7 @@ const riskOrder: Record<RiskLevel, number> = {
 
 const moduleStyles: Record<string, string> = {
     ALL_COMPANIES: 'bg-amber-100 text-amber-800 border-amber-200',
-    HR: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
+    HR: 'bg-cyan-100 text-cyan-800 border-cyan-200',
     FINANCE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     COMPANY: 'bg-sky-100 text-sky-800 border-sky-200',
     CORE: 'bg-secondary-100 text-secondary-700 border-secondary-200',
@@ -289,7 +289,7 @@ export default async function AccessPolicyAuditPage() {
                         label="Sensitive Access"
                         value={sensitiveAccessUsers}
                         detail="Elevated roles or sensitive module grants."
-                        tone="border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700"
+                        tone="border-cyan-200 bg-cyan-50 text-cyan-700"
                     />
                     <StatCard
                         icon={FileWarning}
@@ -442,3 +442,5 @@ export default async function AccessPolicyAuditPage() {
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

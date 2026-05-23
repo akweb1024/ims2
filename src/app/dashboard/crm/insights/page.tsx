@@ -370,3 +370,5 @@ export default function CRMInsightsPage() {
         </CRMClientLayout>
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

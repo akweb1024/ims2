@@ -45,7 +45,7 @@ function fmtBytes(b: number): string {
 
 function FileIcon({ mimeType, className = 'h-8 w-8' }: { mimeType: string; className?: string }) {
     if (mimeType.startsWith('image/')) return <Img className={`${className} text-blue-400`} />;
-    if (mimeType.startsWith('video/')) return <Film className={`${className} text-purple-400`} />;
+    if (mimeType.startsWith('video/')) return <Film className={`${className} text-indigo-400`} />;
     if (mimeType.startsWith('audio/')) return <Music className={`${className} text-pink-400`} />;
     if (mimeType.includes('pdf'))      return <FileText className={`${className} text-red-400`} />;
     if (mimeType.includes('word') || mimeType.includes('document'))
@@ -62,7 +62,7 @@ function CategoryBadge({ category }: { category: string }) {
         feedback:         'bg-indigo-900/40 text-indigo-300 border-indigo-700/40',
         documents:        'bg-sky-900/40 text-sky-300 border-sky-700/40',
         profile_pictures: 'bg-teal-900/40 text-teal-300 border-teal-700/40',
-        publications:     'bg-violet-900/40 text-violet-300 border-violet-700/40',
+        publications:     'bg-indigo-900/40 text-indigo-300 border-indigo-700/40',
         proofs:           'bg-orange-900/40 text-orange-300 border-orange-700/40',
         general:          'bg-slate-800/60 text-slate-300 border-slate-600/40',
     };

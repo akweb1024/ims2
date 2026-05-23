@@ -293,7 +293,7 @@ export default function EmployeeTransactions() {
                                                                 #{p.razorpayPaymentId || p.id?.slice(0, 12)}
                                                             </div>
                                                             {p.international && (
-                                                                <span className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[8px] font-black rounded uppercase">
+                                                                <span className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-black rounded uppercase">
                                                                     <Globe size={8} /> Int&apos;l
                                                                 </span>
                                                             )}

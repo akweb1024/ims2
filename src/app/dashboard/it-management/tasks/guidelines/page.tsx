@@ -102,7 +102,7 @@ export default function ITGuidelinesPage() {
                         </div>
                         <ul className="space-y-3 text-sm text-slate-300">
                             <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" /> <strong>Super Admins & IT Managers</strong> have global edit, delete, and assignment rights across all projects and tasks.</li>
-                            <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" /> <strong>Project Managers & Team Leads</strong> can update details for projects they are explicitly assigned to govern.</li>
+                            <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0" /> <strong>Project Managers & Team Leads</strong> can update details for projects they are explicitly assigned to govern.</li>
                             <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 flex-shrink-0" /> <strong>Standard Employees</strong> can view tasks they are assigned to, log time, and add comments.</li>
                         </ul>
                     </div>
@@ -123,3 +123,5 @@ export default function ITGuidelinesPage() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

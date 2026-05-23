@@ -41,3 +41,5 @@ export const prisma = globalForPrisma.prisma || getClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export default prisma;
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

@@ -250,7 +250,7 @@ export default function LMSFinancialsPage() {
                                             <td className="p-4 font-bold text-secondary-900">{item.productName}</td>
                                             <td className="p-4">
                                                 <span className={`badge ${item.type === 'Course' ? 'bg-blue-50 text-blue-600' :
-                                                        item.type === 'Workshop' ? 'bg-purple-50 text-purple-600' :
+                                                        item.type === 'Workshop' ? 'bg-indigo-50 text-indigo-600' :
                                                             'bg-orange-50 text-orange-600'
                                                     } text-xs uppercase px-3 py-1 rounded-full font-bold`}>
                                                     {item.type}

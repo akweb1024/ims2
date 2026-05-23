@@ -61,7 +61,7 @@ export default function IncrementHelpPage() {
                 {/* Visibility Rules */}
                 <section className="bg-white rounded-2xl border border-secondary-200 p-8 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
+                        <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
                             <FiShield className="w-6 h-6" />
                         </div>
                         <h2 className="text-2xl font-bold text-secondary-900">Role-Based Visibility (RBAC)</h2>

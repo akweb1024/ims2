@@ -36,7 +36,7 @@ const getFileIcon = (type: string) => {
     if (type.includes('pdf')) return <FileText className="h-6 w-6 text-red-500" />;
     if (type.includes('image')) return <ImageIcon className="h-6 w-6 text-blue-500" />;
     if (type.includes('word') || type.includes('msword')) return <FileText className="h-6 w-6 text-blue-600" />;
-    if (type.includes('code') || type.includes('json') || type.includes('javascript')) return <FileCode className="h-6 w-6 text-purple-500" />;
+    if (type.includes('code') || type.includes('json') || type.includes('javascript')) return <FileCode className="h-6 w-6 text-indigo-500" />;
     if (type.includes('zip') || type.includes('rar')) return <Archive className="h-6 w-6 text-yellow-600" />;
     if (type.includes('html')) return <Type className="h-6 w-6 text-emerald-500" />;
     return <File className="h-6 w-6 text-gray-500" />;

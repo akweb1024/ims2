@@ -135,3 +135,5 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

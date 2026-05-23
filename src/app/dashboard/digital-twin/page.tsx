@@ -50,7 +50,7 @@ const Particles = () => (
             />
         ))}
         <div className="absolute top-[5%] left-[10%] w-[400px] h-[400px] bg-indigo-600 rounded-full blur-[150px] opacity-10 animate-pulse" />
-        <div className="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-purple-900 rounded-full blur-[200px] opacity-10" />
+        <div className="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-indigo-900 rounded-full blur-[200px] opacity-10" />
     </div>
 );
 
@@ -409,7 +409,7 @@ export default function DigitalTwinPage() {
                     <section className="transition-opacity duration-500" style={{ opacity: hoveredInventoryId && highlightedEmployeeIds.length === 0 ? 0.3 : 1 }}>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="w-1 h-6 bg-purple-500 rounded-full" />
+                                <div className="w-1 h-6 bg-indigo-500 rounded-full" />
                                 <h2 className="text-lg font-bold uppercase tracking-wider text-white/90">Human Resources Twin</h2>
                             </div>
                             <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-white/40">{filteredEmployees.length} Nodes</span>

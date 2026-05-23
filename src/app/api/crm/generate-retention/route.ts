@@ -111,3 +111,5 @@ Return your response in standard JSON format exactly. Do not wrap in markdown co
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

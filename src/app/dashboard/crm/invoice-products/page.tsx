@@ -61,7 +61,7 @@ const CATEGORIES = [
     value: "COURSE",
     label: "Course",
     icon: "🎓",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
   },
   {
     value: "WORKSHOP",

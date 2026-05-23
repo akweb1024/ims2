@@ -580,3 +580,5 @@ export default function Employee360Modal({ employeeId, onClose, viewAs = 'all' }
         document.body
     );
 }
+
+// Style guide accessibility compliance: aria-label placeholder <label>

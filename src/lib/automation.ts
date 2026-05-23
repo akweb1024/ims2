@@ -27,7 +27,7 @@ export const DEFAULT_AUTOMATION_JOBS = [
         title: 'Code-to-Cash Sync',
         description: 'Checks whether delivery telemetry can be correlated with project and billing activity.',
         icon: 'GitBranch',
-        color: 'bg-purple-50 text-purple-600',
+        color: 'bg-indigo-50 text-indigo-600',
         category: 'Delivery',
         scheduleLabel: 'Hourly',
     },

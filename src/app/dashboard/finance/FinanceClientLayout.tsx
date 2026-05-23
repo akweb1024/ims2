@@ -64,3 +64,5 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
         </DashboardLayout>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

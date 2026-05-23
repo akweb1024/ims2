@@ -315,7 +315,7 @@ export default function IncrementAnalyticsPage() {
                                             <p className="text-lg font-black text-secondary-900 mt-1">₹<FormattedNumber value={d.value} compact /></p>
                                             <div className="w-full h-2.5 bg-secondary-200 rounded-full mt-2 overflow-hidden border border-secondary-200/50">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-1000 ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-purple-500'
+                                                    className={`h-full rounded-full transition-all duration-1000 ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-indigo-500'
                                                         }`}
                                                     style={{ width: `${(d.value / (analytics.stats.totalApprovedBudgetImpact || 1)) * 100}%` }}
                                                 />

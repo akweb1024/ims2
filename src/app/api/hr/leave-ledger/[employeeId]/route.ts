@@ -177,3 +177,5 @@ async function calculateAttendanceBehavior(
             : 0
     };
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -16,10 +16,15 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
         password: ''
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(false);
     const [showCompanySelection, setShowCompanySelection] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
 
     const redirectUrl = searchParams.get('redirect_url') || '/dashboard/staff-portal';
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
 
     const handleSelectCompany = async (companyId: string) => {
         setLoading(true);
@@ -192,7 +197,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
                         Email
                     </label>
                     <input
-                        type="text"
+                        type="email"
                         required
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                         placeholder="you@example.com"
@@ -243,7 +248,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
 
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !isHydrated}
                     className={`w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                     {loading ? (

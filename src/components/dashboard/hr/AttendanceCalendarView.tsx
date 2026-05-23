@@ -55,9 +55,9 @@ const STATUS_CONFIG: Record<StatusKey, {
     },
     HALF_DAY: {
         label: 'Half Day',
-        bgCell: 'bg-purple-50', textCell: 'text-purple-700', borderCell: 'border-purple-200',
-        bgBadge: 'bg-purple-100', textBadge: 'text-purple-700',
-        dot: 'bg-purple-500',
+        bgCell: 'bg-indigo-50', textCell: 'text-indigo-700', borderCell: 'border-indigo-200',
+        bgBadge: 'bg-indigo-100', textBadge: 'text-indigo-700',
+        dot: 'bg-indigo-500',
         icon: <MinusCircle size={11} strokeWidth={2.5} />
     },
     LEAVE: {
@@ -109,7 +109,7 @@ const STATS = [
     { key: 'absent'  as const, label: 'Absent',   gradient: 'from-red-500 to-red-600' },
     { key: 'wfh'     as const, label: 'WFH',      gradient: 'from-indigo-500 to-indigo-600' },
     { key: 'leave'   as const, label: 'Leave',    gradient: 'from-blue-500 to-blue-600' },
-    { key: 'halfDay' as const, label: 'Half Day', gradient: 'from-purple-500 to-purple-600' },
+    { key: 'halfDay' as const, label: 'Half Day', gradient: 'from-indigo-500 to-indigo-600' },
 ];
 
 export default function AttendanceCalendarView({ attendance }: Props) {

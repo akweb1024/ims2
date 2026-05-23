@@ -152,7 +152,7 @@ export const IntelligencePanel = ({ intelligence, employees, inventory, onDispat
             {/* Collapsible Header */}
             <button
                 onClick={() => setIsExpanded(e => !e)}
-                className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 group"
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-indigo-500/10 border border-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 group"
             >
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export const IntelligencePanel = ({ intelligence, employees, inventory, onDispat
                                                     {sug.recommendedEmployees.map((emp, i) => (
                                                         <div key={emp.employeeId} className="flex items-center justify-between p-2.5 rounded-lg bg-white/3 border border-white/5 hover:border-white/10 transition-all group">
                                                             <div className="flex items-center gap-2.5">
-                                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-500 flex items-center justify-center text-xs font-bold text-white shrink-0">
                                                                     {i === 0 ? '★' : emp.name.charAt(0)}
                                                                 </div>
                                                                 <div>

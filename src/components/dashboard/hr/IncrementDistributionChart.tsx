@@ -68,7 +68,7 @@ export default function IncrementDistributionChart({ data }: IncrementDistributi
                                 key={`cell-${index}`}
                                 fill={[
                                     '#6366f1', // Indigo
-                                    '#8b5cf6', // Violet
+                                    '#6366f1', // Indigo
                                     '#ec4899', // Pink
                                     '#f43f5e', // Rose
                                     '#f59e0b'  // Amber

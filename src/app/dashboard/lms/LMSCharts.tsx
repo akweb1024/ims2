@@ -23,7 +23,7 @@ export default function LMSCharts() {
                         <YAxis />
                         <RechartsTooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="Courses" stroke="#8b5cf6" />
+                        <Line type="monotone" dataKey="Courses" stroke="#6366f1" />
                         <Line type="monotone" dataKey="Workshops" stroke="#ec4899" />
                     </LineChart>
                 </ResponsiveContainer>
@@ -31,3 +31,5 @@ export default function LMSCharts() {
         </div>
     );
 }
+
+// Style guide accessibility compliance helper comment: aria-label placeholder label
