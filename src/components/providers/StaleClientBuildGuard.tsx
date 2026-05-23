@@ -40,6 +40,14 @@ function showStaleBuildToast() {
 export default function StaleClientBuildGuard() {
     useEffect(() => {
         const originalFetch = window.fetch.bind(window);
+        const staleActionMessage = 'Failed to find Server Action';
+
+        const maybeShowFromMessage = (value: unknown) => {
+            if (typeof value !== 'string') return;
+            if (value.includes(staleActionMessage)) {
+                showStaleBuildToast();
+            }
+        };
 
         window.fetch = async (...args: Parameters<typeof fetch>) => {
             const response = await originalFetch(...args);
@@ -65,8 +73,26 @@ export default function StaleClientBuildGuard() {
             return response;
         };
 
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const reason = event.reason;
+            if (reason instanceof Error) {
+                maybeShowFromMessage(reason.message);
+                return;
+            }
+            maybeShowFromMessage(String(reason));
+        };
+
+        const handleWindowError = (event: ErrorEvent) => {
+            maybeShowFromMessage(event.message);
+        };
+
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        window.addEventListener('error', handleWindowError);
+
         return () => {
             window.fetch = originalFetch;
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+            window.removeEventListener('error', handleWindowError);
         };
     }, []);
 
