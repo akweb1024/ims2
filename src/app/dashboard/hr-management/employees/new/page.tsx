@@ -141,6 +141,12 @@ export default function NewEmployeePage() {
                         <h1 className="text-3xl font-black text-secondary-900 tracking-tight">New Onboarding</h1>
                         <p className="text-secondary-500 font-medium">Create a new staff account and profile</p>
                     </div>
+                    <button
+                        onClick={() => router.push('/dashboard/hr-management/employees/workflow')}
+                        className="ml-auto btn btn-secondary text-xs"
+                    >
+                        Open Step Workflow
+                    </button>
                 </div>
 
                 <EmployeeForm

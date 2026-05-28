@@ -164,6 +164,12 @@ export default function EditEmployeePage() {
                         <h1 className="text-3xl font-black text-secondary-900 tracking-tight">Update Employee</h1>
                         <p className="text-secondary-500 font-medium tracking-tight">Modifying <span className="text-primary-600 font-bold">{empInitialData?.user?.email}</span></p>
                     </div>
+                    <button
+                        onClick={() => router.push('/dashboard/hr-management/employees/workflow')}
+                        className="ml-auto btn btn-secondary text-xs"
+                    >
+                        Open Step Workflow
+                    </button>
                 </div>
 
                 <EmployeeForm
