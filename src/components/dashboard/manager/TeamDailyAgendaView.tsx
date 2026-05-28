@@ -172,6 +172,21 @@ export default function TeamDailyAgendaView() {
               <div>
                 <p className="font-black text-secondary-900">{emp.name}</p>
                 <p className="text-xs text-secondary-500">{emp.designation} | Completion: {emp.progress.completionRate}%</p>
+                <div className="mt-1">
+                  {emp.sync?.status === 'FRESH' ? (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-success-50 text-success-700 border border-success-200">
+                      Sync: Fresh
+                    </span>
+                  ) : emp.sync?.status === 'STALE' ? (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                      Sync: Stale (KPI updated after agenda generation)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-secondary-100 text-secondary-700 border border-secondary-200">
+                      Sync: No KPI
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-xs font-bold text-secondary-600">
                 Hours: {Number(emp.guardRails.plannedHours || 0).toFixed(1)} {emp.guardRails.overload ? '(Overload)' : ''}

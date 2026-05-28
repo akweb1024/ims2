@@ -78,6 +78,16 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
       orderBy: [{ employeeId: 'asc' }, { date: 'asc' }]
     });
 
+    const latestKpiByEmployeeRows = await prisma.employeeKPI.groupBy({
+      by: ['employeeId'],
+      where: { employeeId: { in: employeeIds } },
+      _max: { updatedAt: true }
+    });
+    const latestKpiByEmployee = new Map<string, Date>();
+    for (const row of latestKpiByEmployeeRows) {
+      if (row._max.updatedAt) latestKpiByEmployee.set(row.employeeId, row._max.updatedAt);
+    }
+
     const byEmployee = new Map<string, any>();
     for (const p of plans) {
       if (!byEmployee.has(p.employeeId)) {
@@ -127,9 +137,32 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
       const completed = sortedTasks.filter((t: any) => t.completionStatus === 'COMPLETED').length;
       const blocked = sortedTasks.filter((t: any) => t.completionStatus === 'BLOCKED').length;
       const mandatoryPending = sortedTasks.filter((t: any) => t.mandatory && t.completionStatus !== 'COMPLETED').length;
+      const generatedTimestamps = sortedTasks
+        .map((t: any) => {
+          const planMeta = plans.find((p) => p.id === t.id);
+          const meta = decodeAgendaMetadata(planMeta?.strategy || null);
+          return meta?.generatedAt ? new Date(meta.generatedAt) : null;
+        })
+        .filter((d: Date | null): d is Date => !!d && !Number.isNaN(d.getTime()));
+      const latestAgendaGeneratedAt = generatedTimestamps.length
+        ? new Date(Math.max(...generatedTimestamps.map((d: Date) => d.getTime())))
+        : null;
+      const latestKpiUpdatedAt = latestKpiByEmployee.get(entry.employeeId) || null;
+      const syncStatus = !latestKpiUpdatedAt
+        ? 'NO_KPI'
+        : !latestAgendaGeneratedAt
+          ? 'STALE'
+          : latestKpiUpdatedAt.getTime() > latestAgendaGeneratedAt.getTime()
+            ? 'STALE'
+            : 'FRESH';
       return {
         ...entry,
         tasks: sortedTasks,
+        sync: {
+          status: syncStatus,
+          latestKpiUpdatedAt,
+          latestAgendaGeneratedAt,
+        },
         progress: {
           total: sortedTasks.length,
           completed,
@@ -159,4 +192,3 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     return createErrorResponse(error?.message || error);
   }
 });
-
