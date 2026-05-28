@@ -650,10 +650,8 @@ export const PUT = authorizedRoute(
 
             // Sync Work Agenda Checkpoint Completion Status on Edit
             if (updateData.completedAgendaIds && Array.isArray(updateData.completedAgendaIds)) {
-                const reportDateOnly = new Date(existing.date);
-                reportDateOnly.setHours(0, 0, 0, 0);
-                const reportDateEnd = new Date(reportDateOnly);
-                reportDateEnd.setHours(23, 59, 59, 999);
+                const reportIstDate = getISTDateString(new Date(existing.date));
+                const { start: reportDateOnly, end: reportDateEnd } = getISTDateRange(reportIstDate);
 
                 if (updateData.completedAgendaIds.length > 0) {
                     await prisma.workPlan.updateMany({
@@ -741,10 +739,8 @@ export const PATCH = authorizedRoute(
 
             let reconciledManagerComment = managerComment;
             if (status === 'APPROVED') {
-                const reportDayStart = new Date(existing.date);
-                reportDayStart.setHours(0, 0, 0, 0);
-                const reportDayEnd = new Date(reportDayStart);
-                reportDayEnd.setHours(23, 59, 59, 999);
+                const reportIstDate = getISTDateString(new Date(existing.date));
+                const { start: reportDayStart, end: reportDayEnd } = getISTDateRange(reportIstDate);
                 const dayAgenda = await prisma.workPlan.findMany({
                     where: {
                         employeeId: existing.employeeId,

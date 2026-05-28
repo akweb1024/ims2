@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { generateTodayAgendaForEmployees } from '@/lib/hr/work-agenda-generator';
 
 const MANAGERIAL_ROLES = new Set([
     'SUPER_ADMIN',
@@ -219,10 +220,23 @@ export const PUT = authorizedRoute(
                 return updatedProfile;
             });
 
+            const targetUserCompany = await prisma.user.findUnique({
+                where: { id: targetProfile.userId },
+                select: { companyId: true },
+            });
+
+            const agendaSync = await generateTodayAgendaForEmployees({
+                companyId: targetUserCompany?.companyId || user.companyId || null,
+                employeeIds: [targetProfile.id],
+                generatedBy: user.id,
+                forceRegenerate: true,
+            });
+
             return NextResponse.json({
                 success: true,
                 message: 'KRA/KPI updated successfully',
                 data: result,
+                agendaSync,
             });
         } catch (error) {
             return createErrorResponse(error);

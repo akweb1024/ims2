@@ -19,6 +19,8 @@ const inJsonList = (list: any, value?: string | null) => {
   return list.map((x) => String(x)).includes(String(value));
 };
 
+const normalizeTitle = (value?: string | null) => String(value || '').trim().toLowerCase();
+
 const getSourceType = (t: TemplateCandidate, employeeProfileId: string): AgendaSourceType => {
   if (t.employeeId === employeeProfileId || inJsonList(t.employeeIds, employeeProfileId)) return 'EMPLOYEE_TEMPLATE';
   if (t.departmentId || t.designationId || Array.isArray(t.departmentIds) || Array.isArray(t.designationIds)) return 'ROLE_TEMPLATE';
@@ -61,7 +63,12 @@ export async function generateTodayAgendaForEmployees(args: {
       select: { id: true, agenda: true, strategy: true }
     });
 
-    const hasGeneratedItems = existingToday.some((row) => !!decodeAgendaMetadata(row.strategy));
+    const isRegeneratableGenerated = (strategy?: string | null) => {
+      const meta = decodeAgendaMetadata(strategy);
+      return Boolean(meta && ['EMPLOYEE_TEMPLATE', 'ROLE_TEMPLATE', 'GENERIC_TEMPLATE'].includes(meta.sourceType));
+    };
+
+    const hasGeneratedItems = existingToday.some((row) => isRegeneratableGenerated(row.strategy));
     if (hasGeneratedItems && !forceRegenerate) {
       totalSkipped += 1;
       details.push({ employeeId: employeeProfileId, generated: 0, skipped: 1 });
@@ -106,7 +113,12 @@ export async function generateTodayAgendaForEmployees(args: {
       const employeeMatch = t.employeeId === employeeProfileId || inJsonList(t.employeeIds, employeeProfileId);
       const roleMatch = (profile.user.departmentId && (t.departmentId === profile.user.departmentId || inJsonList(t.departmentIds, profile.user.departmentId))) ||
         (profile.designationId && (t.designationId === profile.designationId || inJsonList(t.designationIds, profile.designationId)));
-      const generic = !t.employeeId && !t.departmentId && !t.designationId && !Array.isArray(t.employeeIds) && !Array.isArray(t.departmentIds) && !Array.isArray(t.designationIds);
+      const generic = !t.employeeId
+        && !t.departmentId
+        && !t.designationId
+        && (!Array.isArray(t.employeeIds) || t.employeeIds.length === 0)
+        && (!Array.isArray(t.departmentIds) || t.departmentIds.length === 0)
+        && (!Array.isArray(t.designationIds) || t.designationIds.length === 0);
       return employeeMatch || roleMatch || generic;
     });
 
@@ -122,24 +134,30 @@ export async function generateTodayAgendaForEmployees(args: {
       .sort((a, b) => a.rank - b.rank || a.template.title.localeCompare(b.template.title))
       .map((x) => x.template);
 
+    let retainedExisting = existingToday;
     if (forceRegenerate && hasGeneratedItems) {
-      const generatedIds = existingToday.filter((row) => !!decodeAgendaMetadata(row.strategy)).map((x) => x.id);
+      const generatedIds = existingToday.filter((row) => isRegeneratableGenerated(row.strategy)).map((x) => x.id);
       if (generatedIds.length) {
         await prisma.workPlan.deleteMany({ where: { id: { in: generatedIds } } });
+        retainedExisting = existingToday.filter((x) => !generatedIds.includes(x.id));
       }
     }
+
+    const retainedAgendaKeys = new Set(retainedExisting.map((row) => normalizeTitle(row.agenda)));
+    const exactGoalByTitle = new Map(goals.map((g) => [normalizeTitle(g.title), g]));
+    const exactKpiByTitle = new Map(kpis.map((k) => [normalizeTitle(k.title), k]));
 
     let generatedForEmployee = 0;
     for (let idx = 0; idx < chosen.length; idx++) {
       const t = chosen[idx];
-      const agendaKey = t.title.trim().toLowerCase();
-      const alreadyExists = existingToday.some((row) => row.agenda.trim().toLowerCase() === agendaKey);
+      const agendaKey = normalizeTitle(t.title);
+      const alreadyExists = retainedAgendaKeys.has(agendaKey);
       if (alreadyExists) continue;
 
-      const linkedGoal = goals.find((g) => agendaKey.includes(g.title.toLowerCase())) || goals[0];
-      const linkedKpi = kpis.find((k) => agendaKey.includes(k.title.toLowerCase())) || kpis[0];
+      const linkedGoal = exactGoalByTitle.get(agendaKey) || null;
+      const linkedKpi = exactKpiByTitle.get(agendaKey) || null;
       const sourceType = getSourceType(t, employeeProfileId);
-      const isConflict = existingToday.some((row) => row.agenda.trim().toLowerCase() === agendaKey);
+      const isConflict = retainedAgendaKeys.has(agendaKey);
 
       const meta = encodeAgendaMetadata({
         version: 1,
@@ -169,6 +187,7 @@ export async function generateTodayAgendaForEmployees(args: {
           companyId: companyId || null,
         } as any
       });
+      retainedAgendaKeys.add(agendaKey);
       generatedForEmployee += 1;
     }
 
@@ -179,4 +198,3 @@ export async function generateTodayAgendaForEmployees(args: {
 
   return { generated: totalGenerated, skipped: totalSkipped, details, range: { start, end } };
 }
-

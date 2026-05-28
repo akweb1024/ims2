@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import { createAuditLog } from '@/lib/notifications';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR', 'HR_MANAGER', 'TEAM_LEADER'], async (req: NextRequest, user: any) => {
   try {
@@ -14,6 +15,30 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR', 'H
 
     if (!templateIds.length) return NextResponse.json({ error: 'templateIds required' }, { status: 400 });
     if (!employeeIds.length) return NextResponse.json({ error: 'employeeIds required' }, { status: 400 });
+
+    const targetEmployees = await prisma.employeeProfile.findMany({
+      where: { id: { in: employeeIds } },
+      include: { user: { select: { id: true, companyId: true } } }
+    });
+    if (targetEmployees.length !== employeeIds.length) {
+      return NextResponse.json({ error: 'One or more employeeIds are invalid' }, { status: 400 });
+    }
+
+    if (user.role !== 'SUPER_ADMIN') {
+      const companyMismatch = targetEmployees.some((emp) => emp.user.companyId !== user.companyId);
+      if (companyMismatch) {
+        return NextResponse.json({ error: 'Cross-company assignment is not allowed' }, { status: 403 });
+      }
+    }
+
+    if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+      const downline = await getDownlineUserIds(user.id, user.companyId || undefined);
+      const allowed = new Set([...downline, user.id]);
+      const invalidScope = targetEmployees.some((emp) => !allowed.has(emp.user.id));
+      if (invalidScope) {
+        return NextResponse.json({ error: 'You can only assign templates to your team members' }, { status: 403 });
+      }
+    }
 
     const templates = await prisma.employeeTaskTemplate.findMany({
       where: { id: { in: templateIds }, companyId: user.companyId },

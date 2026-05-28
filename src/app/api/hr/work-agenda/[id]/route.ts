@@ -68,6 +68,24 @@ export const PATCH = authorizedRoute(
         strategy: encodeAgendaMetadata(metadata),
       };
 
+      if (body.employeeId && isManagerial) {
+        const targetEmployeeId = String(body.employeeId);
+        const targetProfile = await prisma.employeeProfile.findUnique({
+          where: { id: targetEmployeeId },
+          include: { user: { select: { id: true, companyId: true } } }
+        });
+        if (!targetProfile) return createErrorResponse('Target employee not found', 404);
+        if (user.role !== 'SUPER_ADMIN' && user.companyId && targetProfile.user.companyId && targetProfile.user.companyId !== user.companyId) {
+          return createErrorResponse('Forbidden: cross-company reassignment is not allowed', 403);
+        }
+        if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+          const downline = await getDownlineUserIds(user.id, user.companyId || undefined);
+          if (!downline.includes(targetProfile.user.id) && targetProfile.user.id !== user.id) {
+            return createErrorResponse('Forbidden: target employee not in your team', 403);
+          }
+        }
+      }
+
       const updated = await prisma.workPlan.update({
         where: { id },
         data: updateData,
