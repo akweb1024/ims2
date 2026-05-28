@@ -31,6 +31,7 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
         { name: 'Recruitment Hub', href: '/dashboard/recruitment', icon: Briefcase },
         { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: Clock, tab: 'attendance' },
         { name: 'Performance', href: '/dashboard/hr-management/performance/monthly', icon: TrendingUp },
+        { name: 'Performance 360', href: '/dashboard/hr-management/performance/employee-360', icon: TrendingUp },
         { name: 'Staff Management', href: '/dashboard/staff-management', icon: UserCheck },
     ];
 
