@@ -12,20 +12,36 @@ const STEPS: Array<{ key: StepKey; title: string; subtitle: string }> = [
   { key: 'job', subtitle: 'Step 3', title: 'Job Description & Work Details' },
   { key: 'perks', subtitle: 'Step 4', title: 'Perks & Allotments' },
 ];
+const STEP_KEYS: StepKey[] = STEPS.map((s) => s.key);
 
 export default function EmployeeOnboardingWorkflow() {
   const [mode, setMode] = useState<Mode>('NEW');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('joining');
+  const [userRole, setUserRole] = useState('');
   const [employees, setEmployees] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [managers, setManagers] = useState<any[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [profileId, setProfileId] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const [workflowStatus, setWorkflowStatus] = useState('ONBOARDING_DRAFT');
+  const [workflowStatusDetail, setWorkflowStatusDetail] = useState('IN_PROGRESS');
+  const [workflowStepsMeta, setWorkflowStepsMeta] = useState<Record<string, any>>({});
+  const [workflowActors, setWorkflowActors] = useState<Record<string, string>>({});
+  const [teamRows, setTeamRows] = useState<any[]>([]);
+  const [teamActorMap, setTeamActorMap] = useState<Record<string, string>>({});
+  const [summary, setSummary] = useState<{ inProgress: number; blockedAtVerification: number; blockedAtPerks: number; pendingApprovals: number; completedThisMonth: number; avgCompletionDays: number } | null>(null);
 
   const [stepSaved, setStepSaved] = useState<Record<StepKey, boolean>>({
+    joining: false,
+    verification: false,
+    job: false,
+    perks: false,
+  });
+  const [stepApproved, setStepApproved] = useState<Record<StepKey, boolean>>({
     joining: false,
     verification: false,
     job: false,
@@ -75,11 +91,224 @@ export default function EmployeeOnboardingWorkflow() {
     const done = Object.values(stepSaved).filter(Boolean).length;
     return Math.round((done / STEPS.length) * 100);
   }, [stepSaved]);
+  const canApprove = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER'].includes(userRole);
+
+  const handoverRows = useMemo(() => {
+    const actorLabel = (id: any) => (id ? (workflowActors[String(id)] || String(id)) : '');
+    return STEPS.map((s) => {
+      const meta = workflowStepsMeta?.[s.key] || {};
+      return {
+        step: s.subtitle,
+        title: s.title,
+        savedAt: meta?.savedAt || '',
+        savedBy: actorLabel(meta?.savedBy),
+        reviewedAt: meta?.reviewedAt || '',
+        reviewedBy: actorLabel(meta?.reviewedBy),
+        approvedAt: meta?.approvedAt || '',
+        approvedBy: actorLabel(meta?.approvedBy),
+        approvalDecision: meta?.approvalDecision || '',
+        approvalReason: meta?.approvalReason || '',
+      };
+    });
+  }, [workflowActors, workflowStepsMeta]);
+
+  const exportTimelineCsv = () => {
+    const header = [
+      'Employee',
+      'Profile ID',
+      'Workflow Status',
+      'Workflow Detail',
+      'Step',
+      'Title',
+      'Saved At',
+      'Saved By',
+      'Reviewed At',
+      'Reviewed By',
+      'Approved At',
+      'Approved By',
+      'Approval Decision',
+      'Approval Reason',
+    ];
+
+    const rows = handoverRows.map((row) => [
+      form.name || form.email || 'N/A',
+      profileId || selectedEmployeeId || 'N/A',
+      workflowStatus,
+      workflowStatusDetail,
+      row.step,
+      row.title,
+      row.savedAt || 'Not yet',
+      row.savedBy || '-',
+      row.reviewedAt || 'Not reviewed',
+      row.reviewedBy || '-',
+      row.approvedAt || 'Pending approval',
+      row.approvedBy || '-',
+      row.approvalDecision || '',
+      row.approvalReason || '',
+    ]);
+
+    const csv = [header, ...rows]
+      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `onboarding-handover-${(form.name || profileId || 'employee').toString().replace(/\s+/g, '-').toLowerCase()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printHandoverSheet = () => {
+    const printableRows = handoverRows.map((row) => `
+      <tr>
+        <td>${row.step}</td>
+        <td>${row.title}</td>
+        <td>${row.savedAt || 'Not yet'}</td>
+        <td>${row.savedBy || '-'}</td>
+        <td>${row.reviewedAt || 'Not reviewed'}</td>
+        <td>${row.reviewedBy || '-'}</td>
+        <td>${row.approvedAt || 'Pending approval'}</td>
+        <td>${row.approvedBy || '-'}</td>
+        <td>${row.approvalDecision || '-'}</td>
+        <td>${row.approvalReason || '-'}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>Onboarding Handover Sheet</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111827; }
+            h1 { font-size: 22px; margin-bottom: 6px; }
+            .meta { font-size: 12px; margin-bottom: 16px; color: #374151; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f3f4f6; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <h1>Employee Onboarding Handover Sheet</h1>
+          <div class="meta">
+            <div><strong>Employee:</strong> ${form.name || form.email || 'N/A'}</div>
+            <div><strong>Profile ID:</strong> ${profileId || selectedEmployeeId || 'N/A'}</div>
+            <div><strong>Workflow:</strong> ${workflowStatus} (${workflowStatusDetail})</div>
+            <div><strong>Generated At:</strong> ${new Date().toLocaleString()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th>Title</th>
+                <th>Saved At</th>
+                <th>Saved By</th>
+                <th>Reviewed At</th>
+                <th>Reviewed By</th>
+                <th>Approved At</th>
+                <th>Approved By</th>
+                <th>Decision</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${printableRows}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=1024,height=720');
+    if (!printWindow) return;
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const persistStepState = async (employeeId: string, step: StepKey, completed: boolean, stepCursor: StepKey) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/hr/onboarding/workflow-state', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        employeeId,
+        step,
+        completed,
+        mode,
+        currentStep: stepCursor,
+      }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to persist onboarding state');
+  };
+
+  const loadWorkflowState = async (employeeId: string) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/hr/onboarding/workflow-state?employeeId=${employeeId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    setWorkflowStatus(String(payload?.state?.status || 'ONBOARDING_DRAFT'));
+    setWorkflowStatusDetail(String(payload?.state?.statusDetail || 'IN_PROGRESS'));
+    const steps = payload?.state?.steps || {};
+    setWorkflowActors(payload?.actorMap || {});
+    setWorkflowStepsMeta(steps);
+    const normalized: Record<StepKey, boolean> = {
+      joining: Boolean(steps?.joining?.completed),
+      verification: Boolean(steps?.verification?.completed),
+      job: Boolean(steps?.job?.completed),
+      perks: Boolean(steps?.perks?.completed),
+    };
+    setStepSaved(normalized);
+    const approvedNormalized: Record<StepKey, boolean> = {
+      joining: false,
+      verification: Boolean(steps?.verification?.approvedAt),
+      job: false,
+      perks: Boolean(steps?.perks?.approvedAt),
+    };
+    setStepApproved(approvedNormalized);
+    if (payload?.state?.currentStep && STEP_KEYS.includes(payload.state.currentStep)) {
+      setActiveStep(payload.state.currentStep);
+    }
+  };
+
+  const loadSummary = async () => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/hr/onboarding/workflow-state?summary=true', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    setSummary(payload?.summary || null);
+  };
+
+  const loadTeamSnapshot = async () => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/hr/onboarding/workflow-state?teamView=true', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    setTeamRows(Array.isArray(payload?.rows) ? payload.rows : []);
+    setTeamActorMap(payload?.actorMap || {});
+  };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          setUserRole(JSON.parse(userData)?.role || '');
+        }
         const token = localStorage.getItem('token');
         const [empRes, depRes] = await Promise.all([
           fetch('/api/hr/employees?all=true', { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
@@ -93,6 +322,7 @@ export default function EmployeeOnboardingWorkflow() {
         setEmployees(Array.isArray(empData) ? empData : []);
         setManagers((Array.isArray(empData) ? empData : []).filter((e: any) => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'HR', 'HR_MANAGER'].includes(e?.user?.role)));
         setDepartments(Array.isArray(depData) ? depData : []);
+        await Promise.all([loadSummary(), loadTeamSnapshot()]);
       } catch {
         setEmployees([]);
         setDepartments([]);
@@ -143,7 +373,7 @@ export default function EmployeeOnboardingWorkflow() {
         securityTools: perks.securityTools || '',
         otherBenefits: perks.otherBenefits || '',
       }));
-      setStepSaved({ joining: true, verification: true, job: true, perks: true });
+      await loadWorkflowState(p.id);
       setStatusMessage('Loaded employee profile for upgrade mode.');
     } catch (e: any) {
       alert(e?.message || 'Failed to load employee profile');
@@ -157,8 +387,9 @@ export default function EmployeeOnboardingWorkflow() {
     setStatusMessage('');
     try {
       const token = localStorage.getItem('token');
+      let effectiveProfileId = profileId;
 
-      if (mode === 'NEW' && step === 'joining' && !profileId) {
+      if (mode === 'NEW' && step === 'joining' && !effectiveProfileId) {
         if (!form.email || !form.password || !form.name || !form.designation || !form.baseSalary || !form.dateOfJoining) {
           throw new Error('Joining step requires name, email, password, designation, joining date, and base salary.');
         }
@@ -181,15 +412,16 @@ export default function EmployeeOnboardingWorkflow() {
         });
         const createData = await createRes.json().catch(() => ({}));
         if (!createRes.ok) throw new Error(createData?.error || createData?.message || 'Failed to create employee');
-        setProfileId(createData?.profile?.id || '');
-        setSelectedEmployeeId(createData?.profile?.id || '');
+        effectiveProfileId = createData?.profile?.id || '';
+        setProfileId(effectiveProfileId);
+        setSelectedEmployeeId(effectiveProfileId);
       }
 
-      if (!profileId && !(mode === 'NEW' && step === 'joining')) {
+      if (!effectiveProfileId && !(mode === 'NEW' && step === 'joining')) {
         throw new Error('Please complete Step 1 (Joining) first to create the employee profile.');
       }
 
-      const targetId = profileId || selectedEmployeeId;
+      const targetId = effectiveProfileId || selectedEmployeeId;
       const basePatch: any = { id: targetId };
 
       if (step === 'joining') {
@@ -260,11 +492,53 @@ export default function EmployeeOnboardingWorkflow() {
       }
 
       setStepSaved((prev) => ({ ...prev, [step]: true }));
+      await persistStepState(targetId, step, true, step);
+      await loadWorkflowState(targetId);
+      await loadSummary();
       setStatusMessage(`${STEPS.find((s) => s.key === step)?.title} saved successfully.`);
     } catch (e: any) {
       alert(e?.message || 'Failed to save step');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const approvableStep = activeStep === 'verification' || activeStep === 'perks';
+
+  const approveStep = async (step: 'verification' | 'perks', decision: 'approved' | 'rejected') => {
+    const targetId = profileId || selectedEmployeeId;
+    if (!targetId) {
+      alert('Please load or create an employee first.');
+      return;
+    }
+    setApproving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const reason = decision === 'rejected' ? (prompt('Reason for rejection') || '').trim() : '';
+      const res = await fetch('/api/hr/onboarding/workflow-state', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          employeeId: targetId,
+          step,
+          action: 'approve',
+          approvalDecision: decision,
+          approvalReason: reason || null,
+          currentStep: step,
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to update approval');
+      await loadWorkflowState(targetId);
+      await loadSummary();
+      setStatusMessage(`${step === 'verification' ? 'Verification' : 'Perks'} ${decision}.`);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to update approval');
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -279,13 +553,21 @@ export default function EmployeeOnboardingWorkflow() {
             <p className="text-sm text-secondary-500">Structured 4-step flow for onboarding and profile upgrades.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className={`btn text-xs ${mode === 'NEW' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setMode('NEW'); setSelectedEmployeeId(''); setProfileId(''); setStatusMessage(''); setStepSaved({ joining: false, verification: false, job: false, perks: false }); }}>
+            <button className={`btn text-xs ${mode === 'NEW' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setMode('NEW'); setSelectedEmployeeId(''); setProfileId(''); setStatusMessage(''); setStepSaved({ joining: false, verification: false, job: false, perks: false }); setStepApproved({ joining: false, verification: false, job: false, perks: false }); setWorkflowStatus('ONBOARDING_DRAFT'); setWorkflowStatusDetail('IN_PROGRESS'); }}>
               New Onboarding
             </button>
             <button className={`btn text-xs ${mode === 'UPGRADE' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMode('UPGRADE')}>
               Upgrade Existing Profile
             </button>
           </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-secondary-100 text-secondary-700 border border-secondary-200">
+            {workflowStatus}
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded bg-primary-50 text-primary-700 border border-primary-200">
+            {workflowStatusDetail}
+          </span>
         </div>
 
         {mode === 'UPGRADE' ? (
@@ -305,7 +587,73 @@ export default function EmployeeOnboardingWorkflow() {
         ) : null}
       </div>
 
+      {canApprove ? (
+        <div className="card-premium p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-black text-secondary-900">Team Workflow Snapshot</h3>
+            <p className="text-xs text-secondary-500">Latest 50 profiles with audit ownership</p>
+          </div>
+          <div className="overflow-auto">
+            <table className="min-w-full text-xs">
+              <thead>
+                <tr className="text-left border-b border-secondary-100">
+                  <th className="py-2 pr-3 font-black text-secondary-600">Employee</th>
+                  <th className="py-2 pr-3 font-black text-secondary-600">Status</th>
+                  <th className="py-2 pr-3 font-black text-secondary-600">Verification</th>
+                  <th className="py-2 pr-3 font-black text-secondary-600">Perks</th>
+                  <th className="py-2 pr-3 font-black text-secondary-600">Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamRows.map((row: any) => {
+                  const verification = row?.steps?.verification || {};
+                  const perks = row?.steps?.perks || {};
+                  const verificationApprover = verification?.approvedBy ? (teamActorMap[String(verification.approvedBy)] || String(verification.approvedBy)) : '-';
+                  const perksApprover = perks?.approvedBy ? (teamActorMap[String(perks.approvedBy)] || String(perks.approvedBy)) : '-';
+                  return (
+                    <tr key={row.employeeId} className="border-b border-secondary-50">
+                      <td className="py-2 pr-3">
+                        <div className="font-semibold text-secondary-900">{row.employeeName || row.employeeEmail || row.employeeId}</div>
+                        <div className="text-secondary-500">{row.designation || 'N/A'}</div>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <div className="font-semibold text-secondary-800">{row.status}</div>
+                        <div className="text-secondary-500">{row.statusDetail}</div>
+                      </td>
+                      <td className="py-2 pr-3 text-secondary-700">
+                        <div>{verification?.approvedAt ? 'Approved' : verification?.completed ? 'Pending Approval' : 'Pending Save'}</div>
+                        <div className="text-secondary-500">By: {verificationApprover}</div>
+                      </td>
+                      <td className="py-2 pr-3 text-secondary-700">
+                        <div>{perks?.approvedAt ? 'Approved' : perks?.completed ? 'Pending Approval' : 'Pending Save'}</div>
+                        <div className="text-secondary-500">By: {perksApprover}</div>
+                      </td>
+                      <td className="py-2 pr-3 text-secondary-600">{row.updatedAt ? new Date(row.updatedAt).toLocaleString() : 'N/A'}</td>
+                    </tr>
+                  );
+                })}
+                {!teamRows.length ? (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-secondary-500">No team onboarding workflows found.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       <div className="card-premium p-5">
+        {summary ? (
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
+            <Stat label="In Progress" value={summary.inProgress} />
+            <Stat label="Blocked at Verification" value={summary.blockedAtVerification} />
+            <Stat label="Blocked at Perks" value={summary.blockedAtPerks} />
+            <Stat label="Pending Approvals" value={summary.pendingApprovals} />
+            <Stat label="Completed This Month" value={summary.completedThisMonth} />
+            <Stat label="Avg Completion Days" value={summary.avgCompletionDays} />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-black uppercase tracking-wider text-secondary-500">Overall Progress</p>
           <p className="text-sm font-black text-secondary-900">{progress}%</p>
@@ -325,8 +673,60 @@ export default function EmployeeOnboardingWorkflow() {
               <p className={`text-[10px] font-bold mt-1 ${stepSaved[s.key] ? 'text-success-600' : 'text-secondary-400'}`}>
                 {stepSaved[s.key] ? 'Saved' : 'Pending'}
               </p>
+              {(s.key === 'verification' || s.key === 'perks') ? (
+                <p className={`text-[10px] font-bold mt-1 ${stepApproved[s.key] ? 'text-primary-700' : 'text-amber-600'}`}>
+                  {stepApproved[s.key] ? 'Approved' : 'Pending Approval'}
+                </p>
+              ) : null}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="card-premium p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-black text-secondary-900">Onboarding Activity Timeline</h3>
+          <div className="flex gap-2">
+            <button className="btn btn-secondary text-xs" onClick={exportTimelineCsv}>Export CSV</button>
+            <button className="btn btn-primary text-xs" onClick={printHandoverSheet}>Print Handover Sheet</button>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {STEPS.map((s) => {
+            const meta = workflowStepsMeta?.[s.key] || {};
+            const savedAt = meta?.savedAt ? new Date(meta.savedAt).toLocaleString() : null;
+            const approvedAt = meta?.approvedAt ? new Date(meta.approvedAt).toLocaleString() : null;
+            const reviewedAt = meta?.reviewedAt ? new Date(meta.reviewedAt).toLocaleString() : null;
+            const savedBy = meta?.savedBy ? (workflowActors[String(meta.savedBy)] || String(meta.savedBy)) : null;
+            const reviewedBy = meta?.reviewedBy ? (workflowActors[String(meta.reviewedBy)] || String(meta.reviewedBy)) : null;
+            const approvedBy = meta?.approvedBy ? (workflowActors[String(meta.approvedBy)] || String(meta.approvedBy)) : null;
+            return (
+              <div key={s.key} className="border border-secondary-100 rounded-xl p-3 bg-white">
+                <p className="text-xs font-black uppercase tracking-wider text-secondary-500">{s.subtitle}</p>
+                <p className="text-sm font-bold text-secondary-900">{s.title}</p>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-lg bg-secondary-50 px-2 py-1">
+                    <span className="font-black text-secondary-600">Saved:</span>{' '}
+                    <span className="text-secondary-700">{savedAt || 'Not yet'}{savedBy ? ` by ${savedBy}` : ''}</span>
+                  </div>
+                  <div className="rounded-lg bg-secondary-50 px-2 py-1">
+                    <span className="font-black text-secondary-600">Reviewed:</span>{' '}
+                    <span className="text-secondary-700">{reviewedAt || 'Not reviewed'}{reviewedBy ? ` by ${reviewedBy}` : ''}</span>
+                  </div>
+                  <div className="rounded-lg bg-secondary-50 px-2 py-1">
+                    <span className="font-black text-secondary-600">Approved:</span>{' '}
+                    <span className="text-secondary-700">{approvedAt || 'Pending approval'}{approvedBy ? ` by ${approvedBy}` : ''}</span>
+                  </div>
+                </div>
+                {meta?.approvalDecision ? (
+                  <p className="mt-2 text-xs text-secondary-700">
+                    Decision: <span className="font-bold uppercase">{String(meta.approvalDecision)}</span>
+                    {meta?.approvalReason ? ` | Reason: ${meta.approvalReason}` : ''}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -395,14 +795,37 @@ export default function EmployeeOnboardingWorkflow() {
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-secondary-100 pt-4">
-          <p className="text-xs font-semibold text-secondary-500">{statusMessage || 'Save each step independently to keep onboarding structured and trackable.'}</p>
+          <p className="text-xs font-semibold text-secondary-500">
+            {statusMessage || (approvableStep && !stepSaved[activeStep]
+              ? 'Save this step first, then approval actions will unlock.'
+              : 'Save each step independently to keep onboarding structured and trackable.')}
+          </p>
           <div className="flex gap-2">
             <button className="btn btn-secondary text-xs" onClick={() => setActiveStep(STEPS[Math.max(0, STEPS.findIndex((s) => s.key === activeStep) - 1)].key)} disabled={STEPS.findIndex((s) => s.key === activeStep) === 0}>Previous</button>
             <button className="btn btn-primary text-xs" onClick={() => saveStep(activeStep)} disabled={saving}>{saving ? 'Saving...' : `Save ${STEPS.find((s) => s.key === activeStep)?.title}`}</button>
+            {canApprove && approvableStep ? (
+              <>
+                <button className="btn btn-secondary text-xs" onClick={() => approveStep(activeStep as 'verification' | 'perks', 'approved')} disabled={approving || !stepSaved[activeStep]}>
+                  {approving ? 'Updating...' : `Approve ${activeStep === 'verification' ? 'Verification' : 'Perks'}`}
+                </button>
+                <button className="btn bg-danger-50 text-danger-700 border border-danger-200 text-xs" onClick={() => approveStep(activeStep as 'verification' | 'perks', 'rejected')} disabled={approving || !stepSaved[activeStep]}>
+                  Reject
+                </button>
+              </>
+            ) : null}
             <button className="btn btn-secondary text-xs" onClick={() => setActiveStep(STEPS[Math.min(STEPS.length - 1, STEPS.findIndex((s) => s.key === activeStep) + 1)].key)} disabled={STEPS.findIndex((s) => s.key === activeStep) === STEPS.length - 1}>Next</button>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-secondary-100 bg-white p-3">
+      <p className="text-[10px] uppercase tracking-wider font-black text-secondary-500">{label}</p>
+      <p className="text-lg font-black text-secondary-900 mt-1">{value}</p>
     </div>
   );
 }
