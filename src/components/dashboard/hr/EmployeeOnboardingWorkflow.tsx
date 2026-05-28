@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 type Mode = 'NEW' | 'UPGRADE';
+type TeamFilter = 'ALL' | 'PENDING_APPROVAL' | 'COMPLETED' | 'BLOCKED';
 
 type StepKey = 'joining' | 'verification' | 'job' | 'perks';
 
@@ -33,6 +34,7 @@ export default function EmployeeOnboardingWorkflow() {
   const [workflowActors, setWorkflowActors] = useState<Record<string, string>>({});
   const [teamRows, setTeamRows] = useState<any[]>([]);
   const [teamActorMap, setTeamActorMap] = useState<Record<string, string>>({});
+  const [teamFilter, setTeamFilter] = useState<TeamFilter>('ALL');
   const [summary, setSummary] = useState<{ inProgress: number; blockedAtVerification: number; blockedAtPerks: number; pendingApprovals: number; completedThisMonth: number; avgCompletionDays: number } | null>(null);
 
   const [stepSaved, setStepSaved] = useState<Record<StepKey, boolean>>({
@@ -111,6 +113,16 @@ export default function EmployeeOnboardingWorkflow() {
       };
     });
   }, [workflowActors, workflowStepsMeta]);
+
+  const filteredTeamRows = useMemo(() => {
+    return teamRows.filter((row) => {
+      if (teamFilter === 'ALL') return true;
+      if (teamFilter === 'PENDING_APPROVAL') return row?.statusDetail === 'PENDING_APPROVAL';
+      if (teamFilter === 'COMPLETED') return row?.status === 'ONBOARDING_COMPLETED';
+      if (teamFilter === 'BLOCKED') return row?.status === 'ONBOARDING_DRAFT' && ['verification', 'perks'].includes(String(row?.currentStep || '').toLowerCase());
+      return true;
+    });
+  }, [teamFilter, teamRows]);
 
   const exportTimelineCsv = () => {
     const header = [
@@ -301,6 +313,13 @@ export default function EmployeeOnboardingWorkflow() {
     setTeamActorMap(payload?.actorMap || {});
   };
 
+  const loadEmployeeFromTeamRow = async (employeeId: string) => {
+    if (!employeeId) return;
+    setMode('UPGRADE');
+    setSelectedEmployeeId(employeeId);
+    await loadEmployeeForUpgrade(employeeId);
+  };
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -374,6 +393,7 @@ export default function EmployeeOnboardingWorkflow() {
         otherBenefits: perks.otherBenefits || '',
       }));
       await loadWorkflowState(p.id);
+      await loadTeamSnapshot();
       setStatusMessage('Loaded employee profile for upgrade mode.');
     } catch (e: any) {
       alert(e?.message || 'Failed to load employee profile');
@@ -493,8 +513,7 @@ export default function EmployeeOnboardingWorkflow() {
 
       setStepSaved((prev) => ({ ...prev, [step]: true }));
       await persistStepState(targetId, step, true, step);
-      await loadWorkflowState(targetId);
-      await loadSummary();
+      await Promise.all([loadWorkflowState(targetId), loadSummary(), loadTeamSnapshot()]);
       setStatusMessage(`${STEPS.find((s) => s.key === step)?.title} saved successfully.`);
     } catch (e: any) {
       alert(e?.message || 'Failed to save step');
@@ -532,8 +551,7 @@ export default function EmployeeOnboardingWorkflow() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to update approval');
-      await loadWorkflowState(targetId);
-      await loadSummary();
+      await Promise.all([loadWorkflowState(targetId), loadSummary(), loadTeamSnapshot()]);
       setStatusMessage(`${step === 'verification' ? 'Verification' : 'Perks'} ${decision}.`);
     } catch (e: any) {
       alert(e?.message || 'Failed to update approval');
@@ -591,8 +609,14 @@ export default function EmployeeOnboardingWorkflow() {
         <div className="card-premium p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-black text-secondary-900">Team Workflow Snapshot</h3>
-            <p className="text-xs text-secondary-500">Latest 50 profiles with audit ownership</p>
+            <div className="flex items-center gap-2">
+              <button className={`btn text-[11px] px-2 py-1 ${teamFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTeamFilter('ALL')}>All</button>
+              <button className={`btn text-[11px] px-2 py-1 ${teamFilter === 'PENDING_APPROVAL' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTeamFilter('PENDING_APPROVAL')}>Pending Approval</button>
+              <button className={`btn text-[11px] px-2 py-1 ${teamFilter === 'COMPLETED' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTeamFilter('COMPLETED')}>Completed</button>
+              <button className={`btn text-[11px] px-2 py-1 ${teamFilter === 'BLOCKED' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTeamFilter('BLOCKED')}>Blocked</button>
+            </div>
           </div>
+          <p className="text-xs text-secondary-500 mb-2">Latest 50 profiles with audit ownership</p>
           <div className="overflow-auto">
             <table className="min-w-full text-xs">
               <thead>
@@ -602,10 +626,11 @@ export default function EmployeeOnboardingWorkflow() {
                   <th className="py-2 pr-3 font-black text-secondary-600">Verification</th>
                   <th className="py-2 pr-3 font-black text-secondary-600">Perks</th>
                   <th className="py-2 pr-3 font-black text-secondary-600">Updated</th>
+                  <th className="py-2 pr-3 font-black text-secondary-600">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {teamRows.map((row: any) => {
+                {filteredTeamRows.map((row: any) => {
                   const verification = row?.steps?.verification || {};
                   const perks = row?.steps?.perks || {};
                   const verificationApprover = verification?.approvedBy ? (teamActorMap[String(verification.approvedBy)] || String(verification.approvedBy)) : '-';
@@ -629,12 +654,20 @@ export default function EmployeeOnboardingWorkflow() {
                         <div className="text-secondary-500">By: {perksApprover}</div>
                       </td>
                       <td className="py-2 pr-3 text-secondary-600">{row.updatedAt ? new Date(row.updatedAt).toLocaleString() : 'N/A'}</td>
+                      <td className="py-2 pr-3">
+                        <button
+                          className="btn btn-secondary text-[11px] px-2 py-1"
+                          onClick={() => loadEmployeeFromTeamRow(row.employeeId)}
+                        >
+                          Load
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
-                {!teamRows.length ? (
+                {!filteredTeamRows.length ? (
                   <tr>
-                    <td colSpan={5} className="py-4 text-center text-secondary-500">No team onboarding workflows found.</td>
+                    <td colSpan={6} className="py-4 text-center text-secondary-500">No workflows found for selected filter.</td>
                   </tr>
                 ) : null}
               </tbody>
