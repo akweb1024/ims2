@@ -143,6 +143,7 @@ model Company {
   workshops                   Workshop[]
   performanceMetricDefinitions PerformanceMetricDefinition[]
   performanceSignalEvents     PerformanceSignalEvent[]
+  privateDailyNotes           PrivateDailyNote[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
 }
@@ -262,6 +263,7 @@ model User {
   roles                          UserRole[]                       @default([EXECUTIVE])
   announcements                  Announcement[]
   auditLogs                      AuditLog[]
+  createdPrivateDailyNotes       PrivateDailyNote[]                @relation("PrivateDailyNoteCreator")
   automationRunsTriggered        AutomationRun[]                  @relation("AutomationRunTrigger")
   uploadedReconciliationSessions BankReconciliationSession[]      @relation("ReconciliationSessionUploader")
   certificates                   Certificate[]
@@ -1663,6 +1665,40 @@ model EmployeeProfile {
   workPlans                WorkPlan[]
   workReports              WorkReport[]
   performanceSignals       PerformanceSignalEvent[]
+  privateDailyNoteTags     PrivateDailyNoteTag[]
+}
+
+model PrivateDailyNote {
+  id                     String                @id @default(uuid())
+  creatorUserId          String
+  companyId              String?
+  noteDate               DateTime              @default(now())
+  title                  String
+  note                   String
+  category               String
+  customCategory         String?
+  sentiment              String                @default("NEUTRAL")
+  performanceImpactScore Int?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  creator                User                  @relation("PrivateDailyNoteCreator", fields: [creatorUserId], references: [id], onDelete: Cascade)
+  company                Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  taggedEmployees        PrivateDailyNoteTag[]
+
+  @@index([creatorUserId, noteDate])
+  @@index([companyId])
+}
+
+model PrivateDailyNoteTag {
+  id         String           @id @default(uuid())
+  noteId     String
+  employeeId String
+  createdAt  DateTime         @default(now())
+  note       PrivateDailyNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, employeeId])
+  @@index([employeeId, createdAt])
 }
 
 model EmployeeCompanyDesignation {

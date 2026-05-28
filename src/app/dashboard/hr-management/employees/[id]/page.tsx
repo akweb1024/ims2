@@ -22,6 +22,7 @@ import GoalManagementDashboard from '@/components/dashboard/goals/GoalManagement
 import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import WorkAssignmentManager from '@/components/dashboard/assignments/WorkAssignmentManager';
 import AttendanceCalendarView from '@/components/dashboard/hr/AttendanceCalendarView';
+import PrivateDailyNotesPanel from '@/components/dashboard/notes/PrivateDailyNotesPanel';
 
 export default function EmployeeProfilePage() {
     const params = useParams();
@@ -593,6 +594,13 @@ export default function EmployeeProfilePage() {
                                 )}
 
                                 {/* Compensation Overview Card */}
+                                <div className="md:col-span-2">
+                                    <PrivateDailyNotesPanel
+                                        employeeId={employee.id}
+                                        title="Private Tagged Notes for This Employee"
+                                    />
+                                </div>
+
                                 {canViewSalary && (
                                     <div className="card-premium p-6 md:col-span-2 bg-gradient-to-br from-white to-secondary-50/50">
                                         <h3 className="font-bold text-lg mb-6 flex items-center gap-2">

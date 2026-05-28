@@ -39,6 +39,7 @@ import TeamTaskMasterView from '@/components/dashboard/manager/TeamTaskMasterVie
 import TeamPointsRewardsView from '@/components/dashboard/manager/TeamPointsRewardsView';
 import TeamWorkReportsView from '@/components/dashboard/manager/TeamWorkReportsView';
 import TeamDailyAgendaView from '@/components/dashboard/manager/TeamDailyAgendaView';
+import PrivateDailyNotesPanel from '@/components/dashboard/notes/PrivateDailyNotesPanel';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 export default function StaffPortalPage() {
@@ -551,6 +552,8 @@ export default function StaffPortalPage() {
                                     </div>
                                 )}
                             </div>
+
+                            <PrivateDailyNotesPanel />
 
                             <TodayAgendaCard />
 
