@@ -49,6 +49,8 @@ const MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS = new Set([
     '/api/hr/onboarding/compliance',
     '/api/hr/onboarding/progress',
     '/api/hr/tasks',
+    '/api/hr/work-agenda/today',
+    '/api/hr/work-agenda',
     '/api/hr/reimbursements',
     '/api/hr/documents/my-digital',
 ]);
@@ -62,6 +64,7 @@ const MODULE_ACCESS_PREFIX_EXCEPTIONS = [
     '/api/hr/salary-slips',
     '/api/hr/tasks',
     '/api/hr/work-reports',
+    '/api/hr/work-agenda',
 ];
 
 export const hasModuleAccess = (user: TokenPayload, moduleId: string): boolean => {

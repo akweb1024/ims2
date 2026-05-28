@@ -403,7 +403,8 @@ export const useWorkReportMutations = () => {
             managerRating?: number,
             approvedTaskIds?: string[],
             rejectedTaskIds?: string[],
-            evaluation?: any
+            evaluation?: any,
+            allowMandatoryOverride?: boolean
         }) =>
             fetchJson('/api/hr/work-reports', 'PATCH', data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['work-reports'] }),

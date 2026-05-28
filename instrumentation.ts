@@ -4,5 +4,7 @@ export async function register() {
     }
 
     const { startRazorpaySyncScheduler } = await import('@/lib/jobs/razorpay-sync-scheduler');
+    const { startWorkAgendaScheduler } = await import('@/lib/jobs/work-agenda-scheduler');
     startRazorpaySyncScheduler();
+    startWorkAgendaScheduler();
 }

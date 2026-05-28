@@ -15,7 +15,8 @@ const TeamWorkReportsView: React.FC = () => {
         rejectedTaskIds: string[],
         managerComment: string,
         managerRating: number,
-        evaluation?: any
+        evaluation?: any,
+        allowMandatoryOverride?: boolean
     ) => {
         try {
             await updateStatus.mutateAsync({
@@ -25,7 +26,8 @@ const TeamWorkReportsView: React.FC = () => {
                 rejectedTaskIds,
                 managerComment,
                 managerRating,
-                evaluation
+                evaluation,
+                allowMandatoryOverride
             });
             toast.success('Report approved and validated successfully');
         } catch (err) {

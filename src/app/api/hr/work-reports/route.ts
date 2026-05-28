@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, NotFoundError, AuthorizationError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
 
 const getISTDateString = (date = new Date()) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -20,6 +21,27 @@ const getISTDateRange = (dateStr?: string) => {
         start: new Date(`${base}T00:00:00+05:30`),
         end: new Date(`${base}T23:59:59.999+05:30`)
     };
+};
+
+const SUBMISSION_COOLDOWN_MS = 10_000;
+const BLOCKED_SUBMISSION_COOLDOWN_MS = 30_000;
+const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000;
+
+const recentSubmissionAttempts = new Map<string, { lastAttemptAt: number; lastBlockedAt: number }>();
+const idempotencyReplayCache = new Map<string, { reportId: string; createdAt: number }>();
+
+const pruneInMemoryGuards = () => {
+    const now = Date.now();
+    for (const [key, value] of recentSubmissionAttempts.entries()) {
+        if (now - Math.max(value.lastAttemptAt, value.lastBlockedAt) > IDEMPOTENCY_TTL_MS) {
+            recentSubmissionAttempts.delete(key);
+        }
+    }
+    for (const [key, value] of idempotencyReplayCache.entries()) {
+        if (now - value.createdAt > IDEMPOTENCY_TTL_MS) {
+            idempotencyReplayCache.delete(key);
+        }
+    }
 };
 
 
@@ -196,6 +218,36 @@ export const POST = authorizedRoute(
 
             const { base: reportDateStr, start: startOfDay, end: endOfDay } = getISTDateRange(body.date);
             const reportDate = startOfDay;
+            const submissionGuardKey = `${profile.id}:${reportDateStr}`;
+            const idempotencyKey = (req.headers.get('x-idempotency-key') || '').trim();
+
+            pruneInMemoryGuards();
+
+            if (idempotencyKey) {
+                const cacheKey = `${user.id}:${idempotencyKey}`;
+                const replay = idempotencyReplayCache.get(cacheKey);
+                if (replay && Date.now() - replay.createdAt <= IDEMPOTENCY_TTL_MS) {
+                    const cachedReport = await prisma.workReport.findUnique({ where: { id: replay.reportId } });
+                    if (cachedReport) {
+                        return NextResponse.json({ ...cachedReport, idempotentReplay: true }, { status: 200 });
+                    }
+                    idempotencyReplayCache.delete(cacheKey);
+                }
+            }
+
+            const previousAttempt = recentSubmissionAttempts.get(submissionGuardKey);
+            const nowMs = Date.now();
+            if (previousAttempt && nowMs - previousAttempt.lastAttemptAt < SUBMISSION_COOLDOWN_MS) {
+                return NextResponse.json({
+                    error: 'TOO_MANY_REQUESTS',
+                    message: 'Please wait a few seconds before submitting again.',
+                    retryAfterMs: SUBMISSION_COOLDOWN_MS - (nowMs - previousAttempt.lastAttemptAt)
+                }, { status: 429 });
+            }
+            recentSubmissionAttempts.set(submissionGuardKey, {
+                lastAttemptAt: nowMs,
+                lastBlockedAt: previousAttempt?.lastBlockedAt ?? 0,
+            });
 
             // Check if report already exists for this day
             const existingReport = await prisma.workReport.findFirst({
@@ -209,6 +261,14 @@ export const POST = authorizedRoute(
             });
 
             if (existingReport) {
+                if (idempotencyKey) {
+                    idempotencyReplayCache.set(`${user.id}:${idempotencyKey}`, {
+                        reportId: existingReport.id,
+                        createdAt: Date.now(),
+                    });
+                    return NextResponse.json({ ...existingReport, idempotentReplay: true }, { status: 200 });
+                }
+
                 return NextResponse.json({
                     error: 'DUPLICATE_REPORT',
                     message: 'A work report already exists for this date. Please edit the existing report instead.',
@@ -272,6 +332,10 @@ export const POST = authorizedRoute(
                 }
 
                 if (!allowed) {
+                    recentSubmissionAttempts.set(submissionGuardKey, {
+                        lastAttemptAt: nowMs,
+                        lastBlockedAt: Date.now(),
+                    });
                     logger.warn(`Work report submission blocked`, { 
                         employeeId: profile.id, 
                         isCurrentWeekend,
@@ -282,10 +346,16 @@ export const POST = authorizedRoute(
                         reportDate: reportDateStr,
                         reason: rejectReason 
                     });
+
+                    const blockedRetryAfterMs = previousAttempt?.lastBlockedAt && (Date.now() - previousAttempt.lastBlockedAt < BLOCKED_SUBMISSION_COOLDOWN_MS)
+                        ? BLOCKED_SUBMISSION_COOLDOWN_MS - (Date.now() - previousAttempt.lastBlockedAt)
+                        : BLOCKED_SUBMISSION_COOLDOWN_MS;
+
                     return NextResponse.json({
                         error: 'VALIDATION_ERROR',
-                        message: rejectReason
-                    }, { status: 400 });
+                        message: rejectReason,
+                        retryAfterMs: blockedRetryAfterMs
+                    }, { status: 429 });
                 }
                 
                 logger.info(`Work report submission passed gate`, { employeeId: profile.id, hasCheckedOut, isAfter530PM });
@@ -513,6 +583,13 @@ export const POST = authorizedRoute(
 
             logger.info('Work report submitted', { reportId: report.id, employeeId: profile.id, pointsEarned });
 
+            if (idempotencyKey) {
+                idempotencyReplayCache.set(`${user.id}:${idempotencyKey}`, {
+                    reportId: report.id,
+                    createdAt: Date.now(),
+                });
+            }
+
             return NextResponse.json(report);
         } catch (error) {
             return handleApiError(error, req.nextUrl.pathname);
@@ -611,7 +688,7 @@ export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
-            const { id, status, managerComment, managerRating, approvedTaskIds, rejectedTaskIds, evaluation } = await req.json();
+            const { id, status, managerComment, managerRating, approvedTaskIds, rejectedTaskIds, evaluation, allowMandatoryOverride } = await req.json();
 
             const existing = await prisma.workReport.findUnique({
                 where: { id },
@@ -662,11 +739,40 @@ export const PATCH = authorizedRoute(
                 }
             }
 
+            let reconciledManagerComment = managerComment;
+            if (status === 'APPROVED') {
+                const reportDayStart = new Date(existing.date);
+                reportDayStart.setHours(0, 0, 0, 0);
+                const reportDayEnd = new Date(reportDayStart);
+                reportDayEnd.setHours(23, 59, 59, 999);
+                const dayAgenda = await prisma.workPlan.findMany({
+                    where: {
+                        employeeId: existing.employeeId,
+                        date: { gte: reportDayStart, lte: reportDayEnd }
+                    },
+                    select: { agenda: true, completionStatus: true, strategy: true }
+                });
+                const pendingMandatory = dayAgenda.filter((a) => {
+                    const meta = decodeAgendaMetadata(a.strategy);
+                    return Boolean(meta?.mandatory) && a.completionStatus !== 'COMPLETED';
+                });
+                if (pendingMandatory.length > 0) {
+                    const baseComment = String(managerComment || '').trim();
+                    if (!allowMandatoryOverride || baseComment.length < 12) {
+                        throw new ValidationError(
+                            `Approval blocked: mandatory agenda pending (${pendingMandatory.map((x) => x.agenda).join(', ')}). Provide manager comment with override reason and set allowMandatoryOverride=true.`
+                        );
+                    }
+                    const warning = `Mandatory agenda pending: ${pendingMandatory.map((x) => x.agenda).join(', ')}`;
+                    reconciledManagerComment = [managerComment, warning].filter(Boolean).join(' | ');
+                }
+            }
+
             const updated = await prisma.workReport.update({
                 where: { id },
                 data: {
                     status,
-                    managerComment,
+                    managerComment: reconciledManagerComment,
                     pointsEarned: finalPointsEarned,
                     tasksSnapshot: updatedTasksSnapshot,
                     ...(managerRating && { managerRating: parseInt(managerRating) }),

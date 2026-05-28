@@ -7,7 +7,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 
 interface WorkReportValidatorProps {
     reports: any[];
-    onApprove: (reportId: string, approvedTaskIds: string[], rejectedTaskIds: string[], managerComment: string, managerRating: number, evaluation?: any) => Promise<void>;
+    onApprove: (reportId: string, approvedTaskIds: string[], rejectedTaskIds: string[], managerComment: string, managerRating: number, evaluation?: any, allowMandatoryOverride?: boolean) => Promise<void>;
     onAddComment: (reportId: string, content: string) => Promise<void>;
 }
 
@@ -30,6 +30,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     });
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [allowMandatoryOverride, setAllowMandatoryOverride] = useState(false);
 
     // Compute rating from evaluation metrics (read-only derived value)
     const calculatedRating = useMemo(() => {
@@ -97,6 +98,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         const initScore = Object.values(defaultEval).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
         const initRating = Math.max(1, Math.min(10, Math.round((((initScore + 15) / 30) * 9) + 1)));
         setManagerRating(initRating);
+        setAllowMandatoryOverride(false);
 
         setShowValidationModal(true);
     };
@@ -136,7 +138,8 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                 rejectedTaskIds,
                 managerComment,
                 managerRating,
-                evaluation
+                evaluation,
+                allowMandatoryOverride
             );
             setShowValidationModal(false);
             setSelectedReport(null);
@@ -605,6 +608,14 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                         onChange={e => setManagerComment(e.target.value)}
                                         title="Manager Feedback Comments"
                                     />
+                                    <label className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-secondary-600">
+                                        <input
+                                            type="checkbox"
+                                            checked={allowMandatoryOverride}
+                                            onChange={(e) => setAllowMandatoryOverride(e.target.checked)}
+                                        />
+                                        Allow mandatory agenda override (requires clear reason in comments)
+                                    </label>
                                 </div>
                             </div>
 

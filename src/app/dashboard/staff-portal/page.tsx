@@ -25,6 +25,7 @@ import StaffWorkReports from '@/components/dashboard/staff-portal/StaffWorkRepor
 import StaffSalaryView from '@/components/dashboard/staff-portal/StaffSalaryView';
 import StaffReimbursementView from '@/components/dashboard/staff-portal/StaffReimbursementView';
 import StaffReimbursementReminder from '@/components/dashboard/staff-portal/StaffReimbursementReminder';
+import TodayAgendaCard from '@/components/dashboard/staff-portal/TodayAgendaCard';
 
 // Manager Center Views
 import TeamMembersView from '@/components/dashboard/manager/TeamMembersView';
@@ -37,6 +38,7 @@ import TeamGoalTrackingView from '@/components/dashboard/manager/TeamGoalTrackin
 import TeamTaskMasterView from '@/components/dashboard/manager/TeamTaskMasterView';
 import TeamPointsRewardsView from '@/components/dashboard/manager/TeamPointsRewardsView';
 import TeamWorkReportsView from '@/components/dashboard/manager/TeamWorkReportsView';
+import TeamDailyAgendaView from '@/components/dashboard/manager/TeamDailyAgendaView';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 export default function StaffPortalPage() {
@@ -550,6 +552,8 @@ export default function StaffPortalPage() {
                                 )}
                             </div>
 
+                            <TodayAgendaCard />
+
                             {/* Daily Task Tracker */}
                             <DailyTaskTracker />
                         </div>
@@ -779,6 +783,7 @@ export default function StaffPortalPage() {
                                 <button onClick={() => setActiveSubTab('tasks')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'tasks' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Tasks</button>
                                 <button onClick={() => setActiveSubTab('points')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'points' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Rewards</button>
                                 <button onClick={() => setActiveSubTab('reports')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'reports' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Reports</button>
+                                <button onClick={() => setActiveSubTab('daily-agenda')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'daily-agenda' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Daily Agenda</button>
                             </div>
                             <div className="animate-in fade-in duration-500">
                                 {activeSubTab === 'kra-kpi' && (
@@ -792,6 +797,7 @@ export default function StaffPortalPage() {
                                 {activeSubTab === 'tasks' && <TeamTaskMasterView />}
                                 {activeSubTab === 'points' && <TeamPointsRewardsView />}
                                 {activeSubTab === 'reports' && <TeamWorkReportsView />}
+                                {activeSubTab === 'daily-agenda' && <TeamDailyAgendaView />}
                             </div>
                         </div>
                     )}

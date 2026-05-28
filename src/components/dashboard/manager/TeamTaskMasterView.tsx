@@ -12,6 +12,12 @@ const TeamTaskMasterView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
     const [statsLoading, setStatsLoading] = useState(true);
     const [selectedEmployee, setSelectedEmployee] = useState<string>('ALL');
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+    const [selectedAssignEmployees, setSelectedAssignEmployees] = useState<string[]>([]);
+    const [assignMode, setAssignMode] = useState<'append' | 'replace'>('append');
+    const [assigning, setAssigning] = useState(false);
 
     useEffect(() => {
         const loadStats = async () => {
@@ -34,6 +40,61 @@ const TeamTaskMasterView: React.FC = () => {
         };
         loadStats();
     }, [period, selectedEmployee]);
+
+    useEffect(() => {
+        const loadAssignmentData = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const [templatesRes, teamRes] = await Promise.all([
+                    fetch('/api/hr/tasks', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/team', { headers: { 'Authorization': `Bearer ${token}` } }),
+                ]);
+                if (templatesRes.ok) setTemplates(await templatesRes.json());
+                if (teamRes.ok) setTeamMembers(await teamRes.json());
+            } catch (err) {
+                console.error('Failed to load assignment data', err);
+            }
+        };
+        loadAssignmentData();
+    }, []);
+
+    const toggleTemplateSelection = (id: string) => {
+        setSelectedTemplateIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const toggleEmployeeSelection = (id: string) => {
+        setSelectedAssignEmployees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const applyBulkAssignment = async () => {
+        if (!selectedTemplateIds.length || !selectedAssignEmployees.length) {
+            alert('Select templates and employees first');
+            return;
+        }
+        setAssigning(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/tasks/bulk-assign', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    templateIds: selectedTemplateIds,
+                    employeeIds: selectedAssignEmployees,
+                    mode: assignMode
+                })
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(payload?.error || payload?.message || 'Bulk assign failed');
+            alert(`Assigned successfully: ${payload.updatedTemplates} templates`);
+        } catch (err: any) {
+            alert(err?.message || 'Bulk assign failed');
+        } finally {
+            setAssigning(false);
+        }
+    };
 
     if (loading) {
         return <div className="p-20 text-center text-secondary-400 font-bold animate-pulse">Loading team task matrix...</div>;
@@ -104,6 +165,48 @@ const TeamTaskMasterView: React.FC = () => {
                 ) : (
                     <div className="text-sm text-secondary-400 font-bold">No stats available</div>
                 )}
+            </div>
+
+            <div className="card-premium p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-black text-secondary-900">Bulk Template Assignment</h4>
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-secondary-600">Mode</label>
+                        <select className="input h-8 text-xs w-28" value={assignMode} onChange={(e) => setAssignMode(e.target.value as any)}>
+                            <option value="append">Append</option>
+                            <option value="replace">Replace</option>
+                        </select>
+                        <button className="btn btn-primary h-8 px-3 text-xs" onClick={applyBulkAssignment} disabled={assigning}>
+                            {assigning ? 'Applying...' : 'Apply'}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="border border-secondary-100 rounded-xl p-3 max-h-56 overflow-y-auto">
+                        <p className="text-xs font-black text-secondary-500 uppercase mb-2">Templates</p>
+                        {templates.map((t: any) => (
+                            <label key={t.id} className="flex items-center gap-2 py-1.5 text-sm">
+                                <input type="checkbox" checked={selectedTemplateIds.includes(t.id)} onChange={() => toggleTemplateSelection(t.id)} />
+                                <span className="font-semibold text-secondary-800">{t.title}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="border border-secondary-100 rounded-xl p-3 max-h-56 overflow-y-auto">
+                        <p className="text-xs font-black text-secondary-500 uppercase mb-2">Employees</p>
+                        {teamMembers.map((m: any) => (
+                            <label key={m.employeeProfile?.id || m.id} className="flex items-center gap-2 py-1.5 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedAssignEmployees.includes(m.employeeProfile?.id || '')}
+                                    onChange={() => toggleEmployeeSelection(m.employeeProfile?.id || '')}
+                                    disabled={!m.employeeProfile?.id}
+                                />
+                                <span className="font-semibold text-secondary-800">{m.name || m.email}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {stats?.employees?.length > 0 && (
