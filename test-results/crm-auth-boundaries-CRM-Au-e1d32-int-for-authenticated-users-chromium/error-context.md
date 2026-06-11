@@ -1,0 +1,151 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - button "Toggle sidebar" [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+          - link "S" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - generic [ref=e13]: S
+          - button "🏠 Core Workspace" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16]: 🏠
+            - generic [ref=e17]: Core Workspace
+            - img [ref=e18]
+        - generic [ref=e20]:
+          - button "Quick search... ⌘ K" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+            - generic [ref=e25]: Quick search...
+            - generic [ref=e26]: ⌘ K
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button "S SUPER ADMIN User" [ref=e32] [cursor=pointer]:
+            - generic [ref=e33]: S
+            - generic [ref=e34]:
+              - paragraph [ref=e35]: SUPER ADMIN
+              - paragraph [ref=e36]: User
+            - img [ref=e37]
+    - complementary [ref=e39]:
+      - navigation [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]: Workspace
+            - generic [ref=e44]:
+              - link "📊 Dashboard" [ref=e45] [cursor=pointer]:
+                - /url: /dashboard
+                - generic [ref=e47]: 📊
+                - generic [ref=e48]: Dashboard
+              - link "🌍 Digital Twin" [ref=e49] [cursor=pointer]:
+                - /url: /dashboard/digital-twin
+                - generic [ref=e50]: 🌍
+                - generic [ref=e51]: Digital Twin
+              - link "🏢 Staff Portal" [ref=e52] [cursor=pointer]:
+                - /url: /dashboard/staff-portal
+                - generic [ref=e54]: 🏢
+                - generic [ref=e55]: Staff Portal
+              - link "💡 Think Tank" [ref=e56] [cursor=pointer]:
+                - /url: /dashboard/think-tank
+                - generic [ref=e57]: 💡
+                - generic [ref=e58]: Think Tank
+              - link "🚨 Problems" [ref=e59] [cursor=pointer]:
+                - /url: /dashboard/problems
+                - generic [ref=e60]: 🚨
+                - generic [ref=e61]: Problems
+              - link "💬 Direct Chat" [ref=e63] [cursor=pointer]:
+                - /url: /dashboard/chat
+                - generic [ref=e64]: 💬
+                - generic [ref=e65]: Direct Chat
+              - link "🗂️ File Manager" [ref=e66] [cursor=pointer]:
+                - /url: /dashboard/files
+                - generic [ref=e67]: 🗂️
+                - generic [ref=e68]: File Manager
+              - link "📚 Knowledge Base" [ref=e69] [cursor=pointer]:
+                - /url: /dashboard/knowledge-base
+                - generic [ref=e70]: 📚
+                - generic [ref=e71]: Knowledge Base
+              - link "⚡ Automation" [ref=e72] [cursor=pointer]:
+                - /url: /dashboard/automation
+                - generic [ref=e73]: ⚡
+                - generic [ref=e74]: Automation
+              - link "🧩 Automation Forms" [ref=e75] [cursor=pointer]:
+                - /url: /dashboard/automation/forms
+                - generic [ref=e76]: 🧩
+                - generic [ref=e77]: Automation Forms
+              - link "🛡️ Sentinel Automation" [ref=e78] [cursor=pointer]:
+                - /url: /dashboard/sentinel/automation
+                - generic [ref=e79]: 🛡️
+                - generic [ref=e80]: Sentinel Automation
+          - generic [ref=e81]:
+            - generic [ref=e82]: Personal
+            - generic [ref=e83]:
+              - link "👤 My Profile" [ref=e84] [cursor=pointer]:
+                - /url: /dashboard/profile
+                - generic [ref=e85]: 👤
+                - generic [ref=e86]: My Profile
+              - link "🔒 Password Vault" [ref=e87] [cursor=pointer]:
+                - /url: /dashboard/vault
+                - generic [ref=e88]: 🔒
+                - generic [ref=e89]: Password Vault
+              - link "🎨 App Theme" [ref=e90] [cursor=pointer]:
+                - /url: /dashboard/settings/theme
+                - generic [ref=e91]: 🎨
+                - generic [ref=e92]: App Theme
+        - button "Logout" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+          - generic [ref=e97]: Logout
+    - main [ref=e98]
+    - button "Toggle AI assistant" [ref=e101] [cursor=pointer]:
+      - img [ref=e104]
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic:
+              - generic:
+                - heading "STM Aria" [level=3]
+                - generic:
+                  - generic: Online
+              - paragraph: AI Assistant · Powered by Gemini
+          - generic:
+            - button "👁 On":
+              - img
+              - text: 👁 On
+            - button:
+              - img
+        - generic:
+          - generic: Context
+          - generic:
+            - img
+            - generic: Dashboard › Staff Portal
+          - generic:
+            - img
+            - text: Screen Vision
+        - generic:
+          - generic:
+            - paragraph: Try asking...
+            - button "🖼️ What do you see on my screen?"
+            - button "📊 Explain what's on this page"
+            - button "🔍 What options are available here?"
+            - button "📋 Show dashboard stats"
+            - button "🗺️ How do I navigate to HR?"
+        - generic:
+          - generic:
+            - img
+            - generic: Aria will capture your screen with each message
+          - generic:
+            - generic:
+              - textbox "Ask about this page or anything..."
+            - button [disabled]:
+              - img
+          - paragraph: Press Enter to send · 📸 Screenshot included · Powered by Google Gemini
+  - button "Open Next.js Dev Tools" [ref=e112] [cursor=pointer]:
+    - img [ref=e113]
+  - alert [ref=e116]
+```

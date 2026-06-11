@@ -70,6 +70,17 @@ export default function StaffPortalPage() {
     const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
     const currentCompanyName = user?.company?.name || user?.companies?.[0]?.name || 'Not selected';
     const registeredCompanyName = fullProfile?.user?.companies?.[0]?.name || user?.companies?.[0]?.name || currentCompanyName;
+    const now = new Date();
+    const currentMonthAttendance = attendance.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return entryDate.getFullYear() === now.getFullYear() && entryDate.getMonth() === now.getMonth();
+    });
+    const currentMonthPresentDays = currentMonthAttendance.filter((entry) => entry.status === 'PRESENT').length;
+    const currentMonthLateDays = currentMonthAttendance.filter((entry) => (entry.lateMinutes || 0) > 0).length;
+    const currentSnapshot = snapshots[0] || null;
+    const monthlyPresentDays = currentSnapshot?.daysPresent ?? currentMonthPresentDays;
+    const monthlyWorkingDays = currentSnapshot?.totalWorkingDays ?? currentMonthAttendance.length;
+    const monthlyAttendanceScore = currentSnapshot?.attendanceScore ?? null;
 
     const todayAttendance = attendance.find(a => {
         return formatToISTDate(a.date) === formatToISTDate(new Date());
@@ -468,10 +479,24 @@ export default function StaffPortalPage() {
                                 </div>
 
                                 <div className="card-premium p-6 border-t-4 border-success-500">
-                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Monthly Performance</h3>
-                                    <div className="text-center py-4">
-                                        <p className="text-4xl font-black text-secondary-900">{attendance.length}</p>
-                                        <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Active Days</p>
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">This Month Attendance</h3>
+                                    <div className="text-center py-2">
+                                        <p className="text-4xl font-black text-secondary-900">{monthlyPresentDays}</p>
+                                        <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">
+                                            {monthlyWorkingDays > 0 ? `${monthlyWorkingDays} Working Days` : 'Present Days'}
+                                        </p>
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-left">
+                                            <div className="rounded-xl bg-success-50 px-3 py-2 border border-success-100">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-success-700">Late Days</p>
+                                                <p className="text-lg font-black text-secondary-900">{currentSnapshot?.daysLate ?? currentMonthLateDays}</p>
+                                            </div>
+                                            <div className="rounded-xl bg-primary-50 px-3 py-2 border border-primary-100">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary-700">Score</p>
+                                                <p className="text-lg font-black text-secondary-900">
+                                                    {monthlyAttendanceScore !== null ? `${Math.round(monthlyAttendanceScore)}%` : 'Pending'}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="card-premium p-6 border-t-4 border-amber-500">

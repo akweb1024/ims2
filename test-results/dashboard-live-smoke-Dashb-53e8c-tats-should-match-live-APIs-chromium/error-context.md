@@ -1,0 +1,190 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - button "Toggle sidebar" [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+          - link "S" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - generic [ref=e13]: S
+          - button "👨‍💼 HR Management" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16]: 👨‍💼
+            - generic [ref=e17]: HR Management
+            - img [ref=e18]
+        - generic [ref=e20]:
+          - button "Quick search... ⌘ K" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+            - generic [ref=e25]: Quick search...
+            - generic [ref=e26]: ⌘ K
+          - button "⏱️ Not Checked In" [ref=e27] [cursor=pointer]:
+            - generic [ref=e28]: ⏱️
+            - generic [ref=e29]: Not Checked In
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button "S SUPER ADMIN admin" [ref=e35] [cursor=pointer]:
+            - generic [ref=e36]: S
+            - generic [ref=e37]:
+              - paragraph [ref=e38]: SUPER ADMIN
+              - paragraph [ref=e39]: admin
+            - img [ref=e40]
+    - complementary [ref=e42]:
+      - navigation [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: Operations
+            - generic [ref=e47]:
+              - link "👨‍💼 HR Dashboard" [ref=e48] [cursor=pointer]:
+                - /url: /dashboard/hr-management
+                - generic [ref=e49]: 👨‍💼
+                - generic [ref=e50]: HR Dashboard
+              - link "🎯 Recruitment" [ref=e52] [cursor=pointer]:
+                - /url: /dashboard/recruitment
+                - generic [ref=e54]: 🎯
+                - generic [ref=e55]: Recruitment
+              - link "📋 Screening Templates" [ref=e56] [cursor=pointer]:
+                - /url: /dashboard/hr/screening-templates
+                - generic [ref=e57]: 📋
+                - generic [ref=e58]: Screening Templates
+              - link "👥 User Directory" [ref=e60] [cursor=pointer]:
+                - /url: /dashboard/users
+                - generic [ref=e61]: 👥
+                - generic [ref=e62]: User Directory
+              - link "💵 Payroll" [ref=e64] [cursor=pointer]:
+                - /url: /dashboard/hr-management/payroll
+                - generic [ref=e65]: 💵
+                - generic [ref=e66]: Payroll
+              - link "🧾 Reimbursements" [ref=e68] [cursor=pointer]:
+                - /url: /dashboard/hr-management?tab=reimbursements
+                - generic [ref=e69]: 🧾
+                - generic [ref=e70]: Reimbursements
+          - generic [ref=e72]:
+            - generic [ref=e73]: Team Management
+            - generic [ref=e74]:
+              - link "📝 Work Reports" [ref=e75] [cursor=pointer]:
+                - /url: /dashboard/hr-management?tab=reports
+                - generic [ref=e76]: 📝
+                - generic [ref=e77]: Work Reports
+              - link "🏖️ Leave Requests" [ref=e79] [cursor=pointer]:
+                - /url: /dashboard/hr-management?tab=leaves
+                - generic [ref=e80]: 🏖️
+                - generic [ref=e81]: Leave Requests
+              - link "🕒 Attendance" [ref=e83] [cursor=pointer]:
+                - /url: /dashboard/hr-management?tab=attendance
+                - generic [ref=e84]: 🕒
+                - generic [ref=e85]: Attendance
+              - link "⚡ Productivity" [ref=e87] [cursor=pointer]:
+                - /url: /dashboard/hr-management?tab=productivity
+                - generic [ref=e88]: ⚡
+                - generic [ref=e89]: Productivity
+              - link "📊 Performance Workspace" [ref=e91] [cursor=pointer]:
+                - /url: /dashboard/performance/workspace?tab=review
+                - generic [ref=e92]: 📊
+                - generic [ref=e93]: Performance Workspace
+              - link "💰 Salary Increments" [ref=e94] [cursor=pointer]:
+                - /url: /dashboard/hr-management/increments
+                - generic [ref=e95]: 💰
+                - generic [ref=e96]: Salary Increments
+              - link "📉 Increment 360 Analysis" [ref=e98] [cursor=pointer]:
+                - /url: /dashboard/hr-management/increments/analytics
+                - generic [ref=e99]: 📉
+                - generic [ref=e100]: Increment 360 Analysis
+        - button "Logout" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+          - generic [ref=e105]: Logout
+    - main [ref=e106]:
+      - generic [ref=e110]:
+        - generic [ref=e112]:
+          - link "Command Center" [ref=e113] [cursor=pointer]:
+            - /url: /dashboard/hr-management
+            - img [ref=e114]
+            - text: Command Center
+          - link "Recruitment Hub" [ref=e119] [cursor=pointer]:
+            - /url: /dashboard/recruitment
+            - img [ref=e120]
+            - text: Recruitment Hub
+          - link "Attendance" [ref=e123] [cursor=pointer]:
+            - /url: /dashboard/hr-management?tab=attendance
+            - img [ref=e124]
+            - text: Attendance
+          - link "Performance" [ref=e127] [cursor=pointer]:
+            - /url: /dashboard/hr-management/performance/monthly
+            - img [ref=e128]
+            - text: Performance
+          - link "Staff Management" [ref=e131] [cursor=pointer]:
+            - /url: /dashboard/staff-management
+            - img [ref=e132]
+            - text: Staff Management
+        - generic [ref=e137]:
+          - generic [ref=e139]:
+            - heading "Recruitment Hub" [level=1] [ref=e140]:
+              - img [ref=e141]
+              - text: Recruitment Hub
+            - paragraph [ref=e146]: Manage talent acquisition, interviews, and onboarding.
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - button "Job Postings" [ref=e149] [cursor=pointer]:
+                - img [ref=e150]
+                - generic [ref=e153]: Job Postings
+              - button "Candidate Pipeline" [ref=e154] [cursor=pointer]:
+                - img [ref=e155]
+                - generic [ref=e160]: Candidate Pipeline
+            - generic [ref=e162]: Loading jobs...
+    - button "Toggle AI assistant" [ref=e164] [cursor=pointer]:
+      - img [ref=e167]
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic:
+              - generic:
+                - heading "STM Aria" [level=3]
+                - generic:
+                  - generic: Online
+              - paragraph: AI Assistant · Powered by Gemini
+          - generic:
+            - button "👁 On":
+              - img
+              - text: 👁 On
+            - button:
+              - img
+        - generic:
+          - generic: Context
+          - generic:
+            - img
+            - generic: Dashboard › Recruitment
+          - generic: SUPER ADMIN
+          - generic:
+            - img
+            - text: Screen Vision
+        - generic:
+          - generic:
+            - paragraph: Try asking...
+            - button "🖼️ What do you see on my screen?"
+            - button "📊 Explain what's on this page"
+            - button "🔍 What options are available here?"
+            - button "📋 Show dashboard stats"
+            - button "🗺️ How do I navigate to HR?"
+        - generic:
+          - generic:
+            - img
+            - generic: Aria will capture your screen with each message
+          - generic:
+            - generic:
+              - textbox "Ask about this page or anything..."
+            - button [disabled]:
+              - img
+          - paragraph: Press Enter to send · 📸 Screenshot included · Powered by Google Gemini
+    - button "Feedback & Support" [ref=e170] [cursor=pointer]:
+      - img [ref=e172]
+  - button "Open Next.js Dev Tools" [ref=e179] [cursor=pointer]:
+    - img [ref=e180]
+  - alert [ref=e183]
+```

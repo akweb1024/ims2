@@ -177,8 +177,8 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                     onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
                                 >
                                     <option value="MANAGER">Manager Only</option>
-                                    <option value="public">Public (Team)</option>
-                                    <option value="PRIVATE">Private</option>
+                                    <option value="ALL">Visible to All</option>
+                                    <option value="SELF">Private</option>
                                 </select>
                             </div>
                         </div>

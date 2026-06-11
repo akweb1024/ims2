@@ -5,6 +5,8 @@ const baseURL = process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${port}`;
 
 export default defineConfig({
     testDir: './e2e',
+    outputDir: '/tmp/ims-playwright-test-results',
+    timeout: 90000,
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

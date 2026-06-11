@@ -5,6 +5,14 @@ import { createPortal } from 'react-dom';
 import { X, Calendar, Clock, Flag, Eye, Save, Trash2, CheckCircle2, Briefcase, CheckSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
+const normalizeVisibility = (value?: string | null) => {
+    if (!value) return 'MANAGER';
+    const normalized = String(value).trim().toUpperCase();
+    if (normalized === 'PUBLIC') return 'ALL';
+    if (normalized === 'PRIVATE') return 'SELF';
+    return ['SELF', 'MANAGER', 'ADMIN', 'ALL'].includes(normalized) ? normalized : 'MANAGER';
+};
+
 interface WorkPlan {
     id: string;
     date: string;
@@ -39,7 +47,7 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         priority: plan.priority,
         estimatedHours: plan.estimatedHours || '',
         completionStatus: plan.completionStatus,
-        visibility: plan.visibility || 'MANAGER',
+        visibility: normalizeVisibility(plan.visibility),
         itProjectId: plan.itProjectId || '',
         itTaskId: plan.itTaskId || '',
     });
@@ -221,6 +229,22 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                                     <option value="LOW">Low</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">Visibility</label>
+                        <div className="relative">
+                            <Eye className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                            <select
+                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
+                                value={formData.visibility}
+                                onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                            >
+                                <option value="MANAGER">Manager Only</option>
+                                <option value="ALL">Visible to All</option>
+                                <option value="SELF">Private</option>
+                            </select>
                         </div>
                     </div>
 

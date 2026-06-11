@@ -4,6 +4,14 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
+const normalizeWorkPlanVisibility = (value: unknown) => {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim().toUpperCase();
+    if (normalized === 'PUBLIC') return 'ALL';
+    if (normalized === 'PRIVATE') return 'SELF';
+    return ['SELF', 'MANAGER', 'ADMIN', 'ALL'].includes(normalized) ? normalized : undefined;
+};
+
 // GET: Get specific work plan
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE'],
@@ -132,6 +140,7 @@ export const PUT = authorizedRoute(
                 itTaskId,
                 visibility
             } = body;
+            const normalizedVisibility = normalizeWorkPlanVisibility(visibility);
 
             // Find existing work plan
             const existingPlan = await prisma.workPlan.findUnique({
@@ -178,7 +187,7 @@ export const PUT = authorizedRoute(
                     ...(taskId !== undefined && { taskId: (taskId && taskId !== 'null') ? taskId : null }),
                     ...(itProjectId !== undefined && { itProjectId: (itProjectId && itProjectId !== 'null') ? itProjectId : null }),
                     ...(itTaskId !== undefined && { itTaskId: (itTaskId && itTaskId !== 'null') ? itTaskId : null }),
-                    ...(visibility && { visibility })
+                    ...(normalizedVisibility && { visibility: normalizedVisibility })
                 } as any,
                 include: {
                     employee: {

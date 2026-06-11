@@ -385,7 +385,13 @@ export const workPlanSchema = z.object({
     taskId: z.string().optional().nullable(),
     itProjectId: z.string().optional().nullable(),
     itTaskId: z.string().optional().nullable(),
-    visibility: z.enum(['SELF', 'MANAGER', 'ADMIN', 'ALL']).default('MANAGER'),
+    visibility: z.preprocess((value) => {
+        if (typeof value !== 'string') return value;
+        const normalized = value.trim().toUpperCase();
+        if (normalized === 'PUBLIC') return 'ALL';
+        if (normalized === 'PRIVATE') return 'SELF';
+        return normalized;
+    }, z.enum(['SELF', 'MANAGER', 'ADMIN', 'ALL']).default('MANAGER')),
 });
 
 export type WorkPlanFormData = z.infer<typeof workPlanSchema>;
