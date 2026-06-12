@@ -6,6 +6,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { Globe, TrendingUp, DollarSign, Download, RefreshCw, Calendar, Search, User, Mail } from 'lucide-react';
 import { downloadCSV } from '@/lib/csv-utils';
 
@@ -414,10 +415,17 @@ export default function RazorpayTrackerPage() {
                                             padding: '16px'
                                         }}
                                         labelStyle={{ fontWeight: 'black', color: '#1e293b', marginBottom: '8px', fontSize: '12px' }}
-                                        formatter={(value: any, name?: string) => [
-                                            `₹${Number(value).toLocaleString('en-IN')}`,
-                                            name === 'captured' ? 'Captured' : name === 'failed' ? 'Failed' : 'Last Month'
-                                        ]}
+                                        formatter={(value: ValueType | undefined, name: NameType | undefined) => {
+                                            const numericValue = Array.isArray(value)
+                                                ? Number(value[0] ?? 0)
+                                                : Number(value ?? 0);
+                                            const seriesName = typeof name === 'string' ? name : String(name ?? '');
+
+                                            return [
+                                                `₹${numericValue.toLocaleString('en-IN')}`,
+                                                seriesName === 'captured' ? 'Captured' : seriesName === 'failed' ? 'Failed' : 'Last Month'
+                                            ];
+                                        }}
                                     />
                                     {/* Last Month - orange dashed line (behind others) */}
                                     <Area

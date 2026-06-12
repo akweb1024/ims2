@@ -13,7 +13,7 @@ Ensure the following variables are set in your production environment (e.g., Coo
 | `AUTH_SECRET` | NextAuth encryption secret | Generate via `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | Full URL of your application | `https://your-domain.com` |
 | `AUTH_TRUST_HOST` | Required if behind a proxy | `true` |
-| `JWT_SECRET` | Legacy token secret | Any long random string |
+| `JWT_SECRET` | Legacy token secret | Long random string, 64+ characters recommended |
 | `NEXT_PUBLIC_APP_URL` | Frontend public URL | `https://your-domain.com` |
 | `RAZORPAY_KEY_ID` | Razorpay API Key | `rzp_live_...` |
 | `RAZORPAY_KEY_SECRET` | Razorpay Secret | `[SECRET]` |
@@ -60,6 +60,7 @@ Ensure the following variables are set in your production environment (e.g., Coo
 - **Auth Secrets**: Ensure `AUTH_SECRET` is set and at least 32 characters long.
 - **URL Mismatch**: Ensure `NEXTAUTH_URL` exactly matches the domain in your browser.
 - **Trust Host**: Add `AUTH_TRUST_HOST=true` if using Nginx/Coolify as a proxy.
+- **Legacy JWT Secret**: Keep `JWT_SECRET` at 64+ characters in production so token signing stays strong.
 
 ### Database Connection Refused
 - **Internal Host**: If your database host looks like `c0wssw...`, it is an internal Docker host. Ensure your application is running inside the same environment.
@@ -91,4 +92,3 @@ To ensure monitoring runs 24/7 even when no one is logged in, set up a cron job 
    ```cron
    * * * * * cd /path/to/app && node scripts/ping-monitors.js https://your-domain.com >> /var/log/stm-monitor.log 2>&1
    ```
-

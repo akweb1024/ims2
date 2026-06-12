@@ -3,6 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface TrendData {
     revenue: Record<string, Record<string, number>>;
@@ -84,7 +85,19 @@ export default function RevenueTrendsChart({ data }: { data: TrendData }) {
                             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                             <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 11 }} />
                             <Tooltip
-                                formatter={(value: number | undefined) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0)}
+                                formatter={(value: ValueType | undefined) =>
+                                    Array.isArray(value)
+                                        ? new Intl.NumberFormat('en-IN', {
+                                              style: 'currency',
+                                              currency: 'INR',
+                                              maximumFractionDigits: 0
+                                          }).format(Number(value[0] ?? 0))
+                                        : new Intl.NumberFormat('en-IN', {
+                                              style: 'currency',
+                                              currency: 'INR',
+                                              maximumFractionDigits: 0
+                                          }).format(Number(value ?? 0))
+                                }
                                 contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
                             />
                             <Legend />

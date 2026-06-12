@@ -80,6 +80,8 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+let jwtSecretWarningLogged = false;
+
 /**
  * Validated environment variables
  * Throws error if validation fails
@@ -110,7 +112,8 @@ export const env = (() => {
       if (!parsed.NEXTAUTH_URL) {
         throw new Error("NEXTAUTH_URL is required in production");
       }
-      if (parsed.JWT_SECRET.length < 64) {
+      if (!jwtSecretWarningLogged && parsed.JWT_SECRET.length < 64) {
+        jwtSecretWarningLogged = true;
         console.warn(
           "⚠️  WARNING: JWT_SECRET should be at least 64 characters in production",
         );

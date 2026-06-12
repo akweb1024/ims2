@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "bash scripts/build-with-heartbeat.sh",
-    "start": "next start",
+    "start": "if [ -d .next/standalone ]; then node .next/standalone/server.js; else next start; fi",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "prisma generate && tsc --noEmit",

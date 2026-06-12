@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Props = {
   employeeId?: string;
@@ -26,7 +26,7 @@ export default function PrivateDailyNotesPanel({ employeeId, title = 'Important 
     taggedEmployeeIds: employeeId ? [employeeId] : [] as string[],
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -56,11 +56,11 @@ export default function PrivateDailyNotesPanel({ employeeId, title = 'Important 
     } finally {
       setLoading(false);
     }
-  };
+  }, [employeeId]);
 
   useEffect(() => {
     load();
-  }, [employeeId]);
+  }, [load]);
 
   const employeeOptions = useMemo(() => {
     return employees
