@@ -11,26 +11,16 @@ if [ $EXIT_CODE -ne 0 ]; then
   # Check if the error is P3005 (database not empty without migration history)
   if echo "$OUTPUT" | grep -q "P3005"; then
     echo "Detected P3005: Database not empty without migration history."
-    echo "Attempting to baseline existing migrations..."
-    
-    # Check if prisma/migrations directory exists
-    if [ -d "prisma/migrations" ]; then
-      for dir in prisma/migrations/*/; do
-        # Remove trailing slash
-        dir=${dir%/}
-        migration_name=$(basename "$dir")
-        
-        # Only process actual migration directories (skip files like migration_lock.toml)
-        if [ "$migration_name" != "migration_lock.toml" ] && [ "$migration_name" != "*" ]; then
-          echo "Baselining $migration_name..."
-          npx prisma migrate resolve --applied "$migration_name"
-        fi
-      done
-      
-      echo "Baselining complete. Retrying prisma migrate deploy..."
+    echo "Baselining the designated initial migration..."
+
+    BASELINE_MIGRATION="20260301000000_baseline_init"
+    if [ -f "prisma/migrations/${BASELINE_MIGRATION}/migration.sql" ]; then
+      npx prisma migrate resolve --applied "$BASELINE_MIGRATION"
+
+      echo "Initial baseline complete. Applying later migrations..."
       npx prisma migrate deploy
     else
-      echo "No migrations found to baseline."
+      echo "Baseline migration ${BASELINE_MIGRATION} was not found."
       exit 1
     fi
   elif echo "$OUTPUT" | grep -q "P3009" && echo "$OUTPUT" | grep -q "20260301000000_baseline_init"; then

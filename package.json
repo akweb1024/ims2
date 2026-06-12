@@ -8,9 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "bash scripts/build-with-heartbeat.sh",
-    "start": "HOSTNAME=0.0.0.0 sh -c 'if [ -d .next/standalone ]; then node .next/standalone/server.js; else next start -H 0.0.0.0; fi'",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "start": "bash scripts/start-server.sh",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "type-check": "prisma generate && tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",

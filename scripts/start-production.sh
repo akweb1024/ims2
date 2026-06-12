@@ -88,27 +88,7 @@ if [ "$RUN_SEED" = "true" ]; then
 fi
 
 # Start the application
-# Start the application
 echo "🎯 Starting application..."
 print_status "Application is running on port ${PORT:-3000}"
 
-# Next standalone reads HOSTNAME directly; inside containers it is often the
-# container ID, which would make the app unreachable from the reverse proxy.
-export HOSTNAME="${HOSTNAME:-0.0.0.0}"
-
-# Check if standalone build exists
-if [ -d ".next/standalone" ]; then
-    echo "📦 Preparing standalone build..."
-    # Copy public folder
-    cp -r public .next/standalone/ || true
-    # Copy static assets
-    mkdir -p .next/standalone/.next/static
-    cp -r .next/static .next/standalone/.next/ || true
-    
-    # Run standalone server
-    exec node .next/standalone/server.js
-else
-    # Fallback to next start
-    echo "⚠️ Standalone build not found, falling back to 'next start'..."
-    exec next start -H 0.0.0.0
-fi
+exec bash scripts/start-server.sh

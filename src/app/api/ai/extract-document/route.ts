@@ -10,8 +10,19 @@ export async function POST(req: NextRequest) {
         if (!user || (!user.companyId && user.role !== 'SUPER_ADMIN')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        
-        const companyId = user.companyId || (await req.formData()).get('companyId') as string;
+
+        const formData = await req.formData();
+        const requestedCompanyId = formData.get('companyId');
+        const companyId = user.companyId || (
+            typeof requestedCompanyId === 'string' ? requestedCompanyId : null
+        );
+
+        if (!companyId) {
+            return NextResponse.json(
+                { error: 'A company is required for document extraction.' },
+                { status: 400 }
+            );
+        }
 
         // Fetch the Gemini API Key strictly securely via integration Gateway
         const aiIntegration = await prisma.companyIntegration.findUnique({
@@ -30,7 +41,6 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const formData = await req.formData();
         const file = formData.get('file') as File;
         const instructionType = formData.get('type') as string;
 
