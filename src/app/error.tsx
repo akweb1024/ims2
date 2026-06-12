@@ -3,6 +3,16 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 
+function isStaleBuildAssetError(message: string) {
+    return (
+        message.includes('ChunkLoadError') ||
+        message.includes('Loading chunk') ||
+        message.includes('Failed to fetch dynamically imported module') ||
+        message.includes('/_next/static/') ||
+        message.includes('Failed to find Server Action')
+    );
+}
+
 export default function Error({
     error,
     reset,
@@ -20,6 +30,15 @@ export default function Error({
         // }
     }, [error]);
 
+    const isStaleBuildError = isStaleBuildAssetError(error.message || '');
+    const primaryAction = () => {
+        if (isStaleBuildError) {
+            window.location.reload();
+            return;
+        }
+        reset();
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-4">
             <div className="max-w-2xl w-full">
@@ -32,10 +51,12 @@ export default function Error({
                         </div>
                         <h1 className="text-6xl font-bold text-gray-800 mb-2">Oops!</h1>
                         <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                            Something Went Wrong
+                            {isStaleBuildError ? 'A New Version Is Ready' : 'Something Went Wrong'}
                         </h2>
                         <p className="text-gray-600 text-lg">
-                            We encountered an unexpected error. Don&apos;t worry, our team has been notified.
+                            {isStaleBuildError
+                                ? 'Your browser is holding an older app bundle. Refresh once to continue with the latest deployment.'
+                                : 'We encountered an unexpected error. Don&apos;t worry, our team has been notified.'}
                         </p>
                     </div>
 
@@ -61,10 +82,10 @@ export default function Error({
                     {/* Action Buttons */}
                     <div className="space-y-4">
                         <button
-                            onClick={reset}
+                            onClick={primaryAction}
                             className="block w-full bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 text-center shadow-lg"
                         >
-                            Try Again
+                            {isStaleBuildError ? 'Refresh Now' : 'Try Again'}
                         </button>
 
                         <Link

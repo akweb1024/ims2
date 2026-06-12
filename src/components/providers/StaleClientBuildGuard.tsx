@@ -4,6 +4,24 @@ import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
 const STALE_BUILD_TOAST_ID = 'stale-client-build-refresh';
+const STALE_BUILD_RELOAD_KEY = 'stale-client-build-reload-attempted';
+
+function isStaleBuildAssetMessage(value: string) {
+    return (
+        value.includes('Failed to find Server Action') ||
+        value.includes('ChunkLoadError') ||
+        value.includes('Loading chunk') ||
+        value.includes('Failed to fetch dynamically imported module') ||
+        value.includes('/_next/static/')
+    );
+}
+
+function shouldAutoReloadOnce() {
+    if (typeof window === 'undefined') return false;
+    if (window.sessionStorage.getItem(STALE_BUILD_RELOAD_KEY)) return false;
+    window.sessionStorage.setItem(STALE_BUILD_RELOAD_KEY, '1');
+    return true;
+}
 
 function showStaleBuildToast() {
     toast.custom(
@@ -40,13 +58,17 @@ function showStaleBuildToast() {
 export default function StaleClientBuildGuard() {
     useEffect(() => {
         const originalFetch = window.fetch.bind(window);
-        const staleActionMessage = 'Failed to find Server Action';
+        const maybeRecoverFromMessage = (value: unknown) => {
+            if (typeof value !== 'string') return false;
+            if (!isStaleBuildAssetMessage(value)) return false;
 
-        const maybeShowFromMessage = (value: unknown) => {
-            if (typeof value !== 'string') return;
-            if (value.includes(staleActionMessage)) {
-                showStaleBuildToast();
+            if (shouldAutoReloadOnce()) {
+                window.location.reload();
+                return true;
             }
+
+            showStaleBuildToast();
+            return true;
         };
 
         window.fetch = async (...args: Parameters<typeof fetch>) => {
@@ -64,7 +86,11 @@ export default function StaleClientBuildGuard() {
             try {
                 const payload = await response.clone().json();
                 if (payload?.error === 'StaleClientBuild') {
-                    showStaleBuildToast();
+                    if (!shouldAutoReloadOnce()) {
+                        showStaleBuildToast();
+                    } else {
+                        window.location.reload();
+                    }
                 }
             } catch {
                 // Ignore parse errors; returning original response preserves existing behavior.
@@ -76,14 +102,24 @@ export default function StaleClientBuildGuard() {
         const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
             const reason = event.reason;
             if (reason instanceof Error) {
-                maybeShowFromMessage(reason.message);
+                maybeRecoverFromMessage(reason.message);
                 return;
             }
-            maybeShowFromMessage(String(reason));
+            maybeRecoverFromMessage(String(reason));
         };
 
         const handleWindowError = (event: ErrorEvent) => {
-            maybeShowFromMessage(event.message);
+            if (maybeRecoverFromMessage(event.message)) {
+                return;
+            }
+
+            if (event.filename && event.filename.includes('/_next/static/')) {
+                if (shouldAutoReloadOnce()) {
+                    window.location.reload();
+                } else {
+                    showStaleBuildToast();
+                }
+            }
         };
 
         window.addEventListener('unhandledrejection', handleUnhandledRejection);

@@ -2,6 +2,16 @@
 
 import { useEffect } from 'react';
 
+function isStaleBuildAssetError(message: string) {
+    return (
+        message.includes('ChunkLoadError') ||
+        message.includes('Loading chunk') ||
+        message.includes('Failed to fetch dynamically imported module') ||
+        message.includes('/_next/static/') ||
+        message.includes('Failed to find Server Action')
+    );
+}
+
 export default function GlobalError({
     error,
     reset,
@@ -12,6 +22,15 @@ export default function GlobalError({
     useEffect(() => {
         console.error('Global Application Error:', error);
     }, [error]);
+
+    const isStaleBuildError = isStaleBuildAssetError(error.message || '');
+    const primaryAction = () => {
+        if (isStaleBuildError) {
+            window.location.reload();
+            return;
+        }
+        reset();
+    };
 
     return (
         <html>
@@ -75,7 +94,9 @@ export default function GlobalError({
                             marginBottom: '2rem',
                             lineHeight: '1.6'
                         }}>
-                            A critical error occurred in the application. Please try reloading the page.
+                            {isStaleBuildError
+                                ? 'Your browser is using an older app bundle. Reload once to continue with the latest deployment.'
+                                : 'A critical error occurred in the application. Please try reloading the page.'}
                         </p>
 
                         {/* Error Details (Development) */}
@@ -112,7 +133,7 @@ export default function GlobalError({
                         {/* Action Buttons */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <button
-                                onClick={reset}
+                                onClick={primaryAction}
                                 style={{
                                     width: '100%',
                                     background: 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
@@ -129,7 +150,7 @@ export default function GlobalError({
                                 onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                                 onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                             >
-                                Try Again
+                                {isStaleBuildError ? 'Refresh Now' : 'Try Again'}
                             </button>
 
                             <button
