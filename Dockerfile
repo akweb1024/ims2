@@ -56,6 +56,7 @@ RUN adduser --system --uid 1001 nextjs
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 ENV PRISMA_CLIENT_ENGINE_TYPE=library
 
 # Copy necessary files from builder
@@ -85,4 +86,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start application — run migrations first (handles P3005 on existing DBs)
-CMD ["sh", "-c", "bash scripts/database-migrate.sh && node server.js"]
+CMD ["sh", "-c", "bash scripts/database-migrate.sh && HOSTNAME=0.0.0.0 node server.js"]
