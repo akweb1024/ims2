@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { filterApplicableOnboardingModules } from '@/lib/hr-onboarding';
 
 export const GET = authorizedRoute(
     [],
@@ -56,12 +57,10 @@ export const GET = authorizedRoute(
 
             // Filter in memory for specific Department/Role logic if needed, OR refine the query:
             // The previous query had specific OR conditions. Let's adapt that to include global.
-            const filteredModules = allModules.filter(m => {
-                if (!m.companyId) return true; // Global
-                if (m.type === 'COMPANY') return true;
-                if (m.type === 'DEPARTMENT' && m.departmentId === departmentId) return true;
-                if (m.type === 'ROLE' && m.requiredForDesignation === employee.designation) return true;
-                return false;
+            const filteredModules = filterApplicableOnboardingModules(allModules as any[], {
+                companyId,
+                departmentId,
+                designation: employee.designation,
             });
 
 

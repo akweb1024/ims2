@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { filterApplicableOnboardingModules } from '@/lib/hr-onboarding';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +31,18 @@ export const GET = authorizedRoute(
 
             const requiredModules = await prisma.onboardingModule.findMany({
                 where: {
-                    companyId: user.companyId,
                     isActive: true,
                     OR: [
-                        { type: 'COMPANY' },
-                        { type: 'ROLE' },
+                        { companyId: user.companyId },
+                        { companyId: null },
                     ]
                 }
+            });
+
+            const applicableModules = filterApplicableOnboardingModules(requiredModules as any[], {
+                companyId: user.companyId,
+                departmentId: employee.user?.departmentId || null,
+                designation: employee.designation,
             });
 
             const completedProgress = await prisma.onboardingProgress.findMany({
@@ -49,7 +55,7 @@ export const GET = authorizedRoute(
 
             const completedIds = new Set(completedProgress.map((p: any) => (p as any).moduleId));
 
-            const pendingModules = (requiredModules as any[])
+            const pendingModules = applicableModules
                 .filter((m: any) => !completedIds.has(m.id))
                 .map((m: any) => ({ id: m.id, title: m.title }));
 

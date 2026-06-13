@@ -217,6 +217,7 @@ export const PATCH = authorizedRoute(
       const action = String(body?.action || 'save').trim().toLowerCase();
       const approvalDecision = String(body?.approvalDecision || '').trim().toLowerCase();
       const approvalReason = body?.approvalReason ? String(body.approvalReason).trim() : null;
+      const stepData = body?.stepData && typeof body.stepData === 'object' ? body.stepData : undefined;
 
       if (!employeeId) return createErrorResponse('employeeId is required', 400);
       if (!STEP_KEYS.has(step)) return createErrorResponse('Invalid step', 400);
@@ -265,6 +266,7 @@ export const PATCH = authorizedRoute(
           completed,
           savedAt: new Date().toISOString(),
           savedBy: user.id,
+          ...(stepData ? { details: stepData } : {}),
         };
       }
 

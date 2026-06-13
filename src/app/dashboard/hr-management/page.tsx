@@ -40,7 +40,7 @@ import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { TableSkeleton, CardSkeleton } from '@/components/ui/skeletons';
-import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown, BookOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatToISTDate, getISTToday } from '@/lib/date-utils';
 import {
@@ -552,6 +552,13 @@ const HRManagementContent = () => {
                         >
                             + Onboard Employee
                         </button>
+                        <Link
+                            href="/dashboard/hr-management/onboarding/help"
+                            className="btn btn-secondary shadow-xl flex items-center gap-2"
+                        >
+                            <BookOpen size={18} />
+                            Onboarding SOP
+                        </Link>
                     </div>
                 </div>
 
@@ -584,6 +591,28 @@ const HRManagementContent = () => {
                 </div>
 
                 <RevenueMismatchAlert />
+
+                <section className="card-premium p-6 border border-primary-100 bg-primary-50/40">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary-700">Onboarding Reference</p>
+                            <h2 className="text-xl font-black text-secondary-900 mt-1">Need the onboarding SOP or diagram?</h2>
+                            <p className="text-sm text-secondary-600 mt-1 max-w-2xl">
+                                Open the short admin guide for the candidate-to-employee handoff, workflow approvals, compliance rules, and the architecture diagram.
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/hr-management/onboarding/help"
+                            className="group relative inline-flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-secondary-200 bg-white text-secondary-500 hover:border-primary-300 hover:text-primary-600 transition-colors"
+                            aria-label="Open Onboarding SOP"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            <span className="pointer-events-none absolute left-1/2 top-10 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-secondary-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg group-hover:block">
+                                Open Onboarding SOP
+                            </span>
+                        </Link>
+                    </div>
+                </section>
 
             </div>
 
@@ -744,7 +773,21 @@ const HRManagementContent = () => {
                 )}
 
                 {activeTab === 'onboarding' && (
-                    <OnboardingManager />
+                    <div className="space-y-4">
+                        <div className="flex justify-end">
+                        <Link
+                            href="/dashboard/hr-management/onboarding/help"
+                            className="group relative inline-flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-secondary-200 bg-white text-secondary-500 hover:border-primary-300 hover:text-primary-600 transition-colors"
+                            aria-label="Open Onboarding SOP"
+                        >
+                                <BookOpen className="w-4 h-4" />
+                                <span className="pointer-events-none absolute left-1/2 top-10 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-secondary-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg group-hover:block">
+                                    Open Onboarding SOP
+                                </span>
+                            </Link>
+                        </div>
+                        <OnboardingManager />
+                    </div>
                 )}
 
                 {activeTab === 'document-templates' && (

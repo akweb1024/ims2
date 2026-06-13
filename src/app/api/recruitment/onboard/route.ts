@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { createNotification } from '@/lib/system-notifications';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 // Helper to replace placeholders
 const hydrateTemplate = (content: string, vars: Record<string, string>) => {
@@ -35,8 +37,10 @@ export const POST = authorizedRoute(
             const company = await prisma.company.findUnique({ where: { id: targetCompanyId } });
 
             // Generate Temp Password
-            const rawPassword = `Welcome@${new Date().getFullYear()}`;
-            const hashedPassword = await bcrypt.hash(rawPassword, 12);
+            const inviteToken = crypto.randomBytes(32).toString('hex');
+            const inviteUrl = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${inviteToken}`;
+            const hashedPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
+            let onboardedUser: any = null;
 
             // Generate Emp ID (Simple count + 1 for now)
             const count = await prisma.employeeProfile.count();
@@ -114,19 +118,44 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // 4. Send Welcome Notification (Email)
-                await createNotification({
-                    userId: newUser.id,
-                    title: 'Welcome to the Team! 🚀',
-                    message: `Your account has been created. \nEmail: ${application.applicantEmail}\nPassword: ${rawPassword}\nPlease login and complete your onboarding tasks.`,
-                    type: 'INFO',
-                    channels: ['EMAIL', 'IN_APP'], // Force Email
-                    category: 'ONBOARDING',
-                    link: '/dashboard/staff-portal'
+                await tx.passwordResetToken.deleteMany({
+                    where: { userId: newUser.id }
                 });
 
-                return newUser;
+                await tx.passwordResetToken.create({
+                    data: {
+                        token: inviteToken,
+                        userId: newUser.id,
+                        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                    }
+                });
+
+                onboardedUser = newUser;
             });
+
+            const inviteTemplate = EmailTemplates.onboardingInvite(application.applicantName, inviteUrl);
+            const deliveryResults = await Promise.allSettled([
+                sendEmail({
+                    to: application.applicantEmail,
+                    subject: inviteTemplate.subject,
+                    text: inviteTemplate.text,
+                    html: inviteTemplate.html,
+                }),
+                createNotification({
+                    userId: onboardedUser.id,
+                    title: 'Welcome to the Team! 🚀',
+                    message: 'Your account is ready. Use the onboarding invite sent to your email to set your password and begin the onboarding flow.',
+                    type: 'INFO',
+                    channels: ['IN_APP'],
+                    category: 'ONBOARDING',
+                    link: `/reset-password?token=${inviteToken}`
+                })
+            ]);
+
+            const emailFailure = deliveryResults[0].status === 'rejected' ? deliveryResults[0].reason : null;
+            if (emailFailure) {
+                console.error('Failed to send onboarding invite email:', emailFailure);
+            }
 
             return NextResponse.json({ success: true, message: `Applicant onboarded as ${role || 'Employee'}` });
         } catch (error) {

@@ -86,6 +86,21 @@ export function useApplicationMutations() {
     return { updateStatus, createApplication };
 }
 
+export function useRecruitmentOnboarding() {
+    const queryClient = useQueryClient();
+
+    const onboardCandidate = useMutation({
+        mutationFn: (data: any) => fetchJson('/api/recruitment/onboard', 'POST', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-applications'] });
+            queryClient.invalidateQueries({ queryKey: ['job-postings'] });
+            queryClient.invalidateQueries({ queryKey: ['employees'] });
+        }
+    });
+
+    return { onboardCandidate };
+}
+
 export function useInterviews(applicationId?: string) {
     return useQuery<any[]>({
         queryKey: ['interviews', applicationId],

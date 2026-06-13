@@ -421,6 +421,27 @@ export const EmailTemplates = {
             </div>
         `
     }),
+
+    onboardingInvite: (userName: string, inviteUrl: string) => ({
+        subject: 'Complete your onboarding - STM Journals',
+        text: `Dear ${userName}, your employee account is ready. Set your password and complete onboarding here: ${inviteUrl}. This link will expire in 1 hour.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Your account is ready</h1>
+                <p>Dear <strong>${escapeHtml(userName)}</strong>,</p>
+                <p>Your employee account has been created. To continue, set your password and finish the onboarding steps.</p>
+                <p>This invite link is valid for <strong>1 hour</strong>.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${inviteUrl}"
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Set Password &amp; Continue
+                    </a>
+                </div>
+                <p>If you did not expect this email, please contact your HR team immediately.</p>
+                <p>Best regards,<br/>The STM Team</p>
+            </div>
+        `
+    }),
  
     passwordResetConfirmation: (userName: string) => ({
         subject: 'Password Reset Successful - STM Journals',

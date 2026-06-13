@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useOnboardingModules, useOnboardingMutations, useDepartments } from '@/hooks/useHR';
 import { Plus, Trash2, Edit2, BookOpen, HelpCircle, Save, X, MoveUp, MoveDown } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -73,14 +74,26 @@ export default function OnboardingManager() {
                     <h3 className="text-2xl font-black text-secondary-900 tracking-tight">Onboarding Workflows</h3>
                     <p className="text-secondary-500 text-sm font-medium">Create and manage study material and quizzes for new hires.</p>
                 </div>
-                {!isCreating && !editingModule && (
-                    <button
-                        onClick={() => setIsCreating(true)}
-                        className="btn bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-2xl flex items-center gap-2 shadow-lg shadow-primary-100 transition-all font-bold uppercase tracking-widest text-[10px]"
+                <div className="flex flex-wrap items-center gap-4">
+                    <Link
+                        href="/dashboard/hr-management/onboarding/help"
+                        className="group relative inline-flex shrink-0 items-center justify-center w-8 h-8 rounded-full border border-secondary-200 bg-white text-secondary-500 hover:border-primary-300 hover:text-primary-600 transition-colors"
+                        aria-label="Open Onboarding SOP"
                     >
-                        <Plus size={16} /> Create New Module
-                    </button>
-                )}
+                        <BookOpen className="w-4 h-4" />
+                        <span className="pointer-events-none absolute left-1/2 top-10 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-secondary-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg group-hover:block">
+                            Open Onboarding SOP
+                        </span>
+                    </Link>
+                    {!isCreating && !editingModule && (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            className="btn bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-2xl flex items-center gap-2 shadow-lg shadow-primary-100 transition-all font-bold uppercase tracking-widest text-[10px]"
+                        >
+                            <Plus size={16} /> Create New Module
+                        </button>
+                    )}
+                </div>
             </div>
 
             {(isCreating || editingModule) && (

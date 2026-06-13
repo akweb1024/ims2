@@ -241,7 +241,7 @@ export default function EmployeeOnboardingWorkflow() {
     printWindow.print();
   };
 
-  const persistStepState = async (employeeId: string, step: StepKey, completed: boolean, stepCursor: StepKey) => {
+  const persistStepState = async (employeeId: string, step: StepKey, completed: boolean, stepCursor: StepKey, stepData?: Record<string, any>) => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/hr/onboarding/workflow-state', {
       method: 'PATCH',
@@ -249,14 +249,15 @@ export default function EmployeeOnboardingWorkflow() {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({
-        employeeId,
-        step,
-        completed,
-        mode,
-        currentStep: stepCursor,
-      }),
-    });
+        body: JSON.stringify({
+          employeeId,
+          step,
+          completed,
+          mode,
+          currentStep: stepCursor,
+          ...(stepData ? { stepData } : {}),
+        }),
+      });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to persist onboarding state');
   };
@@ -359,7 +360,7 @@ export default function EmployeeOnboardingWorkflow() {
       const res = await fetch(`/api/hr/employees/${id}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (!res.ok) throw new Error('Failed to load employee profile');
       const p = await res.json();
-      const perks = p?.metrics?.onboarding?.perks || {};
+      const perks = p?.metrics?.onboardingWorkflow?.steps?.perks?.details || p?.metrics?.onboarding?.perks || {};
       setProfileId(p.id);
       setForm((prev: any) => ({
         ...prev,
@@ -481,24 +482,19 @@ export default function EmployeeOnboardingWorkflow() {
       }
 
       if (step === 'perks') {
-        const selected = employees.find((e: any) => e.id === targetId);
-        const currentMetrics = selected?.metrics || {};
-        Object.assign(basePatch, {
-          metrics: {
-            ...currentMetrics,
-            onboarding: {
-              ...(currentMetrics?.onboarding || {}),
-              perks: {
-                pcAllotted: Boolean(form.pcAllotted),
-                mobileAllotted: Boolean(form.mobileAllotted),
-                softwareAccess: form.softwareAccess || '',
-                backupAccess: Boolean(form.backupAccess),
-                securityTools: form.securityTools || '',
-                otherBenefits: form.otherBenefits || '',
-              }
-            }
-          }
-        });
+        const stepData = {
+          pcAllotted: Boolean(form.pcAllotted),
+          mobileAllotted: Boolean(form.mobileAllotted),
+          softwareAccess: form.softwareAccess || '',
+          backupAccess: Boolean(form.backupAccess),
+          securityTools: form.securityTools || '',
+          otherBenefits: form.otherBenefits || '',
+        };
+        await persistStepState(targetId, step, true, step, stepData);
+        setStepSaved((prev) => ({ ...prev, [step]: true }));
+        await Promise.all([loadWorkflowState(targetId), loadSummary(), loadTeamSnapshot()]);
+        setStatusMessage(`${STEPS.find((s) => s.key === step)?.title} saved successfully.`);
+        return;
       }
 
       if (!(mode === 'NEW' && step === 'joining' && !targetId)) {

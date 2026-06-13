@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRecruitmentOnboarding } from '@/hooks/useRecruitment';
 
 interface RecruitmentBoardProps {
     jobs: any[];
@@ -10,11 +11,34 @@ interface RecruitmentBoardProps {
 export default function RecruitmentBoard({ jobs, applications, onCreateJob, onEditJob }: RecruitmentBoardProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [search, setSearch] = useState('');
+    const { onboardCandidate } = useRecruitmentOnboarding();
+    const [onboardingAppId, setOnboardingAppId] = useState<string | null>(null);
 
     const filteredJobs = jobs.filter(j =>
         j.title.toLowerCase().includes(search.toLowerCase()) ||
         j.type.toLowerCase().includes(search.toLowerCase())
     );
+
+    const handleOnboardCandidate = async (app: any) => {
+        if (!app?.id) return;
+        const confirmed = window.confirm(`Move ${app.applicantName} into employee onboarding?`);
+        if (!confirmed) return;
+
+        setOnboardingAppId(app.id);
+        try {
+            await onboardCandidate.mutateAsync({
+                applicationId: app.id,
+                role: app.selectedRole || 'EXECUTIVE',
+                designation: app.jobPosting?.title || 'New Hire',
+                companyId: app.jobPosting?.companyId,
+            });
+        } catch (error) {
+            console.error('Failed to onboard candidate', error);
+        } finally {
+            setOnboardingAppId(null);
+        }
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Job Postings */}
@@ -156,7 +180,21 @@ export default function RecruitmentBoard({ jobs, applications, onCreateJob, onEd
                                     </span>
                                 </td>
                                 <td className="p-4 text-right">
-                                    <button className="text-primary-600 font-bold text-[10px] uppercase hover:underline opacity-0 group-hover:opacity-100 transition-opacity">View Profile</button>
+                                    <div className="flex items-center justify-end gap-2">
+                                        {app.status === 'SELECTED' ? (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    void handleOnboardCandidate(app);
+                                                }}
+                                                disabled={onboardingAppId === app.id}
+                                                className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-60"
+                                            >
+                                                {onboardingAppId === app.id ? 'Onboarding...' : 'Onboard'}
+                                            </button>
+                                        ) : null}
+                                        <button className="text-primary-600 font-bold text-[10px] uppercase hover:underline opacity-0 group-hover:opacity-100 transition-opacity">View Profile</button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

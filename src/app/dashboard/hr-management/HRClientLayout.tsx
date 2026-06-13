@@ -10,6 +10,7 @@ import {
     Clock,
     TrendingUp,
     UserCheck,
+    BookOpen,
 } from 'lucide-react';
 
 interface HRClientLayoutProps {
@@ -32,6 +33,7 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
         { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: Clock, tab: 'attendance' },
         { name: 'Performance', href: '/dashboard/hr-management/performance/monthly', icon: TrendingUp },
         { name: 'Performance 360', href: '/dashboard/hr-management/performance/employee-360', icon: TrendingUp },
+        { name: 'Onboarding SOP', href: '/dashboard/hr-management/onboarding/help', icon: BookOpen },
         { name: 'Staff Management', href: '/dashboard/staff-management', icon: UserCheck },
     ];
 
