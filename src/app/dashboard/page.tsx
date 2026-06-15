@@ -15,6 +15,7 @@ import { formatToISTDate } from '@/lib/date-utils';
 export default function DashboardPage() {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const userRole = (session?.user as any)?.role;
     const [loadingData, setLoadingData] = useState(false);
     const [data, setData] = useState<any>({
         stats: [],
@@ -22,6 +23,12 @@ export default function DashboardPage() {
         upcomingRenewals: []
     });
     const [attendance, setAttendance] = useState<any[]>([]);
+    const [teamAttendanceSummary, setTeamAttendanceSummary] = useState<{
+        totalActiveTeamMembers: number;
+        present: number;
+        absent: number;
+        out: number;
+    } | null>(null);
     const [checkingIn, setCheckingIn] = useState(false);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
@@ -86,14 +93,95 @@ export default function DashboardPage() {
         }
     }, []);
 
+    const fetchTeamAttendanceSummary = useCallback(async () => {
+        const canViewTeamAttendance = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(userRole);
+
+        if (!canViewTeamAttendance) {
+            setTeamAttendanceSummary(null);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            const todayKey = formatToISTDate(now);
+
+            const [membersRes, attendanceRes] = await Promise.all([
+                fetch('/api/manager/team/members', { headers }),
+                fetch(`/api/manager/team/attendance?year=${year}&month=${month}`, { headers })
+            ]);
+
+            if (membersRes.status === 401 || attendanceRes.status === 401) {
+                router.push('/login');
+                return;
+            }
+
+            if (!membersRes.ok || !attendanceRes.ok) {
+                throw new Error('Failed to load team attendance summary');
+            }
+
+            const membersData = await membersRes.json();
+            const attendanceData = await attendanceRes.json();
+            const teamMembers = Array.isArray(membersData?.teamMembers) ? membersData.teamMembers : [];
+            const monthlyAttendance = Array.isArray(attendanceData?.attendance) ? attendanceData.attendance : [];
+
+            const activeTeamMembers = teamMembers.filter((member: any) => member?.isActive !== false);
+            const todayAttendanceMap = new Map<string, any>();
+
+            monthlyAttendance
+                .filter((record: any) => formatToISTDate(record.date) === todayKey)
+                .forEach((record: any) => {
+                    const userId = record?.employee?.userId;
+                    if (!userId) return;
+
+                    const existing = todayAttendanceMap.get(userId);
+                    if (!existing) {
+                        todayAttendanceMap.set(userId, record);
+                        return;
+                    }
+
+                    // Prefer the record that has a checkout if there are duplicates for the day.
+                    if (!existing.checkOut && record.checkOut) {
+                        todayAttendanceMap.set(userId, record);
+                    }
+                });
+
+            const present = activeTeamMembers.filter((member: any) => {
+                const record = todayAttendanceMap.get(member.userId);
+                return !!record?.checkIn;
+            }).length;
+
+            const out = activeTeamMembers.filter((member: any) => {
+                const record = todayAttendanceMap.get(member.userId);
+                return !!record?.checkIn && !!record?.checkOut;
+            }).length;
+
+            setTeamAttendanceSummary({
+                totalActiveTeamMembers: activeTeamMembers.length,
+                present,
+                absent: Math.max(0, activeTeamMembers.length - present),
+                out
+            });
+        } catch (err) {
+            console.error('Failed to fetch team attendance summary', err);
+            setTeamAttendanceSummary(null);
+        }
+    }, [router, userRole]);
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login');
         } else if (status === 'authenticated') {
             fetchDashboardData();
             fetchTodayAttendance();
+            fetchTeamAttendanceSummary();
         }
-    }, [status, router, fetchDashboardData, fetchTodayAttendance]);
+    }, [status, router, fetchDashboardData, fetchTodayAttendance, fetchTeamAttendanceSummary]);
 
     const todayAttendance = attendance.find(a => {
         return formatToISTDate(a.date) === formatToISTDate(new Date());
@@ -210,9 +298,38 @@ export default function DashboardPage() {
     }
 
     const { stats, recentActivities, upcomingRenewals } = data;
-    const userRole = (session?.user as any)?.role;
     const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'User';
     const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
+    const teamSummaryCards = teamAttendanceSummary ? [
+        {
+            label: 'Total Active Team Members',
+            value: teamAttendanceSummary.totalActiveTeamMembers,
+            icon: '👥',
+            tone: 'bg-primary/10 text-primary',
+            note: 'Active employees assigned to your team'
+        },
+        {
+            label: 'Present',
+            value: teamAttendanceSummary.present,
+            icon: '🟢',
+            tone: 'bg-emerald-500/10 text-emerald-600',
+            note: 'Checked in today'
+        },
+        {
+            label: 'Absent',
+            value: teamAttendanceSummary.absent,
+            icon: '⚪',
+            tone: 'bg-muted text-muted-foreground',
+            note: 'No check-in today'
+        },
+        {
+            label: 'Out',
+            value: teamAttendanceSummary.out,
+            icon: '🚪',
+            tone: 'bg-amber-500/10 text-amber-600',
+            note: 'Checked in and checked out today'
+        }
+    ] : [];
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -326,6 +443,46 @@ export default function DashboardPage() {
                                     ✅ Shift Completed
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {teamAttendanceSummary && (
+                    <div className="glass-card p-6 shadow-sm">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
+                            <div>
+                                <h2 className="text-xl font-black text-foreground">Today's Team Attendance</h2>
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Live snapshot for the logged-in user's team
+                                </p>
+                            </div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            Out is included in Present
+                        </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            {teamSummaryCards.map((card) => (
+                                <div key={card.label} className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-lg ${card.tone}`}>
+                                            {card.icon}
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                            Today
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+                                        {card.label}
+                                    </p>
+                                    <div className="flex items-end gap-2">
+                                        <p className="text-3xl font-black leading-none text-foreground">{card.value}</p>
+                                    </div>
+                                    <p className="mt-3 text-xs font-medium text-muted-foreground">
+                                        {card.note}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GlobalSearch from './GlobalSearch';
@@ -54,6 +54,8 @@ export default function Header({
     const [attendance, setAttendance] = useState<any[]>([]);
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
     const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement | null>(null);
 
     const isStaff = user && !['CUSTOMER', 'AGENCY'].includes(user.role);
     const todayAttendance = attendance.find(a => {
@@ -117,6 +119,31 @@ export default function Header({
         return () => clearInterval(interval);
     }, [fetchTodayAttendance]);
 
+    useEffect(() => {
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            if (!userMenuRef.current) return;
+            if (event.target instanceof Node && !userMenuRef.current.contains(event.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('touchstart', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('touchstart', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
     return (
         <nav
             className={`fixed w-full z-30 transition-all ${isImpersonating ? 'top-10' : 'top-0'}`}
@@ -178,7 +205,7 @@ export default function Header({
 
                             {/* Dropdown Menu */}
                             <div className="absolute top-full left-0 pt-2 w-64 z-50 opacity-0 invisible group-hover/module-switcher:opacity-100 group-hover/module-switcher:visible transition-all duration-200 translate-y-2 group-hover/module-switcher:translate-y-0">
-                                <div className="p-2 rounded-2xl bg-card/95 backdrop-blur-xl border border-border shadow-premium-lg grid gap-1">
+                                <div className="p-2 rounded-2xl bg-background border border-border/80 shadow-[0_24px_70px_rgba(15,23,42,0.16)] ring-1 ring-black/5 grid gap-1">
                                     {navigationModules.map((mod) => (
                                         <button
                                             key={mod.id}
@@ -189,10 +216,10 @@ export default function Header({
                                                 // Optional: close dropdown logic if needed, hover handles it mostly
                                             }}
                                             className={`
-                                                flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                                                flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all duration-200 min-h-11
                                                 ${activeModule === mod.id 
                                                     ? 'bg-primary/10 text-primary shadow-sm' 
-                                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
                                                 }
                                             `}
                                         >
@@ -257,14 +284,14 @@ export default function Header({
                             {/* Notifications Dropdown */}
                             <div className="hidden group-hover:block absolute right-[-50px] sm:right-0 mt-2 w-72 sm:w-84 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div
-                                    className="glass-card border-border/60"
+                                    className="bg-background border border-border/80"
                                     style={{
-                                        boxShadow: '0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+                                        boxShadow: '0 24px 70px rgba(15,23,42,0.16), 0 0 0 1px rgba(15,23,42,0.05)',
                                         borderRadius: '20px',
                                         overflow: 'hidden'
                                     }}
                                 >
-                                    <div className="px-3 py-2.5 sm:px-4 sm:py-3.5 border-b border-border/60 flex justify-between items-center">
+                                    <div className="px-3 py-2.5 sm:px-4 sm:py-3.5 border-b border-border/70 flex justify-between items-center bg-muted/40">
                                         <div className="flex items-center gap-1.5 sm:gap-2">
                                             <h3 className="text-xs sm:text-sm font-bold text-foreground">Notifications</h3>
                                             {unreadCount > 0 && (
@@ -293,10 +320,10 @@ export default function Header({
                                                 <div
                                                     key={n.id}
                                                     onClick={() => handleNotificationClick(n)}
-                                                    className={`px-3 py-2.5 sm:px-4 sm:py-3.5 cursor-pointer transition-all duration-150 border-b border-border/40 last:border-0 group/notif
+                                                className={`px-3 py-3 sm:px-4 sm:py-3.5 cursor-pointer transition-all duration-150 border-b border-border/50 last:border-0 group/notif
                                                         ${!n.isRead
                                                             ? 'bg-primary/10/60 hover:bg-primary/10'
-                                                            : 'hover:bg-muted/50'
+                                                            : 'hover:bg-muted/60'
                                                         }`}
                                                 >
                                                     <div className="flex justify-between items-start gap-2 sm:gap-3">
@@ -322,8 +349,14 @@ export default function Header({
                         </div>
 
                         {/* User Dropdown */}
-                        <div className="relative group">
-                            <button className="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2 pr-1 sm:pr-3 py-1 sm:py-1.5 rounded-xl hover:bg-muted transition-all duration-200 border border-transparent hover:border-border">
+                        <div ref={userMenuRef} className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setIsUserMenuOpen((open) => !open)}
+                                aria-haspopup="menu"
+                                aria-expanded={isUserMenuOpen}
+                                className="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2 pr-1 sm:pr-3 py-1 sm:py-1.5 rounded-xl hover:bg-muted transition-all duration-200 border border-transparent hover:border-border"
+                            >
                                 <div
                                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-primary-foreground shadow-md flex-shrink-0"
                                     style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)' }}
@@ -344,18 +377,22 @@ export default function Header({
                             </button>
 
                             {/* Dropdown Menu */}
-                            <div className="hidden group-hover:block absolute right-0 top-full pt-2 w-[260px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div
+                                className={`absolute right-0 top-full pt-2 w-[280px] z-50 animate-in fade-in slide-in-from-top-2 duration-200 ${
+                                    isUserMenuOpen ? 'block' : 'hidden'
+                                }`}
+                            >
                                 <div
-                                    className="bg-card/95 backdrop-blur-xl border border-border"
+                                    className="bg-background border border-border/80"
                                     style={{
-                                        boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+                                        boxShadow: '0 24px 70px rgba(15,23,42,0.16), 0 0 0 1px rgba(15,23,42,0.05)',
                                         borderRadius: '16px',
                                         overflow: 'hidden'
                                     }}
                                 >
                                     {/* User Info Header */}
                                     <div
-                                        className="px-4 py-4 border-b border-border/60 bg-muted/50"
+                                        className="px-4 py-4 border-b border-border/70 bg-muted/40"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div
@@ -383,7 +420,8 @@ export default function Header({
                                     <div className="py-1.5">
                                         <Link
                                             href="/dashboard/profile"
-                                            className="flex items-center px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors gap-3"
+                                            onClick={() => setIsUserMenuOpen(false)}
+                                            className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors gap-3 min-h-11"
                                         >
                                             <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                                                 <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,7 +433,8 @@ export default function Header({
 
                                         <Link
                                             href="/dashboard"
-                                            className="flex items-center px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors gap-3"
+                                            onClick={() => setIsUserMenuOpen(false)}
+                                            className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors gap-3 min-h-11"
                                         >
                                             <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                                                 <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,14 +448,17 @@ export default function Header({
 
                                     {/* Switch Company */}
                                     {availableCompanies.length > 1 && (
-                                        <div className="border-t border-border/60 py-1.5">
+                                        <div className="border-t border-border/70 py-1.5">
                                             <p className="px-4 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Switch Company</p>
                                             <div className="max-h-40 overflow-y-auto">
                                                 {canUseAllCompanies && (
                                                     <button
                                                         onClick={() => handleSwitchCompany('ALL')}
-                                                        className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors gap-2
-                                                            ${!user?.companyId ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/50'}`}
+                                                        type="button"
+                                                        onMouseDown={(event) => event.preventDefault()}
+                                                        onClickCapture={() => setIsUserMenuOpen(false)}
+                                                        className={`w-full text-left px-4 py-3 text-xs flex justify-between items-center transition-colors gap-2 min-h-11
+                                                            ${!user?.companyId ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/70'}`}
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-primary">🌐</span>
@@ -432,9 +474,12 @@ export default function Header({
                                                 {availableCompanies.map((comp) => (
                                                     <button
                                                         key={comp.id}
+                                                        type="button"
+                                                        onMouseDown={(event) => event.preventDefault()}
+                                                        onClickCapture={() => setIsUserMenuOpen(false)}
                                                         onClick={() => handleSwitchCompany(comp.id)}
-                                                        className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors
-                                                            ${comp.id === user?.companyId ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/50'}`}
+                                                        className={`w-full text-left px-4 py-3 text-xs flex justify-between items-center transition-colors min-h-11
+                                                            ${comp.id === user?.companyId ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/70'}`}
                                                     >
                                                         <span className="truncate">{comp.name}</span>
                                                         {comp.id === user?.companyId && (
@@ -449,10 +494,12 @@ export default function Header({
                                     )}
 
                                     {/* Logout */}
-                                    <div className="border-t border-border/60 p-2">
+                                    <div className="border-t border-border/70 p-2">
                                         <button
                                             onClick={handleLogout}
-                                            className="w-full rounded-xl bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive transition-all hover:bg-destructive/20 flex items-center justify-center gap-2"
+                                            type="button"
+                                            onClickCapture={() => setIsUserMenuOpen(false)}
+                                            className="w-full rounded-xl bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive transition-all hover:bg-destructive/20 flex items-center justify-center gap-2 min-h-11"
                                         >
                                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

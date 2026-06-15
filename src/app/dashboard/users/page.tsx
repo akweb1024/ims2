@@ -18,6 +18,11 @@ function UsersContent() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [showNewModal, setShowNewModal] = useState(false);
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<any>(null);
+    const [deletePreview, setDeletePreview] = useState<any>(null);
+    const [expandedDeleteDependencies, setExpandedDeleteDependencies] = useState<Record<string, boolean>>({});
+    const [deleteSearchTerm, setDeleteSearchTerm] = useState('');
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [pagination, setPagination] = useState({
         page: 1,
@@ -231,9 +236,34 @@ function UsersContent() {
         }
     };
 
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return;
+    const loadDeletePreview = async (user: any) => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/${user.id}/delete-preview`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'Failed to load delete preview');
+                return;
+            }
+
+            const preview = await res.json();
+            setDeleteTarget(user);
+            setDeletePreview(preview);
+            setShowDeleteModal(true);
+        } catch (err) {
+            alert('Error loading delete preview');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeactivateUser = async (userId: string) => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -249,14 +279,101 @@ function UsersContent() {
                 setPagination(prev => ({ ...prev, total: prev.total - 1 }));
             } else {
                 const err = await res.json();
-                alert(err.error || 'Failed to delete user');
+                alert(err.error || 'Failed to deactivate user');
             }
         } catch (err) {
-            alert('Error deleting user');
+            alert('Error deactivating user');
         } finally {
             setActionLoading(false);
         }
     };
+
+    const handlePermanentDeleteUser = async () => {
+        if (!deleteTarget) return;
+        if (!confirm('This will permanently delete the user and clear linked records that block deletion. Continue?')) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/${deleteTarget.id}?mode=hard`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (res.ok) {
+                setUsers(users.filter(u => u.id !== deleteTarget.id));
+                setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+                setShowDeleteModal(false);
+                setDeleteTarget(null);
+                setDeletePreview(null);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'Failed to permanently delete user');
+            }
+        } catch (err) {
+            alert('Error permanently deleting user');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const toggleDeleteDependency = (key: string) => {
+        setExpandedDeleteDependencies((prev) => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const renderHighlightedText = (value: string, query: string) => {
+        if (!query.trim()) return value;
+
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const parts = value.split(new RegExp(`(${escaped})`, 'gi'));
+        return parts.map((part, index) =>
+            part.toLowerCase() === query.toLowerCase() ? (
+                <mark
+                    key={`${part}-${index}`}
+                    className="rounded-md bg-primary/10 px-1 py-0.5 font-medium text-primary ring-1 ring-inset ring-primary/15 dark:bg-primary/30 dark:text-primary-foreground dark:ring-primary/40"
+                >
+                    {part}
+                </mark>
+            ) : (
+                <span key={`${part}-${index}`}>{part}</span>
+            )
+        );
+    };
+
+    const setAllDeleteDependencies = (expanded: boolean) => {
+        if (!deletePreview?.dependencies?.length) return;
+
+        const nextState: Record<string, boolean> = {};
+        deletePreview.dependencies.forEach((dep: any) => {
+            nextState[`${dep.table}.${dep.column}`] = expanded;
+        });
+        setExpandedDeleteDependencies(nextState);
+    };
+
+    const filteredDeleteDependencies = (deletePreview?.dependencies || []).filter((dep: any) => {
+        if (!deleteSearchTerm.trim()) return true;
+
+        const haystack = [
+            dep.table,
+            dep.column,
+            dep.action,
+            ...(dep.samples || []).flatMap((sample: any) => [
+                sample.label,
+                sample.id,
+                sample.details
+            ])
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+        return haystack.includes(deleteSearchTerm.toLowerCase());
+    });
 
     const handleBulkAssign = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -508,11 +625,11 @@ function UsersContent() {
                                                 >
                                                     Edit
                                                 </button>
-                                                {userRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN' && (
+                                                {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && user.role !== 'SUPER_ADMIN' && (
                                                     <button
-                                                        onClick={() => handleDeleteUser(user.id)}
+                                                        onClick={() => loadDeletePreview(user)}
                                                         className="p-2 border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                                                        title="Delete User"
+                                                        title="Delete or Deactivate User"
                                                     >
                                                         🗑️
                                                     </button>
@@ -790,6 +907,234 @@ function UsersContent() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Preview Modal */}
+            {showDeleteModal && deleteTarget && deletePreview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-start justify-between gap-4 mb-5">
+                            <div>
+                                <h2 className="text-2xl font-bold text-secondary-900">Delete user</h2>
+                                <p className="text-secondary-500 mt-1">
+                                    Review the linked records before choosing a permanent delete.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setDeleteTarget(null);
+                                    setDeletePreview(null);
+                                    setExpandedDeleteDependencies({});
+                                    setDeleteSearchTerm('');
+                                }}
+                                className="rounded-full border border-secondary-200 px-3 py-1 text-secondary-500 hover:bg-secondary-50"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="rounded-2xl border border-secondary-200 bg-secondary-50 p-4 mb-5">
+                            <div className="flex flex-col gap-1">
+                                <p className="text-sm font-bold text-secondary-900">
+                                    {deletePreview.user?.name || deletePreview.user?.email}
+                                </p>
+                                <p className="text-xs text-secondary-500">
+                                    {deletePreview.user?.email} • {deletePreview.user?.role}
+                                </p>
+                                <p className="text-[11px] text-secondary-400 mt-1">
+                                    Permanent delete will remove or clear linked records that block deletion. Soft delete only deactivates the user.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-secondary-900">Linked records</h3>
+                                <span className="text-xs font-semibold text-secondary-500">
+                                    {deletePreview.totalDependencies || 0} total linked rows
+                                </span>
+                            </div>
+
+                            <div className="flex flex-col gap-3 rounded-2xl border border-secondary-200 bg-secondary-50 p-4 md:flex-row md:items-center md:justify-between">
+                                <div className="relative flex-1">
+                                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400">🔎</span>
+                                    <input
+                                        type="text"
+                                        value={deleteSearchTerm}
+                                        onChange={(e) => setDeleteSearchTerm(e.target.value)}
+                                        placeholder="Search tables, sample names, IDs..."
+                                        className="input pl-10 bg-white"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAllDeleteDependencies(true)}
+                                        disabled={filteredDeleteDependencies.length === 0}
+                                        className="btn btn-secondary"
+                                    >
+                                        Expand all
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAllDeleteDependencies(false)}
+                                        disabled={filteredDeleteDependencies.length === 0}
+                                        className="btn btn-secondary"
+                                    >
+                                        Collapse all
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="overflow-hidden rounded-2xl border border-secondary-200 bg-white">
+                                {filteredDeleteDependencies.length > 0 ? (
+                                    <div className="divide-y divide-secondary-100">
+                                        {filteredDeleteDependencies.map((dep: any) => {
+                                            const depKey = `${dep.table}.${dep.column}`;
+                                            const isExpanded = !!expandedDeleteDependencies[depKey];
+                                            const visibleSamples = isExpanded ? dep.samples : dep.samples.slice(0, 3);
+
+                                            return (
+                                                <div key={depKey} className="bg-white">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleDeleteDependency(depKey)}
+                                                        aria-expanded={isExpanded}
+                                                        className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-secondary-50"
+                                                    >
+                                                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                                                            dep.action === 'delete'
+                                                                ? 'border-red-200 bg-red-50 text-red-600'
+                                                                : dep.action === 'nullify'
+                                                                    ? 'border-amber-200 bg-amber-50 text-amber-600'
+                                                                    : 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                                                        }`}>
+                                                            <svg
+                                                                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </span>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-sm font-bold text-secondary-900">
+                                                                    {renderHighlightedText(dep.table, deleteSearchTerm)}
+                                                                </p>
+                                                                <span className="rounded-full bg-secondary-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-secondary-500">
+                                                                    {renderHighlightedText(dep.column, deleteSearchTerm)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="mt-0.5 text-[11px] text-secondary-500">
+                                                                {dep.count} linked row{dep.count === 1 ? '' : 's'}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex shrink-0 items-center gap-2">
+                                                            <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
+                                                                dep.action === 'delete'
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : dep.action === 'nullify'
+                                                                        ? 'bg-amber-100 text-amber-700'
+                                                                        : 'bg-emerald-100 text-emerald-700'
+                                                            }`}>
+                                                                {dep.action}
+                                                            </span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                                                                {isExpanded ? 'Collapse' : 'Expand'}
+                                                            </span>
+                                                        </div>
+                                                    </button>
+
+                                                    {isExpanded && (
+                                                        <div className="border-t border-secondary-100 bg-secondary-50 px-4 py-4">
+                                                            <div className="mb-3 flex items-center justify-between">
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-secondary-500">
+                                                                    Sample records
+                                                                </p>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleDeleteDependency(depKey)}
+                                                                    className="text-[10px] font-bold text-primary hover:underline"
+                                                                >
+                                                                    Show fewer
+                                                                </button>
+                                                            </div>
+
+                                                            {dep.samples?.length > 0 ? (
+                                                                <div className="space-y-2">
+                                                                    {visibleSamples.map((sample: any) => (
+                                                                        <div key={`${dep.table}-${sample.id || sample.label}`} className="rounded-xl border border-secondary-200 bg-white px-3 py-2 shadow-sm">
+                                                                            <p className="text-sm font-semibold text-secondary-900 leading-tight">
+                                                                                {renderHighlightedText(sample.label, deleteSearchTerm)}
+                                                                            </p>
+                                                                            <p className="text-[10px] text-secondary-500 mt-0.5">
+                                                                                {sample.id ? (
+                                                                                    <>
+                                                                                        {renderHighlightedText(`ID: ${sample.id}`, deleteSearchTerm)}
+                                                                                    </>
+                                                                                ) : (
+                                                                                    'No record ID'
+                                                                                )}
+                                                                                {sample.details ? (
+                                                                                    <>
+                                                                                        {' • '}
+                                                                                        {renderHighlightedText(sample.details, deleteSearchTerm)}
+                                                                                    </>
+                                                                                ) : null}
+                                                                            </p>
+                                                                        </div>
+                                                                    ))}
+                                                                    {dep.samples.length > 3 && !isExpanded && (
+                                                                        <p className="text-[10px] font-semibold text-secondary-400">
+                                                                            +{dep.samples.length - 3} more
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-xs text-secondary-400">No sample rows available.</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="px-4 py-8 text-center text-sm text-secondary-500">
+                                        {deleteSearchTerm.trim()
+                                            ? 'No linked rows match your search.'
+                                            : 'No linked rows found. This user should be safe to delete permanently.'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => handleDeactivateUser(deleteTarget.id)}
+                                disabled={actionLoading}
+                                className="btn btn-secondary"
+                            >
+                                Deactivate Instead
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePermanentDeleteUser}
+                                disabled={actionLoading}
+                                className="btn btn-danger bg-red-600 text-white hover:bg-red-700"
+                            >
+                                {actionLoading ? 'Deleting...' : 'Delete Permanently'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

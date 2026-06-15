@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
 import { assertCompanyAccess, normalizeAllowedModulesForWrite, userHasCompanyAccess } from '@/lib/access-policy';
+import { hardDeleteUser } from '@/lib/user-deletion';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
@@ -171,6 +172,8 @@ export const DELETE = authorizedRoute(
     async (req: NextRequest, user, { params }: any) => {
         try {
             const { id } = await params;
+            const { searchParams } = new URL(req.url);
+            const mode = searchParams.get('mode');
 
             if (user.id === id) {
                 return createErrorResponse('Cannot delete yourself', 400);
@@ -183,6 +186,29 @@ export const DELETE = authorizedRoute(
                 if (user.role === 'ADMIN' && !(await userHasCompanyAccess(user, existingUser.companyId))) {
                     return createErrorResponse('Forbidden', 403);
                 }
+            }
+
+            if (mode === 'hard') {
+                const deleted = await hardDeleteUser(id);
+                await prisma.auditLog.create({
+                    data: {
+                        userId: user.id,
+                        action: 'delete',
+                        entity: 'user',
+                        entityId: id,
+                        changes: {
+                            mode: 'hard',
+                            deletedBy: user.id,
+                            cleanupActions: deleted.actions
+                        }
+                    }
+                });
+
+                return NextResponse.json({
+                    message: 'User permanently deleted successfully',
+                    userId: id,
+                    cleanupActions: deleted.actions
+                });
             }
 
             const deactivatedUser = await prisma.user.update({
