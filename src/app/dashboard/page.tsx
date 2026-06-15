@@ -451,9 +451,9 @@ export default function DashboardPage() {
                     <div className="glass-card p-6 shadow-sm">
                         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
                             <div>
-                                <h2 className="text-xl font-black text-foreground">Today's Team Attendance</h2>
+                                <h2 className="text-xl font-black text-foreground">Today&apos;s Team Attendance</h2>
                                 <p className="text-sm font-medium text-muted-foreground">
-                                    Live snapshot for the logged-in user's team
+                                    Live snapshot for the logged-in user&apos;s team
                                 </p>
                             </div>
                         <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
