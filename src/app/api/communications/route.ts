@@ -5,9 +5,10 @@ import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { calculatePredictions } from '@/lib/predictions';
 import { updateLeadScore } from '@/lib/crm-scoring';
+import { CRM_COMMUNICATION_ROLES } from '@/lib/crm-access';
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'EXECUTIVE', 'MANAGER', 'FINANCE_ADMIN'],
+    [...CRM_COMMUNICATION_ROLES],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
@@ -91,7 +92,7 @@ export const POST = authorizedRoute(
 );
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    [...CRM_COMMUNICATION_ROLES],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);

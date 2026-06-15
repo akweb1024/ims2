@@ -7,11 +7,12 @@ import { logger } from '@/lib/logger';
 import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
 import { assertCompanyAccess, resolveCompanyScope } from '@/lib/access-policy';
+import { CRM_CUSTOMER_EDITOR_ROLES } from '@/lib/crm-access';
 
 const DISCOUNT_EDITOR_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
+    [...CRM_CUSTOMER_EDITOR_ROLES],
     async (req: NextRequest, user) => {
     // Fetch customers with filtering and assignment
     try {
@@ -196,7 +197,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
+    [...CRM_CUSTOMER_EDITOR_ROLES],
     async (req: NextRequest, user) => {
     try {
         const { searchParams } = new URL(req.url);

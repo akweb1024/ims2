@@ -86,7 +86,7 @@ const productUpdateSchema = productCreateSchema
 
 // ─── GET: List / Search products ──────────────────────────────────────────
 export const GET = authorizedRoute(
-  ["SUPER_ADMIN", "MANAGER", "EXECUTIVE", "FINANCE_ADMIN"],
+  ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEADER", "EXECUTIVE", "FINANCE_ADMIN", "HR_MANAGER", "HR", "EMPLOYEE"],
   async (request: NextRequest, user: any) => {
     try {
       const { searchParams } = new URL(request.url);

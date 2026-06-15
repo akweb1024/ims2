@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 import { buildTrackingMetadata } from '@/lib/dispatch';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
 import { userHasCompanyAccess } from '@/lib/access-policy';
+import { CRM_CUSTOMER_EDITOR_ROLES } from '@/lib/crm-access';
 
 const toNullableString = (value: unknown) => {
     if (value === undefined) return undefined;
@@ -241,7 +242,7 @@ export async function PATCH(
     try {
         const { id } = await params;
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'].includes(decoded.role)) {
+        if (!decoded || !CRM_CUSTOMER_EDITOR_ROLES.has(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

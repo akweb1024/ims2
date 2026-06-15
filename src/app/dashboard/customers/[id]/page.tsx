@@ -12,6 +12,7 @@ import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
 import DesignationCombobox from '@/components/crm/DesignationCombobox';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
+import { CRM_CUSTOMER_EDITOR_ROLES } from '@/lib/crm-access';
 
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -59,7 +60,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             .then(res => res.json())
             .then(response => {
                 const data = Array.isArray(response) ? response : (response.data || []);
-                setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role)));
+                setStaffList(data.filter((u: any) => CRM_CUSTOMER_EDITOR_ROLES.has(u.role)));
             });
 
         fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -743,7 +744,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 </div>
 
                                 {/* ── Assignment ── */}
-                                {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                                {CRM_CUSTOMER_EDITOR_ROLES.has(userRole) && (
                                     <div className="pt-4 border-t border-secondary-100">
                                         <h4 className="font-bold text-secondary-900 mb-2">Customer Ownership</h4>
                                         <label className="label">Assign to team members (Ctrl+Click for multiple)</label>

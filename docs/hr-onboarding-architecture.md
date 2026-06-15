@@ -14,30 +14,73 @@ The HR flow now has three cooperating layers:
 
 ## Architecture Diagram
 
+Primary canonical asset: [public/images/hr-onboarding-architecture.svg](/home/itb09/Desktop/projects/ims%2012%20feb/public/images/hr-onboarding-architecture.svg)
+
 ```mermaid
-flowchart LR
-    A[Recruitment Board] --> B[POST /api/recruitment/onboard]
-    B --> C[Create User]
-    B --> D[Create EmployeeProfile]
-    B --> E[Create PasswordResetToken Invite]
-    B --> F[Create Offer Letter]
-    B --> G[Send Invite Email + In-App Notification]
+flowchart TB
+    subgraph Recruitment["1. Recruitment Handoff"]
+        A[Recruitment Board]
+        B[POST /api/recruitment/onboard]
+        C[Create User]
+        D[Create EmployeeProfile]
+        E[Create PasswordResetToken Invite]
+        F[Create Offer Letter]
+        G[Send Invite Email + In-App Notification]
 
-    H[Employee Portal] --> I[GET /api/hr/onboarding/progress]
-    H --> J[GET /api/hr/onboarding/compliance]
-    H --> K[Onboarding Portal UI]
+        A --> B
+        B --> C
+        B --> D
+        B --> E
+        B --> F
+        B --> G
+    end
 
-    L[HR Workflow UI] --> M[GET /api/hr/onboarding/workflow-state]
-    L --> N[PATCH /api/hr/onboarding/workflow-state]
-    N --> O[Persist employeeProfile.metrics.onboardingWorkflow]
-    N --> P[Create audit log]
+    subgraph Employee["2. Employee Portal"]
+        H[Staff Portal / Onboarding UI]
+        I[GET /api/hr/onboarding/progress]
+        J[GET /api/hr/onboarding/compliance]
+        K[Complete learning modules]
+        H --> I
+        H --> J
+        H --> K
+    end
 
-    Q[Onboarding Manager] --> R[CRUD /api/hr/onboarding/modules]
-    R --> S[OnboardingModule + OnboardingQuestion]
+    subgraph Workflow["3. HR Workflow State"]
+        L[HR Workflow UI]
+        M[GET /api/hr/onboarding/workflow-state]
+        N[PATCH /api/hr/onboarding/workflow-state]
+        O[Persist employeeProfile.metrics.onboardingWorkflow]
+        P[Create audit log]
 
-    J --> T[OnboardingProgress]
-    I --> T
+        L --> M
+        L --> N
+        N --> O
+        N --> P
+    end
+
+    subgraph Content["4. Onboarding Content"]
+        Q[Onboarding Manager]
+        R[CRUD /api/hr/onboarding/modules]
+        S[OnboardingModule + OnboardingQuestion]
+        Q --> R
+        R --> S
+    end
+
+    E --> H
+    I --> T[OnboardingProgress]
+    J --> T
+    S --> T
+    O --> U[Workflow source of truth]
+    T --> V[Compliance + readiness checks]
+    U --> V
 ```
+
+### Role Responsibilities
+
+- Recruitment starts the journey by converting a selected candidate into a provisioned employee account.
+- The employee portal consumes progress and compliance data and lets the employee continue the onboarding journey.
+- HR owns workflow state, approvals, and the audit trail.
+- HR managers own the reusable onboarding content library and assessments.
 
 ## Data Model
 
@@ -128,3 +171,4 @@ Each step keeps:
 - The onboarding invite is now one-time and time-limited instead of a shared yearly password.
 - Compliance and progress now use the same applicability rules, so employees are not blocked by unrelated role modules.
 - The workflow UI stores perks details inside workflow state instead of splitting them across multiple onboarding keys.
+- The SVG diagram is the canonical visual asset for this architecture; the help page renders the same file.

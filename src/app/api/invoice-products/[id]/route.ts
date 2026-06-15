@@ -80,7 +80,7 @@ const updateSchema = z.object({
 
 // ─── GET single product ───────────────────────────────────────────────────
 export const GET = authorizedRoute(
-  ["SUPER_ADMIN", "MANAGER", "EXECUTIVE", "FINANCE_ADMIN"],
+  ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEADER", "EXECUTIVE", "FINANCE_ADMIN", "HR_MANAGER", "HR", "EMPLOYEE"],
   async (request: NextRequest, user: any, context?: any) => {
     try {
       const { id } = await context.params;

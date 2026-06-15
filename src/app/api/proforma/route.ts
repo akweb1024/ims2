@@ -9,6 +9,7 @@ import {
 } from '@/lib/validation/schemas';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
+import { CRM_PROFORMA_ROLES } from '@/lib/crm-access';
 
 const db = prisma;
 
@@ -69,7 +70,7 @@ async function nextProformaNumber(companyId: string): Promise<string> {
 
 // ─── GET: List proforma invoices ───────────────────────────────────────────
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    [...CRM_PROFORMA_ROLES],
     async (request: NextRequest, user: any) => {
         try {
             const { searchParams } = new URL(request.url);
@@ -127,7 +128,7 @@ export const GET = authorizedRoute(
 
 // ─── POST: Create proforma draft ───────────────────────────────────────────
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    [...CRM_PROFORMA_ROLES],
     async (request: NextRequest, user: any) => {
         try {
             let body: any;

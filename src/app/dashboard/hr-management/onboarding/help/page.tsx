@@ -92,19 +92,31 @@ export default function OnboardingSOPPage() {
                         <div className="space-y-1">
                             <h2 className="text-2xl font-black leading-tight text-secondary-900">Architecture Diagram</h2>
                             <p className="text-sm leading-relaxed text-secondary-600 max-w-3xl">
-                                This diagram shows the recruitment handoff, the onboarding workflow state, and the module/compliance loop.
+                                This diagram shows the recruitment handoff, the onboarding workflow state, and the module/compliance loop. It is the canonical SVG used by the architecture doc.
                             </p>
                         </div>
                     </div>
                     <div className="overflow-hidden rounded-[1.5rem] border border-secondary-200 bg-secondary-50 p-3 shadow-sm">
                         <Image
-                            src="/images/hr-onboarding-architecture.png"
+                            src="/images/hr-onboarding-architecture.svg"
                             alt="HR hiring and onboarding architecture diagram"
                             width={1600}
                             height={900}
-                            className="block w-full h-auto rounded-[1.1rem]"
+                            className="block w-full h-auto rounded-[1.1rem] bg-white"
                             priority
                         />
+                        <div className="mt-3 flex items-center justify-between gap-3 px-1">
+                            <p className="text-xs font-medium text-secondary-500">
+                                Vector diagram for crisp zooming on desktop and mobile.
+                            </p>
+                            <a
+                                href="/images/hr-onboarding-architecture.svg"
+                                className="text-xs font-black uppercase tracking-[0.14em] text-primary-600 hover:text-primary-700"
+                                download
+                            >
+                                Download SVG
+                            </a>
+                        </div>
                     </div>
                 </section>
             </div>

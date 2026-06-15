@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { proformaUpdateSchema, validateData } from '@/lib/validation/schemas';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
+import { CRM_PROFORMA_ROLES } from '@/lib/crm-access';
 
 const db = prisma;
 
@@ -59,7 +60,7 @@ function computeFinancials(
 
 // ─── GET: Single proforma ──────────────────────────────────────────────────
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    [...CRM_PROFORMA_ROLES],
     async (request: NextRequest, user: any, context?: any) => {
         try {
             const { id } = await context.params;
@@ -93,7 +94,7 @@ export const GET = authorizedRoute(
 
 // ─── PATCH: Update DRAFT proforma ─────────────────────────────────────────
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    [...CRM_PROFORMA_ROLES],
     async (request: NextRequest, user: any, context?: any) => {
         try {
             const { id } = await context.params;

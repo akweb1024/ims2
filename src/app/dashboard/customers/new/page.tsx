@@ -12,6 +12,7 @@ import { customerSchema, type CustomerFormData } from '@/lib/validation/schemas'
 import { showSuccess, showError } from '@/lib/toast';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
+import { canAccessCrmWorkflow } from '@/lib/crm-access';
 import { 
     UserPlus, ArrowLeft, Save, X, Info, ShieldCheck, 
     Globe, MapPin, Building2, CreditCard, ClipboardList,
@@ -107,7 +108,7 @@ export default function NewCustomerPage() {
             const user = JSON.parse(userData);
             setUserRole(user.role);
             setActorRole(user.role);
-            if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'].includes(user.role)) {
+            if (!canAccessCrmWorkflow(user.role)) {
                 router.push('/dashboard/customers');
             }
         } else {

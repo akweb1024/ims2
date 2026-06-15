@@ -11,6 +11,7 @@ import { applyInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 import { validateInvoiceConfig } from '@/lib/invoice-config';
 import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 import { assertCompanyAccess, resolveCompanyScope } from '@/lib/access-policy';
+import { CRM_INVOICE_ROLES } from '@/lib/crm-access';
 
 export const GET = authorizedRoute(
     [],
@@ -144,7 +145,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'ADMIN', 'EXECUTIVE'],
+    [...CRM_INVOICE_ROLES],
     async (req: NextRequest, user) => {
     try {
         const body = await req.json();
