@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DASHBOARD_WIDGETS } from '@/lib/dashboard/widgets';
 
 /**
  * Centralized Validation Schemas using Zod
@@ -169,6 +170,75 @@ export const userSchema = z.object({
 });
 
 export type UserFormData = z.infer<typeof userSchema>;
+
+// ============================================================================
+// Dashboard Customization Schemas
+// ============================================================================
+
+const dashboardWidgetKeySchema = z.enum(DASHBOARD_WIDGETS.map((widget) => widget.key) as [string, ...string[]]);
+const dashboardScopeSchema = z.enum(['TEAM', 'INDIVIDUAL']);
+
+const timeStringSchema = z.string().regex(/^\d{2}:\d{2}$/, 'Time must be in HH:mm format');
+
+export const dashboardWidgetLayoutSchema = z.object({
+    context: dashboardScopeSchema,
+    selectedScope: dashboardScopeSchema,
+    widgetOrder: z.array(dashboardWidgetKeySchema),
+    widgetVisibility: z.record(dashboardWidgetKeySchema, z.boolean()),
+    widgetConfig: z.record(z.string(), z.any()).optional(),
+}).refine((data) => new Set(data.widgetOrder).size === data.widgetOrder.length, {
+    message: 'Widget order cannot contain duplicates',
+    path: ['widgetOrder'],
+});
+
+export const dashboardWidgetPolicySchema = z.object({
+    companyId: z.string().optional().nullable(),
+    widgetKey: dashboardWidgetKeySchema,
+    scope: dashboardScopeSchema,
+    allowedRoles: z.array(z.string()).default([]),
+    allowedUserIds: z.array(z.string()).default([]),
+    defaultVisible: z.boolean().default(true),
+    locked: z.boolean().default(false),
+    minRole: z.string().optional().nullable(),
+    config: z.record(z.string(), z.any()).optional(),
+});
+
+export const attendancePolicySchema = z.object({
+    companyId: z.string().optional().nullable(),
+    timezone: z.string().default('Asia/Kolkata'),
+    lateCheckInTime: timeStringSchema,
+    shortLeaveTime: timeStringSchema,
+    graceMinutes: z.coerce.number().int().min(0).default(0),
+    isActive: z.boolean().default(true).optional(),
+}).refine((data) => data.shortLeaveTime > data.lateCheckInTime, {
+    message: 'Short leave time must be later than late check-in time',
+    path: ['shortLeaveTime'],
+});
+
+export const employeeAttendanceOverrideSchema = z.object({
+    employeeId: z.string().min(1, 'Employee ID is required'),
+    companyId: z.string().optional().nullable(),
+    timezone: z.string().optional().nullable(),
+    lateCheckInTime: timeStringSchema.optional().nullable(),
+    shortLeaveTime: timeStringSchema.optional().nullable(),
+    graceMinutes: z.coerce.number().int().min(0).optional().nullable(),
+    isActive: z.boolean().default(true).optional(),
+    notes: z.string().optional().nullable(),
+}).refine((data) => {
+    if (!data.lateCheckInTime || !data.shortLeaveTime) return true;
+    return data.shortLeaveTime > data.lateCheckInTime;
+}, {
+    message: 'Short leave time must be later than late check-in time',
+    path: ['shortLeaveTime'],
+});
+
+export const dashboardRecomputeSchema = z.object({
+    companyId: z.string().optional().nullable(),
+    employeeId: z.string().optional().nullable(),
+    startDate: z.string().min(1),
+    endDate: z.string().min(1),
+    dryRun: z.boolean().default(false).optional(),
+});
 
 // ============================================================================
 // Journal Schemas

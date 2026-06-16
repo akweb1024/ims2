@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-type Tab = 'General' | 'Security' | 'Notifications' | 'Allocations';
+type Tab = 'General' | 'Security' | 'Notifications' | 'Allocations' | 'Dashboard';
 
 export default function SettingsPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -25,6 +25,20 @@ export default function SettingsPage() {
     const [departments, setDepartments] = useState<any[]>([]);
     const [allocationRules, setAllocationRules] = useState<any[]>([]);
     const [savingAllocations, setSavingAllocations] = useState(false);
+    const [dashboardSettings, setDashboardSettings] = useState<any>(null);
+    const [attendanceRules, setAttendanceRules] = useState({
+        timezone: 'Asia/Kolkata',
+        lateCheckInTime: '09:30',
+        shortLeaveTime: '10:30',
+        graceMinutes: 0
+    });
+    const [employeeOverride, setEmployeeOverride] = useState({
+        employeeId: '',
+        lateCheckInTime: '',
+        shortLeaveTime: '',
+        graceMinutes: 0,
+        notes: ''
+    });
 
     const fetchUserSettings = useCallback(async () => {
         try {
@@ -77,6 +91,39 @@ export default function SettingsPage() {
         }
     }, []);
 
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const [widgetRes, attendanceRes] = await Promise.all([
+                fetch('/api/settings/dashboard-widgets', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch('/api/settings/attendance-rules', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+
+            if (widgetRes.ok) {
+                setDashboardSettings(await widgetRes.json());
+            }
+
+            if (attendanceRes.ok) {
+                const data = await attendanceRes.json();
+                const source = data.company || data.global;
+                if (source) {
+                    setAttendanceRules({
+                        timezone: source.timezone || 'Asia/Kolkata',
+                        lateCheckInTime: source.lateCheckInTime || '09:30',
+                        shortLeaveTime: source.shortLeaveTime || '10:30',
+                        graceMinutes: source.graceMinutes || 0,
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Fetch dashboard data error:', err);
+        }
+    }, []);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -88,7 +135,10 @@ export default function SettingsPage() {
         if (activeTab === 'Allocations') {
             fetchAllocationData();
         }
-    }, [fetchUserSettings, fetchSystemSettings, fetchAllocationData, activeTab]);
+        if (activeTab === 'Dashboard') {
+            fetchDashboardData();
+        }
+    }, [fetchUserSettings, fetchSystemSettings, fetchAllocationData, fetchDashboardData, activeTab]);
 
     const handleUpdateUserPref = async (updates: any) => {
         try {
@@ -141,6 +191,7 @@ export default function SettingsPage() {
         'General',
         'Security',
         'Notifications',
+        ...(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'].includes(userRole) ? ['Dashboard' as Tab] : []),
         ...(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(userRole) ? ['Allocations' as Tab] : [])
     ];
 
@@ -148,6 +199,7 @@ export default function SettingsPage() {
         'General': '⚙️',
         'Security': '🔐',
         'Notifications': '🔔',
+        'Dashboard': '🧩',
         'Allocations': '📊'
     };
 
@@ -253,6 +305,124 @@ export default function SettingsPage() {
                                         </form>
                                     </section>
                                 )}
+                            </>
+                        )}
+
+                        {/* ─── DASHBOARD TAB ─── */}
+                        {activeTab === 'Dashboard' && (
+                            <>
+                                <section className="card-premium">
+                                    <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Dashboard Widgets</h3>
+                                    <div className="space-y-4">
+                                        {(dashboardSettings?.catalog || []).map((widget: any) => (
+                                            <div key={widget.key} className="rounded-2xl border border-secondary-200 bg-white p-4">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <p className="font-bold text-secondary-900">{widget.title}</p>
+                                                        <p className="text-sm text-secondary-500">{widget.description}</p>
+                                                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-secondary-400">
+                                                            {widget.category} • {(widget.supportedScopes || []).join(', ')}
+                                                        </p>
+                                                    </div>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${widget.isActive ? 'bg-success-100 text-success-700' : 'bg-secondary-100 text-secondary-600'}`}>
+                                                        {widget.isActive ? 'Active' : 'Disabled'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="card-premium">
+                                    <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Attendance Rules</h3>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <Field label="Timezone">
+                                            <input className="input" value={attendanceRules.timezone} onChange={(e) => setAttendanceRules({ ...attendanceRules, timezone: e.target.value })} />
+                                        </Field>
+                                        <Field label="Late Check-in Time">
+                                            <input className="input" value={attendanceRules.lateCheckInTime} onChange={(e) => setAttendanceRules({ ...attendanceRules, lateCheckInTime: e.target.value })} />
+                                        </Field>
+                                        <Field label="Short Leave Time">
+                                            <input className="input" value={attendanceRules.shortLeaveTime} onChange={(e) => setAttendanceRules({ ...attendanceRules, shortLeaveTime: e.target.value })} />
+                                        </Field>
+                                        <Field label="Grace Minutes">
+                                            <input type="number" className="input" value={attendanceRules.graceMinutes} onChange={(e) => setAttendanceRules({ ...attendanceRules, graceMinutes: Number(e.target.value) })} />
+                                        </Field>
+                                    </div>
+                                    <div className="mt-4 flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch('/api/settings/attendance-rules', {
+                                                    method: 'PATCH',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`,
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify(attendanceRules)
+                                                });
+                                                if (res.ok) {
+                                                    alert('Attendance rules updated');
+                                                } else {
+                                                    const data = await res.json();
+                                                    alert(data.error || 'Failed to update attendance rules');
+                                                }
+                                            }}
+                                            className="btn btn-primary"
+                                        >
+                                            Save Attendance Rules
+                                        </button>
+                                    </div>
+                                </section>
+
+                                <section className="card-premium">
+                                    <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Employee Overrides</h3>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <Field label="Employee ID">
+                                            <input className="input" value={employeeOverride.employeeId} onChange={(e) => setEmployeeOverride({ ...employeeOverride, employeeId: e.target.value })} />
+                                        </Field>
+                                        <Field label="Late Check-in Time">
+                                            <input className="input" value={employeeOverride.lateCheckInTime} onChange={(e) => setEmployeeOverride({ ...employeeOverride, lateCheckInTime: e.target.value })} />
+                                        </Field>
+                                        <Field label="Short Leave Time">
+                                            <input className="input" value={employeeOverride.shortLeaveTime} onChange={(e) => setEmployeeOverride({ ...employeeOverride, shortLeaveTime: e.target.value })} />
+                                        </Field>
+                                        <Field label="Grace Minutes">
+                                            <input type="number" className="input" value={employeeOverride.graceMinutes} onChange={(e) => setEmployeeOverride({ ...employeeOverride, graceMinutes: Number(e.target.value) })} />
+                                        </Field>
+                                        <div className="md:col-span-2">
+                                            <Field label="Notes">
+                                                <textarea className="input min-h-24" value={employeeOverride.notes} onChange={(e) => setEmployeeOverride({ ...employeeOverride, notes: e.target.value })} />
+                                            </Field>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch('/api/settings/attendance-rules/employee', {
+                                                    method: 'PATCH',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`,
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify(employeeOverride)
+                                                });
+                                                if (res.ok) {
+                                                    alert('Employee override saved');
+                                                } else {
+                                                    const data = await res.json();
+                                                    alert(data.error || 'Failed to save override');
+                                                }
+                                            }}
+                                            className="btn btn-secondary"
+                                        >
+                                            Save Employee Override
+                                        </button>
+                                    </div>
+                                </section>
                             </>
                         )}
 

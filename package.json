@@ -18,6 +18,7 @@
     "prisma:migrate": "bash scripts/database-migrate.sh",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test": "playwright test e2e/auth.spec.ts e2e/crm-invoice-flows.spec.ts e2e/conference-followups.spec.ts",
     "test:e2e": "playwright test",
     "db:sync:live:dry-run": "tsx scripts/sync-live-readonly-to-staging.ts --dry-run",

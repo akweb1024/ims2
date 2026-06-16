@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { processLateArrival, processShortLeave } from '@/lib/utils/leave-ledger-processor';
+import { resolveEffectiveAttendancePolicy, resolveThresholdDate, getMinutesDifference } from '@/lib/attendance-policy';
 
 export interface AttendanceUpsertInput {
     employeeId: string;
@@ -70,9 +71,10 @@ export async function upsertAttendanceRecord(
     let isShort = false;
     let isGeofenced = isManual || workFrom === 'REMOTE';
     const shiftId = roster?.shiftId || null;
+    const policy = await resolveEffectiveAttendancePolicy({ employeeId, companyId });
 
     // 2. Geofencing check (if not manual and not remote)
-    if (!isManual && workFrom !== 'REMOTE' && latitude && longitude) {
+    if (!isManual && workFrom !== 'REMOTE' && latitude && longitude && companyId) {
         const company = await tx.company.findUnique({
             where: { id: companyId! },
             select: { latitude: true, longitude: true }
@@ -84,23 +86,23 @@ export async function upsertAttendanceRecord(
         }
     }
 
-    // 3. Late Arrival Calculation
-    if (effectiveCheckIn && roster?.shift) {
-        const shift = roster.shift;
-        const [sHrs, sMin] = shift.startTime.split(':').map(Number);
-        const shiftStart = new Date(date);
-        shiftStart.setHours(sHrs, sMin, 0, 0);
+    // 3. Attendance Threshold Calculation (IST-aware company/employee policy)
+    if (effectiveCheckIn) {
+        const lateThreshold = resolveThresholdDate(date, policy.lateCheckInTime);
+        const shortThreshold = resolveThresholdDate(date, policy.shortLeaveTime);
 
-        const graceLimit = new Date(shiftStart);
-        graceLimit.setMinutes(graceLimit.getMinutes() + (shift.gracePeriod || 0));
-
-        if (effectiveCheckIn > graceLimit) {
-            lateMinutes = Math.floor((effectiveCheckIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+        if (effectiveCheckIn > lateThreshold) {
+            lateMinutes = getMinutesDifference(effectiveCheckIn, lateThreshold);
             isLate = lateMinutes > 0;
+        }
+
+        if (effectiveCheckIn > shortThreshold) {
+            shortMinutes = getMinutesDifference(effectiveCheckIn, shortThreshold);
+            isShort = shortMinutes > 0;
         }
     }
 
-    // 4. Short Leave / OT Calculation
+    // 4. OT Calculation remains shift-based when a roster exists
     if (effectiveCheckOut && roster?.shift) {
         const shift = roster.shift;
         const [eHrs, eMin] = shift.endTime.split(':').map(Number);
@@ -108,10 +110,7 @@ export async function upsertAttendanceRecord(
         shiftEnd.setHours(eHrs, eMin, 0, 0);
 
         if (effectiveCheckOut > shiftEnd) {
-            otMinutes = Math.floor((effectiveCheckOut.getTime() - shiftEnd.getTime()) / (1000 * 60));
-        } else {
-            shortMinutes = Math.floor((shiftEnd.getTime() - effectiveCheckOut.getTime()) / (1000 * 60));
-            isShort = shortMinutes > 0;
+            otMinutes = getMinutesDifference(effectiveCheckOut, shiftEnd);
         }
     }
 

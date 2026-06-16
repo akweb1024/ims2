@@ -118,6 +118,11 @@ model Company {
   productionOrders            ProductionOrder[]
   projects                    Project[]
   purchaseOrders              PurchaseOrder[]
+  dashboardLayoutPreferences  DashboardLayoutPreference[]
+  dashboardRoleDefaults        DashboardRoleDefault[]
+  dashboardWidgetPolicies      DashboardWidgetPolicy[]
+  companyAttendancePolicy     CompanyAttendancePolicy?
+  employeeAttendancePolicyOverrides EmployeeAttendancePolicyOverride[]
   redGreenDiaries             RedGreenDiary[]
   revenueTransactions         RevenueTransaction[]
   salaryAdvances              SalaryAdvance[]
@@ -402,6 +407,7 @@ model User {
   workReportComments             WorkReportComment[]              @relation("WorkReportCommentAuthor")
   mentoredWorkshops              Workshop[]                       @relation("WorkshopMentor")
   workshopEnrollments            WorkshopEnrollment[]
+  dashboardLayoutPreferences     DashboardLayoutPreference[]
   assignedToCustomers            CustomerProfile[]                @relation("CustomerToExecutives")
   taggedITProjects               ITProject[]                      @relation("ProjectTaggedEmployees")
   companies                      Company[]                        @relation("UserCompanies")
@@ -1516,6 +1522,119 @@ model SystemSettings {
   primaryColor    String?  @default("#3b82f6")
 }
 
+model DashboardWidgetCatalog {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  title           String
+  description     String?
+  category        String
+  supportedScopes String[] @default(["TEAM", "INDIVIDUAL"])
+  defaultSize     String?  @default("MD")
+  defaultOrder    Int      @default(0)
+  configSchema    Json?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DashboardWidgetPolicy {
+  id             String   @id @default(uuid())
+  companyId      String?
+  widgetKey      String
+  scope          String
+  allowedRoles   String[] @default([])
+  allowedUserIds String[] @default([])
+  defaultVisible Boolean  @default(true)
+  locked         Boolean  @default(false)
+  minRole        String?
+  config         Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  company        Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, widgetKey, scope])
+  @@index([companyId])
+  @@index([widgetKey])
+}
+
+model DashboardLayoutPreference {
+  id               String   @id @default(uuid())
+  companyId        String?
+  userId           String
+  context          String
+  selectedScope    String   @default("INDIVIDUAL")
+  layoutVersion    Int      @default(1)
+  widgetOrder      Json
+  widgetVisibility Json
+  widgetConfig     Json?
+  isDefaultForRole Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, context])
+  @@index([companyId])
+  @@index([context])
+}
+
+model DashboardRoleDefault {
+  id               String   @id @default(uuid())
+  companyId        String?
+  role             String
+  context          String
+  widgetOrder      Json
+  widgetVisibility Json
+  widgetConfig     Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, role, context])
+  @@index([companyId])
+  @@index([role])
+}
+
+model AttendancePolicy {
+  id               String   @id @default("singleton")
+  timezone         String   @default("Asia/Kolkata")
+  lateCheckInTime  String   @default("09:30")
+  shortLeaveTime   String   @default("10:30")
+  graceMinutes     Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CompanyAttendancePolicy {
+  id               String   @id @default(uuid())
+  companyId        String   @unique
+  timezone         String   @default("Asia/Kolkata")
+  lateCheckInTime  String   @default("09:30")
+  shortLeaveTime   String   @default("10:30")
+  graceMinutes     Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeAttendancePolicyOverride {
+  id               String          @id @default(uuid())
+  employeeId       String          @unique
+  companyId        String?
+  timezone         String?         @default("Asia/Kolkata")
+  lateCheckInTime  String?
+  shortLeaveTime   String?
+  graceMinutes     Int?
+  isActive         Boolean         @default(true)
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  company          Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee         EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
 model Designation {
   id                  String                       @id @default(uuid())
   name                String
@@ -1632,6 +1751,7 @@ model EmployeeProfile {
   currentLeaveBalance      Float                        @default(0)
   metrics                  Json?
   employeeType             EmployeeType                 @default(FULL_TIME)
+  attendancePolicyOverride EmployeeAttendancePolicyOverride?
   attendance               Attendance[]
   dailyTaskCompletions     DailyTaskCompletion[]
   digitalDocuments         DigitalDocument[]
