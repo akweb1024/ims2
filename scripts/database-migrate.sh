@@ -12,7 +12,7 @@ if OUTPUT=$(npx prisma migrate deploy 2>&1); then
 fi
 
 EXIT_CODE=$?
-FAILED_MIGRATION="$(printf '%s\n' "$OUTPUT" | awk 'match($0, /The `([^`]+)` migration started/, m) { print m[1]; exit }')"
+FAILED_MIGRATION="$(printf '%s\n' "$OUTPUT" | sed -n 's/.*The `\([^`]*\)` migration started.*/\1/p' | sed -n '1p')"
 
 # Check if the error is P3005 (database not empty without migration history)
 if echo "$OUTPUT" | grep -q "P3005"; then
