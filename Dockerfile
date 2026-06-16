@@ -85,5 +85,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Start application — run migrations first (handles P3005 on existing DBs)
-CMD ["sh", "-c", "bash scripts/database-migrate.sh && HOSTNAME=0.0.0.0 node server.js"]
+# Start application — run migrations first, then launch the shared production helper
+CMD ["bash", "scripts/start-production.sh"]

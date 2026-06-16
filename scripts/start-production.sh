@@ -3,7 +3,7 @@
 # Production Deployment Script
 # This script handles database migrations and starts the application
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error
 
 echo "🚀 Starting STM Customer Management System..."
 
@@ -28,7 +28,7 @@ print_error() {
 
 # Check required environment variables
 echo "📋 Checking environment variables..."
-REQUIRED_VARS=("DATABASE_URL" "AUTH_SECRET" "NEXTAUTH_URL")
+REQUIRED_VARS=("DATABASE_URL" "AUTH_SECRET" "NEXTAUTH_URL" "JWT_SECRET")
 
 for var in "${REQUIRED_VARS[@]}"; do
     if [ -z "${!var}" ]; then
@@ -58,7 +58,7 @@ print_status "Database is ready"
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-if npx prisma migrate deploy; then
+if bash scripts/database-migrate.sh; then
     print_status "Database migrations completed successfully"
 else
     print_error "Database migration failed"
@@ -74,8 +74,8 @@ else
 fi
 
 # Optional: Run database seed for first-time setup
-if [ "$RUN_SEED" = "true" ]; then
-    if [ "$ALLOW_DESTRUCTIVE_SEED" != "true" ]; then
+if [ "${RUN_SEED:-}" = "true" ]; then
+    if [ "${ALLOW_DESTRUCTIVE_SEED:-}" != "true" ]; then
         print_warning "RUN_SEED=true was requested, but seed was skipped because it deletes existing business data. Set ALLOW_DESTRUCTIVE_SEED=true only for a disposable database."
     else
         echo "🌱 Seeding database..."
