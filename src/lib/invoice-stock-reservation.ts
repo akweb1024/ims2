@@ -67,26 +67,33 @@ export async function applyInvoiceStockReservations(
 
     // Variant-backed stock (variable products)
     if (item.variantId) {
-      const variant = await tx.productVariant.findUnique({
-        where: { id: item.variantId },
-        select: { id: true, stockQuantity: true },
+      // Atomic conditional decrement: the WHERE guard row-locks and re-checks
+      // stockQuantity, so two concurrent reservations can't both pass and oversell.
+      const reserved = await tx.productVariant.updateMany({
+        where: { id: item.variantId, stockQuantity: { gte: qty } },
+        data: { stockQuantity: { decrement: qty } },
       });
 
-      if (!variant) {
-        throw new Error(`Variant not found for stock reservation: ${item.variantId}`);
-      }
-
-      const available = Number(variant.stockQuantity || 0);
-      if (available < qty) {
+      if (reserved.count !== 1) {
+        const existing = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { id: true, stockQuantity: true },
+        });
+        if (!existing) {
+          throw new Error(`Variant not found for stock reservation: ${item.variantId}`);
+        }
+        const available = Number(existing.stockQuantity || 0);
         throw new Error(
           `Insufficient stock for ${item.description || product.name}. Available: ${available}, Required: ${qty}`,
         );
       }
 
-      await tx.productVariant.update({
-        where: { id: variant.id },
-        data: { stockQuantity: available - qty },
+      const afterVariant = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: { stockQuantity: true },
       });
+      const afterStock = Number(afterVariant?.stockQuantity ?? 0);
+
       await tx.auditLog.create({
         data: {
           userId,
@@ -95,11 +102,11 @@ export async function applyInvoiceStockReservations(
           entityId: invoiceId,
           changes: {
             invoiceId,
-            variantId: variant.id,
+            variantId: item.variantId,
             productId: product.id,
             quantity: qty,
-            beforeStock: available,
-            afterStock: available - qty,
+            beforeStock: afterStock + qty,
+            afterStock,
             reason,
           },
         },
@@ -111,7 +118,7 @@ export async function applyInvoiceStockReservations(
           status: "RESERVED" as ReservationStatus,
           sourceType: "VARIANT",
           productId: product.id,
-          variantId: variant.id,
+          variantId: item.variantId,
           quantity: qty,
           reservedAt: nowIso(),
         },
@@ -141,17 +148,18 @@ export async function applyInvoiceStockReservations(
       );
     }
 
-    const available = Number(inventoryItem.quantity || 0);
-    if (available < qty) {
+    // Atomic conditional decrement guards against concurrent oversell.
+    const reservedInv = await tx.inventoryItem.updateMany({
+      where: { id: inventoryItem.id, quantity: { gte: qty } },
+      data: { quantity: { decrement: qty } },
+    });
+
+    if (reservedInv.count !== 1) {
+      const available = Number(inventoryItem.quantity || 0);
       throw new Error(
         `Insufficient stock for ${item.description || product.name}. Available: ${available}, Required: ${qty}`,
       );
     }
-
-    await tx.inventoryItem.update({
-      where: { id: inventoryItem.id },
-      data: { quantity: available - qty },
-    });
 
     await tx.stockMovement.create({
       data: {

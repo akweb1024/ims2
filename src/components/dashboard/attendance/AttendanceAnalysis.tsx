@@ -41,9 +41,14 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
     }, [scope]);
 
     if (loading) return <div className="p-8 text-center text-secondary-500 animate-pulse">Loading Analytics...</div>;
-    if (!data) return <div className="p-8 text-center text-secondary-500">No Data Available</div>;
+    if (!data || !data.summary) return <div className="p-8 text-center text-secondary-500">No Data Available</div>;
 
-    const { summary, trends, balances } = data;
+    const summary = {
+        present: 0, absent: 0, late: 0, short: 0, totalRecords: 0,
+        ...data.summary,
+    };
+    const trends: any[] = Array.isArray(data.trends) ? data.trends : [];
+    const balances: any[] = Array.isArray(data.balances) ? data.balances : [];
 
     return (
         <div className="space-y-6">

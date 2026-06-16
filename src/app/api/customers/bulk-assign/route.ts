@@ -39,20 +39,31 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Either specific customers or filters are required' }, { status: 400 });
         }
 
-        // Fetch customers to update
+        // Fetch customers to update. Cap the batch so an over-broad filter can't
+        // match the whole table and exhaust the connection pool / time out.
+        const MAX_BULK = 1000;
         const customersToUpdate = await prisma.customerProfile.findMany({
             where,
-            select: { id: true }
+            select: { id: true },
+            take: MAX_BULK + 1,
         });
 
         if (customersToUpdate.length === 0) {
             return NextResponse.json({ message: 'No customers found to assign', count: 0 });
         }
 
-        // Perform updates (Prisma updateMany doesn't support many-to-many connects)
-        // Using Promise.all for batch updates
+        if (customersToUpdate.length > MAX_BULK) {
+            return NextResponse.json(
+                { error: `Too many customers matched (>${MAX_BULK}). Narrow the filter and try again.` },
+                { status: 400 },
+            );
+        }
+
+        // Perform updates atomically (Prisma updateMany doesn't support
+        // many-to-many connects). A failure mid-way rolls the whole batch back
+        // instead of leaving a partial reassignment.
         if (assignedToUserId) {
-            await Promise.all(customersToUpdate.map(customer =>
+            await prisma.$transaction(customersToUpdate.map(customer =>
                 prisma.customerProfile.update({
                     where: { id: customer.id },
                     data: {

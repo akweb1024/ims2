@@ -330,13 +330,17 @@ export const calculateInvoiceTaxBreakdown = ({
   defaultTaxRate?: number;
   productMetadata?: Map<string, ProductTaxMetadata>;
 }) => {
+  // Round monetary values to 2 decimals to avoid IEEE-754 drift (e.g. 1799.9999)
+  // accumulating into persisted invoice totals and breaking reconciliation/GST.
+  const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+
   const context = buildInvoiceTaxContext(customer, company);
-  const subtotal = items.reduce((sum, item) => {
+  const subtotal = round2(items.reduce((sum, item) => {
     const baseAmount =
       item.amount ?? Number(item.quantity || 0) * Number(item.price || 0);
     return sum + Number(baseAmount || 0);
-  }, 0);
-  const taxableSubtotal = Math.max(0, subtotal - Number(discountAmount || 0));
+  }, 0));
+  const taxableSubtotal = round2(Math.max(0, subtotal - Number(discountAmount || 0)));
 
   let totalTax = 0;
   let cgst = 0;
@@ -351,10 +355,10 @@ export const calculateInvoiceTaxBreakdown = ({
     const baseAmount =
       item.amount ?? Number(item.quantity || 0) * Number(item.price || 0);
     const itemWeight = subtotal > 0 ? Number(baseAmount || 0) / subtotal : 0;
-    const itemTaxableAmount = Math.max(
+    const itemTaxableAmount = round2(Math.max(
       0,
       Number(baseAmount || 0) - Number(discountAmount || 0) * itemWeight,
-    );
+    ));
     let itemTaxRate = 0;
     if (context.isDomestic) {
       if (isJournalSubscription) {
@@ -370,14 +374,16 @@ export const calculateInvoiceTaxBreakdown = ({
         );
       }
     }
-    const itemTaxAmount = itemTaxableAmount * (itemTaxRate / 100);
+    const itemTaxAmount = round2(itemTaxableAmount * (itemTaxRate / 100));
 
     totalTax += itemTaxAmount;
 
     if (itemTaxRate > 0) {
       if (context.isSameStateSupply) {
-        cgst += itemTaxAmount / 2;
-        sgst += itemTaxAmount / 2;
+        // Split so CGST + SGST always re-sums to the line tax exactly.
+        const half = round2(itemTaxAmount / 2);
+        cgst += half;
+        sgst += round2(itemTaxAmount - half);
       } else if (context.isDomestic) {
         igst += itemTaxAmount;
       }
@@ -401,12 +407,17 @@ export const calculateInvoiceTaxBreakdown = ({
     };
   });
 
+  totalTax = round2(totalTax);
+  cgst = round2(cgst);
+  sgst = round2(sgst);
+  igst = round2(igst);
+
   return {
     ...context,
     subtotal,
     taxableSubtotal,
     tax: totalTax,
-    total: taxableSubtotal + totalTax,
+    total: round2(taxableSubtotal + totalTax),
     cgst,
     sgst,
     igst,

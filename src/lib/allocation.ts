@@ -50,7 +50,7 @@ export async function processExpenseAllocations(revenueTransactionId: string) {
 
         // 3. Calculate and create allocations
         const allocations = await Promise.all(rules.map(async (rule: ExpenseAllocationRule) => {
-            const allocationAmount = (amount * rule.percentage) / 100;
+            const allocationAmount = Math.round((amount * rule.percentage) / 100 * 100) / 100;
 
             return await prisma.employeeExpenseAllocation.create({
                 data: {

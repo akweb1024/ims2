@@ -7,11 +7,15 @@ const DEFAULT_ALLOWED_HOSTS = [
 ];
 
 const isPrivateHostname = (hostname: string) => {
-  const h = hostname.toLowerCase();
-  if (h === "localhost" || h === "127.0.0.1" || h === "::1") return true;
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "0.0.0.0") return true;
+  if (/^127\./.test(h)) return true;
   if (/^10\./.test(h)) return true;
   if (/^192\.168\./.test(h)) return true;
   if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return true;
+  if (/^169\.254\./.test(h)) return true; // link-local / cloud metadata
+  if (h.startsWith("fc") || h.startsWith("fd")) return true; // IPv6 ULA
+  if (h.startsWith("fe80")) return true; // IPv6 link-local
   return false;
 };
 
@@ -53,17 +57,47 @@ export async function GET(request: NextRequest) {
       request.nextUrl.hostname.toLowerCase(),
     ]);
 
-    if (!allowlist.has(sourceUrl.hostname.toLowerCase())) {
+    const isAllowedTarget = (url: URL) =>
+      ["http:", "https:"].includes(url.protocol) &&
+      !isPrivateHostname(url.hostname) &&
+      allowlist.has(url.hostname.toLowerCase());
+
+    if (!isAllowedTarget(sourceUrl)) {
       return NextResponse.json({ error: "Host not allowed" }, { status: 403 });
     }
 
-    const upstream = await fetch(sourceUrl.toString(), {
-      method: "GET",
-      cache: "no-store",
-      redirect: "follow",
-    });
+    // Follow redirects MANUALLY, re-validating every hop against the allowlist
+    // and private-IP filter. With redirect:"follow" an allowlisted host could
+    // 302 to an internal address (e.g. 169.254.169.254) — an SSRF vector.
+    let currentUrl = sourceUrl;
+    let upstream: Response | null = null;
+    const MAX_REDIRECTS = 5;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      upstream = await fetch(currentUrl.toString(), {
+        method: "GET",
+        cache: "no-store",
+        redirect: "manual",
+      });
 
-    if (!upstream.ok) {
+      if (upstream.status >= 300 && upstream.status < 400) {
+        const location = upstream.headers.get("location");
+        if (!location) break;
+        let nextUrl: URL;
+        try {
+          nextUrl = new URL(location, currentUrl);
+        } catch {
+          return NextResponse.json({ error: "Invalid redirect target" }, { status: 502 });
+        }
+        if (!isAllowedTarget(nextUrl)) {
+          return NextResponse.json({ error: "Redirect target not allowed" }, { status: 403 });
+        }
+        currentUrl = nextUrl;
+        continue;
+      }
+      break;
+    }
+
+    if (!upstream || !upstream.ok) {
       return NextResponse.json(
         { error: "Failed to fetch source image" },
         { status: 502 },

@@ -14,16 +14,38 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
 
         const body = await req.json();
-        const { name, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
-        const normalizedEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
-        const normalizedYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
-        const normalizedDocumentWebhookConfig = parseAutomationConfigInput(body.documentWebhookConfig);
-        const normalizedDocumentEmailConfig = parseAutomationConfigInput(body.documentEmailConfig);
         const hasAutomationConfigUpdate =
             body.documentWebhookConfig !== undefined || body.documentEmailConfig !== undefined;
 
         if (hasAutomationConfigUpdate && decoded.role !== 'SUPER_ADMIN') {
             throw new ValidationError('Only SUPER_ADMIN can manage document automation configuration');
+        }
+
+        // Build the update payload from ONLY the keys the client actually sent.
+        // Spreading every field unconditionally would overwrite existing columns
+        // with null/defaults on a partial update (data loss).
+        const data: Record<string, any> = {};
+        const directFields = [
+            'name', 'logoUrl', 'companyLogoUrl', 'tagline', 'address', 'email', 'website',
+            'brandRelationType', 'legalEntityName', 'gstin', 'cinNo', 'panNo', 'iecCode',
+            'bankName', 'bankAccountHolder', 'bankAccountNumber', 'bankIfscCode', 'bankSwiftCode',
+            'paymentMode', 'regdOfficeAddress', 'salesOfficeAddress', 'invoiceTerms',
+            'invoicePrefix', 'proformaPrefix', 'invoiceNextNumber', 'proformaNextNumber',
+        ];
+        for (const field of directFields) {
+            if (body[field] !== undefined) data[field] = body[field];
+        }
+        if (body.invoiceEntityCode !== undefined) {
+            data.invoiceEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
+        }
+        if (body.invoiceYearFormat !== undefined) {
+            data.invoiceYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
+        }
+        if (body.documentWebhookConfig !== undefined) {
+            data.documentWebhookConfig = parseAutomationConfigInput(body.documentWebhookConfig);
+        }
+        if (body.documentEmailConfig !== undefined) {
+            data.documentEmailConfig = parseAutomationConfigInput(body.documentEmailConfig);
         }
 
         const before = await prisma.brand.findUnique({
@@ -48,38 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         const brand = await prisma.brand.update({
             where: { id },
-            data: {
-                ...(name && { name }),
-                logoUrl,
-                companyLogoUrl,
-                tagline,
-                address,
-                email,
-                website,
-                brandRelationType,
-                legalEntityName: body.legalEntityName,
-                gstin: body.gstin,
-                cinNo: body.cinNo,
-                panNo: body.panNo,
-                iecCode: body.iecCode,
-                bankName: body.bankName,
-                bankAccountHolder: body.bankAccountHolder,
-                bankAccountNumber: body.bankAccountNumber,
-                bankIfscCode: body.bankIfscCode,
-                bankSwiftCode: body.bankSwiftCode,
-                paymentMode: body.paymentMode,
-                regdOfficeAddress: body.regdOfficeAddress,
-                salesOfficeAddress: body.salesOfficeAddress,
-                invoiceTerms: body.invoiceTerms,
-                invoicePrefix: body.invoicePrefix,
-                proformaPrefix: body.proformaPrefix,
-                invoiceNextNumber: body.invoiceNextNumber,
-                proformaNextNumber: body.proformaNextNumber,
-                invoiceEntityCode: normalizedEntityCode,
-                invoiceYearFormat: normalizedYearFormat,
-                documentWebhookConfig: normalizedDocumentWebhookConfig,
-                documentEmailConfig: normalizedDocumentEmailConfig,
-            }
+            data,
         });
 
         await prisma.auditLog.create({

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+
+const EXAM_DURATION_SECONDS = 30 * 60;
 
 export default function ExamPortal() {
     const { applicationId } = useParams();
@@ -10,6 +12,11 @@ export default function ExamPortal() {
     const [answers, setAnswers] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<any>(null);
+    const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
+    // Refs so the timer's auto-submit always sees the latest answers/state
+    // without re-creating the interval on every keystroke.
+    const answersRef = useRef<number[]>([]);
+    const submittingRef = useRef(false);
 
     const fetchExam = useCallback(async () => {
         const res = await fetch(`/api/recruitment/exam?applicationId=${applicationId}`);
@@ -25,22 +32,57 @@ export default function ExamPortal() {
         fetchExam();
     }, [fetchExam]);
 
-    const handleSubmit = async () => {
-        if (answers.includes(-1)) {
+    useEffect(() => {
+        answersRef.current = answers;
+    }, [answers]);
+
+    const submitAnswers = useCallback(async (auto: boolean) => {
+        if (submittingRef.current) return;
+        const current = answersRef.current;
+        if (!auto && current.includes(-1)) {
             alert('Please answer all questions before submitting.');
             return;
         }
+        submittingRef.current = true;
 
-        const res = await fetch('/api/recruitment/exam', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ applicationId, answers })
-        });
+        try {
+            const res = await fetch('/api/recruitment/exam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // Unanswered questions left at -1 are scored as incorrect on auto-submit.
+                body: JSON.stringify({ applicationId, answers: current })
+            });
 
-        if (res.ok) {
-            setResult(await res.json());
+            if (res.ok) {
+                setResult(await res.json());
+            } else {
+                submittingRef.current = false;
+            }
+        } catch {
+            submittingRef.current = false;
         }
-    };
+    }, [applicationId]);
+
+    const handleSubmit = () => submitAnswers(false);
+
+    // Countdown timer: starts once the exam is loaded, stops when a result is shown,
+    // and auto-submits when time runs out. Cleans up its interval on unmount.
+    useEffect(() => {
+        if (!examData || result) return;
+        const id = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(id);
+                    submitAnswers(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(id);
+    }, [examData, result, submitAnswers]);
+
+    const formattedTime = `${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`;
 
     if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-secondary-400 uppercase tracking-widest">Entering Exam Hall...</div>;
 
@@ -51,7 +93,7 @@ export default function ExamPortal() {
                     {result.isPassed ? '🎯' : '❌'}
                 </div>
                 <div>
-                    <h2 className="text-4xl font-black text-secondary-900">{result.score.toFixed(1)}%</h2>
+                    <h2 className="text-4xl font-black text-secondary-900">{typeof result.score === 'number' ? result.score.toFixed(1) : '—'}%</h2>
                     <p className="text-secondary-400 font-bold uppercase tracking-widest mt-2">{result.isPassed ? 'Exam Passed' : 'Exam Failed'}</p>
                 </div>
                 <p className="text-secondary-600 leading-relaxed font-medium">
@@ -75,7 +117,7 @@ export default function ExamPortal() {
             <div className="max-w-3xl mx-auto space-y-8">
                 <div className="flex justify-between items-center bg-white p-6 rounded-[1.5rem] shadow-sm border border-secondary-200">
                     <h1 className="text-2xl font-black text-secondary-900">Online Entrance Exam</h1>
-                    <div className="px-5 py-2 bg-secondary-900 text-white rounded-xl font-mono text-xl font-bold">30:00</div>
+                    <div className={`px-5 py-2 rounded-xl font-mono text-xl font-bold ${timeLeft <= 60 ? 'bg-danger-600 text-white animate-pulse' : 'bg-secondary-900 text-white'}`}>{formattedTime}</div>
                 </div>
 
                 <div className="space-y-6">

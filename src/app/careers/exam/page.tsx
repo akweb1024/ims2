@@ -88,7 +88,7 @@ function ExamContent() {
 
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-8">
                     <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Your Score</span>
-                    <span className={`text-5xl font-black ${result.isPassed ? 'text-green-600' : 'text-slate-900'}`}>{result.score.toFixed(0)}%</span>
+                    <span className={`text-5xl font-black ${result.isPassed ? 'text-green-600' : 'text-slate-900'}`}>{typeof result.score === 'number' ? result.score.toFixed(0) : '—'}%</span>
                 </div>
 
                 <p className="text-xs text-slate-400">You can now close this tab.</p>

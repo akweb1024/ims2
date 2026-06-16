@@ -29,6 +29,16 @@ export default function ScreeningTemplateBuilderModal({ template, onClose, onSav
     const [candidateSkills, setCandidateSkills] = useState('');
     const [roundType, setRoundType] = useState('Technical Round');
 
+    // Re-sync editable state when a different template is opened so edits aren't
+    // applied to a stale (previously-selected) template.
+    useEffect(() => {
+        setTitle(template?.title || '');
+        setDepartment(template?.department || '');
+        setJobType(template?.jobType || 'Full-Time');
+        setCategories(template?.categories || ['General', 'Technical', 'Culture Fit']);
+        setQuestions(template?.questions || [{ id: 'q1', category: 'General', question: '', difficulty: 'Medium', rubric: [], followups: [], required: true }]);
+    }, [template]);
+
     const handleAddCategory = () => {
         const cat = prompt('Enter Category Name:');
         if (cat && !categories.includes(cat)) {

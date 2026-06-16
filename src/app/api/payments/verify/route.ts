@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getRazorpayCredentials, validateSignature } from '@/lib/razorpay';
+import { getRazorpayCredentials, getRazorpayInstance, validateSignature } from '@/lib/razorpay';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { sendEmail, EmailTemplates } from '@/lib/email';
@@ -39,7 +39,34 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Invalid payment signature', 400);
             }
 
-            // 3. Update Enrollment and Create Payment Record in a transaction
+            // 3. Reconcile the actual captured amount against the course price.
+            //    A valid signature only proves the order/payment pair is authentic;
+            //    it does NOT prove the correct amount was charged. Fetch the order
+            //    from Razorpay and verify the captured amount before fulfilling.
+            const expectedPaise = Math.round(course.price * 100);
+            let capturedPaise = expectedPaise;
+            try {
+                const instance = await getRazorpayInstance(companyId);
+                const order = await instance.orders.fetch(razorpay_order_id);
+                capturedPaise = Number(order.amount_paid ?? order.amount);
+
+                if (order.status !== 'paid') {
+                    return createErrorResponse('Payment not captured', 400);
+                }
+                if (capturedPaise < expectedPaise) {
+                    logger.error('Payment amount mismatch', {
+                        razorpay_order_id,
+                        expectedPaise,
+                        capturedPaise,
+                    });
+                    return createErrorResponse('Payment amount does not match course price', 400);
+                }
+            } catch (verifyErr: any) {
+                logger.error('Failed to reconcile Razorpay order amount', verifyErr);
+                return createErrorResponse('Unable to verify payment with gateway', 502);
+            }
+
+            // 4. Update Enrollment and Create Payment Record in a transaction (idempotent)
             const result = await prisma.$transaction(async (tx) => {
                 // Update or Create Enrollment
                 const enrollment = await tx.courseEnrollment.upsert({
@@ -58,10 +85,13 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // Create Payment record
-                const payment = await tx.payment.create({
-                    data: {
-                        amount: course.price,
+                // Create Payment record idempotently: a replay (or a webhook that
+                // already recorded this payment) must not throw or double-record.
+                const payment = await tx.payment.upsert({
+                    where: { razorpayPaymentId: razorpay_payment_id },
+                    update: {},
+                    create: {
+                        amount: capturedPaise / 100,
                         currency: course.currency || 'INR',
                         paymentDate: new Date(),
                         razorpayOrderId: razorpay_order_id,

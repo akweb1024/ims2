@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface AttendanceModalProps {
@@ -17,6 +17,18 @@ export default function AttendanceModal({ isOpen, onClose, initialData, onSave }
         checkOut: initialData?.checkOut || '',
         status: initialData?.status || 'PRESENT'
     });
+
+    // The modal stays mounted (it only hides via `if (!isOpen)`), so re-sync the
+    // form whenever a new record is opened — otherwise it shows/saves the
+    // previously-selected employee's data.
+    useEffect(() => {
+        setAttendanceForm({
+            id: initialData?.id || '',
+            checkIn: initialData?.checkIn || '',
+            checkOut: initialData?.checkOut || '',
+            status: initialData?.status || 'PRESENT'
+        });
+    }, [initialData, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

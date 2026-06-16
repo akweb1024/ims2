@@ -39,6 +39,18 @@ export const POST = authorizedRoute(
         if (!invoice) throw new ValidationError('Invoice not found');
         if (invoice.status === 'PAID') throw new ValidationError('Invoice is already paid');
 
+        const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+        const alreadyPaid = round2(invoice.payments.reduce((a: number, p: any) => a + Number(p.amount || 0), 0));
+        const remaining = round2(Number(invoice.total || 0) - alreadyPaid);
+
+        // Reject overpayment: a recorded payment must not exceed the outstanding
+        // balance (allow a 1-paisa epsilon for rounding).
+        if (amount > remaining + 0.01) {
+          throw new ValidationError(
+            `Payment of ${amount} exceeds the remaining balance of ${remaining}.`,
+          );
+        }
+
         const payment = await tx.payment.create({
           data: {
             invoiceId,
@@ -50,8 +62,8 @@ export const POST = authorizedRoute(
           },
         });
 
-        const totalPaid = [...invoice.payments.map((p: any) => p.amount), amount].reduce((a, b) => a + b, 0);
-        const newStatus = totalPaid >= invoice.total ? 'PAID' : 'PARTIALLY_PAID';
+        const totalPaid = round2(alreadyPaid + amount);
+        const newStatus = totalPaid >= round2(Number(invoice.total || 0)) - 0.01 ? 'PAID' : 'PARTIALLY_PAID';
 
         const updatedInvoice = await tx.invoice.update({
           where: { id: invoiceId },
