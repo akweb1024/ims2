@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import SearchableFilterSelect, { SearchableFilterOption } from '@/components/dashboard/SearchableFilterSelect';
 import { formatToISTDate } from '@/lib/date-utils';
 import { DashboardScope, DashboardWidgetKey, DASHBOARD_WIDGETS } from '@/lib/dashboard/widgets';
 import {
@@ -86,6 +87,10 @@ export default function DashboardPage() {
     const [activeContext, setActiveContext] = useState<DashboardScope>('INDIVIDUAL');
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
     const [checkingIn, setCheckingIn] = useState(false);
+    const [lookupLoading, setLookupLoading] = useState(false);
+    const [departmentOptions, setDepartmentOptions] = useState<SearchableFilterOption[]>([]);
+    const [employeeOptions, setEmployeeOptions] = useState<SearchableFilterOption[]>([]);
+    const [teamOptions, setTeamOptions] = useState<SearchableFilterOption[]>([]);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
     const [filters, setFilters] = useState({
         startDate: monthStartISTInputValue(),
@@ -173,6 +178,53 @@ export default function DashboardPage() {
         }
     }, []);
 
+    const fetchFilterLookups = useCallback(async () => {
+        setLookupLoading(true);
+        try {
+            const headers = authHeaders();
+            const [departmentsRes, employeesRes] = await Promise.all([
+                fetch('/api/hr/departments', { headers }),
+                fetch('/api/hr/employees', { headers }),
+            ]);
+
+            const departments = departmentsRes.ok ? await departmentsRes.json() : [];
+            const employees = employeesRes.ok ? await employeesRes.json() : [];
+
+            setDepartmentOptions(
+                (Array.isArray(departments) ? departments : []).map((department: any) => ({
+                    value: department.id,
+                    label: department.name,
+                    hint: department.code ? `Code ${department.code}` : department.company?.name ? department.company.name : 'Department',
+                }))
+            );
+
+            const normalizedEmployees = Array.isArray(employees) ? employees : [];
+            setEmployeeOptions(
+                normalizedEmployees.map((employee: any) => ({
+                    value: employee.id,
+                    label: employee.user?.name || employee.name || employee.user?.email || employee.email || employee.employeeId || 'Employee',
+                    hint: employee.employeeId
+                        ? `${employee.employeeId}${employee.designation?.title ? ` · ${employee.designation.title}` : ''}`
+                        : employee.user?.email || employee.email || 'Employee profile',
+                }))
+            );
+
+            setTeamOptions(
+                normalizedEmployees
+                    .filter((employee: any) => ['MANAGER', 'TEAM_LEADER'].includes(employee.user?.role))
+                    .map((employee: any) => ({
+                        value: employee.user?.id || employee.id,
+                        label: employee.user?.name || employee.name || employee.user?.email || 'Team Lead',
+                        hint: `${employee.user?.role || 'TEAM'}${employee.department?.name ? ` · ${employee.department.name}` : ''}`,
+                    }))
+            );
+        } catch (err) {
+            console.error('Failed to load dashboard filter lookups', err);
+        } finally {
+            setLookupLoading(false);
+        }
+    }, [authHeaders]);
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login');
@@ -184,6 +236,12 @@ export default function DashboardPage() {
             fetchTodayAttendance();
         }
     }, [activeContext, fetchLayout, fetchTodayAttendance, router, status]);
+
+    useEffect(() => {
+        if (status === 'authenticated') {
+            fetchFilterLookups();
+        }
+    }, [fetchFilterLookups, status]);
 
     useEffect(() => {
         if (layout?.widgets?.length) {
@@ -288,7 +346,7 @@ export default function DashboardPage() {
                 );
             case 'attendance_overview':
                 return (
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
                         <DashboardMetric
                             label="Attendance"
                             value={`${data.currentAttendance || 0}`}
@@ -306,11 +364,6 @@ export default function DashboardPage() {
                             value={`${data.currentAbsent || 0}`}
                             subtext={`Last month ${data.previousAbsent || 0}`}
                             tone="danger"
-                        />
-                        <DashboardMetric
-                            label="Scope"
-                            value={layout?.selectedScope || activeContext}
-                            subtext="Team or individual view"
                         />
                     </div>
                 );
@@ -354,6 +407,30 @@ export default function DashboardPage() {
         if (canUseTeamContext) scopes.add('TEAM');
         return Array.from(scopes);
     }, [canUseTeamContext]);
+
+    const selectedDepartment = useMemo(
+        () => departmentOptions.find((option) => option.value === filters.departmentId),
+        [departmentOptions, filters.departmentId]
+    );
+    const selectedEmployee = useMemo(
+        () => employeeOptions.find((option) => option.value === filters.employeeId),
+        [employeeOptions, filters.employeeId]
+    );
+    const selectedTeam = useMemo(
+        () => teamOptions.find((option) => option.value === filters.teamId),
+        [filters.teamId, teamOptions]
+    );
+    const activeFilterCount = useMemo(
+        () => [filters.departmentId, filters.employeeId, filters.teamId].filter(Boolean).length,
+        [filters.departmentId, filters.employeeId, filters.teamId]
+    );
+    const visibleWidgetCount = useMemo(
+        () => (layout?.widgets || []).filter((widget: any) => widget.visible && widget.allowed).length,
+        [layout?.widgets]
+    );
+    const visibleWidgetTotal = layout?.widgets?.length || 0;
+    const attendancePolicy = layout?.attendancePolicy;
+    const scopeLabel = layout?.selectedScope || activeContext;
 
     if (status === 'loading' || loading) {
         return (
@@ -417,101 +494,232 @@ export default function DashboardPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
-                <section className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-6 shadow-sm">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="space-y-3">
+                <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+                    <div className="grid gap-0 lg:grid-cols-[1.25fr_0.95fr]">
+                        <div className="bg-gradient-to-br from-white via-slate-50 to-sky-50 p-6 md:p-7">
                             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-slate-600">
                                 <LayoutGrid size={12} />
                                 Dashboard Customization
                             </div>
-                            <div>
+                            <div className="mt-4 max-w-2xl">
                                 <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
                                     Welcome back, {user?.name || 'User'}
                                 </h1>
-                                <p className="mt-2 max-w-2xl text-sm font-medium text-slate-600">
+                                <p className="mt-3 text-sm font-medium leading-6 text-slate-600">
                                     Choose the widgets you want, switch between team and individual context, and keep the dashboard aligned with your role.
                                 </p>
                             </div>
+
+                            <div className="mt-6 flex flex-wrap gap-2">
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                    {visibleWidgetCount}/{visibleWidgetTotal || 0} widgets visible
+                                </span>
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                    {activeFilterCount} filters active
+                                </span>
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                    {scopeLabel} scope
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="inline-flex overflow-hidden rounded-2xl border border-slate-200 bg-white p-1">
-                                {availableScopes.map((scope) => (
-                                    <button
-                                        key={scope}
-                                        onClick={() => {
-                                            setActiveContext(scope);
-                                            void fetchLayout(scope);
-                                        }}
-                                        className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition-all ${
-                                            activeContext === scope ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {scope.toLowerCase()}
-                                    </button>
-                                ))}
+                        <div className="border-t border-slate-200 bg-slate-950 p-5 text-white lg:border-l lg:border-t-0">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Active view</div>
+                                    <div className="mt-1 text-lg font-black tracking-tight">{scopeLabel}</div>
+                                    <div className="mt-1 text-xs text-white/55">{buildDateRangeLabel(filters.startDate, filters.endDate)}</div>
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                    Live
+                                </div>
                             </div>
 
-                            <button
-                                onClick={() => setShowCustomizer(true)}
-                                className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/10"
-                            >
-                                <Settings2 size={16} />
-                                Customize Dashboard
-                            </button>
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Window</div>
+                                    <div className="mt-1 text-sm font-semibold text-white">{buildDateRangeLabel(filters.startDate, filters.endDate)}</div>
+                                    <div className="mt-1 text-[11px] text-white/55">Drives every widget query.</div>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Filters</div>
+                                    <div className="mt-1 text-sm font-semibold text-white">{activeFilterCount ? 'Scoped' : 'All data'}</div>
+                                    <div className="mt-1 text-[11px] text-white/55">
+                                        {selectedDepartment?.label || selectedEmployee?.label || selectedTeam?.label || 'No audience override'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Attendance policy</div>
+                                        <div className="mt-1 text-xs text-white/55">Operational guardrails for check-in timing.</div>
+                                    </div>
+                                    <div className="grid gap-1 text-right text-xs text-white/85">
+                                        <div>Late after {attendancePolicy?.lateCheckInTime || '09:30'} AM</div>
+                                        <div>Short leave after {attendancePolicy?.shortLeaveTime || '10:30'} AM</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                                <div className="inline-flex overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-1">
+                                    {availableScopes.map((scope) => (
+                                        <button
+                                            key={scope}
+                                            onClick={() => {
+                                                setActiveContext(scope);
+                                                void fetchLayout(scope);
+                                            }}
+                                            className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition-all ${
+                                                activeContext === scope ? 'bg-white text-slate-950' : 'text-white/70 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            {scope.toLowerCase()}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setShowCustomizer(true)}
+                                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-black/20"
+                                >
+                                    <Settings2 size={16} />
+                                    Customize Dashboard
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-5">
-                    <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Start Date</span>
-                        <input
-                            type="date"
-                            value={filters.startDate}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
-                        />
-                    </label>
-                    <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">End Date</span>
-                        <input
-                            type="date"
-                            value={filters.endDate}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
-                        />
-                    </label>
-                    <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Department</span>
-                        <input
-                            type="text"
-                            value={filters.departmentId}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, departmentId: e.target.value }))}
-                            placeholder="Department ID"
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
-                        />
-                    </label>
-                    <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Employee</span>
-                        <input
-                            type="text"
-                            value={filters.employeeId}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
-                            placeholder="Employee profile ID"
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
-                        />
-                    </label>
-                    <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Team</span>
-                        <input
-                            type="text"
-                            value={filters.teamId}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, teamId: e.target.value }))}
-                            placeholder="Team ID"
-                            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
-                        />
-                    </label>
+                    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-950">Filters and audience</h2>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Search departments, employees, and team leads to narrow the dashboard without typing raw IDs.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
+                                {lookupLoading ? 'Loading selectors' : 'Live selectors'}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFilters({
+                                    startDate: monthStartISTInputValue(),
+                                    endDate: todayISTInputValue(),
+                                    departmentId: '',
+                                    employeeId: '',
+                                    teamId: '',
+                                })}
+                                className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                            >
+                                Reset filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 xl:grid-cols-[0.95fr_1.45fr]">
+                        <div className="rounded-[1.4rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                            <div className="mb-4">
+                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Date Range</div>
+                                <div className="mt-1 text-sm text-slate-500">Controls the reporting window for every widget.</div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <label className="space-y-2">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Start Date</span>
+                                    <input
+                                        type="date"
+                                        value={filters.startDate}
+                                        onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                                    />
+                                </label>
+                                <label className="space-y-2">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">End Date</span>
+                                    <input
+                                        type="date"
+                                        value={filters.endDate}
+                                        onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                                    />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="rounded-[1.4rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                            <div className="mb-4 flex items-end justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Audience Scope</div>
+                                    <div className="mt-1 text-sm text-slate-500">Pick a department, employee, or team lead.</div>
+                                </div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                                    {activeFilterCount} active
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <SearchableFilterSelect
+                                    label="Department"
+                                    value={filters.departmentId}
+                                    options={departmentOptions}
+                                    onChange={(value) => setFilters((prev) => ({ ...prev, departmentId: value }))}
+                                    placeholder="Search departments..."
+                                    emptyLabel="All departments"
+                                    loading={lookupLoading}
+                                />
+                                <SearchableFilterSelect
+                                    label="Employee"
+                                    value={filters.employeeId}
+                                    options={employeeOptions}
+                                    onChange={(value) => setFilters((prev) => ({ ...prev, employeeId: value }))}
+                                    placeholder="Search employees..."
+                                    emptyLabel="All employees"
+                                    loading={lookupLoading}
+                                />
+                                {canUseTeamContext ? (
+                                    <SearchableFilterSelect
+                                        label="Team lead"
+                                        value={filters.teamId}
+                                        options={teamOptions}
+                                        onChange={(value) => setFilters((prev) => ({ ...prev, teamId: value }))}
+                                        placeholder="Search team leads..."
+                                        emptyLabel="All teams"
+                                        loading={lookupLoading}
+                                    />
+                                ) : (
+                                    <div className="rounded-[1.4rem] border border-dashed border-slate-200 bg-white/60 p-4">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Team</div>
+                                        <div className="mt-2 text-sm font-semibold text-slate-900">Team filters are limited to manager views.</div>
+                                        <div className="mt-1 text-xs text-slate-500">You can still switch to individual scope above.</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {(selectedDepartment || selectedEmployee || selectedTeam) && (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {selectedDepartment && (
+                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                            Dept: {selectedDepartment.label}
+                                        </span>
+                                    )}
+                                    {selectedEmployee && (
+                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                            Employee: {selectedEmployee.label}
+                                        </span>
+                                    )}
+                                    {selectedTeam && (
+                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                            Team: {selectedTeam.label}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </section>
 
                 {userRole !== 'CUSTOMER' && userRole !== 'AGENCY' && (
@@ -574,36 +782,55 @@ export default function DashboardPage() {
                     </section>
                 )}
 
-                <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="mb-6 flex items-center justify-between gap-4">
                         <div>
                             <h2 className="text-xl font-black text-slate-950">Widgets</h2>
                             <p className="text-sm text-slate-500">Visible widgets are saved per user and context.</p>
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                        <div className="text-right text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                            <div>{visibleWidgetCount} visible</div>
                             {buildDateRangeLabel(filters.startDate, filters.endDate)}
                         </div>
                     </div>
 
-                    <div className="grid gap-5 xl:grid-cols-2">
-                        {widgets.filter((widget: any) => widget.visible).map((widget: any) => (
-                            <article key={widget.key} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                                <div className="mb-4 flex items-start justify-between gap-4">
+                    {widgets.filter((widget: any) => widget.visible).length > 0 ? (
+                        <div className="grid gap-6 xl:grid-cols-2">
+                            {widgets.filter((widget: any) => widget.visible).map((widget: any) => (
+                            <article key={widget.key} className="rounded-[1.75rem] border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/60 p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                                <div className="mb-5 flex items-start justify-between gap-4">
                                     <div>
                                         <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">
                                             {widget.category}
                                         </div>
-                                        <h3 className="mt-1 text-lg font-black text-slate-950">{widget.title}</h3>
-                                        <p className="mt-1 text-sm text-slate-500">{widget.description}</p>
+                                        <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">{widget.title}</h3>
+                                        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">{widget.description}</p>
                                     </div>
-                                    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                                        {widget.scope}
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                                            {widget.scope}
+                                        </div>
+                                        {widget.locked && (
+                                            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
+                                                Locked
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                {renderWidgetContent(widget.key)}
+                                <div className="rounded-[1.45rem] border border-slate-200/60 bg-white p-5">
+                                    {renderWidgetContent(widget.key)}
+                                </div>
                             </article>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="rounded-[1.65rem] border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center">
+                            <div className="text-sm font-semibold text-slate-900">No widgets are visible yet.</div>
+                            <p className="mt-2 text-sm text-slate-500">
+                                Open Customize Dashboard to bring widgets back into the layout.
+                            </p>
+                        </div>
+                    )}
                 </section>
 
                 {canUseTeamContext && (
