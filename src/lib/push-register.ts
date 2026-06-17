@@ -37,6 +37,20 @@ export async function registerPush() {
 
         return newSubscription;
     } catch (error) {
+        // The browser throws an AbortError ("Registration failed - push service
+        // not available") when it can't reach a push backend — e.g. Linux
+        // Chromium builds without Google API keys, Brave with push disabled, or
+        // a network blocking FCM. This is an environment limitation, not an app
+        // error, so degrade quietly instead of surfacing a console error overlay.
+        const isPushUnavailable =
+            error instanceof DOMException &&
+            (error.name === 'AbortError' || error.name === 'NotSupportedError');
+
+        if (isPushUnavailable) {
+            console.warn('Push notifications unavailable in this browser/environment; skipping registration.');
+            return;
+        }
+
         console.error('Push registration failed:', error);
     }
 }
