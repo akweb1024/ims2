@@ -56,13 +56,20 @@ fi
 
 print_status "Database is ready"
 
-# Run database migrations
-echo "🔄 Running database migrations..."
-if bash scripts/database-migrate.sh; then
-    print_status "Database migrations completed successfully"
+# Run database migrations (opt-in).
+# Default is to SKIP automatic migrations so they can be run manually from the
+# app terminal (e.g. `bash scripts/database-migrate.sh`). To restore automatic
+# migrations on startup, set RUN_MIGRATIONS_ON_START=true in the environment.
+if [ "${RUN_MIGRATIONS_ON_START:-false}" = "true" ]; then
+    echo "🔄 Running database migrations..."
+    if bash scripts/database-migrate.sh; then
+        print_status "Database migrations completed successfully"
+    else
+        print_error "Database migration failed"
+        exit 1
+    fi
 else
-    print_error "Database migration failed"
-    exit 1
+    print_warning "Skipping automatic migrations (RUN_MIGRATIONS_ON_START is not 'true'). Run them manually: bash scripts/database-migrate.sh"
 fi
 
 # Generate Prisma Client (in case it's not already generated)
