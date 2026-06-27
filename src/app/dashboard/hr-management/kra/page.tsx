@@ -113,7 +113,7 @@ function MetricsTab() {
       </div>
 
       {loading ? <p className="text-gray-500">Loading…</p> : Object.keys(grouped).length === 0 ? (
-        <p className="text-gray-500">Koi metric nahi. "New Metric" se shuru karo ya seed chalao.</p>
+        <p className="text-gray-500">Koi metric nahi — upar diye New Metric button se shuru karo ya seed chalao.</p>
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([dept, list]) => (
