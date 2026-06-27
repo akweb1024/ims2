@@ -151,6 +151,9 @@ model Company {
   privateDailyNotes           PrivateDailyNote[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
+  kraTemplates                KraTemplate[]
+  metricContributions         MetricContribution[]
+  performanceIndices          PerformanceIndex[]
 }
 
 model CompanyIntegration {
@@ -1786,6 +1789,8 @@ model EmployeeProfile {
   workReports              WorkReport[]
   performanceSignals       PerformanceSignalEvent[]
   privateDailyNoteTags     PrivateDailyNoteTag[]
+  metricContributions      MetricContribution[]
+  performanceIndices       PerformanceIndex[]
 }
 
 model PrivateDailyNote {
@@ -2988,9 +2993,17 @@ model PerformanceMetricDefinition {
   sourceModule      String
   isActive          Boolean  @default(true)
   metadata          Json?
+  // --- KRA system extensions (Phase 0) ---
+  dataSource        String?  @default("MANUAL") // SYSTEM | MANUAL | HYBRID
+  sourceType        String?  // REVENUE_TRANSACTION | PUBLICATION_ARTICLE | JOURNAL_ISSUE | SUPPORT_TICKET | COURSE_SALE | SUBSCRIPTION | DISPATCH | INVOICE
+  aggregation       String?  @default("SUM") // SUM | COUNT | AVG
+  department        String?  // department tag for template suggestions
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  templateItems     KraTemplateItem[]
+  contributions     MetricContribution[]
+  kraGoals          EmployeeGoal[]
 
   @@unique([companyId, scope, key])
   @@index([companyId, scope])
@@ -3693,11 +3706,19 @@ model EmployeeGoal {
   reviewNotes           String?
   companyId             String
   kpiId                 String?
+  // --- KRA system extensions (Phase 0) ---
+  metricId              String?
+  templateId            String?
+  dataSource            String?
+  weight                Float            @default(1)
+  verifiedValue         Float            @default(0)
+  isKra                 Boolean          @default(false)
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   company               Company          @relation(fields: [companyId], references: [id])
   employee              EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   kpi                   EmployeeKPI?     @relation(fields: [kpiId], references: [id])
+  metric                PerformanceMetricDefinition? @relation(fields: [metricId], references: [id])
   reviewer              User?            @relation("GoalReviewer", fields: [reviewerId], references: [id])
   evaluations           GoalEvaluation[]
   workPlans             WorkPlan[]       @relation("GoalWorkPlans")
@@ -6401,4 +6422,101 @@ model ReimbursementRecord {
 
   @@unique([userId, month, year])
   @@index([userId])
+}
+
+// ============================================================
+// KRA & Performance system (Phase 0)
+// Metric catalog reuses PerformanceMetricDefinition (extended above).
+// ============================================================
+
+/// A reusable KRA blueprint for a department/designation: a set of metrics
+/// with default targets + weights that can be applied to employees.
+model KraTemplate {
+  id            String            @id @default(uuid())
+  companyId     String
+  name          String
+  description   String?
+  departmentId  String?           // plain ref (no relation to keep Department model untouched)
+  designationId String?           // plain ref
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  company       Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items         KraTemplateItem[]
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([designationId])
+}
+
+/// One metric line inside a KraTemplate, with its default target for a period.
+model KraTemplateItem {
+  id            String                      @id @default(uuid())
+  templateId    String
+  metricId      String
+  defaultTarget Float                       @default(0)
+  weight        Float                       @default(1)
+  periodType    GoalType                    @default(MONTHLY)
+  minThreshold  Float?
+  createdAt     DateTime                    @default(now())
+  template      KraTemplate                 @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, metricId, periodType])
+  @@index([metricId])
+}
+
+/// Validation ledger: every reported metric value from a work report.
+/// Rolls into EmployeeGoal.verifiedValue by (employeeId, metricId, date-in-window).
+model MetricContribution {
+  id            String                      @id @default(uuid())
+  companyId     String
+  employeeId    String
+  metricId      String
+  workReportId  String?                     // plain ref (no relation to keep WorkReport model untouched)
+  reportedValue Float
+  verifiedValue Float?
+  status        String                      @default("PENDING") // PENDING | AUTO_VERIFIED | MANAGER_APPROVED | REJECTED | FLAGGED
+  source        String                      @default("MANUAL")  // MANUAL | SYSTEM
+  sourceRefId   String?
+  pointsValue   Float?                      // normalized weight for focus score
+  verifiedById  String?                     // plain ref to reviewing user
+  verifiedAt    DateTime?
+  note          String?
+  date          DateTime                    @default(now())
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+  company       Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee      EmployeeProfile             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([employeeId, metricId, date])
+  @@index([status])
+  @@index([workReportId])
+}
+
+/// Composite performance score per employee per period (monthly/quarterly/yearly).
+model PerformanceIndex {
+  id                 String          @id @default(uuid())
+  companyId          String
+  employeeId         String
+  periodType         GoalType        @default(MONTHLY)
+  period             String          // "2026-06" | "2026-Q2" | "2026"
+  achievementScore   Float           @default(0)
+  attendanceScore    Float           @default(0)
+  managerRatingScore Float           @default(0)
+  focusScore         Float           @default(0)
+  overallIndex       Float           @default(0)
+  grade              String?
+  weights            Json?
+  computedAt         DateTime        @default(now())
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  company            Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee           EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, periodType, period])
+  @@index([companyId])
+  @@index([employeeId])
 }
