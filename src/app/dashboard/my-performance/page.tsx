@@ -17,6 +17,7 @@ interface IndexData {
 }
 interface MyGoal {
   id: string;
+  metricId: string | null;
   title: string;
   unit: string;
   target: number;
@@ -108,23 +109,7 @@ export default function MyPerformancePage() {
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
                 {goals.map((g) => (
-                  <div key={g.id} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{g.title}</h3>
-                        <p className="text-xs text-gray-400">
-                          {g.current} / {g.target} {g.unit}
-                          {g.dataSource && <span className="ml-1">· {g.dataSource}</span>}
-                        </p>
-                      </div>
-                      <span className={`text-sm font-semibold ${gradeColor(g.achievementPercentage >= 85 ? 'A' : g.achievementPercentage >= 70 ? 'B' : g.achievementPercentage >= 55 ? 'C' : 'D')}`}>
-                        {Math.round(g.achievementPercentage)}%
-                      </span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full mt-3 overflow-hidden">
-                      <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, g.achievementPercentage)}%` }} />
-                    </div>
-                  </div>
+                  <GoalCard key={g.id} goal={g} onLogged={load} />
                 ))}
               </div>
             )}
@@ -132,5 +117,57 @@ export default function MyPerformancePage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function GoalCard({ goal, onLogged }: { goal: MyGoal; onLogged: () => void }) {
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const log = async () => {
+    const num = Number(value);
+    if (!goal.metricId || !Number.isFinite(num) || num <= 0) {
+      toast.error('Valid value daalein');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await kraFetch<{ summary: { autoVerified: number; pending: number; flagged: number } }>(
+        '/api/kra/contributions',
+        { method: 'POST', body: JSON.stringify({ entries: [{ metricId: goal.metricId, value: num }] }) }
+      );
+      const s = res.summary;
+      toast.success(s.autoVerified ? 'Logged & auto-verified ✅' : s.flagged ? 'Logged — flagged for review' : 'Logged — manager review pending');
+      setValue('');
+      onLogged();
+    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-xl p-4">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-medium text-gray-900">{goal.title}</h3>
+          <p className="text-xs text-gray-400">
+            {goal.current} / {goal.target} {goal.unit}
+            {goal.dataSource && <span className="ml-1">· {goal.dataSource}</span>}
+          </p>
+        </div>
+        <span className={`text-sm font-semibold ${gradeColor(goal.achievementPercentage >= 85 ? 'A' : goal.achievementPercentage >= 70 ? 'B' : goal.achievementPercentage >= 55 ? 'C' : 'D')}`}>
+          {Math.round(goal.achievementPercentage)}%
+        </span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full mt-3 overflow-hidden">
+        <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, goal.achievementPercentage)}%` }} />
+      </div>
+      <div className="flex gap-2 mt-3">
+        <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder={`Add ${goal.unit}`}
+          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+        <button onClick={log} disabled={busy}
+          className="bg-indigo-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          {busy ? '…' : 'Log'}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { handleApiError, NotFoundError, AuthorizationError, ValidationError } fr
 import { logger } from '@/lib/logger';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
+import { recordContributions } from '@/lib/kra/contributions';
 
 const getISTDateString = (date = new Date()) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -582,6 +583,30 @@ export const POST = authorizedRoute(
             }
 
             logger.info('Work report submitted', { reportId: report.id, employeeId: profile.id, pointsEarned });
+
+            // KRA integration (Phase 4): turn reported KRA metric values into validated
+            // contributions that roll up into the employee's targets. Defensive — a KRA
+            // failure must never block report submission.
+            if (Array.isArray(body.kraEntries) && body.kraEntries.length > 0 && user.companyId) {
+                try {
+                    const entries = body.kraEntries
+                        .filter((e: any) => e && e.metricId && Number.isFinite(Number(e.value)))
+                        .map((e: any) => ({ metricId: String(e.metricId), value: Number(e.value) }));
+                    if (entries.length > 0) {
+                        await recordContributions({
+                            companyId: user.companyId,
+                            employeeId: profile.id,
+                            workReportId: report.id,
+                            date: report.date,
+                            entries,
+                        });
+                    }
+                } catch (kraErr) {
+                    logger.error('KRA contribution recording failed (report still saved)', {
+                        reportId: report.id, error: kraErr instanceof Error ? kraErr.message : String(kraErr),
+                    });
+                }
+            }
 
             if (idempotencyKey) {
                 idempotencyReplayCache.set(`${user.id}:${idempotencyKey}`, {
