@@ -225,6 +225,7 @@ function TemplatesTab() {
         items: (editing.items as KraTemplateItem[]).map((i) => ({
           metricId: i.metricId, defaultTarget: Number(i.defaultTarget) || 0,
           weight: Number(i.weight) || 1, periodType: i.periodType || 'MONTHLY',
+          ratePerUnit: i.ratePerUnit != null && i.ratePerUnit !== ('' as any) ? Number(i.ratePerUnit) : null,
         })),
       };
       if (editing.id) await kraFetch('/api/kra/templates', { method: 'PATCH', body: JSON.stringify(payload) });
@@ -240,7 +241,7 @@ function TemplatesTab() {
   };
 
   const newTemplate = () => setEditing({ name: '', description: '', departmentId: '', isActive: true, items: [] });
-  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY' }] });
+  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY', ratePerUnit: '' }] });
   const setItem = (idx: number, patch: any) => setEditing({ ...editing, items: editing.items.map((it: any, i: number) => i === idx ? { ...it, ...patch } : it) });
   const delItem = (idx: number) => setEditing({ ...editing, items: editing.items.filter((_: any, i: number) => i !== idx) });
 
@@ -273,7 +274,7 @@ function TemplatesTab() {
                 {t.items.map((i) => (
                   <li key={i.id} className="flex justify-between text-gray-600">
                     <span>{i.metric?.name}</span>
-                    <span className="text-gray-400">{i.defaultTarget}{i.metric?.unit} · w{i.weight} · {i.periodType}</span>
+                    <span className="text-gray-400">{i.defaultTarget}{i.metric?.unit}{i.ratePerUnit ? ` · ₹${i.ratePerUnit}/unit` : ''} · w{i.weight} · {i.periodType}</span>
                   </li>
                 ))}
               </ul>
@@ -294,15 +295,24 @@ function TemplatesTab() {
             <span className="text-sm font-medium text-gray-700">Metrics</span>
             <button onClick={addItem} className="text-indigo-600 text-sm inline-flex items-center gap-1"><FiPlus /> Add metric</button>
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-400 px-1">
+            <span className="col-span-4">Metric</span>
+            <span className="col-span-2">Target</span>
+            <span className="col-span-2">₹ / unit</span>
+            <span className="col-span-1">Weight</span>
+            <span className="col-span-2">Period</span>
+            <span className="col-span-1"></span>
+          </div>
+          <div className="space-y-2 mt-1">
             {editing.items.length === 0 && <p className="text-sm text-gray-400">Koi metric add nahi kiya.</p>}
             {editing.items.map((it: any, idx: number) => (
               <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                <select className={`${inputCls} col-span-5`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
+                <select className={`${inputCls} col-span-4`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
                   {metrics.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
                 </select>
                 <input type="number" className={`${inputCls} col-span-2`} value={it.defaultTarget} onChange={(e) => setItem(idx, { defaultTarget: e.target.value })} placeholder="target" />
-                <input type="number" className={`${inputCls} col-span-2`} value={it.weight} onChange={(e) => setItem(idx, { weight: e.target.value })} placeholder="weight" />
+                <input type="number" className={`${inputCls} col-span-2`} value={it.ratePerUnit ?? ''} onChange={(e) => setItem(idx, { ratePerUnit: e.target.value })} placeholder="₹/unit" />
+                <input type="number" className={`${inputCls} col-span-1`} value={it.weight} onChange={(e) => setItem(idx, { weight: e.target.value })} placeholder="w" />
                 <select className={`${inputCls} col-span-2`} value={it.periodType} onChange={(e) => setItem(idx, { periodType: e.target.value })}>
                   {PERIOD_TYPES.map((p) => <option key={p}>{p}</option>)}
                 </select>

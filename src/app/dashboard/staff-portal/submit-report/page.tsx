@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
+import DprKraSection from '@/components/dashboard/kra/DprKraSection';
 import { toast } from 'react-hot-toast';
 
 const getISTDateString = (date = new Date()) =>
@@ -664,6 +665,9 @@ export default function SubmitReportPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* KRA daily progress (Phase 5) — employee updates their assigned targets here */}
+                <DprKraSection />
 
                 {/* Edit Restriction Notice */}
                 {isEditMode && existingReport && (

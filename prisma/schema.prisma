@@ -3713,6 +3713,7 @@ model EmployeeGoal {
   weight                Float            @default(1)
   verifiedValue         Float            @default(0)
   isKra                 Boolean          @default(false)
+  ratePerUnit           Float?           // INR earned per unit (override of template rate)
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   company               Company          @relation(fields: [companyId], references: [id])
@@ -6458,6 +6459,7 @@ model KraTemplateItem {
   weight        Float                       @default(1)
   periodType    GoalType                    @default(MONTHLY)
   minThreshold  Float?
+  ratePerUnit   Float?                      // INR earned per unit (e.g. ₹/article)
   createdAt     DateTime                    @default(now())
   template      KraTemplate                 @relation(fields: [templateId], references: [id], onDelete: Cascade)
   metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)

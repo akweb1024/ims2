@@ -66,6 +66,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
             weight: i.weight,
             periodType: i.periodType,
             minThreshold: i.minThreshold ?? null,
+            ratePerUnit: i.ratePerUnit ?? null,
           })),
         },
       },
@@ -120,6 +121,7 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
               weight: i.weight,
               periodType: i.periodType,
               minThreshold: i.minThreshold ?? null,
+              ratePerUnit: i.ratePerUnit ?? null,
             })),
           });
         }

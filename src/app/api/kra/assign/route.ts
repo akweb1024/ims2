@@ -53,9 +53,9 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
     const periodType = input.periodType as KraPeriodType;
     const win = computePeriodWindow(periodType, ref);
 
-    // Build override lookup: `${employeeId}:${metricId}` -> target
-    const overrideMap = new Map<string, number>();
-    for (const o of input.overrides ?? []) overrideMap.set(`${o.employeeId}:${o.metricId}`, o.target);
+    // Build override lookup: `${employeeId}:${metricId}` -> { target?, ratePerUnit? }
+    const overrideMap = new Map<string, { target?: number; ratePerUnit?: number }>();
+    for (const o of input.overrides ?? []) overrideMap.set(`${o.employeeId}:${o.metricId}`, { target: o.target, ratePerUnit: o.ratePerUnit });
 
     // 5) Upsert one EmployeeGoal per (employee, metric) for this window.
     let created = 0;
@@ -64,7 +64,9 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
     await prisma.$transaction(async (tx) => {
       for (const profile of profiles) {
         for (const item of template.items) {
-          const target = overrideMap.get(`${profile.id}:${item.metricId}`) ?? item.defaultTarget;
+          const ov = overrideMap.get(`${profile.id}:${item.metricId}`);
+          const target = ov?.target ?? item.defaultTarget;
+          const ratePerUnit = ov?.ratePerUnit ?? item.ratePerUnit ?? null;
 
           const existing = await tx.employeeGoal.findFirst({
             where: {
@@ -89,6 +91,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
             templateId: template.id,
             dataSource: item.metric.dataSource ?? 'MANUAL',
             weight: item.weight,
+            ratePerUnit,
             visibility: 'MANAGER',
             ...(input.reviewerId ? { reviewerId: input.reviewerId } : {}),
           };

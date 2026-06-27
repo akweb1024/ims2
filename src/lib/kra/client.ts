@@ -38,6 +38,7 @@ export interface KraTemplateItem {
   weight: number;
   periodType: string;
   minThreshold?: number | null;
+  ratePerUnit?: number | null;
   metric?: KraMetric;
 }
 

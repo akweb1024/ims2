@@ -22,8 +22,12 @@ interface MyGoal {
   unit: string;
   target: number;
   current: number;
+  remaining: number;
+  overflow: number;
   achievementPercentage: number;
   dataSource: string | null;
+  ratePerUnit: number | null;
+  earned: number;
   status: string;
 }
 
@@ -34,7 +38,7 @@ export default function MyPerformancePage() {
   const [periodType, setPeriodType] = useState('MONTHLY');
   const [index, setIndex] = useState<IndexData | null>(null);
   const [goals, setGoals] = useState<MyGoal[]>([]);
-  const [summary, setSummary] = useState<{ weightedAchievement: number } | null>(null);
+  const [summary, setSummary] = useState<{ weightedAchievement: number; totalEarned: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -42,7 +46,7 @@ export default function MyPerformancePage() {
     try {
       const [perf, my] = await Promise.all([
         kraFetch<{ index: IndexData }>(`/api/kra/performance?self=1&periodType=${periodType}`),
-        kraFetch<{ goals: MyGoal[]; summary: { weightedAchievement: number } }>(`/api/kra/my?periodType=${periodType}`),
+        kraFetch<{ goals: MyGoal[]; summary: { weightedAchievement: number; totalEarned: number } }>(`/api/kra/my?periodType=${periodType}`),
       ]);
       setIndex(perf.index);
       setGoals(my.goals || []);
@@ -101,7 +105,7 @@ export default function MyPerformancePage() {
             {/* KRA goals */}
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
               <FiTarget className="text-indigo-600" /> My KRA Targets
-              {summary && <span className="text-sm font-normal text-gray-400">· {summary.weightedAchievement}% overall</span>}
+              {summary && <span className="text-sm font-normal text-gray-400">· {summary.weightedAchievement}% overall{summary.totalEarned ? ` · earned ₹${summary.totalEarned.toLocaleString('en-IN')}` : ''}</span>}
             </h2>
 
             {goals.length === 0 ? (
@@ -149,17 +153,25 @@ function GoalCard({ goal, onLogged }: { goal: MyGoal; onLogged: () => void }) {
         <div>
           <h3 className="font-medium text-gray-900">{goal.title}</h3>
           <p className="text-xs text-gray-400">
-            {goal.current} / {goal.target} {goal.unit}
+            Done {goal.current} / {goal.target} {goal.unit}
             {goal.dataSource && <span className="ml-1">· {goal.dataSource}</span>}
           </p>
         </div>
-        <span className={`text-sm font-semibold ${gradeColor(goal.achievementPercentage >= 85 ? 'A' : goal.achievementPercentage >= 70 ? 'B' : goal.achievementPercentage >= 55 ? 'C' : 'D')}`}>
-          {Math.round(goal.achievementPercentage)}%
-        </span>
+        <div className="text-right">
+          {goal.overflow > 0 ? (
+            <span className="text-sm font-semibold text-green-600">+{goal.overflow} {goal.unit} 🎉</span>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">{goal.remaining} {goal.unit} left</span>
+          )}
+          <div className={`text-xs ${goal.achievementPercentage >= 100 ? 'text-green-600' : 'text-gray-400'}`}>{Math.round(goal.achievementPercentage)}%</div>
+        </div>
       </div>
       <div className="h-2 bg-gray-100 rounded-full mt-3 overflow-hidden">
-        <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, goal.achievementPercentage)}%` }} />
+        <div className={`h-full ${goal.overflow > 0 ? 'bg-green-500' : 'bg-indigo-500'}`} style={{ width: `${Math.min(100, goal.achievementPercentage)}%` }} />
       </div>
+      {goal.ratePerUnit ? (
+        <p className="text-xs text-gray-500 mt-2">₹{goal.ratePerUnit}/{goal.unit} · earned <span className="font-semibold text-gray-800">₹{Math.round(goal.earned).toLocaleString('en-IN')}</span></p>
+      ) : null}
       <div className="flex gap-2 mt-3">
         <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder={`Add ${goal.unit}`}
           className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />

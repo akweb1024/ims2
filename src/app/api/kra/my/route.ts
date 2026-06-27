@@ -56,20 +56,33 @@ export const GET = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) => 
       period: win.label,
       periodType,
       window: { start: win.startDate, end: win.endDate },
-      goals: goals.map((g) => ({
-        id: g.id,
-        metricId: g.metricId,
-        title: g.title,
-        unit: g.unit,
-        target: g.targetValue,
-        current: g.currentValue,
-        verifiedValue: g.verifiedValue,
-        achievementPercentage: g.achievementPercentage,
-        weight: g.weight,
-        dataSource: g.dataSource,
-        status: g.status,
-      })),
-      summary: { goalCount: goals.length, weightedAchievement: Math.round(weightedAchievement * 10) / 10 },
+      goals: goals.map((g) => {
+        const remaining = Math.max(0, g.targetValue - g.currentValue);
+        const overflow = Math.max(0, g.currentValue - g.targetValue);
+        const earned = (g.ratePerUnit ?? 0) * g.currentValue;
+        return {
+          id: g.id,
+          metricId: g.metricId,
+          title: g.title,
+          unit: g.unit,
+          target: g.targetValue,
+          current: g.currentValue,
+          remaining,
+          overflow,
+          verifiedValue: g.verifiedValue,
+          achievementPercentage: g.achievementPercentage,
+          weight: g.weight,
+          dataSource: g.dataSource,
+          ratePerUnit: g.ratePerUnit,
+          earned,
+          status: g.status,
+        };
+      }),
+      summary: {
+        goalCount: goals.length,
+        weightedAchievement: Math.round(weightedAchievement * 10) / 10,
+        totalEarned: Math.round(goals.reduce((s, g) => s + (g.ratePerUnit ?? 0) * g.currentValue, 0)),
+      },
     });
   } catch (error) {
     return createErrorResponse(error);

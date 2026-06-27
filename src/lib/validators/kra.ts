@@ -29,6 +29,7 @@ export const kraTemplateItemSchema = z.object({
   weight: z.number().positive().default(1),
   periodType: z.enum(PERIOD_TYPES).default('MONTHLY'),
   minThreshold: z.number().nonnegative().nullish(),
+  ratePerUnit: z.number().nonnegative().nullish(),
 });
 
 export const kraTemplateSchema = z.object({
@@ -61,7 +62,8 @@ export const kraAssignSchema = z
         z.object({
           employeeId: z.string().min(1),
           metricId: z.string().min(1),
-          target: z.number().nonnegative(),
+          target: z.number().nonnegative().optional(),
+          ratePerUnit: z.number().nonnegative().optional(),
         })
       )
       .optional(),
