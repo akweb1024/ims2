@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ReactElement } from 'react';
-import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX } from 'react-icons/fi';
+import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -10,7 +10,7 @@ import {
   type KraMetric, type KraTemplate, type KraTemplateItem,
 } from '@/lib/kra/client';
 
-type Tab = 'metrics' | 'templates' | 'assign' | 'review';
+type Tab = 'metrics' | 'templates' | 'assign' | 'review' | 'performance';
 
 export default function KraAdminPage() {
   const [tab, setTab] = useState<Tab>('metrics');
@@ -33,6 +33,7 @@ export default function KraAdminPage() {
             ['templates', 'Templates', <FiTarget key="t" />],
             ['assign', 'Assign', <FiUsers key="a" />],
             ['review', 'Review', <FiInbox key="r" />],
+            ['performance', 'Performance', <FiBarChart2 key="p" />],
           ] as [Tab, string, ReactElement][]).map(([id, label, icon]) => (
             <button
               key={id}
@@ -50,6 +51,7 @@ export default function KraAdminPage() {
         {tab === 'templates' && <TemplatesTab />}
         {tab === 'assign' && <AssignTab />}
         {tab === 'review' && <ReviewTab />}
+        {tab === 'performance' && <PerformanceTab />}
       </div>
     </DashboardLayout>
   );
@@ -519,6 +521,96 @@ function ReviewTab() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ----------------------------- Performance ----------------------------- */
+
+interface LeaderRow {
+  employeeId: string;
+  name: string;
+  overallIndex: number;
+  grade: string;
+  achievementScore: number;
+  attendanceScore: number;
+  managerRatingScore: number;
+  focusScore: number;
+  goalCount: number;
+}
+
+const gradeColor = (g: string) =>
+  g === 'A' ? 'bg-green-100 text-green-700'
+  : g === 'B' ? 'bg-blue-100 text-blue-700'
+  : g === 'C' ? 'bg-amber-100 text-amber-700'
+  : 'bg-red-100 text-red-700';
+
+function PerformanceTab() {
+  const [rows, setRows] = useState<LeaderRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [periodType, setPeriodType] = useState('MONTHLY');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await kraFetch<{ leaderboard: LeaderRow[] }>(`/api/kra/performance?periodType=${periodType}`);
+      setRows(data.leaderboard || []);
+    } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
+  }, [periodType]);
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-sm text-gray-500">Team performance index ({periodType.toLowerCase()})</p>
+        <select className={`${inputCls} w-44`} value={periodType} onChange={(e) => setPeriodType(e.target.value)}>
+          {PERIOD_TYPES.map((p) => <option key={p}>{p}</option>)}
+        </select>
+      </div>
+
+      {loading ? <p className="text-gray-500">Computing…</p> : rows.length === 0 ? (
+        <p className="text-gray-500">Koi data nahi.</p>
+      ) : (
+        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">#</th>
+                <th className="text-left px-3 py-2 font-medium">Employee</th>
+                <th className="text-center px-3 py-2 font-medium">Index</th>
+                <th className="text-center px-3 py-2 font-medium">Grade</th>
+                <th className="text-right px-3 py-2 font-medium">Achieve</th>
+                <th className="text-right px-3 py-2 font-medium">Attend</th>
+                <th className="text-right px-3 py-2 font-medium">Mgr</th>
+                <th className="text-right px-3 py-2 font-medium">Focus</th>
+                <th className="text-right px-3 py-2 font-medium">Goals</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((r, i) => (
+                <tr key={r.employeeId}>
+                  <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                  <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className="font-semibold text-gray-900">{r.overallIndex}</span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${gradeColor(r.grade)}`}>{r.grade}</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.achievementScore}</td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.attendanceScore}</td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.managerRatingScore}</td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.focusScore}</td>
+                  <td className="px-3 py-2 text-right text-gray-400">{r.goalCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="text-xs text-gray-400 mt-2">
+        Index = 45% achievement + 20% attendance + 20% manager rating + 15% KRA focus.
+      </p>
     </div>
   );
 }
