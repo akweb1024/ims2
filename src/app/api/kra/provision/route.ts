@@ -36,16 +36,19 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
       });
 
       let provisioned = 0, krasCreated = 0, goalsCreated = 0, failed = 0;
+      const failures: Array<{ userId: string; error: string }> = [];
       for (const p of profiles) {
         try {
           const r = await provisionEmployee(p.userId, user.id);
           provisioned++; krasCreated += r.krasCreated; goalsCreated += r.goalsCreated;
         } catch (err) {
           failed++;
+          const message = err instanceof Error ? err.message : String(err);
+          if (failures.length < 15) failures.push({ userId: p.userId, error: message });
           logger.error('Sweep provisioning failed', err, { userId: p.userId });
         }
       }
-      return NextResponse.json({ success: true, sweep: true, employees: profiles.length, provisioned, krasCreated, goalsCreated, failed });
+      return NextResponse.json({ success: true, sweep: true, employees: profiles.length, provisioned, krasCreated, goalsCreated, failed, failures });
     }
 
     // --- Single employee ---
