@@ -7,6 +7,7 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { logger } from '@/lib/logger';
 import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
 import { assertCompanyAccess, canAccessAllCompanies, normalizeAllowedModulesForWrite, resolveCompanyScope } from '@/lib/access-policy';
+import { provisionEmployee } from '@/lib/kra/provision';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
@@ -572,6 +573,13 @@ export const POST = authorizedRoute(
                         }
                     }
                 }
+            }
+
+            // New-hire KRA/Goals auto-provisioning (idempotent; non-fatal).
+            try {
+                await provisionEmployee(targetUser.id, user.id);
+            } catch (err) {
+                logger.error('KRA provisioning failed for new employee', err, { userId: targetUser.id });
             }
 
             return NextResponse.json({ user: targetUser, profile });

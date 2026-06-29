@@ -3714,6 +3714,12 @@ model EmployeeGoal {
   verifiedValue         Float            @default(0)
   isKra                 Boolean          @default(false)
   ratePerUnit           Float?           // INR earned per unit (override of template rate)
+  // --- Goals & KRA module extensions (Plan B, Phase 1) ---
+  dimension             KraDimension?    // performance dimension tag (OUTPUT/QUALITY/...)
+  dailyTarget           Float?           // optional per-day target for pace rollup
+  assignedById          String?          // plain ref to the user who assigned this goal
+  dueDate               DateTime?        // verification due date (defaults to endDate)
+  // status value set: PENDING | IN_PROGRESS | SUBMITTED | TL_VERIFIED | MANAGER_VERIFIED | REJECTED | ACHIEVED
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   company               Company          @relation(fields: [companyId], references: [id])
@@ -3723,6 +3729,8 @@ model EmployeeGoal {
   reviewer              User?            @relation("GoalReviewer", fields: [reviewerId], references: [id])
   evaluations           GoalEvaluation[]
   workPlans             WorkPlan[]       @relation("GoalWorkPlans")
+  verifications         GoalVerification[]
+  proofs                Proof[]
 
   @@index([employeeId])
   @@index([companyId])
@@ -4631,6 +4639,8 @@ model RevenueTransaction {
   revenueType         RevenueType?                @default(NEW)
   source              String?                     @default("Subscription")
   sourceOther         String?
+  metricContributionId String?                    // KRA auto-revenue: cascades when the progress log is deleted
+  metricContribution  MetricContribution?         @relation("ContributionRevenue", fields: [metricContributionId], references: [id], onDelete: Cascade)
   expenseAllocations  EmployeeExpenseAllocation[]
   claims              RevenueClaim[]
   approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
@@ -4649,6 +4659,7 @@ model RevenueTransaction {
   @@index([status])
   @@index([paymentDate])
   @@index([customerProfileId])
+  @@index([metricContributionId])
 }
 
 model ExpenseAllocationRule {
@@ -6177,10 +6188,22 @@ enum EmployeeType {
 }
 
 enum GoalType {
+  DAILY
+  WEEKLY
   MONTHLY
   QUARTERLY
   HALF_YEARLY
   YEARLY
+}
+
+/// KRA performance dimension (annual framework tagging). See Goals & KRA module spec §1.
+enum KraDimension {
+  OUTPUT
+  QUALITY
+  TAT
+  COLLABORATION
+  IMPROVEMENT
+  BEHAVIOR
 }
 
 enum RewardType {
@@ -6458,6 +6481,7 @@ model KraTemplateItem {
   defaultTarget Float                       @default(0)
   weight        Float                       @default(1)
   periodType    GoalType                    @default(MONTHLY)
+  dimension     KraDimension                @default(OUTPUT) // carried into goals on assignment
   minThreshold  Float?
   ratePerUnit   Float?                      // INR earned per unit (e.g. ₹/article)
   createdAt     DateTime                    @default(now())
@@ -6491,6 +6515,7 @@ model MetricContribution {
   company       Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   employee      EmployeeProfile             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  revenueEntries RevenueTransaction[]       @relation("ContributionRevenue") // auto-revenue cascades when this log is deleted
 
   @@index([companyId])
   @@index([employeeId, metricId, date])
@@ -6512,6 +6537,13 @@ model PerformanceIndex {
   overallIndex       Float           @default(0)
   grade              String?
   weights            Json?
+  // --- Quarterly rating layer (Plan B, Phase 1) ---
+  letterRating       String?         // A+ | A | B+ | B | C | D (spec rating scale)
+  kraAchievement     Json?           // { kraGoalId: achievementPercent }
+  managerComments    String?
+  hrModeration       String?         // HR moderation note
+  ratingStatus       String          @default("SUBMITTED") // SUBMITTED | HR_MODERATED | FINAL
+  raterId            String?         // plain ref to the user who saved the rating
   computedAt         DateTime        @default(now())
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
@@ -6521,4 +6553,32 @@ model PerformanceIndex {
   @@unique([employeeId, periodType, period])
   @@index([companyId])
   @@index([employeeId])
+}
+
+/// Goal-level verification step (2-step TL -> MANAGER approval chain). Spec §10.
+model GoalVerification {
+  id         String        @id @default(uuid())
+  goalId     String
+  level      String        // TL | MANAGER
+  verifierId String        // plain ref to reviewing user
+  status     String        // APPROVED | REJECTED
+  comment    String?
+  createdAt  DateTime      @default(now())
+  goal       EmployeeGoal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([verifierId])
+}
+
+/// Evidence attached to a goal on submit. Spec §3 (Proof model).
+model Proof {
+  id        String       @id @default(uuid())
+  goalId    String
+  type      String       // FILE | LINK | NOTE
+  url       String?
+  note      String?
+  createdAt DateTime     @default(now())
+  goal      EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
 }

@@ -92,3 +92,63 @@ export const kraContributionReviewSchema = z.object({
   verifiedValue: z.number().nonnegative().optional(),
   note: z.string().max(500).optional(),
 });
+
+// --- Goals & KRA module (Plan B, Phase 3) ---
+
+const GOAL_PERIOD_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] as const;
+const KRA_DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
+
+/** Employee logs dated progress against a goal they own. */
+export const kraLogProgressSchema = z.object({
+  goalId: z.string().min(1),
+  value: z.number().finite().refine((v) => v !== 0, 'Value must be non-zero'),
+  note: z.string().max(500).optional(),
+  date: z.string().datetime().optional(),
+});
+
+/** Employee deletes one of their own logs. */
+export const kraDeleteLogSchema = z.object({ logId: z.string().min(1) });
+
+/** Employee submits a goal for verification with proof. */
+export const kraSubmitGoalSchema = z.object({
+  goalId: z.string().min(1),
+  proofUrl: z.string().url().optional(),
+  proofNote: z.string().max(1000).optional(),
+});
+
+/** TL or Manager verifies a goal. */
+export const kraVerifyGoalSchema = z.object({
+  goalId: z.string().min(1),
+  level: z.enum(['TL', 'MANAGER']),
+  decision: z.enum(['APPROVE', 'REJECT']),
+  comment: z.string().max(500).optional(),
+});
+
+/** Manual single goal assignment (spec §5a). */
+export const kraAssignGoalSchema = z.object({
+  employeeId: z.string().min(1),
+  title: z.string().min(1).max(200),
+  period: z.enum(GOAL_PERIOD_TYPES).default('MONTHLY'),
+  target: z.number().nonnegative(),
+  metric: z.string().min(1).max(32),
+  dailyTarget: z.number().nonnegative().optional(),
+  metricId: z.string().optional(),
+  ratePerUnit: z.number().nonnegative().optional(),
+  dimension: z.enum(KRA_DIMENSIONS).optional(),
+  reviewerId: z.string().optional(),
+});
+
+/** Save a quarterly rating from the employee's KRAs. */
+export const kraSaveRatingSchema = z.object({
+  employeeId: z.string().min(1),
+  periodType: z.enum(['QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'MONTHLY']).default('QUARTERLY'),
+  periodRef: z.string().datetime().optional(),
+  managerComments: z.string().max(1000).optional(),
+});
+
+/** HR moderation / letter override. */
+export const kraModerateRatingSchema = z.object({
+  ratingId: z.string().min(1),
+  hrModeration: z.string().min(1).max(1000),
+  ratingOverride: z.enum(['A+', 'A', 'B+', 'B', 'C', 'D']).optional(),
+});

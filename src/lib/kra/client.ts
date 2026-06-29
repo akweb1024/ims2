@@ -15,8 +15,74 @@ export async function kraFetch<T = any>(url: string, init?: RequestInit): Promis
 }
 
 export const PERIOD_TYPES = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] as const;
+/** Goal-loop periods include DAILY/WEEKLY (Plan B). */
+export const GOAL_PERIOD_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] as const;
+export const KRA_DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
 export const DATA_SOURCES = ['MANUAL', 'SYSTEM', 'HYBRID'] as const;
 export const AGGREGATIONS = ['SUM', 'COUNT', 'AVG'] as const;
+
+/** A dated progress log (backed by MetricContribution). */
+export interface KraLog {
+  id: string;
+  metricId: string;
+  reportedValue: number;
+  verifiedValue: number | null;
+  status: string;
+  source: string;
+  note: string | null;
+  date: string;
+}
+
+export interface KraProof {
+  id: string;
+  type: string;
+  url: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface KraGoalVerification {
+  id: string;
+  level: string;
+  verifierId: string;
+  status: string;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface KraPace {
+  remaining: number;
+  remainingDays: number;
+  pacePerDay: number;
+  neededPerRemainingDay: number;
+  onTrack: boolean;
+}
+
+/** Enriched goal returned by /api/kra/my. */
+export interface MyGoal {
+  id: string;
+  metricId: string | null;
+  title: string;
+  dimension: string | null;
+  unit: string;
+  target: number;
+  dailyTarget: number | null;
+  current: number;
+  remaining: number;
+  overflow: number;
+  verifiedValue: number | null;
+  achievementPercentage: number;
+  weight: number;
+  dataSource: string | null;
+  ratePerUnit: number | null;
+  earned: number;
+  status: string;
+  locked: boolean;
+  pace: KraPace;
+  logs: KraLog[];
+  proofs: KraProof[];
+  verifications: KraGoalVerification[];
+}
 
 export interface KraMetric {
   id: string;
