@@ -104,6 +104,7 @@ function sumAmount<T extends { amount: number }>(rows: T[]) {
 
 async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
   const companyId = getBaseCompanyId(ctx);
+  const selfCompanyId = selfScopedCompanyId(ctx); // for employee/user-scoped queries (revenue, follow-ups)
   const current = getISTDateRangeForPeriod('MONTHLY');
   const previousBase = new Date(current.start);
   previousBase.setMonth(previousBase.getMonth() - 1);
@@ -115,7 +116,7 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
   const [currentRevenue, previousRevenue, todayFollowUps, missedFollowUps, invoices, proformas] = await Promise.all([
     prisma.revenueTransaction.findMany({
       where: {
-        ...(companyId ? { companyId } : {}),
+        ...(selfCompanyId ? { companyId: selfCompanyId } : {}),
         paymentDate: { gte: current.start, lte: current.end },
         ...(ctx.scope === 'INDIVIDUAL' && individualEmployeeIds.length ? { claimedByEmployeeId: { in: individualEmployeeIds } } : {}),
       },
@@ -123,7 +124,7 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
     }),
     prisma.revenueTransaction.findMany({
       where: {
-        ...(companyId ? { companyId } : {}),
+        ...(selfCompanyId ? { companyId: selfCompanyId } : {}),
         paymentDate: { gte: previous.start, lte: previous.end },
         ...(ctx.scope === 'INDIVIDUAL' && individualEmployeeIds.length ? { claimedByEmployeeId: { in: individualEmployeeIds } } : {}),
       },
@@ -131,7 +132,7 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
     }),
     prisma.communicationLog.findMany({
       where: {
-        ...(companyId ? { companyId } : {}),
+        ...(selfCompanyId ? { companyId: selfCompanyId } : {}),
         userId: { in: teamUserIds },
         nextFollowUpDate: { gte: today.start, lte: today.end },
       },
@@ -139,7 +140,7 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
     }),
     prisma.communicationLog.findMany({
       where: {
-        ...(companyId ? { companyId } : {}),
+        ...(selfCompanyId ? { companyId: selfCompanyId } : {}),
         userId: { in: teamUserIds },
         nextFollowUpDate: { lt: new Date() },
         isFollowUpCompleted: false,
@@ -291,7 +292,7 @@ async function getIndividualSummary(ctx: DashboardPayloadContext) {
 }
 
 async function getFollowUpSnapshot(ctx: DashboardPayloadContext) {
-  const companyId = getBaseCompanyId(ctx);
+  const companyId = selfScopedCompanyId(ctx); // logs are scoped by userId; skip company filter for INDIVIDUAL
   const teamUserIds = await resolveTeamUserIds(ctx);
   const today = getISTDateRangeForPeriod('DAILY');
 
