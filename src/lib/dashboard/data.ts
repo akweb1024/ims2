@@ -27,6 +27,19 @@ function getBaseCompanyId(ctx: DashboardPayloadContext) {
   return ctx.filters?.companyId || ctx.user.companyId || null;
 }
 
+/**
+ * Company filter for queries already scoped to a specific employee/user (e.g. attendance
+ * by employeeId). For INDIVIDUAL scope the employeeId/userId already isolates the user's
+ * own data, and the user's `User.companyId` frequently differs from the data's companyId
+ * (company often lives in companyDesignations, not on the User) — so applying a company
+ * filter wrongly hides their own records. Skip it for INDIVIDUAL; honour an explicit
+ * filter override if one was passed.
+ */
+function selfScopedCompanyId(ctx: DashboardPayloadContext) {
+  if (ctx.scope === 'INDIVIDUAL') return ctx.filters?.companyId || null;
+  return getBaseCompanyId(ctx);
+}
+
 async function resolveUserIdsForScope(ctx: DashboardPayloadContext) {
   if (ctx.scope === 'INDIVIDUAL') {
     return [ctx.user.id];
@@ -176,7 +189,7 @@ async function getAttendanceOverview(ctx: DashboardPayloadContext) {
   previousBase.setMonth(previousBase.getMonth() - 1);
   const previous = getISTDateRangeForPeriod('MONTHLY', previousBase);
   const employeeIds = await resolveEmployeeIdsForScope(ctx);
-  const companyId = getBaseCompanyId(ctx);
+  const companyId = selfScopedCompanyId(ctx);
 
   const [currentAttendance, previousAttendance, activeEmployees] = await Promise.all([
     prisma.attendance.findMany({
@@ -248,7 +261,7 @@ async function getTeamSummary(ctx: DashboardPayloadContext) {
 }
 
 async function getIndividualSummary(ctx: DashboardPayloadContext) {
-  const companyId = getBaseCompanyId(ctx);
+  const companyId = selfScopedCompanyId(ctx);
   const employeeIds = await resolveEmployeeIdsForScope(ctx);
   const today = getISTDateRangeForPeriod('DAILY');
   const [attendanceCount, followUps, tasks] = await Promise.all([
