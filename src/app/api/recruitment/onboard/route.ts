@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { createNotification } from '@/lib/system-notifications';
 import { sendEmail, EmailTemplates } from '@/lib/email';
+import { provisionEmployee } from '@/lib/kra/provision';
 
 // Helper to replace placeholders
 const hydrateTemplate = (content: string, vars: Record<string, string>) => {
@@ -132,6 +133,15 @@ export const POST = authorizedRoute(
 
                 onboardedUser = newUser;
             });
+
+            // New-hire KRA/Goals auto-provisioning (idempotent; non-fatal).
+            if (onboardedUser) {
+                try {
+                    await provisionEmployee(onboardedUser.id, user.id);
+                } catch (err) {
+                    console.error('KRA provisioning failed for onboarded user:', err);
+                }
+            }
 
             const inviteTemplate = EmailTemplates.onboardingInvite(application.applicantName, inviteUrl);
             const deliveryResults = await Promise.allSettled([

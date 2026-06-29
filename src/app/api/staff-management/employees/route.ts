@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
+import { provisionEmployee } from '@/lib/kra/provision';
 
 // GET /api/staff-management/employees - List employees
 export const GET = authorizedRoute(
@@ -72,6 +73,13 @@ export const POST = authorizedRoute(
 
                 return { user, profile };
             });
+
+            // New-hire KRA/Goals auto-provisioning (idempotent; non-fatal).
+            try {
+                await provisionEmployee(newEmployee.user.id, currentUser.id);
+            } catch (err) {
+                logger.error('KRA provisioning failed for new employee', err, { userId: newEmployee.user.id });
+            }
 
             return NextResponse.json({
                 id: newEmployee.user.id,
