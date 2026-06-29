@@ -31,10 +31,21 @@ const OUTPUT_TITLE_BY_DEPT: Record<string, string> = {
 export async function provisionEmployee(userId: string, assignerId: string) {
   const profile = await prisma.employeeProfile.findUnique({
     where: { userId },
-    select: { id: true, user: { select: { companyId: true, departmentId: true } } },
+    select: {
+      id: true,
+      user: { select: { companyId: true, departmentId: true } },
+      companyDesignations: { select: { companyId: true, isPrimary: true, isActive: true } },
+    },
   });
   if (!profile) throw new KraScopeError('Employee profile not found', 404);
-  const companyId = profile.user?.companyId;
+
+  // Resolve company: User.companyId first, else the primary/active company designation.
+  let companyId = profile.user?.companyId ?? null;
+  if (!companyId) {
+    const designs = profile.companyDesignations ?? [];
+    const chosen = designs.find((d) => d.isPrimary && d.isActive) || designs.find((d) => d.isActive) || designs[0];
+    companyId = chosen?.companyId ?? null;
+  }
   const departmentId = profile.user?.departmentId ?? null;
   if (!companyId) throw new KraScopeError('Employee has no company', 400);
 
