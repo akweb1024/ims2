@@ -1,10 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
+import { computePeriodWindow, type KraPeriodType } from '@/lib/kra/period';
 import { handleKraError } from '@/lib/kra/http';
 import { saveRating, moderateRating } from '@/lib/kra/rating';
 import { kraSaveRatingSchema, kraModerateRatingSchema } from '@/lib/validators/kra';
-import { MANAGERIAL_ROLES } from '@/lib/kra/scope';
+import { GROUP_WIDE_ROLES, MANAGERIAL_ROLES } from '@/lib/kra/scope';
+
+// GET /api/kra/rating?periodType=QUARTERLY&periodRef=ISO — saved ratings in the viewer's scope.
+export const GET = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+  try {
+    if (!user.companyId) return createErrorResponse('Company association required', 403);
+    const { searchParams } = new URL(req.url);
+    const periodType = (searchParams.get('periodType') || 'QUARTERLY').toUpperCase() as KraPeriodType;
+    const ref = searchParams.get('periodRef') ? new Date(searchParams.get('periodRef')!) : new Date();
+    const win = computePeriodWindow(periodType, ref);
+
+    // Resolve scoped employee profiles.
+    let profiles: { id: string; user: { name: string | null; email: string } }[];
+    if (GROUP_WIDE_ROLES.has(user.role)) {
+      profiles = await prisma.employeeProfile.findMany({
+        where: { user: { companyId: user.companyId, isActive: true } },
+        select: { id: true, user: { select: { name: true, email: true } } },
+        take: 300,
+      });
+    } else {
+      const downline = await getDownlineUserIds(user.id, user.companyId || undefined);
+      profiles = await prisma.employeeProfile.findMany({
+        where: { userId: { in: [...downline, user.id] } },
+        select: { id: true, user: { select: { name: true, email: true } } },
+      });
+    }
+    const nameById = new Map(profiles.map((p) => [p.id, p.user.name || p.user.email]));
+
+    const ratings = await prisma.performanceIndex.findMany({
+      where: { employeeId: { in: profiles.map((p) => p.id) }, periodType, period: win.label },
+      select: {
+        id: true, employeeId: true, letterRating: true, achievementScore: true, overallIndex: true,
+        grade: true, ratingStatus: true, hrModeration: true, managerComments: true, period: true,
+      },
+      orderBy: { achievementScore: 'desc' },
+    });
+
+    return NextResponse.json({
+      period: win.label,
+      ratings: ratings.map((r) => ({ ...r, name: nameById.get(r.employeeId) ?? 'Employee' })),
+    });
+  } catch (error) {
+    return handleKraError(error);
+  }
+});
 
 // POST /api/kra/rating — compute + save a quarterly rating from KRAs. MANAGER+ with scope.
 export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {

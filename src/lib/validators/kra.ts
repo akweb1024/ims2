@@ -4,6 +4,7 @@ const PERIOD_TYPES = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] as const;
 const DATA_SOURCES = ['SYSTEM', 'MANUAL', 'HYBRID'] as const;
 const AGGREGATIONS = ['SUM', 'COUNT', 'AVG'] as const;
 const DIRECTIONS = ['HIGHER_BETTER', 'LOWER_BETTER'] as const;
+const KRA_DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
 
 /** Create/update a KRA metric (stored in PerformanceMetricDefinition, scope=KRA). */
 export const kraMetricSchema = z.object({
@@ -28,6 +29,7 @@ export const kraTemplateItemSchema = z.object({
   defaultTarget: z.number().nonnegative().default(0),
   weight: z.number().positive().default(1),
   periodType: z.enum(PERIOD_TYPES).default('MONTHLY'),
+  dimension: z.enum(KRA_DIMENSIONS).default('OUTPUT'),
   minThreshold: z.number().nonnegative().nullish(),
   ratePerUnit: z.number().nonnegative().nullish(),
 });
@@ -96,7 +98,6 @@ export const kraContributionReviewSchema = z.object({
 // --- Goals & KRA module (Plan B, Phase 3) ---
 
 const GOAL_PERIOD_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] as const;
-const KRA_DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
 
 /** Employee logs dated progress against a goal they own. */
 export const kraLogProgressSchema = z.object({

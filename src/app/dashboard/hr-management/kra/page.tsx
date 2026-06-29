@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ReactElement } from 'react';
-import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2 } from 'react-icons/fi';
+import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2, FiStar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
-  kraFetch, PERIOD_TYPES, DATA_SOURCES, AGGREGATIONS,
+  kraFetch, PERIOD_TYPES, DATA_SOURCES, AGGREGATIONS, KRA_DIMENSIONS,
   type KraMetric, type KraTemplate, type KraTemplateItem,
 } from '@/lib/kra/client';
 
-type Tab = 'metrics' | 'templates' | 'assign' | 'review' | 'performance';
+type Tab = 'metrics' | 'templates' | 'assign' | 'review' | 'performance' | 'rating';
 
 export default function KraAdminPage() {
   const [tab, setTab] = useState<Tab>('metrics');
@@ -33,6 +33,7 @@ export default function KraAdminPage() {
             ['templates', 'Templates', <FiTarget key="t" />],
             ['assign', 'Assign', <FiUsers key="a" />],
             ['review', 'Review', <FiInbox key="r" />],
+            ['rating', 'Ratings', <FiStar key="rt" />],
             ['performance', 'Performance', <FiBarChart2 key="p" />],
           ] as [Tab, string, ReactElement][]).map(([id, label, icon]) => (
             <button
@@ -51,6 +52,7 @@ export default function KraAdminPage() {
         {tab === 'templates' && <TemplatesTab />}
         {tab === 'assign' && <AssignTab />}
         {tab === 'review' && <ReviewTab />}
+        {tab === 'rating' && <RatingTab />}
         {tab === 'performance' && <PerformanceTab />}
       </div>
     </DashboardLayout>
@@ -225,6 +227,7 @@ function TemplatesTab() {
         items: (editing.items as KraTemplateItem[]).map((i) => ({
           metricId: i.metricId, defaultTarget: Number(i.defaultTarget) || 0,
           weight: Number(i.weight) || 1, periodType: i.periodType || 'MONTHLY',
+          dimension: i.dimension || 'OUTPUT',
           ratePerUnit: i.ratePerUnit != null && i.ratePerUnit !== ('' as any) ? Number(i.ratePerUnit) : null,
         })),
       };
@@ -241,7 +244,7 @@ function TemplatesTab() {
   };
 
   const newTemplate = () => setEditing({ name: '', description: '', departmentId: '', isActive: true, items: [] });
-  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY', ratePerUnit: '' }] });
+  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY', dimension: 'OUTPUT', ratePerUnit: '' }] });
   const setItem = (idx: number, patch: any) => setEditing({ ...editing, items: editing.items.map((it: any, i: number) => i === idx ? { ...it, ...patch } : it) });
   const delItem = (idx: number) => setEditing({ ...editing, items: editing.items.filter((_: any, i: number) => i !== idx) });
 
@@ -296,30 +299,43 @@ function TemplatesTab() {
             <button onClick={addItem} className="text-indigo-600 text-sm inline-flex items-center gap-1"><FiPlus /> Add metric</button>
           </div>
           <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-400 px-1">
-            <span className="col-span-4">Metric</span>
+            <span className="col-span-3">Metric</span>
             <span className="col-span-2">Target</span>
             <span className="col-span-2">₹ / unit</span>
             <span className="col-span-1">Weight</span>
-            <span className="col-span-2">Period</span>
+            <span className="col-span-2">Dimension</span>
+            <span className="col-span-1">Period</span>
             <span className="col-span-1"></span>
           </div>
           <div className="space-y-2 mt-1">
             {editing.items.length === 0 && <p className="text-sm text-gray-400">Koi metric add nahi kiya.</p>}
             {editing.items.map((it: any, idx: number) => (
               <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                <select className={`${inputCls} col-span-4`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
+                <select className={`${inputCls} col-span-3`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
                   {metrics.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
                 </select>
                 <input type="number" className={`${inputCls} col-span-2`} value={it.defaultTarget} onChange={(e) => setItem(idx, { defaultTarget: e.target.value })} placeholder="target" />
                 <input type="number" className={`${inputCls} col-span-2`} value={it.ratePerUnit ?? ''} onChange={(e) => setItem(idx, { ratePerUnit: e.target.value })} placeholder="₹/unit" />
                 <input type="number" className={`${inputCls} col-span-1`} value={it.weight} onChange={(e) => setItem(idx, { weight: e.target.value })} placeholder="w" />
-                <select className={`${inputCls} col-span-2`} value={it.periodType} onChange={(e) => setItem(idx, { periodType: e.target.value })}>
+                <select className={`${inputCls} col-span-2`} value={it.dimension || 'OUTPUT'} onChange={(e) => setItem(idx, { dimension: e.target.value })}>
+                  {KRA_DIMENSIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select className={`${inputCls} col-span-1`} value={it.periodType} onChange={(e) => setItem(idx, { periodType: e.target.value })}>
                   {PERIOD_TYPES.map((p) => <option key={p}>{p}</option>)}
                 </select>
                 <button onClick={() => delItem(idx)} className="text-gray-400 hover:text-red-600 col-span-1"><FiTrash2 /></button>
               </div>
             ))}
           </div>
+          {editing.items.length > 0 && (() => {
+            const sum = editing.items.reduce((s: number, it: any) => s + (Number(it.weight) || 0), 0);
+            const ok = sum >= 95 && sum <= 105;
+            return (
+              <p className={`mt-2 text-xs ${ok ? 'text-gray-400' : 'text-amber-600'}`}>
+                Total weight: <span className="font-semibold">{sum}</span>{ok ? '' : ' — aim for ~100 if using percentage weights'}
+              </p>
+            );
+          })()}
         </Modal>
       )}
     </div>
@@ -621,6 +637,160 @@ function PerformanceTab() {
       <p className="text-xs text-gray-400 mt-2">
         Index = 45% achievement + 20% attendance + 20% manager rating + 15% KRA focus.
       </p>
+    </div>
+  );
+}
+
+/* -------------------------------- Rating ------------------------------- */
+
+interface RatingRow {
+  id: string;
+  employeeId: string;
+  name: string;
+  letterRating: string | null;
+  achievementScore: number;
+  overallIndex: number;
+  grade: string | null;
+  ratingStatus: string;
+  hrModeration: string | null;
+  managerComments: string | null;
+}
+
+const RATING_PERIODS = ['QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'MONTHLY'] as const;
+const LETTERS = ['A+', 'A', 'B+', 'B', 'C', 'D'] as const;
+
+const letterColor = (l: string | null) =>
+  l === 'A+' || l === 'A' ? 'bg-green-100 text-green-700'
+  : l === 'B+' || l === 'B' ? 'bg-blue-100 text-blue-700'
+  : l === 'C' ? 'bg-amber-100 text-amber-700'
+  : l === 'D' ? 'bg-red-100 text-red-700'
+  : 'bg-gray-100 text-gray-500';
+
+function RatingTab() {
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [ratings, setRatings] = useState<RatingRow[]>([]);
+  const [periodType, setPeriodType] = useState<string>('QUARTERLY');
+  const [employeeId, setEmployeeId] = useState('');
+  const [comments, setComments] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const loadRatings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await kraFetch<{ ratings: RatingRow[] }>(`/api/kra/rating?periodType=${periodType}`);
+      setRatings(data.ratings || []);
+    } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
+  }, [periodType]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const e = await kraFetch<any[]>('/api/hr/employees').catch(() => []);
+        setEmployees(Array.isArray(e) ? e : []);
+      } catch { /* non-fatal */ }
+    })();
+  }, []);
+  useEffect(() => { loadRatings(); }, [loadRatings]);
+
+  const save = async () => {
+    if (!employeeId) return toast.error('Employee select karo');
+    setBusy(true);
+    try {
+      const res = await kraFetch<any>('/api/kra/rating', {
+        method: 'POST',
+        body: JSON.stringify({ employeeId, periodType, managerComments: comments || undefined }),
+      });
+      toast.success(`Rating saved: ${res.letterRating} (${res.achievementScore}%)`);
+      setComments('');
+      loadRatings();
+    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+  };
+
+  const moderate = async (r: RatingRow) => {
+    const note = prompt('HR moderation note?');
+    if (!note) return;
+    const override = prompt('Override letter (A+, A, B+, B, C, D) — blank to keep')?.trim().toUpperCase();
+    const ratingOverride = override && (LETTERS as readonly string[]).includes(override) ? override : undefined;
+    setBusy(true);
+    try {
+      await kraFetch('/api/kra/rating', { method: 'PATCH', body: JSON.stringify({ ratingId: r.id, hrModeration: note, ratingOverride }) });
+      toast.success('Rating moderated');
+      loadRatings();
+    } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Save a rating */}
+      <div className="border border-gray-200 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Compute & save a quarterly rating</h3>
+        <div className="grid sm:grid-cols-4 gap-3 items-end">
+          <Field label="Employee">
+            <select className={inputCls} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
+              <option value="">— Select —</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.user?.name || emp.name || emp.employeeId || emp.id}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Period">
+            <select className={inputCls} value={periodType} onChange={(e) => setPeriodType(e.target.value)}>
+              {RATING_PERIODS.map((p) => <option key={p}>{p}</option>)}
+            </select>
+          </Field>
+          <Field label="Manager comments">
+            <input className={inputCls} value={comments} onChange={(e) => setComments(e.target.value)} placeholder="optional" />
+          </Field>
+          <button onClick={save} disabled={busy}
+            className="inline-flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            <FiStar /> {busy ? 'Saving…' : 'Save rating'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">Letter grade weighted KRA achievement se compute hota hai (A+ ≥90 … D &lt;50).</p>
+      </div>
+
+      {/* Saved ratings */}
+      {loading ? <p className="text-gray-500">Loading…</p> : ratings.length === 0 ? (
+        <p className="text-gray-500">Is period ke liye koi rating save nahi hui.</p>
+      ) : (
+        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">Employee</th>
+                <th className="text-center px-3 py-2 font-medium">Rating</th>
+                <th className="text-right px-3 py-2 font-medium">Achieve</th>
+                <th className="text-right px-3 py-2 font-medium">Index</th>
+                <th className="text-left px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {ratings.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${letterColor(r.letterRating)}`}>{r.letterRating || '—'}</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.achievementScore}%</td>
+                  <td className="px-3 py-2 text-right text-gray-600">{r.overallIndex}</td>
+                  <td className="px-3 py-2">
+                    <span className="text-xs text-gray-500">{r.ratingStatus}</span>
+                    {r.hrModeration && <div className="text-xs text-amber-600">HR: {r.hrModeration}</div>}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <button disabled={busy} onClick={() => moderate(r)}
+                      className="text-xs text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded disabled:opacity-50">
+                      Moderate
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
