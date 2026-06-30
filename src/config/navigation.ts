@@ -67,6 +67,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Performance', href: '/dashboard/my-performance', icon: '📈', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Goal Verification', href: '/dashboard/performance/verify', icon: '🛡️', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                     { name: 'KRA Analytics', href: '/dashboard/performance/team', icon: '📊', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
+                    { name: 'Assign KRA', href: '/dashboard/performance/assign', icon: '🎯', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                     { name: 'Salary & Increments', href: '/dashboard/manager/team/salary', icon: '💰', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                 ]
             },
