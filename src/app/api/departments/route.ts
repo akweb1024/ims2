@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { companyId, name, code, description, parentDepartmentId, headUserId } = body;
+        const { companyId, name, code, description, parentDepartmentId, headUserId, departmentType } = body;
 
         if (!companyId || !name) {
             return NextResponse.json({ error: 'Company ID and Name are required' }, { status: 400 });
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
                 description,
                 parentDepartmentId,
                 headUserId,
+                ...(departmentType !== undefined && { departmentType }),
                 isActive: true
             },
             include: {

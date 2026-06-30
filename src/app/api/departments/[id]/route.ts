@@ -14,7 +14,7 @@ export async function PATCH(
         }
 
         const body = await req.json();
-        const { name, code, description, headUserId, isActive, parentDepartmentId } = body;
+        const { name, code, description, headUserId, isActive, parentDepartmentId, departmentType } = body;
 
         const department = await prisma.department.update({
             where: { id },
@@ -24,7 +24,8 @@ export async function PATCH(
                 ...(description !== undefined && { description }),
                 ...(headUserId !== undefined && { headUserId }),
                 ...(isActive !== undefined && { isActive }),
-                ...(parentDepartmentId !== undefined && { parentDepartmentId })
+                ...(parentDepartmentId !== undefined && { parentDepartmentId }),
+                ...(departmentType !== undefined && { departmentType })
             },
             include: {
                 headUser: {

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { logger } from '@/lib/logger';
+import { processRevenueShares } from '@/lib/revenue-share';
 
 // GET all financial records for the company
 export const GET = authorizedRoute(
@@ -102,7 +103,7 @@ export const POST = authorizedRoute(
                     // Generate a temporary TRN number
                     const trn = `TRN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-                    await prisma.revenueTransaction.create({
+                    const syncedTx = await prisma.revenueTransaction.create({
                         data: {
                             companyId: user.companyId,
                             transactionNumber: trn,
@@ -125,6 +126,13 @@ export const POST = authorizedRoute(
                         }
                     });
                     logger.info('Auto-synced RevenueTransaction', { trn });
+
+                    // Born-verified revenue triggers cross-company revenue shares (idempotent).
+                    try {
+                        await processRevenueShares(syncedTx.id);
+                    } catch (shareError) {
+                        logger.error('Failed to process revenue shares for finance-synced transaction', shareError, { trn });
+                    }
                 } catch (syncError) {
                     logger.error('Failed to sync RevenueTransaction', syncError);
                     // We don't fail the main request, but log the error

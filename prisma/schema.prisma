@@ -88,6 +88,7 @@ model Company {
   pointLogs                   EmployeePointLog[]
   taskTemplates               EmployeeTaskTemplate[]
   expenseAllocationRules      ExpenseAllocationRule[]
+  revenueShareSourceRules     RevenueShareRule[]           @relation("ShareSourceCompany")
   financialRecords            FinancialRecord[]
   holidays                    Holiday[]
   itAssets                    ITAsset[]
@@ -226,6 +227,7 @@ model Department {
   parentDepartmentId     String?
   headUserId             String?
   isActive               Boolean                      @default(true)
+  departmentType         DepartmentType               @default(REVENUE)
   createdAt              DateTime                     @default(now())
   updatedAt              DateTime                     @updatedAt
   company                Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -245,6 +247,9 @@ model Department {
   revenueTransactions    RevenueTransaction[]
   users                  User[]                       @relation("DepartmentMembers")
   designations           Designation[]                @relation("DepartmentToDesignation")
+  shareRulesAsBeneficiary RevenueShareRule[]          @relation("BeneficiaryDept")
+  shareRulesAsSource      RevenueShareRule[]          @relation("SourceDept")
+  revenueSharesReceived   DepartmentRevenueShare[]    @relation("ShareBeneficiary")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -4642,6 +4647,7 @@ model RevenueTransaction {
   metricContributionId String?                    // KRA auto-revenue: cascades when the progress log is deleted
   metricContribution  MetricContribution?         @relation("ContributionRevenue", fields: [metricContributionId], references: [id], onDelete: Cascade)
   expenseAllocations  EmployeeExpenseAllocation[]
+  revenueShares       DepartmentRevenueShare[]
   claims              RevenueClaim[]
   approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
   claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
@@ -4675,6 +4681,57 @@ model ExpenseAllocationRule {
 
   @@unique([companyId, departmentId])
   @@index([companyId])
+}
+
+// Cross-company department revenue-sharing rules (fixed % weights).
+// A beneficiary (typically a SUPPORT/PRODUCTION department) earns a fixed share of
+// revenue arising in a source company (optionally narrowed to one source department).
+model RevenueShareRule {
+  id                      String     @id @default(uuid())
+  beneficiaryDepartmentId String
+  sourceCompanyId         String
+  sourceDepartmentId      String?    // null = applies to the whole source company
+  percentage              Float      @default(0)
+  effectiveFrom           DateTime   @default(now())
+  effectiveTo             DateTime?  // null = open-ended
+  isActive                Boolean    @default(true)
+  note                    String?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+
+  beneficiaryDepartment   Department  @relation("BeneficiaryDept", fields: [beneficiaryDepartmentId], references: [id], onDelete: Cascade)
+  sourceCompany           Company     @relation("ShareSourceCompany", fields: [sourceCompanyId], references: [id], onDelete: Cascade)
+  sourceDepartment        Department? @relation("SourceDept", fields: [sourceDepartmentId], references: [id])
+
+  @@index([sourceCompanyId, sourceDepartmentId, isActive])
+  @@index([beneficiaryDepartmentId])
+}
+
+// Computed, immutable revenue-share allocations produced when a RevenueTransaction is
+// VERIFIED. One row per applied rule, plus a residual row for the source department's
+// kept remainder. Locked at period close so downstream bonus/P&L numbers never shift.
+model DepartmentRevenueShare {
+  id                      String   @id @default(uuid())
+  revenueTransactionId    String
+  ruleId                  String?  // null = residual (kept-remainder) or manual row
+  sourceCompanyId         String
+  sourceDepartmentId      String?
+  beneficiaryDepartmentId String
+  beneficiaryCompanyId    String   // denormalized for cross-company P&L grouping
+  amount                  Float
+  percentage              Float
+  isResidual              Boolean  @default(false)
+  periodMonth             Int      // snapshot of paymentDate (IST) for immutable period close
+  periodYear              Int
+  isLocked                Boolean  @default(false)
+  createdAt               DateTime @default(now())
+
+  revenueTransaction      RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
+  beneficiaryDepartment   Department         @relation("ShareBeneficiary", fields: [beneficiaryDepartmentId], references: [id])
+
+  @@index([beneficiaryDepartmentId, periodYear, periodMonth])
+  @@index([sourceCompanyId, periodYear, periodMonth])
+  @@index([revenueTransactionId])
 }
 
 model EmployeeExpenseAllocation {
@@ -6375,6 +6432,12 @@ enum RevenueStatus {
   VERIFIED
   DISPUTED
   CANCELLED
+}
+
+enum DepartmentType {
+  REVENUE // earns revenue directly (Sales, Marketing, Publication)
+  PRODUCTION // builds the product; cost flows into COGS
+  SUPPORT // enables everyone, no direct revenue (IT, HR, Admin)
 }
 
 enum VerificationStatus {
