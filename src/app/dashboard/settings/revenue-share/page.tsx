@@ -139,13 +139,19 @@ export default function RevenueSharePage() {
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const [cRes, dRes, rRes] = await Promise.all([
+            // Departments: this is a cross-company feature, so try to load EVERY company's
+            // departments (companyId=ALL). Roles that can't access all companies fall back
+            // to their own company's departments.
+            let dRes = await fetch('/api/departments?companyId=ALL', { headers: authHeaders() });
+            if (!dRes.ok) dRes = await fetch('/api/departments', { headers: authHeaders() });
+
+            const [cRes, rRes] = await Promise.all([
                 fetch('/api/companies?limit=100', { headers: authHeaders() }),
-                fetch('/api/departments', { headers: authHeaders() }),
                 fetch('/api/settings/revenue-share-rules?includeInactive=true', { headers: authHeaders() }),
             ]);
+            // /api/companies returns { data: [...], pagination }, not a bare array.
             const cData = cRes.ok ? await cRes.json() : [];
-            setCompanies(Array.isArray(cData) ? cData : cData.companies || []);
+            setCompanies(Array.isArray(cData) ? cData : (cData.data || cData.companies || []));
             setDepartments(dRes.ok ? await dRes.json() : []);
             setRules(rRes.ok ? await rRes.json() : []);
         } catch (e: any) {
