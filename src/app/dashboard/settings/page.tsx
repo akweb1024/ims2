@@ -574,6 +574,17 @@ export default function SettingsPage() {
                                         </a>
                                     </div>
                                 </section>
+                                <section className="card-premium mt-6 overflow-hidden relative">
+                                    <div className="relative z-10 flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold mb-2 text-secondary-900">Revenue Share</h3>
+                                            <p className="text-secondary-500 text-xs max-w-sm">Classify departments and define how support/production departments earn a fixed share of revenue across companies.</p>
+                                        </div>
+                                        <a href="/dashboard/settings/revenue-share" className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-indigo-700 transition-colors">
+                                            Configure
+                                        </a>
+                                    </div>
+                                </section>
                             </>
                         )}
                     </div>

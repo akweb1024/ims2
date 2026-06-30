@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { logger } from '@/lib/logger';
+import { processRevenueShares } from '@/lib/revenue-share';
 
 export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN', 'HR'], async (req: NextRequest, user) => {
     try {
@@ -195,15 +197,30 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
         if (status === 'APPROVED') {
             // 1. Verify the underlying Revenue Transaction
             if (claim.revenueTransactionId) {
+                // approvedByManagerId FK-references EmployeeProfile.id (not User.id) — resolve the
+                // reviewer's profile; leave null if none rather than violating the FK constraint.
+                const reviewerProfile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
                 await prisma.revenueTransaction.update({
                     where: { id: claim.revenueTransactionId },
                     data: {
                         verificationStatus: 'VERIFIED',
                         status: 'VERIFIED', // Ensure main status reflects this too
                         verifiedAt: new Date(),
-                        approvedByManagerId: user.id
+                        ...(reviewerProfile ? { approvedByManagerId: reviewerProfile.id } : {})
                     }
                 });
+
+                // Verifying the transaction triggers cross-company revenue shares (idempotent).
+                try {
+                    await processRevenueShares(claim.revenueTransactionId);
+                } catch (shareError) {
+                    logger.error('Failed to process revenue shares on claim approval', shareError, {
+                        transactionId: claim.revenueTransactionId,
+                    });
+                }
             }
 
             // 2. Update Work Report Revenue

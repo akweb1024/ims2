@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 import { processExpenseAllocations } from '@/lib/allocation';
+import { processRevenueShares } from '@/lib/revenue-share';
 import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 // Helper to generate transaction number
@@ -282,25 +283,19 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
 
         const data: any = {};
         if (status) data.status = status;
+        let justVerified = false;
         if (verificationStatus) {
             data.verificationStatus = verificationStatus;
             if (verificationStatus === 'VERIFIED') {
                 data.verifiedAt = new Date();
-                data.approvedByManagerId = user.id; // Usually user.id is User ID, need Employee Profile ID if possible
-
-                // Auto-approve linked claims
-                await prisma.revenueClaim.updateMany({
-                    where: { revenueTransactionId: id },
-                    data: { status: 'APPROVED' }
+                justVerified = true;
+                // approvedByManagerId FK-references EmployeeProfile.id (not User.id) — resolve the
+                // verifier's profile; leave null if they have none, rather than violating the FK.
+                const verifierProfile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
                 });
-
-                // Trigger Departmental Expense Allocations
-                try {
-                    await processExpenseAllocations(id);
-                } catch (allocError) {
-                    logger.error('Failed to process allocations during approval', allocError, { id });
-                    // We don't fail the approval if allocations fail, but we log it
-                }
+                if (verifierProfile) data.approvedByManagerId = verifierProfile.id;
             }
         }
 
@@ -308,6 +303,32 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
             where: { id },
             data
         });
+
+        // Side-effects run only after the verification is durably persisted, so a failed
+        // update can never leave orphan claim-approvals or allocations behind.
+        if (justVerified) {
+            // Auto-approve linked claims
+            await prisma.revenueClaim.updateMany({
+                where: { revenueTransactionId: id },
+                data: { status: 'APPROVED' }
+            });
+
+            // Trigger Departmental Expense Allocations
+            try {
+                await processExpenseAllocations(id);
+            } catch (allocError) {
+                logger.error('Failed to process allocations during approval', allocError, { id });
+                // We don't fail the approval if allocations fail, but we log it
+            }
+
+            // Trigger cross-company Department Revenue Shares
+            try {
+                await processRevenueShares(id);
+            } catch (shareError) {
+                logger.error('Failed to process revenue shares during approval', shareError, { id });
+                // Allocation failures never block the approval itself.
+            }
+        }
 
         return NextResponse.json(transaction);
     } catch (error: any) {
