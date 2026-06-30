@@ -33,11 +33,16 @@ const nextConfig = {
         cpus: 1,
         memoryBasedWorkersCount: true,
     },
+    // Skip the in-build lint + type-check pass: it is the heaviest phase of `next build`
+    // and OOM/255-kills the memory-constrained Coolify (1-CPU) source builder right after
+    // "Compiled successfully". Type safety + lint are still enforced separately — the CI
+    // "Lint & Type Check" job runs `tsc --noEmit` + `eslint src` — so nothing is lost,
+    // only a redundant, resource-heavy pass is removed.
     eslint: {
-        ignoreDuringBuilds: false,
+        ignoreDuringBuilds: true,
     },
     typescript: {
-        ignoreBuildErrors: false,
+        ignoreBuildErrors: true,
     },
     productionBrowserSourceMaps: false,
     compress: true,
