@@ -1,6 +1,9 @@
-import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { logger } from './logger';
+import { buildShareRows, istPeriod } from './revenue-share-core';
+
+export { buildShareRows, istPeriod, roundMoney } from './revenue-share-core';
+export type { MatchedRule, BuildShareRowsInput } from './revenue-share-core';
 
 /**
  * Cross-company department revenue-sharing engine.
@@ -8,28 +11,13 @@ import { logger } from './logger';
  * When a RevenueTransaction is verified, support/production departments earn a fixed
  * share of it per the active RevenueShareRule rows, and the source revenue department
  * keeps the remainder (recorded as an explicit "residual" row for clean internal P&L).
+ * The pure allocation math lives in ./revenue-share-core (buildShareRows).
  *
  * Mirrors `processExpenseAllocations` in ./allocation.ts: it is caller-driven (invoke it
  * only on a genuine VERIFIED transition — it does NOT re-read verificationStatus, because
  * callers frequently trigger it before the status write is persisted), idempotent, and
  * never throws into the caller's critical path (callers wrap it in try/catch).
- *
- * Decisions baked in:
- *  - Overlapping whole-company and source-department rules STACK (percentages add up).
- *  - A residual row is always recorded for the source department's kept remainder
- *    (including 100% when no rules match), provided the transaction has a source department.
- *  - If matched rules sum to >100%, nothing is written (over-allocation guard).
  */
-
-const roundMoney = (n: number) => Math.round(n * 100) / 100;
-
-// IST = UTC+5:30. Snapshot the period in IST so it aligns with the dashboard's monthly
-// boundaries (getISTDateRangeForPeriod) and with period-close locking downstream.
-function istPeriod(date: Date): { month: number; year: number } {
-    const ist = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
-    return { month: ist.getUTCMonth() + 1, year: ist.getUTCFullYear() };
-}
-
 export async function processRevenueShares(revenueTransactionId: string) {
     try {
         const tx = await prisma.revenueTransaction.findUnique({
@@ -72,56 +60,30 @@ export async function processRevenueShares(revenueTransactionId: string) {
             },
         });
 
-        const totalSharedPct = rules.reduce((sum, r) => sum + r.percentage, 0);
-        if (totalSharedPct > 100) {
-            logger.warn('RevenueShare: matched rules exceed 100%, skipping to avoid over-allocation', {
-                revenueTransactionId,
-                totalSharedPct,
-                ruleCount: rules.length,
-            });
-            return [];
-        }
-
         // Denormalize each beneficiary's company for cross-company P&L grouping.
         const beneficiaryIds = [...new Set(rules.map((r) => r.beneficiaryDepartmentId))];
         const beneficiaries = beneficiaryIds.length
             ? await prisma.department.findMany({ where: { id: { in: beneficiaryIds } }, select: { id: true, companyId: true } })
             : [];
-        const beneficiaryCompany = Object.fromEntries(beneficiaries.map((b) => [b.id, b.companyId]));
+        const beneficiaryCompanyById = Object.fromEntries(beneficiaries.map((b) => [b.id, b.companyId]));
 
-        const { month, year } = istPeriod(tx.paymentDate);
-
-        const rows: Prisma.DepartmentRevenueShareCreateManyInput[] = rules.map((rule) => ({
+        const rows = buildShareRows({
             revenueTransactionId,
-            ruleId: rule.id,
+            amount,
             sourceCompanyId: tx.companyId,
             sourceDepartmentId: tx.departmentId,
-            beneficiaryDepartmentId: rule.beneficiaryDepartmentId,
-            beneficiaryCompanyId: beneficiaryCompany[rule.beneficiaryDepartmentId] ?? tx.companyId,
-            amount: roundMoney((amount * rule.percentage) / 100),
-            percentage: rule.percentage,
-            isResidual: false,
-            periodMonth: month,
-            periodYear: year,
-        }));
+            period: istPeriod(tx.paymentDate),
+            rules,
+            beneficiaryCompanyById,
+        });
 
-        // Residual — the source revenue department keeps the remainder. Only attributable
-        // when the transaction has a source department (else the remainder is unassigned).
-        const residualPct = roundMoney(100 - totalSharedPct);
-        if (tx.departmentId && residualPct > 0) {
-            rows.push({
+        if (rows === null) {
+            logger.warn('RevenueShare: matched rules exceed 100%, skipping to avoid over-allocation', {
                 revenueTransactionId,
-                ruleId: null,
-                sourceCompanyId: tx.companyId,
-                sourceDepartmentId: tx.departmentId,
-                beneficiaryDepartmentId: tx.departmentId,
-                beneficiaryCompanyId: tx.companyId,
-                amount: roundMoney((amount * residualPct) / 100),
-                percentage: residualPct,
-                isResidual: true,
-                periodMonth: month,
-                periodYear: year,
+                totalSharedPct: rules.reduce((s, r) => s + r.percentage, 0),
+                ruleCount: rules.length,
             });
+            return [];
         }
 
         if (rows.length === 0) {
@@ -132,8 +94,8 @@ export async function processRevenueShares(revenueTransactionId: string) {
         await prisma.departmentRevenueShare.createMany({ data: rows });
         logger.info(`RevenueShare: recorded ${rows.length} share row(s)`, {
             revenueTransactionId,
-            totalSharedPct,
-            residualPct,
+            shareCount: rows.filter((r) => !r.isResidual).length,
+            hasResidual: rows.some((r) => r.isResidual),
         });
         return rows;
     } catch (error) {
