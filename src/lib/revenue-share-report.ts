@@ -1,9 +1,14 @@
 import { prisma } from './prisma';
 import { getISTDateRangeForPeriod } from './date-utils';
+import { aggregateDepartmentShares, type DepartmentShareReport } from './revenue-share-report-core';
+
+export { aggregateDepartmentShares } from './revenue-share-report-core';
+export type { DepartmentShareRow, DepartmentShareReport, ShareLite, DeptLite } from './revenue-share-report-core';
 
 /**
  * Internal P&L / revenue-share reporting for a single month, computed live from
  * DepartmentRevenueShare (the immutable allocation rows) + RevenueTransaction (gross).
+ * Fetches the inputs and delegates the math to aggregateDepartmentShares (pure, tested).
  *
  * Per department:
  *  - grossRevenue : revenue the department billed directly (VERIFIED txns, IST month).
@@ -17,30 +22,6 @@ import { getISTDateRangeForPeriod } from './date-utils';
  * Conservation: summed across all departments, netAttributed equals total gross of
  * transactions that went through the allocation engine.
  */
-
-export interface DepartmentShareRow {
-    departmentId: string;
-    departmentName: string;
-    companyId: string;
-    companyName: string;
-    departmentType: string;
-    grossRevenue: number;
-    sharesOut: number;
-    residualKept: number;
-    sharesIn: number;
-    netAttributed: number;
-}
-
-export interface DepartmentShareReport {
-    month: number;
-    year: number;
-    locked: boolean; // true when every share row in the period is locked
-    rows: DepartmentShareRow[];
-    totals: { grossRevenue: number; sharesOut: number; residualKept: number; sharesIn: number; netAttributed: number };
-}
-
-const round = (n: number) => Math.round(n * 100) / 100;
-
 export async function getDepartmentShareReport(opts: {
     companyId?: string | null;
     month: number;
@@ -77,63 +58,24 @@ export async function getDepartmentShareReport(opts: {
         }),
     ]);
 
-    const sharesIn = new Map<string, number>();
-    const residualKept = new Map<string, number>();
-    const sharesOut = new Map<string, number>();
-    let allLocked = shares.length > 0;
-
-    for (const s of shares) {
-        if (!s.isLocked) allLocked = false;
-        if (s.isResidual) {
-            residualKept.set(s.beneficiaryDepartmentId, (residualKept.get(s.beneficiaryDepartmentId) || 0) + s.amount);
-        } else {
-            sharesIn.set(s.beneficiaryDepartmentId, (sharesIn.get(s.beneficiaryDepartmentId) || 0) + s.amount);
-            if (s.sourceDepartmentId) {
-                sharesOut.set(s.sourceDepartmentId, (sharesOut.get(s.sourceDepartmentId) || 0) + s.amount);
-            }
-        }
-    }
-
-    const gross = new Map<string, number>();
+    const grossByDept: Record<string, number> = {};
     for (const g of grossRows) {
-        if (g.departmentId) gross.set(g.departmentId, g._sum.amount || 0);
+        if (g.departmentId) grossByDept[g.departmentId] = g._sum.amount || 0;
     }
 
-    const rows: DepartmentShareRow[] = departments
-        .map((d) => {
-            const grossRevenue = round(gross.get(d.id) || 0);
-            const out = round(sharesOut.get(d.id) || 0);
-            const residual = round(residualKept.get(d.id) || 0);
-            const inn = round(sharesIn.get(d.id) || 0);
-            return {
-                departmentId: d.id,
-                departmentName: d.name,
-                companyId: d.companyId,
-                companyName: d.company?.name || '',
-                departmentType: d.departmentType,
-                grossRevenue,
-                sharesOut: out,
-                residualKept: residual,
-                sharesIn: inn,
-                netAttributed: round(residual + inn),
-            };
-        })
-        // Only show departments with activity in the period.
-        .filter((r) => r.grossRevenue || r.sharesOut || r.residualKept || r.sharesIn)
-        .sort((a, b) => b.netAttributed - a.netAttributed);
-
-    const totals = rows.reduce(
-        (t, r) => ({
-            grossRevenue: round(t.grossRevenue + r.grossRevenue),
-            sharesOut: round(t.sharesOut + r.sharesOut),
-            residualKept: round(t.residualKept + r.residualKept),
-            sharesIn: round(t.sharesIn + r.sharesIn),
-            netAttributed: round(t.netAttributed + r.netAttributed),
-        }),
-        { grossRevenue: 0, sharesOut: 0, residualKept: 0, sharesIn: 0, netAttributed: 0 },
-    );
-
-    return { month, year, locked: allLocked, rows, totals };
+    return aggregateDepartmentShares({
+        month,
+        year,
+        shares,
+        grossByDept,
+        departments: departments.map((d) => ({
+            id: d.id,
+            name: d.name,
+            departmentType: d.departmentType,
+            companyId: d.companyId,
+            companyName: d.company?.name || '',
+        })),
+    });
 }
 
 /**
