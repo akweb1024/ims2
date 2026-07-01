@@ -153,8 +153,10 @@ export default function DashboardPage() {
                         headers: authHeaders(),
                     });
                     if (!response.ok) return [widget.key, null] as const;
-                    const payload = await response.json();
-                    return [widget.key, payload] as const;
+                    // The widget API wraps the data as { widgetKey, scope, payload };
+                    // the renderers read flat fields, so store the inner payload.
+                    const json = await response.json();
+                    return [widget.key, json.payload ?? null] as const;
                 })
         );
 
