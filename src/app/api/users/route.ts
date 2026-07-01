@@ -9,6 +9,8 @@ import {
     normalizeAllowedModulesForWrite,
     resolveCompanyScope,
 } from '@/lib/access-policy';
+import { provisionEmployee } from '@/lib/kra/provision';
+import { logger } from '@/lib/logger';
 
 const DEFAULT_LEAVE_BALANCE = parseInt(process.env.DEFAULT_LEAVE_BALANCE || '20', 10);
 
@@ -218,6 +220,16 @@ export const POST = authorizedRoute(
 
                 return createdUser;
             });
+
+            // New-hire KRA/Goals auto-provisioning (idempotent; non-fatal). Only when a
+            // profile was created — non-staff users (e.g. CUSTOMER) have no KRAs.
+            if (shouldCreateEmployeeProfile) {
+                try {
+                    await provisionEmployee(newUser.id, user.id);
+                } catch (err) {
+                    logger.error('KRA provisioning failed for new employee', err, { userId: newUser.id });
+                }
+            }
 
             await prisma.auditLog.create({
                 data: {
