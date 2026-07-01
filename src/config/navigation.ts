@@ -108,6 +108,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Employee Performance 360', icon: '🧭', href: '/dashboard/hr-management/performance/employee-360', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'KRA & Targets', icon: '🎯', href: '/dashboard/hr-management/kra', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Salary Increments', icon: '💰', href: '/dashboard/hr-management/increments', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'Increment Advisor', icon: '📈', href: '/dashboard/hr-management/increments/recommend', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'] },
                     { name: 'Increment 360 Analysis', icon: '📉', href: '/dashboard/hr-management/increments/analytics', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
                     { name: 'Manage Team', icon: '👥', href: '/dashboard/manager/team', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
