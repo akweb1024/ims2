@@ -211,6 +211,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Global Setup', href: '/dashboard/companies/global-setup', icon: '🌍', roles: ['SUPER_ADMIN'] },
                     { name: 'Departments', href: '/dashboard/hr-management/departments', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Designations', href: '/dashboard/hr-management/designations', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'Job Grades', href: '/dashboard/hr-management/grades', icon: '🪜', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
                 ]
             },
             {
