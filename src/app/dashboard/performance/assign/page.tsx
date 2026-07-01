@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Target, Plus, LayoutTemplate, PencilLine, CheckCircle2, Users } from 'lucide-react';
+import { Target, Plus, LayoutTemplate, PencilLine, CheckCircle2, Users, Pencil, Trash2, X, Check } from 'lucide-react';
 
 const PERIODS = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'WEEKLY', 'DAILY'] as const;
 const DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
@@ -28,6 +28,9 @@ export default function AssignKraPage() {
     const [overrides, setOverrides] = useState<Record<string, string>>({}); // `${employeeId}:${metricId}` -> target
     const [goals, setGoals] = useState<Goal[]>([]);
     const [loadingGoals, setLoadingGoals] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editVals, setEditVals] = useState({ target: '', ratePerUnit: '', dailyTarget: '' });
+    const [rowBusy, setRowBusy] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -167,6 +170,50 @@ export default function AssignKraPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const startEdit = (g: Goal) => {
+        setError(null); setSuccess(null);
+        setEditingId(g.id);
+        setEditVals({ target: String(g.targetValue), ratePerUnit: '', dailyTarget: '' });
+    };
+    const cancelEdit = () => { setEditingId(null); setEditVals({ target: '', ratePerUnit: '', dailyTarget: '' }); };
+
+    const saveEdit = async (goalId: string) => {
+        if (editVals.target === '' || !Number.isFinite(Number(editVals.target))) { setError('Target ek valid number hona chahiye.'); return; }
+        setRowBusy(goalId); setError(null); setSuccess(null);
+        try {
+            const res = await fetch('/api/kra/goal', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify({
+                    goalId,
+                    target: Number(editVals.target),
+                    ...(editVals.ratePerUnit !== '' ? { ratePerUnit: Number(editVals.ratePerUnit) } : {}),
+                    ...(editVals.dailyTarget !== '' ? { dailyTarget: Number(editVals.dailyTarget) } : {}),
+                }),
+            });
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.error || 'Update failed');
+            setSuccess('Goal update ho gaya.');
+            cancelEdit();
+            loadGoals();
+        } catch (e: any) { setError(e.message); }
+        finally { setRowBusy(null); }
+    };
+
+    const removeGoal = async (g: Goal) => {
+        if (typeof window !== 'undefined' && !window.confirm(`"${g.title}" ko hata dein? Employee ke dashboard se ye goal remove ho jaayega.`)) return;
+        setRowBusy(g.id); setError(null); setSuccess(null);
+        try {
+            const res = await fetch(`/api/kra/goal?goalId=${encodeURIComponent(g.id)}`, { method: 'DELETE', headers: authHeaders() });
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.error || 'Delete failed');
+            setSuccess('Goal hata diya gaya.');
+            if (editingId === g.id) cancelEdit();
+            loadGoals();
+        } catch (e: any) { setError(e.message); }
+        finally { setRowBusy(null); }
     };
 
     return (
@@ -357,16 +404,43 @@ export default function AssignKraPage() {
                                                     <th className="py-2 pr-4 font-medium text-right">Current</th>
                                                     <th className="py-2 pr-4 font-medium text-right">%</th>
                                                     <th className="py-2 pr-4 font-medium">Status</th>
+                                                    <th className="py-2 pl-4 font-medium text-right">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {goals.map((g) => (
+                                                {goals.map((g) => editingId === g.id ? (
+                                                    <tr key={g.id} className="border-b border-gray-50 bg-indigo-50/40">
+                                                        <td className="py-2 pr-4 text-gray-800">{g.title}</td>
+                                                        <td className="py-2 pr-4 text-right">
+                                                            <input type="number" min={0} step="any" value={editVals.target} onChange={(e) => setEditVals({ ...editVals, target: e.target.value })} className="w-20 border border-gray-200 rounded px-2 py-1 text-right tabular-nums" autoFocus />
+                                                        </td>
+                                                        <td className="py-2 pr-4 text-right tabular-nums text-gray-400">{g.currentValue}</td>
+                                                        <td className="py-2 pr-4" colSpan={2}>
+                                                            <div className="flex gap-2 justify-start">
+                                                                <input type="number" min={0} step="any" value={editVals.ratePerUnit} onChange={(e) => setEditVals({ ...editVals, ratePerUnit: e.target.value })} placeholder="₹/unit" className="w-20 border border-gray-200 rounded px-2 py-1" />
+                                                                <input type="number" min={0} step="any" value={editVals.dailyTarget} onChange={(e) => setEditVals({ ...editVals, dailyTarget: e.target.value })} placeholder="daily" className="w-20 border border-gray-200 rounded px-2 py-1" />
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-2 pl-4">
+                                                            <div className="flex gap-1 justify-end">
+                                                                <button onClick={() => saveEdit(g.id)} disabled={rowBusy === g.id} title="Save" className="p-1.5 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"><Check className="w-4 h-4" /></button>
+                                                                <button onClick={cancelEdit} disabled={rowBusy === g.id} title="Cancel" className="p-1.5 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-50"><X className="w-4 h-4" /></button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
                                                     <tr key={g.id} className="border-b border-gray-50">
                                                         <td className="py-2 pr-4 text-gray-800">{g.title}</td>
                                                         <td className="py-2 pr-4 text-right tabular-nums">{g.targetValue} {g.unit}</td>
                                                         <td className="py-2 pr-4 text-right tabular-nums">{g.currentValue}</td>
                                                         <td className="py-2 pr-4 text-right tabular-nums">{Math.round(g.achievementPercentage)}%</td>
                                                         <td className="py-2 pr-4 text-xs text-gray-500">{g.status.replace(/_/g, ' ')}</td>
+                                                        <td className="py-2 pl-4">
+                                                            <div className="flex gap-1 justify-end">
+                                                                <button onClick={() => startEdit(g)} disabled={rowBusy === g.id} title="Edit target / rate / daily" className="p-1.5 rounded text-gray-500 hover:bg-gray-100 hover:text-indigo-600 disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
+                                                                <button onClick={() => removeGoal(g)} disabled={rowBusy === g.id} title="Remove goal" className="p-1.5 rounded text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
+                                                            </div>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

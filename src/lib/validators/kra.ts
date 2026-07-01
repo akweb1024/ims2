@@ -139,6 +139,21 @@ export const kraAssignGoalSchema = z.object({
   reviewerId: z.string().optional(),
 });
 
+/** Manager edits an already-assigned goal (target / rate / daily / title / reviewer). */
+export const kraUpdateGoalSchema = z
+  .object({
+    goalId: z.string().min(1),
+    title: z.string().min(1).max(200).optional(),
+    target: z.number().nonnegative().optional(),
+    dailyTarget: z.number().nonnegative().nullable().optional(),
+    ratePerUnit: z.number().nonnegative().nullable().optional(),
+    reviewerId: z.string().nullable().optional(),
+  })
+  .refine(
+    (d) => [d.title, d.target, d.dailyTarget, d.ratePerUnit, d.reviewerId].some((v) => v !== undefined),
+    { message: 'At least one field to update is required' },
+  );
+
 /** Save a quarterly rating from the employee's KRAs. */
 export const kraSaveRatingSchema = z.object({
   employeeId: z.string().min(1),
