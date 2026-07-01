@@ -11,7 +11,7 @@ import {
 import CandidateProfileModal from './CandidateProfileModal';
 import AddCandidateModal from './AddCandidateModal';
 import InterviewScorecardModal from './screening/InterviewScorecardModal';
-import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations } from '@/hooks/useRecruitment';
+import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations, useRecruitmentOnboarding } from '@/hooks/useRecruitment';
 import { useEmployees } from '@/hooks/useHR';
 
 export default function ApplicantPipeline() {
@@ -20,6 +20,8 @@ export default function ApplicantPipeline() {
     const { data: rawApplications, isLoading } = useJobApplications(selectedJobId || undefined);
     const { updateStatus, createApplication } = useApplicationMutations();
     const { scheduleInterview } = useInterviewMutations();
+    const { onboardCandidate } = useRecruitmentOnboarding();
+    const [onboardingAppId, setOnboardingAppId] = useState<string | null>(null);
 
     const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export default function ApplicantPipeline() {
         return [...rawApplications].sort((a, b) => (b.aiMatchScore || 0) - (a.aiMatchScore || 0));
     }, [rawApplications]);
 
-    const stages = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
+    const stages = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'SELECTED', 'HIRED', 'REJECTED'];
 
     const handleDragStart = (e: React.DragEvent, appId: string) => {
         setDraggedAppId(appId);
@@ -95,6 +97,24 @@ export default function ApplicantPipeline() {
             await createApplication.mutateAsync(data);
         } catch (err) {
             console.error("Failed to create application", err);
+        }
+    };
+
+    const handleOnboard = async (app: any) => {
+        if (!app?.id) return;
+        if (!window.confirm(`Onboard ${app.applicantName} as an employee? They will get a login invite and their onboarding will begin.`)) return;
+        setOnboardingAppId(app.id);
+        try {
+            await onboardCandidate.mutateAsync({
+                applicationId: app.id,
+                role: app.selectedRole || 'EXECUTIVE',
+                designation: app.jobPosting?.title || 'New Hire',
+                companyId: app.jobPosting?.companyId,
+            });
+        } catch (err) {
+            console.error("Failed to onboard candidate", err);
+        } finally {
+            setOnboardingAppId(null);
         }
     };
 
@@ -286,7 +306,7 @@ export default function ApplicantPipeline() {
                                                     </a>
                                                 </div>
 
-                                                {stage !== 'REJECTED' && stage !== 'HIRED' && (
+                                                {stage !== 'REJECTED' && stage !== 'HIRED' && stage !== 'SELECTED' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedAppForInterview(app); setShowInterviewModal(true); }}
                                                         className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 uppercase hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
@@ -301,6 +321,16 @@ export default function ApplicantPipeline() {
                                                         className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase hover:bg-amber-50 px-2 py-1 rounded transition-colors ml-2"
                                                     >
                                                         <MessageSquare size={10} /> Scorecard
+                                                    </button>
+                                                )}
+
+                                                {stage === 'SELECTED' && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleOnboard(app); }}
+                                                        disabled={onboardingAppId === app.id}
+                                                        className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase hover:bg-emerald-50 disabled:opacity-50 px-2 py-1 rounded transition-colors"
+                                                    >
+                                                        <CheckCircle2 size={10} /> {onboardingAppId === app.id ? 'Onboarding…' : 'Onboard'}
                                                     </button>
                                                 )}
                                             </div>
