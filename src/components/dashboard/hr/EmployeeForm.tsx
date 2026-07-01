@@ -43,6 +43,7 @@ const initialFormState = {
     nextReviewDate: '',
     lastIncrementPercentage: 0,
     designationId: '',
+    gradeId: '',
     phoneNumber: '',
     officePhone: '',
     personalEmail: '',
@@ -92,6 +93,18 @@ export default function EmployeeForm({
     mode
 }: EmployeeFormProps) {
     const [empForm, setEmpForm] = useState(initialFormState);
+    const [grades, setGrades] = useState<any[]>([]);
+
+    // Load the company's grade ladder for the grade dropdown (ICDR §2).
+    useEffect(() => {
+        (async () => {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+                const res = await fetch('/api/hr/grades', { headers: { Authorization: `Bearer ${token}` } });
+                if (res.ok) setGrades((await res.json()).grades || []);
+            } catch { /* non-fatal */ }
+        })();
+    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -498,6 +511,19 @@ export default function EmployeeForm({
                                 .filter(d => !empForm.companyId || d.companies?.some((c: any) => c.id === empForm.companyId))
                                 .map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="label-premium">Job Grade</label>
+                        <select
+                            className="input-premium"
+                            title="Job Grade"
+                            value={empForm.gradeId}
+                            onChange={e => setEmpForm({ ...empForm, gradeId: e.target.value })}
+                        >
+                            <option value="">Select Grade...</option>
+                            {grades.map(g => <option key={g.id} value={g.id}>{g.code} · {g.name}</option>)}
+                        </select>
+                        <p className="text-xs text-secondary-400 mt-1">Drives salary band, compa-ratio and notice period. Manage grades under HR → Job Grades.</p>
                     </div>
                     <div>
                         <label className="label-premium">Account Status</label>

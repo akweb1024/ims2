@@ -22,7 +22,7 @@ export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
-            const { applicationId, role, designation, companyId, baseSalary } = await req.json();
+            const { applicationId, role, designation, companyId, baseSalary, gradeId } = await req.json();
 
             const application = await prisma.jobApplication.findUnique({
                 where: { id: applicationId },
@@ -35,6 +35,14 @@ export const POST = authorizedRoute(
 
             // Determine Company ID
             const targetCompanyId = companyId || application.jobPosting.companyId;
+
+            // Fitment gate (§40): the chosen grade must belong to the hiring company.
+            let resolvedGradeId: string | null = null;
+            if (gradeId) {
+                const grade = await prisma.grade.findFirst({ where: { id: gradeId, companyId: targetCompanyId }, select: { id: true } });
+                if (!grade) return createErrorResponse('Selected grade does not belong to this company', 400);
+                resolvedGradeId = grade.id;
+            }
             const company = await prisma.company.findUnique({ where: { id: targetCompanyId } });
 
             // Generate Temp Password
@@ -64,6 +72,7 @@ export const POST = authorizedRoute(
                                 designation: designation || application.jobPosting.title,
                                 dateOfJoining: new Date(),
                                 baseSalary: baseSalary ? parseFloat(baseSalary) : undefined,
+                                ...(resolvedGradeId ? { gradeId: resolvedGradeId } : {}),
                                 phoneNumber: application.applicantPhone,
                                 personalEmail: application.applicantEmail,
                                 // Initialise the onboarding workflow so HR sees the new hire as
