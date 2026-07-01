@@ -60,7 +60,18 @@ export const POST = authorizedRoute(
 
             if (!template || !employee) return createErrorResponse('Template or Employee not found', 404);
 
-            const company = user.companyId ? await prisma.company.findUnique({ where: { id: user.companyId } }) : null;
+            // Company from the EMPLOYEE's own record (dynamic per record), not the HR actor's —
+            // so a group admin issuing across companies always gets the right letterhead.
+            const employeeCompanyId = (employee.user as any)?.companyId || user.companyId || null;
+            const company = employeeCompanyId ? await prisma.company.findUnique({ where: { id: employeeCompanyId } }) : null;
+
+            // Derived monthly salary structure (baseSalary treated as monthly, like grade bands).
+            const gross = employee.baseSalary || 0;
+            const basic = Math.round(gross * 0.5);
+            const hra = Math.round(gross * 0.2);
+            const conveyance = Math.min(1600, gross);
+            const special = Math.max(0, gross - basic - hra - conveyance);
+            const rupee = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
             // Comprehensive placeholder replacement
             let resolvedContent = template.content;
@@ -83,6 +94,15 @@ export const POST = authorizedRoute(
                 '{{companyName}}': company?.name || 'The Company',
                 '{{companyAddress}}': company?.address || 'N/A',
                 '{{companyReg}}': company?.registrationNumber || 'N/A',
+                '{{companyCin}}': (company as any)?.cinNo || '',
+                // Derived salary breakup (monthly) + annual CTC — used by the appointment annexure.
+                '{{grossMonthly}}': gross ? rupee(gross) : 'N/A',
+                '{{ctcAnnual}}': gross ? rupee(gross * 12) : 'N/A',
+                '{{basicSalary}}': gross ? rupee(basic) : 'N/A',
+                '{{hra}}': gross ? rupee(hra) : 'N/A',
+                '{{conveyance}}': gross ? rupee(conveyance) : 'N/A',
+                '{{specialAllowance}}': gross ? rupee(special) : 'N/A',
+                '{{netMonthly}}': gross ? rupee(gross) : 'N/A',
                 ...customFields
             };
 

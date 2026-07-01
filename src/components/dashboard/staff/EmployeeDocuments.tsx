@@ -111,16 +111,25 @@ export default function EmployeeDocuments({ data, fullProfile }: EmployeeDocumen
                                     <Eye size={14} /> {doc.status === 'PENDING' ? 'View & Sign' : 'View Snapshot'}
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        const w = window.open('', '_blank');
-                                        if (w) {
-                                            w.document.write(`<html><head><title>${doc.title}</title><style>body { font-family: sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; } .signature { margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px; }</style></head><body>${doc.content}<div class="signature"><p><strong>Digitally Signed:</strong> ${doc.signedAt ? new Date(doc.signedAt).toLocaleString() : 'Pending'}</p></div></body></html>`);
-                                            w.document.close();
-                                        }
+                                    onClick={async () => {
+                                        try {
+                                            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+                                            const res = await fetch(`/api/hr/digital-documents/${doc.id}/download`, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (!res.ok) { alert('Failed to download PDF'); return; }
+                                            const blob = await res.blob();
+                                            const url = window.URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${String(doc.title || 'document').replace(/[^a-z0-9]+/gi, '_')}.pdf`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                            window.URL.revokeObjectURL(url);
+                                        } catch { alert('An error occurred while downloading.'); }
                                     }}
                                     className="p-3 bg-secondary-100 text-secondary-600 rounded-xl hover:bg-secondary-200 transition-colors"
-                                    title="Download Document"
-                                    aria-label="Download Document"
+                                    title="Download PDF"
+                                    aria-label="Download PDF"
                                 >
                                     <Download size={16} />
                                 </button>

@@ -41,35 +41,52 @@ export const HR_PRESETS = [
         title: 'Appointment Letter',
         type: 'CONTRACT',
         content: `
-<h1>Appointment Letter</h1>
-<p>Date: {{date}}</p>
-<p><strong>{{companyName}}</strong><br>{{companyAddress}}</p>
-
-<h3>Strictly Confidential</h3>
-<p>To,<br><strong>{{name}}</strong><br>{{address}}</p>
-
+<p><strong>Private &amp; Confidential</strong></p>
+<p><strong>{{name}}</strong><br>{{address}}<br>Mob: {{phone}} &nbsp; Email: {{email}}</p>
+<p>Dated: {{date}}</p>
+<h2>Subject: Letter of Appointment</h2>
 <p>Dear {{name}},</p>
-
-<p>Sub: <strong>Appointment for the post of {{designation}}</strong></p>
-
-<p>Further to your application and subsequent interview, we are pleased to appoint you as <strong>{{designation}}</strong> in our organization, effective from <strong>{{joiningDate}}</strong>.</p>
-
-<h3>1. Remuneration</h3>
-<p>Your monthly gross salary will be <strong>{{salary}}</strong>/12.</p>
-
-<h3>2. Probation</h3>
-<p>You will be on probation for a period of six months from the date of joining. Upon successful completion, your services will be confirmed in writing.</p>
-
-<h3>3. Responsibilities</h3>
-<p>You will responsible for duties as assigned by your reporting manager. The company reserves the right to transfer you to any other department or location as per business requirements.</p>
-
-<h3>4. Notice Period</h3>
-<p>During probation, either party may terminate this appointment by giving 15 days notice. After confirmation, the notice period will be 1 month.</p>
-
-<p>We welcome you to {{companyName}} and wish you a successful career with us.</p>
-
-<p>For {{companyName}},</p>
-<p>Authorized Signatory</p>
+<p>Congratulations and welcome to <strong>{{companyName}}</strong>. With reference to your application and subsequent interview, we are pleased to offer you an appointment in the service of the company as <strong>{{designation}}</strong> under a service contract with the following terms and conditions. We are confident that you will meet the responsibilities of the position with the same enthusiasm and enterprise you have exhibited.</p>
+<p>1. Your Cost to the Company (CTC) would be <strong>{{ctcAnnual}} per annum</strong> which includes perks, ESI &amp; provident fund etc. The structure of your compensation may be changed from time to time in line with the Company's compensation policy. Your compensation details are confidential and should be discussed only with your reporting manager or the HR Department.</p>
+<p>2. Your appointment shall come into effect from the date of your joining <strong>{{companyName}}</strong> and shall initially be for a period of two years (including three months probation) or the project allocated (whichever is earlier), extendable as mutually agreed. You will devote your whole working time and work faithfully, sincerely, diligently and efficiently in the development of the company.</p>
+<p>3. After your probation period, you may resign by giving 30 days prior written notice. During probation, the company may ask you to resign or terminate your services without notice or assigning any reason.</p>
+<p>4. After successful completion of probation, the company may terminate this appointment by giving one month's prior notice or one month's salary in lieu thereof. In case of breach of any term, commission of any criminal offence, or absence from duty for more than a week without permission, the company may terminate the appointment without the stipulated notice.</p>
+<p>5. You may be liable to be transferred to any office or department of the Company or its associate / group companies, whether existing or to be set up, anywhere in India or abroad, at the sole discretion of management, on the same terms and conditions of employment.</p>
+<p>6. You may be required to sign a separate service agreement if you are sent for any specialized training required for upgradation of your skills and knowledge.</p>
+<p>7. During your employment you will not participate or be engaged, directly or indirectly, in any other occupation or advisory role of any kind without the prior written approval of the competent authority.</p>
+<p>8. You will not engage in any studies or professional courses without prior written permission, which will be at the sole discretion of the company.</p>
+<p>9. You will treat all information relating to the affairs of the company as secret and confidential and prevent its disclosure. You will not use such information for personal or commercial gains. This provision will apply for three years even after termination of your appointment.</p>
+<p>10. You will not seek employment with any organization with whom contact has been developed as a result of your professional dealings.</p>
+<p>11. Any change in your residential address, civil/marital status or qualification after your application should be notified in writing within three days to the company.</p>
+<p>12. Salary reviews are linked to your performance and will be the basis for your future promotion/growth, evaluated periodically as part of our appraisal procedure.</p>
+<p>13. You shall not carry on any business or be employed by any other firm, company or individual, in any capacity, without the prior written permission of the competent authority.</p>
+<p>14. During your employment you will be governed by the service rules and regulations / procedure manual and such other circulars as may be in force or amended from time to time.</p>
+<p>15. All Intellectual Property Rights arising out of your work / research shall be of single ownership belonging to <strong>{{companyName}}</strong>. You warrant that IPR generated by your work is legally and beneficially owned by the company and does not infringe any third-party rights.</p>
+<p>16. Dereliction of duty, non-adherence to assigned roles, non-performance, disobedience or malpractice will be considered a serious deviation from duties and may result in termination with or without intimation.</p>
+<p>17. In case you are found misusing the organization's property (including mobile, internet, computer, printer etc.), the resulting costs may be recovered from your dues and the company may terminate you from service.</p>
+<p>18. You have been engaged on the presumption that the particulars furnished by you are correct. If found incorrect, or if you have concealed or withheld relevant facts, your appointment shall stand terminated/cancelled without notice.</p>
+<p>19. You will be retired from service on attaining the superannuation age of 58 years, or earlier if found physically/mentally unfit as certified by a medical practitioner nominated by the company.</p>
+<p>20. You would initially be posted at the Company's office and are requested to report to your Reporting Manager on joining, effective <strong>{{joiningDate}}</strong>. Upon joining, you will be required to sign a standard undertaking to conform to organizational discipline, policies and norms.</p>
+<h3>Undertaking</h3>
+<p>I hereby undertake to give one month's notice or surrender one month's salary in case I wish to leave the organization. After leaving, I undertake not to take employment in any competitive organization where the trainings, knowledge, key information and trade secrets of {{companyName}} can be used against it, for a period of three years. It is clearly understood that it is mandatory to obtain a No Dues Certificate before leaving the organization.</p>
+<h3>Declaration</h3>
+<p>I, {{name}}, hereby declare that I have understood this Letter of Appointment and agree to abide by its clauses. All required documents will be submitted on the date of joining. Salary will be subject to revision in case of non-submission of the required experience certificates. Non-disclosure of prior experience or non-submission of any required document will lead to termination of services.</p>
+<h3>Documents to be submitted at the time of joining</h3>
+<p>1. Passport size colored photographs (02 copies)<br>2. Birth Certificate / School Leaving Certificate showing date of birth<br>3. Educational certificates (10th grade onwards) along with marksheets<br>4. Appointment and Relieving Letters of previous employers<br>5. Last month's Salary Slip<br>6. Any one photo ID and address proof (Passport / Driving License / Voter ID / PAN Card / Aadhaar)<br>7. Medical Fitness Certificate from a registered medical practitioner</p>
+<h3>Annexure — Salary Structure (Monthly)</h3>
+<table>
+<tr><th>Component</th><th>Amount (per month)</th></tr>
+<tr><td>Basic + DA</td><td>{{basicSalary}}</td></tr>
+<tr><td>HRA</td><td>{{hra}}</td></tr>
+<tr><td>Conveyance</td><td>{{conveyance}}</td></tr>
+<tr><td>Special Allowance</td><td>{{specialAllowance}}</td></tr>
+<tr><td>Gross (per month)</td><td>{{grossMonthly}}</td></tr>
+<tr><td>Total CTC (per annum)</td><td>{{ctcAnnual}}</td></tr>
+</table>
+<p>Note: Statutory bonus will be paid in accordance with the Payment of Bonus Act and company policy. Other reimbursements/benefits, if applicable, will be extended as per company policy.</p>
+<p>We look forward to having you as a member of our team.</p>
+<p>Yours sincerely,<br>For <strong>{{companyName}}</strong></p>
+<p>Authorized Signatory &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Candidate's Signature</p>
         `
     },
     {
