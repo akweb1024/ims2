@@ -10,8 +10,9 @@ import {
 } from 'lucide-react';
 import CandidateProfileModal from './CandidateProfileModal';
 import AddCandidateModal from './AddCandidateModal';
+import OnboardCandidateModal from './OnboardCandidateModal';
 import InterviewScorecardModal from './screening/InterviewScorecardModal';
-import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations, useRecruitmentOnboarding } from '@/hooks/useRecruitment';
+import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations } from '@/hooks/useRecruitment';
 import { useEmployees } from '@/hooks/useHR';
 
 export default function ApplicantPipeline() {
@@ -20,8 +21,7 @@ export default function ApplicantPipeline() {
     const { data: rawApplications, isLoading } = useJobApplications(selectedJobId || undefined);
     const { updateStatus, createApplication } = useApplicationMutations();
     const { scheduleInterview } = useInterviewMutations();
-    const { onboardCandidate } = useRecruitmentOnboarding();
-    const [onboardingAppId, setOnboardingAppId] = useState<string | null>(null);
+    const [onboardApp, setOnboardApp] = useState<any>(null);
 
     const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -97,24 +97,6 @@ export default function ApplicantPipeline() {
             await createApplication.mutateAsync(data);
         } catch (err) {
             console.error("Failed to create application", err);
-        }
-    };
-
-    const handleOnboard = async (app: any) => {
-        if (!app?.id) return;
-        if (!window.confirm(`Onboard ${app.applicantName} as an employee? They will get a login invite and their onboarding will begin.`)) return;
-        setOnboardingAppId(app.id);
-        try {
-            await onboardCandidate.mutateAsync({
-                applicationId: app.id,
-                role: app.selectedRole || 'EXECUTIVE',
-                designation: app.jobPosting?.title || 'New Hire',
-                companyId: app.jobPosting?.companyId,
-            });
-        } catch (err) {
-            console.error("Failed to onboard candidate", err);
-        } finally {
-            setOnboardingAppId(null);
         }
     };
 
@@ -326,11 +308,10 @@ export default function ApplicantPipeline() {
 
                                                 {stage === 'SELECTED' && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); handleOnboard(app); }}
-                                                        disabled={onboardingAppId === app.id}
-                                                        className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase hover:bg-emerald-50 disabled:opacity-50 px-2 py-1 rounded transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); setOnboardApp(app); }}
+                                                        className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
                                                     >
-                                                        <CheckCircle2 size={10} /> {onboardingAppId === app.id ? 'Onboarding…' : 'Onboard'}
+                                                        <CheckCircle2 size={10} /> Onboard
                                                     </button>
                                                 )}
                                             </div>
@@ -465,6 +446,14 @@ export default function ApplicantPipeline() {
                     jobs={jobs || []}
                     onClose={() => setShowAddCandidateModal(false)}
                     onSubmit={handleCreateApplication}
+                />
+            )}
+
+            {/* Onboard Candidate Modal — grade + salary-fitment gate (§40) */}
+            {onboardApp && (
+                <OnboardCandidateModal
+                    app={onboardApp}
+                    onClose={() => setOnboardApp(null)}
                 />
             )}
         </div>

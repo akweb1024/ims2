@@ -154,6 +154,7 @@ export const updateEmployeeSchema = z.object({
 
     // Growth tracking
     grade: z.preprocess(emptyToNull, z.string().nullable().optional()),
+    gradeId: z.preprocess(emptyToNull, z.string().uuid().nullable().optional()).or(z.literal(null)).optional(),
     lastPromotionDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     lastIncrementDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     nextReviewDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
