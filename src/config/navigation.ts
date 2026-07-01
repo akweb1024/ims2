@@ -107,6 +107,8 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Performance Workspace', icon: '📊', href: '/dashboard/performance/workspace?tab=review', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Employee Performance 360', icon: '🧭', href: '/dashboard/hr-management/performance/employee-360', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'KRA & Targets', icon: '🎯', href: '/dashboard/hr-management/kra', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
+                    { name: 'Job Grades', icon: '🪜', href: '/dashboard/hr-management/grades', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Salary Fitment', icon: '⚖️', href: '/dashboard/hr-management/fitment', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'] },
                     { name: 'Salary Increments', icon: '💰', href: '/dashboard/hr-management/increments', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Increment Advisor', icon: '📈', href: '/dashboard/hr-management/increments/recommend', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'] },
                     { name: 'Increment 360 Analysis', icon: '📉', href: '/dashboard/hr-management/increments/analytics', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
@@ -212,8 +214,6 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Global Setup', href: '/dashboard/companies/global-setup', icon: '🌍', roles: ['SUPER_ADMIN'] },
                     { name: 'Departments', href: '/dashboard/hr-management/departments', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Designations', href: '/dashboard/hr-management/designations', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Job Grades', href: '/dashboard/hr-management/grades', icon: '🪜', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Salary Fitment', href: '/dashboard/hr-management/fitment', icon: '⚖️', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'] },
                 ]
             },
             {
