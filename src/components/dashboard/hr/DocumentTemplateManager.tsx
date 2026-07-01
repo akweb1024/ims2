@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDocumentTemplates, useDocumentTemplateMutations, useEmployees, useDigitalDocumentMutations } from '@/hooks/useHR';
-import { FileText, Plus, Trash2, Edit2, Save, X, Send, User } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit2, Save, X, Send, User, Eye } from 'lucide-react';
 import { HR_PRESETS } from '@/lib/hr-presets';
 
 export default function DocumentTemplateManager() {
@@ -41,6 +41,27 @@ export default function DocumentTemplateManager() {
         } catch (err) {
             alert('Failed to issue document');
         }
+    };
+
+    const [previewing, setPreviewing] = useState(false);
+    // Live preview: renders the letter to a PDF (sample data, or a chosen employee's real
+    // data) WITHOUT saving anything, and opens it in a new tab.
+    const previewPdf = async (payload: { content?: string; templateId?: string; employeeId?: string; title?: string }) => {
+        setPreviewing(true);
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+            const res = await fetch('/api/hr/digital-documents/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) { alert('Preview failed — add some content or pick a template first.'); return; }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+        } catch { alert('Preview error'); }
+        finally { setPreviewing(false); }
     };
 
     return (
@@ -137,6 +158,9 @@ export default function DocumentTemplateManager() {
 
                         <div className="flex justify-end gap-4 pt-4">
                             <button onClick={() => { setIsEditing(false); setEditingObj(null); }} className="btn bg-secondary-100 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                            <button onClick={() => previewPdf({ content: formData.content, title: formData.title })} disabled={previewing || !formData.content.trim()} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
+                                <Eye size={16} /> {previewing ? 'Preview…' : 'Preview PDF'}
+                            </button>
                             <button onClick={handleSave} className="btn bg-primary-600 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
                                 <Save size={16} /> Save Template
                             </button>
@@ -175,6 +199,9 @@ export default function DocumentTemplateManager() {
 
                     <div className="flex justify-end gap-4 mt-8">
                         <button onClick={() => setIsIssuing(false)} className="btn bg-secondary-100 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                        <button onClick={() => previewPdf({ templateId: issueData.templateId, employeeId: issueData.employeeId || undefined })} disabled={previewing || !issueData.templateId} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
+                            <Eye size={16} /> {previewing ? 'Preview…' : 'Preview'}
+                        </button>
                         <button onClick={handleIssue} disabled={!issueData.templateId || !issueData.employeeId} className="btn bg-secondary-900 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2 disabled:opacity-50">
                             <Send size={16} /> Confirm & Send
                         </button>
