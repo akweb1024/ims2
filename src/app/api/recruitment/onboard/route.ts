@@ -65,7 +65,18 @@ export const POST = authorizedRoute(
                                 dateOfJoining: new Date(),
                                 baseSalary: baseSalary ? parseFloat(baseSalary) : undefined,
                                 phoneNumber: application.applicantPhone,
-                                personalEmail: application.applicantEmail
+                                personalEmail: application.applicantEmail,
+                                // Initialise the onboarding workflow so HR sees the new hire as
+                                // pending in the tracker immediately (was lazily null until first GET).
+                                metrics: {
+                                    onboardingWorkflow: {
+                                        version: 1,
+                                        status: 'ONBOARDING_DRAFT',
+                                        steps: {},
+                                        currentStep: 'joining',
+                                        updatedAt: new Date().toISOString(),
+                                    },
+                                },
                             }
                         }
                     },
@@ -127,7 +138,8 @@ export const POST = authorizedRoute(
                     data: {
                         token: inviteToken,
                         userId: newUser.id,
-                        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                        // Onboarding invite — give the new hire 7 days, not 1 hour.
+                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     }
                 });
 

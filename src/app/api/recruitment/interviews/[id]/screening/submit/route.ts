@@ -90,13 +90,22 @@ export async function POST(request: Request, context: any) {
         });
 
         // Also update Interview record result if applicable
+        const passed = data.recommendation === 'Strong Hire' || data.recommendation === 'Hire';
         await prisma.recruitmentInterview.update({
             where: { id: interviewId },
             data: {
-                result: data.recommendation === 'Strong Hire' || data.recommendation === 'Hire' ? 'PASSED' : 'REJECTED',
+                result: passed ? 'PASSED' : 'REJECTED',
                 feedback: data.finalNotes || `Recommendation: ${data.recommendation}, Score: ${finalScore.toFixed(2)}`,
                 rating: Math.round(finalScore)
             }
+        });
+
+        // Advance the application so the pipeline moves after scoring (previously it stayed
+        // in INTERVIEW forever). Only advance from INTERVIEW so we never clobber a later stage;
+        // a further round can re-set INTERVIEW via interview scheduling.
+        await prisma.jobApplication.updateMany({
+            where: { id: screening.applicationId, status: 'INTERVIEW' },
+            data: { status: passed ? 'OFFER' : 'REJECTED' },
         });
 
         return NextResponse.json({ success: true, finalScore, categoryScores: computedCategoryScores });
