@@ -308,3 +308,81 @@ export async function assignGoal(actor: Actor, input: AssignGoalArgs) {
   }
   return { goalId: goal.id, period: win.label };
 }
+
+export interface UpdateGoalArgs {
+  goalId: string;
+  title?: string;
+  target?: number;
+  dailyTarget?: number | null;
+  ratePerUnit?: number | null;
+  reviewerId?: string | null;
+}
+
+/** Manager edits an assigned goal in scope. Recomputes achievement% if the target moved. */
+export async function updateGoal(actor: Actor, input: UpdateGoalArgs) {
+  requireRole(actor.role, 3); // MANAGER+
+  const goal = await prisma.employeeGoal.findUnique({
+    where: { id: input.goalId },
+    select: { id: true, employeeId: true, metricId: true, currentValue: true, targetValue: true, title: true },
+  });
+  if (!goal) throw new KraScopeError('Goal not found', 404);
+  await assertManagerScope(actor, goal.employeeId);
+
+  const data: Record<string, unknown> = {};
+  if (input.title !== undefined) data.title = input.title.trim();
+  if (input.target !== undefined) data.targetValue = input.target;
+  if (input.dailyTarget !== undefined) data.dailyTarget = input.dailyTarget;
+  if (input.ratePerUnit !== undefined) data.ratePerUnit = input.ratePerUnit;
+  if (input.reviewerId !== undefined) data.reviewerId = input.reviewerId;
+
+  // Target moved on a goal with no metric ledger: refresh achievement% from currentValue here,
+  // since recomputeGoalProgress early-returns for metric-less goals.
+  if (input.target !== undefined && !goal.metricId) {
+    data.achievementPercentage = input.target > 0 ? Math.min(100, (goal.currentValue / input.target) * 100) : 0;
+  }
+
+  await prisma.employeeGoal.update({ where: { id: goal.id }, data });
+
+  // Metric-backed goal: recompute current + achievement% from the ledger against the new target.
+  if (input.target !== undefined && goal.metricId) {
+    await recomputeGoalProgress(goal.id);
+  }
+
+  const employeeUserId = await userIdForProfile(goal.employeeId);
+  if (employeeUserId) {
+    await notify({
+      userId: employeeUserId,
+      title: 'Goal updated',
+      message: `Your manager updated the goal "${(data.title as string) ?? goal.title}"`,
+      type: 'KRA_GOAL',
+      link: '/dashboard/my-performance',
+    });
+  }
+  return { goalId: goal.id };
+}
+
+/** Manager unassigns (deletes) a goal in scope. Proofs + verifications cascade; the
+ *  metric/revenue ledger (keyed on employee+metric, not the goal) is left intact. */
+export async function deleteGoal(actor: Actor, goalId: string) {
+  requireRole(actor.role, 3); // MANAGER+
+  const goal = await prisma.employeeGoal.findUnique({
+    where: { id: goalId },
+    select: { id: true, employeeId: true, title: true },
+  });
+  if (!goal) throw new KraScopeError('Goal not found', 404);
+  await assertManagerScope(actor, goal.employeeId);
+
+  await prisma.employeeGoal.delete({ where: { id: goal.id } });
+
+  const employeeUserId = await userIdForProfile(goal.employeeId);
+  if (employeeUserId) {
+    await notify({
+      userId: employeeUserId,
+      title: 'Goal removed',
+      message: `Your manager removed the goal "${goal.title}"`,
+      type: 'KRA_GOAL',
+      link: '/dashboard/my-performance',
+    });
+  }
+  return { goalId };
+}
