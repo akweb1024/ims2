@@ -110,6 +110,8 @@ export default function SubmitReportPage() {
     const [prodActivity, setProdActivity] = useState<any>(null);
     const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [loadingWorkPlans, setLoadingWorkPlans] = useState(false);
+    // Next-day plan captured during DPR submit → creates tomorrow's WorkPlan.
+    const [tomorrowPlan, setTomorrowPlan] = useState({ agenda: '', priority: 'MEDIUM', estimatedHours: '' });
     const [completedAgendaIds, setCompletedAgendaIds] = useState<string[]>([]);
     const [checkInTime, setCheckInTime] = useState<Date | null>(null);
 
@@ -580,6 +582,24 @@ export default function SubmitReportPage() {
             });
 
             if (res.ok) {
+                // Create tomorrow's work plan (next-day agenda) if the employee filled it in.
+                if (tomorrowPlan.agenda.trim()) {
+                    try {
+                        const tomorrowStr = getISTDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
+                        await fetch('/api/work-agenda', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                date: tomorrowStr,
+                                agenda: tomorrowPlan.agenda.trim(),
+                                priority: tomorrowPlan.priority,
+                                ...(tomorrowPlan.estimatedHours ? { estimatedHours: parseFloat(tomorrowPlan.estimatedHours) } : {}),
+                            }),
+                        });
+                    } catch (planErr) {
+                        console.error('Failed to save tomorrow plan (non-fatal):', planErr);
+                    }
+                }
                 setSavedReport(true);
                 setTimeout(() => router.push('/dashboard/staff-portal'), 2000);
             } else {
@@ -813,6 +833,42 @@ export default function SubmitReportPage() {
                         </p>
                     </div>
                 )}
+
+                {/* Plan for Tomorrow — creates next-day WorkPlan on submit (manager can adjust before execution) */}
+                <div className="card-premium p-6 border-t-4 border-indigo-500 bg-gradient-to-br from-white to-indigo-50/30">
+                    <div className="flex items-center gap-2 mb-4">
+                        <TrendingUp className="text-indigo-600" size={24} />
+                        <div>
+                            <h3 className="font-bold text-lg text-secondary-900">Plan for Tomorrow</h3>
+                            <p className="text-xs text-secondary-400 font-medium">Kal ka agenda — submit karte hi tomorrow ka WorkPlan ban jayega. Manager execution se pehle adjust kar sakta hai.</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <textarea
+                            className="input-premium md:col-span-2"
+                            placeholder="e.g. Deploy app #3 + smoke-test (error-free)"
+                            value={tomorrowPlan.agenda}
+                            onChange={e => setTomorrowPlan({ ...tomorrowPlan, agenda: e.target.value })}
+                        />
+                        <select
+                            className="input-premium"
+                            title="Tomorrow priority"
+                            value={tomorrowPlan.priority}
+                            onChange={e => setTomorrowPlan({ ...tomorrowPlan, priority: e.target.value })}
+                        >
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                        <input
+                            type="number"
+                            className="input-premium"
+                            placeholder="Est. hours"
+                            value={tomorrowPlan.estimatedHours}
+                            onChange={e => setTomorrowPlan({ ...tomorrowPlan, estimatedHours: e.target.value })}
+                        />
+                    </div>
+                </div>
 
                 {/* Gamified Task Checklist */}
                 {availableTasks.length > 0 && (

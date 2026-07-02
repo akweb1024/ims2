@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { getISTToday } from '@/lib/date-utils';
+import { createAuditLog } from '@/lib/notifications';
+import { createNotification } from '@/lib/system-notifications';
 
 const normalizeWorkPlanVisibility = (value: unknown) => {
     if (typeof value !== 'string') return undefined;
@@ -173,6 +176,17 @@ export const PUT = authorizedRoute(
                 }
             }
 
+            // A manager modifying a SUBORDINATE's plan may only do so BEFORE its execution
+            // date (the plan's own day). The owner can still edit past plans (e.g. log actuals).
+            const ownProfile = await prisma.employeeProfile.findUnique({
+                where: { userId: user.id },
+                select: { id: true },
+            });
+            const isOwnerEdit = !!ownProfile && ownProfile.id === existingPlan.employeeId;
+            if (!isOwnerEdit && existingPlan.date < getISTToday()) {
+                return createErrorResponse('Cannot modify a plan whose execution date has already passed', 403);
+            }
+
             const updatedPlan = await prisma.workPlan.update({
                 where: { id },
                 data: {
@@ -230,6 +244,37 @@ export const PUT = authorizedRoute(
                     }
                 } as any
             });
+
+            // Manager (cross-user) edit → audit trail + notify + a visible comment for the employee.
+            if (!isOwnerEdit) {
+                try {
+                    const planEmployee = await prisma.employeeProfile.findUnique({
+                        where: { id: existingPlan.employeeId },
+                        select: { userId: true },
+                    });
+                    await createAuditLog({
+                        userId: user.id,
+                        action: 'WORKPLAN_MODIFY',
+                        entity: 'WorkPlan',
+                        entityId: id,
+                        changes: { agenda, strategy, priority, estimatedHours, completionStatus, linkedGoalId, taskId },
+                    });
+                    await prisma.workPlanComment.create({
+                        data: { workPlanId: id, userId: user.id, content: 'Plan adjusted by manager before execution.' },
+                    });
+                    if (planEmployee?.userId) {
+                        await createNotification({
+                            userId: planEmployee.userId,
+                            title: 'Your work plan was updated',
+                            message: `Your plan for ${new Date(existingPlan.date).toLocaleDateString()} was adjusted by ${(user as any).name || 'your manager'}.`,
+                            type: 'INFO',
+                            link: '/dashboard/staff-portal',
+                        });
+                    }
+                } catch (sideErr) {
+                    console.error('Work plan modify side-effect failed (non-fatal):', sideErr);
+                }
+            }
 
             return NextResponse.json(updatedPlan);
         } catch (error: any) {
