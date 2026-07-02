@@ -53,7 +53,6 @@ const MODULE_ACCESS_EXACT_ROUTE_EXCEPTIONS = new Set([
     '/api/hr/work-agenda',
     '/api/hr/private-notes',
     '/api/hr/reimbursements',
-    '/api/hr/documents/my-digital',
 ]);
 
 const MODULE_ACCESS_PREFIX_EXCEPTIONS = [
