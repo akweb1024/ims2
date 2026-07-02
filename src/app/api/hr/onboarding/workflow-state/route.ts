@@ -1,3 +1,8 @@
+// ── Onboarding System B: NEW-HIRE WORKFLOW STEPS ─────────────────────────────
+// State lives in employeeProfile.metrics.onboardingWorkflow (statuses ONBOARDING_DRAFT/
+// ONBOARDING_COMPLETED; steps joining→verification→job→perks). SEPARATE from the
+// training/quiz modules (System A: onboarding/{modules,progress,compliance} → OnboardingProgress).
+// "Onboarded" means different things in each — do not cross-wire the two.
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';

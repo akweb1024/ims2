@@ -1,5 +1,7 @@
 'use client';
 
+// HR/manager view for Onboarding System B — NEW-HIRE WORKFLOW STEPS (data via onboarding/workflow-state).
+// This is NOT the training/quiz modules (System A) — that is staff/EmployeeOnboarding.tsx.
 import { useEffect, useMemo, useState } from 'react';
 
 type Mode = 'NEW' | 'UPGRADE';
