@@ -9,15 +9,24 @@ export async function applyApprovedIncrement(
 ) {
     const profileId = increment.employeeProfileId;
 
+    // Current values — used to PRESERVE fields the increment record does not specify.
+    // Minimal "quick" increment records carry only a new total salary; without this a
+    // bare `|| 0` would wipe the employee's fixed/variable split, targets and perks.
+    const existing = await tx.employeeProfile.findUnique({
+        where: { id: profileId },
+        include: { salaryStructure: true },
+    });
+    const curStruct = existing?.salaryStructure;
+
     // 1. Update Employee Profile with ALL relevant fields
     await tx.employeeProfile.update({
         where: { id: profileId },
         data: {
-            // Salary components
-            baseSalary: increment.newSalary,
-            salaryFixed: increment.newFixed || 0,
-            salaryVariable: increment.newVariable || 0,
-            salaryIncentive: increment.newIncentive || 0,
+            // Salary components (preserve existing split when the record omits it)
+            baseSalary: increment.newSalary ?? existing?.baseSalary ?? 0,
+            salaryFixed: increment.newFixed ?? existing?.salaryFixed ?? 0,
+            salaryVariable: increment.newVariable ?? existing?.salaryVariable ?? 0,
+            salaryIncentive: increment.newIncentive ?? existing?.salaryIncentive ?? 0,
 
             // Opt-in Flags & Detailed Structure
             hasVariable: increment.optInVariable ?? undefined,
@@ -33,8 +42,8 @@ export async function applyApprovedIncrement(
             baseTarget: increment.newBaseTarget ?? undefined,
             variableRate: increment.newVariableRate ?? undefined,
             variableUnit: increment.newVariableUnit ?? undefined,
-            monthlyTarget: increment.newMonthlyTarget ?? 0,
-            yearlyTarget: (increment as any).newYearlyTarget ?? (increment.newMonthlyTarget ? increment.newMonthlyTarget * 12 : 0),
+            monthlyTarget: increment.newMonthlyTarget ?? existing?.monthlyTarget ?? 0,
+            yearlyTarget: (increment as any).newYearlyTarget ?? (increment.newMonthlyTarget != null ? increment.newMonthlyTarget * 12 : (existing?.yearlyTarget ?? 0)),
 
             // Performance & Designation
             designation: increment.newDesignation ?? undefined,
@@ -76,7 +85,7 @@ export async function applyApprovedIncrement(
             conveyance,
             medical,
             specialAllowance,
-            statutoryBonus: (increment as any).statutoryBonus || 0,
+            statutoryBonus: (increment as any).statutoryBonus ?? curStruct?.statutoryBonus ?? 0,
             grossSalary,
             pfEmployee,
             esicEmployee,
@@ -87,15 +96,15 @@ export async function applyApprovedIncrement(
             netSalary,
             ctc,
             deductPF: increment.deductPF ?? true,
-            healthCare: increment.newHealthCare || 0,
-            travelling: increment.newTravelling || 0,
-            mobile: increment.newMobile || 0,
-            internet: increment.newInternet || 0,
-            booksAndPeriodicals: increment.newBooksAndPeriodicals || 0,
+            healthCare: increment.newHealthCare ?? curStruct?.healthCare ?? 0,
+            travelling: increment.newTravelling ?? curStruct?.travelling ?? 0,
+            mobile: increment.newMobile ?? curStruct?.mobile ?? 0,
+            internet: increment.newInternet ?? curStruct?.internet ?? 0,
+            booksAndPeriodicals: increment.newBooksAndPeriodicals ?? curStruct?.booksAndPeriodicals ?? 0,
             effectiveFrom: increment.effectiveDate,
-            salaryFixed: increment.newFixed || 0,
-            salaryVariable: increment.newVariable || 0,
-            salaryIncentive: increment.newIncentive || 0,
+            salaryFixed: increment.newFixed ?? existing?.salaryFixed ?? 0,
+            salaryVariable: increment.newVariable ?? existing?.salaryVariable ?? 0,
+            salaryIncentive: increment.newIncentive ?? existing?.salaryIncentive ?? 0,
         },
         create: {
             employeeId: profileId,
