@@ -46,7 +46,9 @@ export default function EmployeeProfilePage() {
     // Increment Form State
     const [showIncrementForm, setShowIncrementForm] = useState(false);
     const [incrementForm, setIncrementForm] = useState({
+        mode: 'AMOUNT', // 'AMOUNT' = enter new salary, 'PERCENT' = enter increment %
         amount: '',
+        percentage: '',
         date: new Date().toISOString().split('T')[0],
         type: 'INCREMENT',
         reason: '',
@@ -122,16 +124,14 @@ export default function EmployeeProfilePage() {
             });
 
             if (res.ok) {
-                const data = await res.json();
-                const msg = data.status === 'RECOMMENDED'
-                    ? 'Increment recommendation submitted for approval!'
-                    : 'Salary updated successfully!';
-                alert(msg);
+                alert('Increment recommendation submitted for approval!');
                 setShowIncrementForm(false);
-                fetchEmployeeDetails(); // Refresh to see new salary
+                fetchEmployeeDetails(); // Refresh to show the new pending recommendation
                 // Reset form
                 setIncrementForm({
+                    mode: 'AMOUNT',
                     amount: '',
+                    percentage: '',
                     date: new Date().toISOString().split('T')[0],
                     type: 'INCREMENT',
                     reason: '',
@@ -722,15 +722,40 @@ export default function EmployeeProfilePage() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="label-premium">New Salary (Annual / Base)</label>
-                                                <input
-                                                    type="number"
-                                                    placeholder="e.g. 500000"
+                                                <label className="label-premium">Recommend By</label>
+                                                <select
                                                     className="input-premium"
-                                                    value={incrementForm.amount}
-                                                    onChange={e => setIncrementForm({ ...incrementForm, amount: e.target.value })}
-                                                />
+                                                    title="Increment input mode"
+                                                    value={incrementForm.mode}
+                                                    onChange={e => setIncrementForm({ ...incrementForm, mode: e.target.value })}
+                                                >
+                                                    <option value="AMOUNT">Fixed new salary</option>
+                                                    <option value="PERCENT">Increment %</option>
+                                                </select>
                                             </div>
+                                            {incrementForm.mode === 'PERCENT' ? (
+                                                <div>
+                                                    <label className="label-premium">Increment %</label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="e.g. 10"
+                                                        className="input-premium"
+                                                        value={incrementForm.percentage}
+                                                        onChange={e => setIncrementForm({ ...incrementForm, percentage: e.target.value })}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <label className="label-premium">New Salary (Annual / Base)</label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="e.g. 500000"
+                                                        className="input-premium"
+                                                        value={incrementForm.amount}
+                                                        onChange={e => setIncrementForm({ ...incrementForm, amount: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
                                             {incrementForm.type === 'PROMOTION' && (
                                                 <div>
                                                     <label className="label-premium">New Designation</label>
@@ -756,7 +781,7 @@ export default function EmployeeProfilePage() {
                                         </div>
                                         <div className="flex justify-end gap-2">
                                             <button className="btn btn-secondary" onClick={() => setShowIncrementForm(false)}>Cancel</button>
-                                            <button className="btn btn-primary" onClick={handleAddIncrement}>Save & Update Profile</button>
+                                            <button className="btn btn-primary" onClick={handleAddIncrement}>Recommend Increment</button>
                                         </div>
                                     </div>
                                 )}
