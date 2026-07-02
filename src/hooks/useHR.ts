@@ -553,11 +553,15 @@ export const useDigitalDocumentMutations = () => {
         mutationFn: (data: any) => fetchJson('/api/hr/digital-documents', 'POST', data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['digital-documents'] }),
     });
+    const generateBulk = useMutation({
+        mutationFn: (data: any) => fetchJson('/api/hr/digital-documents/bulk', 'POST', data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['digital-documents'] }),
+    });
     const sign = useMutation({
         mutationFn: (data: { id: string }) => fetchJson('/api/hr/digital-documents', 'PATCH', data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['digital-documents'] }),
     });
-    return { generate, sign };
+    return { generate, generateBulk, sign };
 };
 
 export const useDepartmentMutations = () => {

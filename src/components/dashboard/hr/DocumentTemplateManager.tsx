@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useDocumentTemplates, useDocumentTemplateMutations, useEmployees, useDigitalDocumentMutations } from '@/hooks/useHR';
 import { FileText, Plus, Trash2, Edit2, Save, X, Send, User, Eye } from 'lucide-react';
 import { HR_PRESETS } from '@/lib/hr-presets';
+import { DOCUMENT_TYPES } from '@/lib/document-types';
 
 export default function DocumentTemplateManager() {
     const { data: templates } = useDocumentTemplates();
     const { data: employees } = useEmployees();
     const { create, update, remove } = useDocumentTemplateMutations();
-    const { generate } = useDigitalDocumentMutations();
+    const { generate, generateBulk } = useDigitalDocumentMutations();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editingObj, setEditingObj] = useState<any>(null);
@@ -17,6 +18,28 @@ export default function DocumentTemplateManager() {
 
     const [isIssuing, setIsIssuing] = useState(false);
     const [issueData, setIssueData] = useState({ templateId: '', employeeId: '' });
+    // Single recipient, or bulk to everyone / a designation / an employee-type.
+    const [issueMode, setIssueMode] = useState<'SINGLE' | 'BULK'>('SINGLE');
+    const [bulkTarget, setBulkTarget] = useState<'ALL' | 'DESIGNATION' | 'EMPLOYEE_TYPE'>('ALL');
+    const [bulkDesignation, setBulkDesignation] = useState('');
+    const [bulkEmployeeType, setBulkEmployeeType] = useState('');
+
+    const designationOptions = useMemo(
+        () => Array.from(new Set((employees || []).map((e: any) => e.designation).filter(Boolean))).sort(),
+        [employees]
+    );
+    const employeeTypeOptions = useMemo(
+        () => Array.from(new Set((employees || []).map((e: any) => e.employeeType).filter(Boolean))).sort(),
+        [employees]
+    );
+
+    const canIssue = issueData.templateId && (
+        issueMode === 'SINGLE'
+            ? !!issueData.employeeId
+            : bulkTarget === 'ALL'
+                || (bulkTarget === 'DESIGNATION' && !!bulkDesignation)
+                || (bulkTarget === 'EMPLOYEE_TYPE' && !!bulkEmployeeType)
+    );
 
     const handleSave = async () => {
         try {
@@ -35,8 +58,18 @@ export default function DocumentTemplateManager() {
 
     const handleIssue = async () => {
         try {
-            await generate.mutateAsync(issueData);
-            alert('Document generated and sent to employee portal!');
+            if (issueMode === 'BULK') {
+                const filters =
+                    bulkTarget === 'DESIGNATION' ? { designation: bulkDesignation }
+                        : bulkTarget === 'EMPLOYEE_TYPE' ? { employeeType: bulkEmployeeType }
+                            : {}; // ALL active employees in the company
+                const res: any = await generateBulk.mutateAsync({ templateId: issueData.templateId, filters });
+                const ok = (res?.results || []).filter((r: any) => r.status === 'SUCCESS').length;
+                alert(`Document issued to ${ok}/${res?.total ?? ok} employees.`);
+            } else {
+                await generate.mutateAsync(issueData);
+                alert('Document generated and sent to employee portal!');
+            }
             setIsIssuing(false);
         } catch (err) {
             alert('Failed to issue document');
@@ -140,10 +173,7 @@ export default function DocumentTemplateManager() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Document Type</label>
                                 <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="select w-full bg-white border-secondary-200 font-bold">
-                                    <option value="OFFER_LETTER">Offer Letter</option>
-                                    <option value="CONTRACT">Employment Contract</option>
-                                    <option value="NDA">Non-Disclosure Agreement</option>
-                                    <option value="POLICY">Company Policy</option>
+                                    {DOCUMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -180,6 +210,12 @@ export default function DocumentTemplateManager() {
                         </button>
                     </div>
 
+                    {/* Single recipient vs bulk */}
+                    <div className="flex gap-2 mb-6 bg-secondary-100 p-1 rounded-xl w-fit">
+                        <button onClick={() => setIssueMode('SINGLE')} className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${issueMode === 'SINGLE' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}>Single</button>
+                        <button onClick={() => setIssueMode('BULK')} className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${issueMode === 'BULK' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}>Bulk</button>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Select Template</label>
@@ -188,22 +224,46 @@ export default function DocumentTemplateManager() {
                                 {templates?.map((t: any) => <option key={t.id} value={t.id}>{t.title} ({t.type})</option>)}
                             </select>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Select Recipient</label>
-                            <select value={issueData.employeeId} onChange={e => setIssueData({ ...issueData, employeeId: e.target.value })} className="select w-full bg-white border-secondary-200 font-bold">
-                                <option value="">--- Choose Employee ---</option>
-                                {employees?.map((e: any) => <option key={e.id} value={e.id}>{e.user?.name || e.user?.email}</option>)}
-                            </select>
-                        </div>
+
+                        {issueMode === 'SINGLE' ? (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Select Recipient</label>
+                                <select value={issueData.employeeId} onChange={e => setIssueData({ ...issueData, employeeId: e.target.value })} className="select w-full bg-white border-secondary-200 font-bold">
+                                    <option value="">--- Choose Employee ---</option>
+                                    {employees?.map((e: any) => <option key={e.id} value={e.id}>{e.user?.name || e.user?.email}</option>)}
+                                </select>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Issue To</label>
+                                <select value={bulkTarget} onChange={e => setBulkTarget(e.target.value as any)} className="select w-full bg-white border-secondary-200 font-bold">
+                                    <option value="ALL">All employees (company)</option>
+                                    <option value="DESIGNATION">By designation</option>
+                                    <option value="EMPLOYEE_TYPE">By employee type</option>
+                                </select>
+                                {bulkTarget === 'DESIGNATION' && (
+                                    <select value={bulkDesignation} onChange={e => setBulkDesignation(e.target.value)} className="select w-full bg-white border-secondary-200 font-bold mt-2">
+                                        <option value="">--- Choose Designation ---</option>
+                                        {designationOptions.map((d: any) => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                )}
+                                {bulkTarget === 'EMPLOYEE_TYPE' && (
+                                    <select value={bulkEmployeeType} onChange={e => setBulkEmployeeType(e.target.value)} className="select w-full bg-white border-secondary-200 font-bold mt-2">
+                                        <option value="">--- Choose Employee Type ---</option>
+                                        {employeeTypeOptions.map((t: any) => <option key={t} value={t}>{String(t).replace(/_/g, ' ')}</option>)}
+                                    </select>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-4 mt-8">
                         <button onClick={() => setIsIssuing(false)} className="btn bg-secondary-100 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
-                        <button onClick={() => previewPdf({ templateId: issueData.templateId, employeeId: issueData.employeeId || undefined })} disabled={previewing || !issueData.templateId} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
+                        <button onClick={() => previewPdf({ templateId: issueData.templateId, employeeId: issueMode === 'SINGLE' ? (issueData.employeeId || undefined) : undefined })} disabled={previewing || !issueData.templateId} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
                             <Eye size={16} /> {previewing ? 'Preview…' : 'Preview'}
                         </button>
-                        <button onClick={handleIssue} disabled={!issueData.templateId || !issueData.employeeId} className="btn bg-secondary-900 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2 disabled:opacity-50">
-                            <Send size={16} /> Confirm & Send
+                        <button onClick={handleIssue} disabled={!canIssue} className="btn bg-secondary-900 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2 disabled:opacity-50">
+                            <Send size={16} /> {issueMode === 'BULK' ? 'Confirm & Send All' : 'Confirm & Send'}
                         </button>
                     </div>
                 </div>

@@ -7,7 +7,6 @@ import HRClientLayout from './HRClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 import StaffReimbursementView from '@/components/dashboard/staff-portal/StaffReimbursementView';
-import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
 import StaffFilters from '@/components/dashboard/staff-management/StaffFilters';
 import Employee360Modal from '@/components/dashboard/Employee360Modal';
@@ -661,8 +660,6 @@ const HRManagementContent = () => {
 
                 {activeTab === 'documents' && (
                     <div className="space-y-6">
-                        <DocumentManager employees={employees} />
-                        <hr className="border-secondary-200" />
                         <h3 className="text-lg font-bold">Employee Uploaded Documents</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
                             {/* Employee List Sidebar */}
