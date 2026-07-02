@@ -430,7 +430,7 @@ function PerformanceWorkspaceClient() {
             <p className="text-sm text-secondary-500">One place for Goal, KPI, Task Template, and Monthly Review tracking.</p>
           </div>
           <div className="flex gap-2">
-            {activeTab === 'goals' && <button onClick={openNewGoal} className="btn btn-primary text-sm">New Goal</button>}
+            {activeTab === 'goals' && <button onClick={() => { window.location.href = '/dashboard/performance/assign'; }} className="btn btn-primary text-sm">New Goal</button>}
             {activeTab === 'kpis' && <button onClick={openNewKpi} className="btn btn-primary text-sm">New KPI</button>}
             {activeTab === 'tasks' && <button onClick={openNewTaskTemplate} className="btn btn-primary text-sm">New Template</button>}
             <button onClick={loadAll} className="btn btn-secondary text-sm">Refresh</button>
@@ -522,7 +522,7 @@ function PerformanceWorkspaceClient() {
                     <td>{g.type || '-'}</td>
                     <td>{g.status || '-'}</td>
                     <td className="text-right">{Number(g.achievementPercentage || 0).toFixed(1)}%</td>
-                    <td className="text-right"><button onClick={() => openEditGoal(g)} className="text-primary-600 font-bold text-xs">Edit</button></td>
+                    <td className="text-right"><button onClick={() => { window.location.href = '/dashboard/performance/assign'; }} className="text-primary-600 font-bold text-xs">Edit</button></td>
                   </tr>
                 ))}
               </tbody>

@@ -61,14 +61,13 @@ export default function GoalsPage() {
         }
     }, [fetchGoals, session]);
 
+    // Goals/KRAs are now created & edited from the single canonical screen (KRA Assign).
     const handleCreateGoal = () => {
-        setSelectedGoal(null);
-        setIsGoalModalOpen(true);
+        window.location.href = '/dashboard/performance/assign';
     };
 
-    const handleEditGoal = (goal: any) => {
-        setSelectedGoal(goal);
-        setIsGoalModalOpen(true);
+    const handleEditGoal = (_goal?: any) => {
+        window.location.href = '/dashboard/performance/assign';
     };
 
     const handleEvaluateGoal = (goal: any) => {

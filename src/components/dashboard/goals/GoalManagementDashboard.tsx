@@ -119,13 +119,7 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
                     </p>
                 </div>
                 {isOwnGoals && (
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="btn btn-primary flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        Create Goal
-                    </button>
+                    <span className="text-xs text-secondary-400 font-medium">Goals &amp; KRAs are assigned by your manager (KRA Assign).</span>
                 )}
             </div>
 
@@ -255,15 +249,6 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
                                             <span>Reviewer: {goal.reviewer.name}</span>
                                         )}
                                     </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setEditingGoal(goal)}
-                                        className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-                                        title="Edit Goal"
-                                    >
-                                        <Edit size={18} className="text-secondary-600" />
-                                    </button>
                                 </div>
                             </div>
 
