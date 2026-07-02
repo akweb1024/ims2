@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
-import { filterApplicableOnboardingModules } from '@/lib/hr-onboarding';
+import { filterApplicableOnboardingModules, applyCompanyPlaceholders } from '@/lib/hr-onboarding';
 
 export const GET = authorizedRoute(
     [],
@@ -104,12 +104,12 @@ export const GET = authorizedRoute(
                 isPreviousCompleted = (status === 'COMPLETED');
 
                 // Replace Keywords (e.g., {{COMPANY_NAME}}) - Case insensitive and robust
-                const companyName = userContext.company?.name || 'the Company';
-                const processedContent = (mod.content || '').replace(/\{\{\s*COMPANY_NAME\s*\}\}/gi, companyName);
+                const companyName = userContext.company?.name;
 
                 result.push({
                     ...mod,
-                    content: processedContent,
+                    content: applyCompanyPlaceholders(mod.content, companyName),
+                    description: applyCompanyPlaceholders(mod.description, companyName),
                     progress: {
                         status,
                         score,

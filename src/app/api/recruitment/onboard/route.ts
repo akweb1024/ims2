@@ -7,16 +7,7 @@ import crypto from 'crypto';
 import { createNotification } from '@/lib/system-notifications';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { provisionEmployee } from '@/lib/kra/provision';
-
-// Helper to replace placeholders
-const hydrateTemplate = (content: string, vars: Record<string, string>) => {
-    let output = content;
-    Object.keys(vars).forEach(key => {
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        output = output.replace(regex, vars[key] || '');
-    });
-    return output;
-};
+import { buildLetterVars, hydrate } from '@/lib/services/documents/letterVars';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
@@ -104,19 +95,10 @@ export const POST = authorizedRoute(
                 let offerDocId = null;
 
                 if (offerTemplate) {
-                    const vars = {
-                        name: application.applicantName,
-                        email: application.applicantEmail,
-                        designation: designation || application.jobPosting.title,
-                        date: new Date().toLocaleDateString('en-GB'),
-                        salary: (baseSalary || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }),
-                        address: 'Address to be updated', // we don't have address yet
-                        joiningDate: new Date().toLocaleDateString('en-GB'),
-                        companyName: company?.name || 'Company',
-                        companyAddress: company?.address || '',
-                    };
-
-                    const content = hydrateTemplate(offerTemplate.content, vars);
+                    // Real employee profile was just created above — hydrate with the shared full
+                    // placeholder set so offer letters never leak raw {{ctcAnnual}}, {{employeeId}}, etc.
+                    const employeeForVars = { ...newUser.employeeProfile!, user: newUser };
+                    const content = hydrate(offerTemplate.content, buildLetterVars(employeeForVars, company));
 
                     const doc = await tx.digitalDocument.create({
                         data: {

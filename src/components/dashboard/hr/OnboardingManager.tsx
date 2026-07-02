@@ -2,15 +2,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useOnboardingModules, useOnboardingMutations, useDepartments } from '@/hooks/useHR';
+import { useOnboardingModules, useOnboardingMutations, useDepartments, useCurrentCompanyName } from '@/hooks/useHR';
+import { applyCompanyPlaceholders } from '@/lib/hr-onboarding';
 import { Plus, Trash2, Edit2, BookOpen, HelpCircle, Save, X, MoveUp, MoveDown } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-export default function OnboardingManager() {
+export default function OnboardingManager({ companyName }: { companyName?: string }) {
     const { data: modules, isLoading } = useOnboardingModules();
+    const { data: liveCompanyName } = useCurrentCompanyName();
+    // Prefer the live selected company from the server; fall back to the prop while it loads.
+    // Once resolved (including null for "All Companies"), the server value is authoritative.
+    const effectiveCompanyName = liveCompanyName === undefined ? companyName : (liveCompanyName ?? undefined);
     const { data: departments } = useDepartments();
     const { createModule, updateModule, deleteModule } = useOnboardingMutations();
 
@@ -300,12 +305,12 @@ export default function OnboardingManager() {
                                     </button>
                                 </div>
                             </div>
-                            <h4 className="text-lg font-black text-secondary-900 tracking-tight">{module.title}</h4>
+                            <h4 className="text-lg font-black text-secondary-900 tracking-tight">{applyCompanyPlaceholders(module.title, effectiveCompanyName)}</h4>
                             <p className="text-xs text-secondary-400 font-bold uppercase tracking-widest mt-1">
                                 {module.type} {module.department?.name ? `• ${module.department.name}` : ''}
                             </p>
                             <p className="text-secondary-500 text-sm mt-4 line-clamp-3 leading-relaxed">
-                                {module.description}
+                                {applyCompanyPlaceholders(module.description, effectiveCompanyName)}
                             </p>
                         </div>
                         <div className="mt-8 pt-6 border-t border-secondary-50 flex justify-between items-center">
