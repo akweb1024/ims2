@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { FileText, Send, Plus, Eye, CheckCircle, Download, Copy } from 'lucide-react';
 import { HR_PRESETS } from '@/lib/hr-presets';
+import { buildLetterVars, hydrate } from '@/lib/services/documents/letterVars';
 
 export default function DocumentManager({ employees }: { employees: any[] }) {
     const [templates, setTemplates] = useState<any[]>([]);
@@ -68,29 +69,11 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
         [templates, previewTemplateId]
     );
 
+    // Shared hydration (full placeholder set) so this preview matches what the issue endpoints
+    // actually generate — no drift, no raw {{...}} leaking through.
     const hydrateTemplate = (content: string, employee?: any) => {
         if (!employee) return content;
-
-        const vars: Record<string, string> = {
-            name: employee.user?.name || employee.user?.email?.split('@')[0] || 'Employee Name',
-            email: employee.user?.email || 'employee@example.com',
-            designation: employee.designation || 'Specialist',
-            salary: (employee.baseSalary || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }),
-            joiningDate: employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString('en-GB') : 'Date to be decided',
-            employeeId: employee.employeeId || employee.id || 'EMP-001',
-            companyName: employee.user?.company?.name || 'STM Journal Solutions',
-            address: employee.address || 'Address not provided',
-            phone: employee.phoneNumber || employee.user?.phone || 'Phone not provided',
-            panNumber: employee.panNumber || 'PAN not available',
-            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-        };
-
-        let output = content;
-        Object.entries(vars).forEach(([key, value]) => {
-            output = output.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
-        });
-
-        return output;
+        return hydrate(content, buildLetterVars(employee, employee.user?.company));
     };
 
     const bulkTargetEmployees = useMemo(() => {

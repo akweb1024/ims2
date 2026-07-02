@@ -29,3 +29,16 @@ export function isApplicableOnboardingModule(module: OnboardingModuleLike, scope
 export function filterApplicableOnboardingModules<T extends OnboardingModuleLike>(modules: T[], scope: OnboardingScope) {
     return modules.filter((module) => isApplicableOnboardingModule(module, scope));
 }
+
+const COMPANY_NAME_PLACEHOLDER = /\{\{\s*COMPANY_NAME\s*\}\}/gi;
+
+/**
+ * Replace onboarding template placeholders (e.g. {{COMPANY_NAME}}) with real values.
+ * Pure + safe for both server and client. Falls back to a generic label when the
+ * company name is unavailable. Use ONLY for display/output — never persist the result,
+ * or the placeholder would be lost on the next save.
+ */
+export function applyCompanyPlaceholders(text: string | null | undefined, companyName?: string | null): string {
+    if (!text) return '';
+    return text.replace(COMPANY_NAME_PLACEHOLDER, companyName || 'the Company');
+}

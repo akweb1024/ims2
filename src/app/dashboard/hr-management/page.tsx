@@ -786,7 +786,7 @@ const HRManagementContent = () => {
                                 </span>
                             </Link>
                         </div>
-                        <OnboardingManager />
+                        <OnboardingManager companyName={user?.company?.name} />
                     </div>
                 )}
 

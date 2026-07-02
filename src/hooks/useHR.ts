@@ -220,6 +220,19 @@ export const useOnboardingModules = () => {
     });
 };
 
+// Currently-active company name (reflects a super admin's selected company, live from the server).
+// Returns null in "All Companies" mode (no single company). Used for display-only placeholder rendering.
+export const useCurrentCompanyName = () => {
+    return useQuery<string | null>({
+        queryKey: ['current-company-name'],
+        queryFn: async () => {
+            const data = await fetchJson('/api/auth/me');
+            return data?.user?.company?.name ?? null;
+        },
+        staleTime: 30 * 1000,
+    });
+};
+
 export const useOnboardingProgress = (employeeId?: string) => {
     return useQuery<any[]>({
         queryKey: ['onboarding-progress', employeeId],
