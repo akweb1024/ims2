@@ -33,7 +33,6 @@ import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
 import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
 import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager';
-import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
@@ -1043,7 +1042,18 @@ const HRManagementContent = () => {
                 {activeTab === 'points' && <PointsRewardsManager />}
 
                 {activeTab === 'goals' && (
-                    <GoalManager employees={employees} />
+                    <div className="card-premium p-10 text-center max-w-xl mx-auto">
+                        <h3 className="text-xl font-black text-secondary-900 tracking-tight">Goals &amp; KRA moved</h3>
+                        <p className="text-secondary-500 font-medium mt-2">
+                            Goals aur KRA ab ek hi jagah se assign hote hain — the KRA Assign screen (custom or template, with reviewer &amp; analytics).
+                        </p>
+                        <Link
+                            href="/dashboard/performance/assign"
+                            className="btn bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-2xl inline-flex items-center gap-2 shadow-lg shadow-primary-100 font-bold uppercase tracking-widest text-[10px] mt-6"
+                        >
+                            Go to KRA Assign →
+                        </Link>
+                    </div>
                 )}
 
                 {activeTab === 'rewards' && (
