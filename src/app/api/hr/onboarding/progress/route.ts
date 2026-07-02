@@ -1,3 +1,8 @@
+// ── Onboarding System A: TRAINING / QUIZ MODULES ─────────────────────────────
+// Backed by OnboardingModule + OnboardingProgress (statuses LOCKED/UNLOCKED/COMPLETED/FAILED).
+// Siblings: onboarding/{modules,progress,compliance}. SEPARATE from the new-hire step
+// tracker (System B: onboarding/workflow-state → employeeProfile.metrics.onboardingWorkflow).
+// "Onboarded" means different things in each — do not cross-wire the two.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';

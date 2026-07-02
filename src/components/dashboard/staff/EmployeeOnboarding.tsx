@@ -1,5 +1,7 @@
 'use client';
 
+// Employee view for Onboarding System A — TRAINING / QUIZ MODULES (data via onboarding/progress).
+// This is NOT the new-hire step tracker (System B) — that is hr/EmployeeOnboardingWorkflow.tsx.
 import { useState } from 'react';
 import { useOnboardingProgress, useOnboardingMutations } from '@/hooks/useHR';
 import { CheckCircle2, Lock, Play, HelpCircle, Award, ChevronRight, BookOpen } from 'lucide-react';
