@@ -184,7 +184,11 @@ export const dashboardWidgetLayoutSchema = z.object({
     context: dashboardScopeSchema,
     selectedScope: dashboardScopeSchema,
     widgetOrder: z.array(dashboardWidgetKeySchema),
-    widgetVisibility: z.record(dashboardWidgetKeySchema, z.boolean()),
+    // partialRecord (not record): only the CURRENT context's widgets are sent, so the map is
+    // never exhaustive over all widget keys — a plain z.record with an enum key rejects every
+    // save because the other scope's exclusive widget (team_summary vs individual_summary) is
+    // always absent.
+    widgetVisibility: z.partialRecord(dashboardWidgetKeySchema, z.boolean()),
     widgetConfig: z.record(z.string(), z.any()).optional(),
 }).refine((data) => new Set(data.widgetOrder).size === data.widgetOrder.length, {
     message: 'Widget order cannot contain duplicates',
