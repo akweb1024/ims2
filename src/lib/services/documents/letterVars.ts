@@ -54,6 +54,19 @@ export function buildLetterVars(employee: any, company: any, customFields?: Reco
             conveyance: gross ? rupee(b.conveyance) : 'N/A',
             specialAllowance: gross ? rupee(b.special) : 'N/A',
             netMonthly: gross ? rupee(gross) : 'N/A',
+            // Letter-specific fields — best-effort defaults from the record; HR overrides
+            // person-specific ones (fees, scope, resignation date) via custom fields.
+            pan: employee?.panNumber || 'N/A',
+            lastDrawnSalary: gross ? rupee(gross) : 'N/A',
+            relievingDate: now.toLocaleDateString(),
+            resignationDate: '',
+            refNo: `REL/${now.getFullYear()}/${employee?.employeeId || 'XXXX'}`,
+            offerValidTill: new Date(now.getTime() + 15 * 86400000).toLocaleDateString(),
+            serviceScope: employee?.designation || '',
+            paymentStructure: '',
+            freelanceFee: '',
+            conferenceFee: '',
+            collectionFee: '',
         }),
         ...(customFields ? braces(customFields) : {}),
     };
@@ -77,6 +90,11 @@ export function sampleLetterVars(company?: any, customFields?: Record<string, un
             companyReg: company?.registrationNumber || 'REG-000', companyCin: company?.cinNo || 'U00000XX0000XXX000000',
             grossMonthly: rupee(gross), ctcAnnual: rupee(gross * 12), basicSalary: rupee(b.basic),
             hra: rupee(b.hra), conveyance: rupee(b.conveyance), specialAllowance: rupee(b.special), netMonthly: rupee(gross),
+            pan: 'ABCDE1234F', lastDrawnSalary: rupee(gross),
+            relievingDate: now.toLocaleDateString(), resignationDate: now.toLocaleDateString(),
+            refNo: 'EXP/2026/EMP-1001', offerValidTill: new Date(now.getTime() + 15 * 86400000).toLocaleDateString(),
+            serviceScope: 'Content Editing & Proofreading', paymentStructure: 'As per the agreed output schedule',
+            freelanceFee: '₹700', conferenceFee: '₹550', collectionFee: '₹300',
         }),
         ...(customFields ? braces(customFields) : {}),
     };

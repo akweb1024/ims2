@@ -3,38 +3,34 @@ export const HR_PRESETS = [
         title: 'Offer Letter',
         type: 'OFFER_LETTER',
         content: `
-<h1>Offer of Employment</h1>
+<p><strong>{{companyName}}</strong><br>{{companyAddress}}<br>CIN No.: {{companyCin}}</p>
 <p>Date: {{date}}</p>
-<p>To,</p>
-<h3>{{name}}</h3>
-<p>{{address}}</p>
-
-<p>Dear <strong>{{name}}</strong>,</p>
-
-<p>We are pleased to offer you the position of <strong>{{designation}}</strong> at <strong>{{companyName}}</strong>. We were impressed with your qualifications and believe you will be a valuable asset to our team.</p>
-
-<h3>Compensation and Benefits</h3>
-<p>Your annual cost to company (CTC) will be <strong>{{salary}}</strong>. A detailed breakdown of your salary structure is attached to this letter.</p>
-
-<h3>Date of Joining</h3>
-<p>You are expected to join on or before <strong>{{joiningDate}}</strong>. Please report to the HR department at 10:00 AM on your joining date.</p>
-
-<h3>Terms and Conditions</h3>
-<ul>
-    <li>This offer is subject to satisfactory reference checks and verification of documents.</li>
-    <li>You will be on probation for a period of 6 months.</li>
-    <li>You are required to submit copies of your educational and professional certificates on the day of joining.</li>
-</ul>
-
-<p>We look forward to welcoming you to the <strong>{{companyName}}</strong> family.</p>
-
-<p>Sincerely,</p>
-<p><strong>HR Manager</strong></p>
-<p>{{companyName}}</p>
+<h2>Offer of Employment</h2>
+<p>To,<br><strong>{{name}}</strong><br>{{address}}</p>
+<p>Dear {{name}},</p>
+<p>We are pleased to offer you the position of <strong>{{designation}}</strong> at <strong>{{companyName}}</strong>.</p>
+<h3>Terms of Offer</h3>
+<p>This offer is subject to the following conditions:</p>
+<p>1. Successful background and reference verification.</p>
+<p>2. This offer letter is valid till <strong>{{offerValidTill}}</strong>.</p>
+<p>3. Acceptance of and compliance with the Company's HR Policies and Code of Conduct.</p>
+<p>4. Completion of a probation period of three months.</p>
+<p>5. CTC of <strong>{{ctcAnnual}} per annum</strong>, subject to statutory deductions and inclusive of all emoluments.</p>
+<p>Your date of joining shall be <strong>{{joiningDate}}</strong>, subject to fulfilment of the above conditions.</p>
+<h3>Appointment &amp; Governing Terms</h3>
+<p>This Offer Letter is preliminary in nature. Detailed terms and conditions of employment — including compensation, roles and responsibilities, confidentiality, intellectual property, termination, and notice period — shall be governed exclusively by the formal Appointment Letter issued by the Company.</p>
+<h3>Documentation &amp; Onboarding</h3>
+<p>You will be required to submit the following documents at the time of joining:</p>
+<p>1. Proof of identity and address<br>2. Educational qualification certificates<br>3. Previous employment documents (if applicable)<br>4. Any other documents as required by HR</p>
+<h3>Confidentiality</h3>
+<p>The contents of this Offer Letter are confidential and should not be disclosed to any third party without the prior written consent of the Company.</p>
+<h3>Acceptance of Offer</h3>
+<p>If you accept this offer, please sign and return a copy of this letter as a token of your acceptance. We look forward to having you join <strong>{{companyName}}</strong>.</p>
+<p>For <strong>{{companyName}}</strong></p>
+<p>Authorized Signatory<br>Manager (HR)</p>
 <br>
-<hr>
-<p><strong>Acceptance of Offer</strong></p>
-<p>I, <strong>{{name}}</strong>, accept the offer of employment on the terms and conditions mentioned above.</p>
+<p><strong>Candidate Acceptance</strong></p>
+<p>Name: {{name}}<br>Signature: ______________________<br>Date: ______________________</p>
         `
     },
     {
@@ -124,20 +120,23 @@ export const HR_PRESETS = [
         title: 'Experience / Relieving Letter',
         type: 'RELIEVING_LETTER',
         content: `
-<p>Date: {{date}}</p>
-<h3>TO WHOMSOEVER IT MAY CONCERN</h3>
-
-<p>This is to certify that <strong>{{name}}</strong> was employed with <strong>{{companyName}}</strong> from <strong>{{joiningDate}}</strong> to {{date}}.</p>
-
-<p>He/She held the designation of <strong>{{designation}}</strong> at the time of leaving.</p>
-
-<p>During his/her tenure with us, we found him/her to be sincere, hardworking, and result-oriented. He/She has been relieved from his/her duties effective close of business hours on {{date}}.</p>
-
-<p>We wish him/her all the best for future endeavors.</p>
-
-<p>For <strong>{{companyName}}</strong>,</p>
-<br><br>
-<p>Authorized Signatory</p>
+<p>Ref. No.: {{refNo}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: {{date}}</p>
+<h2>To Whomsoever It May Concern</h2>
+<p>This is to certify that <strong>{{name}}</strong> has worked with our organization as <strong>{{designation}}</strong> in <strong>{{companyName}}</strong> from <strong>{{joiningDate}}</strong> to <strong>{{relievingDate}}</strong>. The last drawn monthly CTC / compensation was <strong>{{lastDrawnSalary}}</strong> per month.</p>
+<p>We wish him/her all the best and success in future career endeavours.</p>
+<p>For <strong>{{companyName}}</strong></p>
+<br>
+<p>Authorized Signatory<br>Managing Director</p>
+<h2>Relieving Letter</h2>
+<p>To,<br><strong>{{name}}</strong></p>
+<p><strong>Subject: Relieving Letter</strong></p>
+<p>In reference to your letter of resignation dated <strong>{{resignationDate}}</strong>, we have accepted your request and you are being relieved from the services of the Company on <strong>{{relievingDate}}</strong> as <strong>{{designation}}</strong>.</p>
+<p>In this capacity, you had access to confidential data and you shall not, under any condition, share this data with your future employers or competitors, or for any commercial or personal gains. Any breach of this clause will be considered a breach of trust and illegal.</p>
+<p>This conditional relieving letter has been issued on the basis of the documents handed over by you to your colleague / Team Leader, assuming that all information is as per the standards and policies of the organization. If any information, data or content has not been shared or transferred to the concerned person, the same shall be completed if the need arises.</p>
+<p>There are no dues on either side. We wish you all the best for your future endeavours.</p>
+<p>For <strong>{{companyName}}</strong></p>
+<br>
+<p>Authorized Signatory<br>Managing Director</p>
         `
     },
     {
@@ -356,6 +355,96 @@ export const HR_PRESETS = [
         <p>HR Department</p>
     </div>
 </div>
+        `
+    },
+    {
+        title: 'Contract Agreement',
+        type: 'CONTRACT',
+        content: `
+<p>Date: {{date}}</p>
+<p>To,<br><strong>{{name}}</strong><br>{{address}}<br>Email: {{email}} &nbsp; PAN: {{pan}} &nbsp; Mobile: {{phone}}</p>
+<h2>Subject: Appointment as Individual Contractor</h2>
+<p>This Contract Agreement (the "Agreement") is made and entered into as of {{date}} by and between <strong>{{companyName}}</strong>, with its principal place of business located at {{companyAddress}}, and <strong>{{name}}</strong>, with the principal place at the address above (the "Contractor").</p>
+<p>WHEREAS, the Company is in the business of marketing and publishing of journals and books; and the Contractor has expertise in commissioning, editing, publication and coordination of journals and books; and the Company desires to engage the Contractor to provide certain services, which the Contractor is willing to provide.</p>
+<p>NOW, THEREFORE, the Parties hereby agree as follows:</p>
+<h3>1. Engagement and Services</h3>
+<p>(a) The Company hereby engages the Contractor to provide and perform the services of <strong>{{serviceScope}}</strong> (the "Services"), and the Contractor accepts the engagement.</p>
+<p>(b) All Services shall be performed with promptness and diligence in a workmanlike manner at a level of proficiency expected of a contractor with the Contractor's represented background and experience. The Company shall provide reasonable access to information, property and personnel required to perform the Services.</p>
+<p>(c) This Agreement is on a principal-to-principal basis. The Contractor shall perform all Services as an independent contractor, and nothing herein shall create any partnership, joint venture, or relationship of principal and agent or master and servant, or authorize the Contractor to create any obligation on behalf of the Company.</p>
+<h3>2. Contract Period</h3>
+<p>(a) This Agreement shall commence on the Effective Date and remain in effect until completion of the Services or earlier termination as provided herein.</p>
+<p>(b) The Company may terminate this Agreement without cause and without liability on thirty (30) calendar days' written notice. Either Party may terminate on thirty (30) days' written notice in the event of a material breach by the other Party.</p>
+<p>(c) Upon termination, all rights and duties shall cease except those that accrued prior to termination and those expressly stated to survive.</p>
+<h3>3. Compensation and Expenses</h3>
+<p>(a) In consideration of the Services, the Company shall pay the Contractor on an output-based payment structure only; no fixed monthly compensation shall be payable. The payment structure shall be as follows: {{paymentStructure}}. Payment shall be made only for work that is successfully completed, submitted and formally approved by the Company. Work that is incomplete, rejected, or requires major corrections shall not be eligible for payment until final approval.</p>
+<p>(b) The Contractor shall be entitled to reimbursement for expenses reasonably incurred, upon submission and approval of written statements and receipts as per the Company's procedures.</p>
+<p>(c) The Contractor shall submit a monthly invoice detailing the Services performed. All undisputed invoices shall be paid within thirty (30) days of receipt.</p>
+<h3>4. Work Product and Intellectual Property</h3>
+<p>(a) All work product generated by the Contractor in performing the Services — including information, notes, materials, processes, software, know-how, designs, inventions, improvements, copyrights, trademarks and trade secrets — is assigned to and shall be the sole and exclusive property of the Company.</p>
+<p>(b) The Contractor shall execute all documents reasonably required to perfect the Company's ownership and shall not use any work product without the Company's prior written consent, and warrants that it shall not knowingly incorporate any material infringing third-party rights.</p>
+<h3>5. Confidentiality</h3>
+<p>The Contractor shall not, except as required by law, use the Company's confidential information for any purpose other than performing the Services, nor disclose it to any third party. Upon termination, the Contractor shall return all Company property and confidential information in tangible form.</p>
+<h3>6. Indemnification</h3>
+<p>The Contractor shall indemnify, defend and hold harmless the Company and its officers, directors, affiliates, agents and employees against all liabilities, losses, claims, costs and expenses (including reasonable attorney's fees) resulting from the Contractor's failure to perform, breach of any representation or warranty, infringement of third-party rights, or any negligence, fraud, dishonesty, misconduct or violation of this Agreement.</p>
+<h3>7. Non-Competition and Non-Solicitation</h3>
+<p>During the term, the Contractor shall not engage in any business or activities competitive with the Company without prior written consent. For eleven (11) months after termination, the Contractor shall not divert any business of the Company or solicit or employ any person employed by the Company.</p>
+<h3>8. Independent Contractor</h3>
+<p>All Services are rendered as an independent contractor. This Agreement does not create an employer-employee relationship, and the Contractor is not entitled to employee benefits. The Contractor agrees to pay all taxes due on the compensation.</p>
+<h3>9. Governing Law and Dispute Resolution</h3>
+<p>This Agreement shall be governed by the laws of India. The Parties consent to the jurisdiction of the Delhi High Court, and all disputes shall be resolved exclusively in the courts of Delhi.</p>
+<h3>10. Tax Deduction at Source (TDS)</h3>
+<p>This engagement shall be treated as a contractual arrangement under Section 194C of the Income Tax Act, 1961. The Company shall deduct TDS at 1% from the gross service amount payable, subject to statutory threshold limits, deposit the deducted TDS within prescribed timelines and issue Form 16A. If a valid PAN is not provided, TDS shall be deducted at the higher rate prescribed by law. The Contractor shall be responsible for all applicable taxes, including income tax and GST (if applicable).</p>
+<p>IN WITNESS WHEREOF, the Parties have duly executed this Agreement as of the date first written above.</p>
+<table>
+<tr><th>Signed for and on behalf of {{companyName}}</th><th>Signed by {{name}}</th></tr>
+<tr><td>Authorized Signatory<br>Title: Managing Director</td><td>{{name}}<br>Title: Contractor</td></tr>
+</table>
+        `
+    },
+    {
+        title: 'Freelancer Agreement',
+        type: 'FREELANCER_AGREEMENT',
+        content: `
+<p>Date: {{date}}</p>
+<p>To,<br><strong>{{name}}</strong><br>{{address}}</p>
+<h2>Individual Freelancer Agreement</h2>
+<p>This Freelancer Agreement (the "Agreement") is made and entered into on {{date}} by and between <strong>{{companyName}}</strong>, having its principal place of business at {{companyAddress}}, and <strong>{{name}}</strong> (the "Freelancer").</p>
+<p>WHEREAS, the Company is engaged in the business of publishing journals and books; and the Freelancer has expertise in commissioning, editing and publication of journals and books; and the Company desires to engage the Freelancer, who is willing to provide such services.</p>
+<p>NOW, THEREFORE, the Parties hereby agree as follows:</p>
+<h3>1. Engagement and Services</h3>
+<p>1.1 The Company hereby engages the Freelancer to provide and perform services as a Freelancer (the "Services"), and the Freelancer accepts the engagement.</p>
+<p>1.2 The Freelancer shall perform all Services promptly, diligently and professionally, at a level of proficiency expected of an expert with the Freelancer's background. The Company shall provide reasonable access to the necessary information, property and personnel.</p>
+<p>1.3 This Agreement is executed on a principal-to-principal basis; the Freelancer performs all Services as an independent contractor. Nothing herein creates an employer-employee relationship, partnership, joint venture, or principal-agent relationship.</p>
+<h3>2. Freelancer Period</h3>
+<p>2.1 This Agreement commences on the Effective Date and remains in effect until completion of the Services or earlier termination.</p>
+<p>2.2 The Company may terminate at any time, without cause or liability, on thirty (30) days' written notice. Either Party may terminate on thirty (30) days' written notice for a material breach.</p>
+<p>2.3 Upon termination, all rights and duties shall cease except those accrued before termination and those expressly stated to survive.</p>
+<h3>3. Obligations</h3>
+<p>3.1 The Freelancer shall use commercially reasonable efforts to deliver the Services within the timelines set from time to time, with all the skill and care expected of a qualified, competent and experienced freelancer.</p>
+<p>3.2 The Freelancer shall comply with all applicable laws, maintain proper records, and perform the Services in accordance with the Company's instructions and this Agreement.</p>
+<p>3.3 Active Engagement and Availability. The Freelancer is expected to remain dedicated to Company activities — attending meetings, participating in calls and responding to emails — as availability is key to timely completion of tasks.</p>
+<p>3.4 Liability for Errors. In the event of any errors or unethical behaviour during task execution, the Freelancer shall be liable. If payment has been made for a task and unethical practices are detected, the Company reserves the right to recover a bearable amount from the Freelancer at settlement.</p>
+<h3>4. Freelancer Fee</h3>
+<p>4.1 In consideration of the Services, the Company shall pay the Freelancer a fee of <strong>{{freelanceFee}} per article</strong> for the end-to-end process up to online publication in the journals assigned. The term "article" refers to a complete manuscript submitted by an author for publication. All articles will be verified by the Manager of Publications, and payment shall be made by the 10th of the following month.</p>
+<p>4.2 For papers received through conferences or other sources processed end-to-end by the Freelancer, a fee of <strong>{{conferenceFee}} per article</strong> shall be provided. Where the Freelancer is responsible solely for the collection of articles and processing is undertaken by other Journal Managers, the Freelancer shall be entitled to <strong>{{collectionFee}} per article</strong>.</p>
+<p>4.3 The Freelancer shall submit a monthly invoice; undisputed invoices shall be paid within thirty (30) days of receipt.</p>
+<h3>5. Work Product and Intellectual Property</h3>
+<p>All work product generated by the Freelancer in performing the Services is assigned to and shall be the sole and exclusive property of the Company. The Freelancer shall execute all documents required to perfect the Company's ownership and shall not use any work product without the Company's prior written consent.</p>
+<h3>6. Confidentiality</h3>
+<p>The Freelancer shall not, except as required by law, use the Company's confidential information for any purpose other than performing the Services, nor disclose it to any third party. Upon termination, the Freelancer shall return all Company property and confidential information.</p>
+<h3>7. Indemnification</h3>
+<p>The Freelancer shall indemnify, defend and hold harmless the Company and its officers, directors, affiliates, agents and employees against all liabilities, losses, claims, costs and expenses (including reasonable attorney's fees) arising from the Freelancer's failure to perform, breach of any representation or warranty, infringement of third-party rights, or any negligence, fraud, misconduct or violation of this Agreement.</p>
+<h3>8. Non-Competition and Non-Solicitation</h3>
+<p>During the term, the Freelancer shall not engage in any business competitive with the Company without prior written consent. For eleven (11) months following termination, the Freelancer shall not divert any business from the Company or solicit any person employed by the Company.</p>
+<h3>9. Independent Contractor</h3>
+<p>All Services are performed as an independent contractor. This Agreement does not create an employer-employee relationship, and the Freelancer is not entitled to employee benefits. The Freelancer agrees to pay all taxes related to the Freelancer Fee.</p>
+<h3>10. Governing Law and Dispute Resolution</h3>
+<p>This Agreement shall be governed by the laws of India. The Parties consent to the jurisdiction of the Delhi High Court, and all disputes shall be resolved exclusively in the courts of Delhi.</p>
+<p>IN WITNESS WHEREOF, the Parties have duly executed this Agreement as of the date first written above.</p>
+<table>
+<tr><th>Signed for and on behalf of {{companyName}}</th><th>Signed by {{name}}</th></tr>
+<tr><td>Authorized Signatory<br>Title: Managing Director</td><td>{{name}}<br>Title: Freelancer</td></tr>
+</table>
         `
     }
 ];
