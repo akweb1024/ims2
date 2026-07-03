@@ -120,12 +120,12 @@ export default function AssignKraPage() {
 
     const submit = async () => {
         setError(null); setSuccess(null);
-        if (employeeIds.length === 0) { setError('Pehle kam se kam ek employee chuno.'); return; }
+        if (employeeIds.length === 0) { setError('Select at least one employee first.'); return; }
         setSaving(true);
         try {
             if (mode === 'custom') {
                 if (!custom.title.trim() || !custom.metric.trim() || custom.target === '') {
-                    setError('Title, unit aur target zaroori hain.'); setSaving(false); return;
+                    setError('Title, unit and target are required.'); setSaving(false); return;
                 }
                 const payloadBase = {
                     title: custom.title.trim(),
@@ -151,10 +151,10 @@ export default function AssignKraPage() {
                 const ok = results.filter((r) => r.ok).length;
                 const failed = results.length - ok;
                 if (ok === 0) throw new Error(results.find((r) => !r.ok)?.error || 'Assign failed');
-                setSuccess(`Goal ${ok} member${ok > 1 ? 's' : ''} ko assign ho gaya${failed ? ` (${failed} fail)` : ''} — unhe "My Performance" me dikhega.`);
+                setSuccess(`Goal assigned to ${ok} member${ok > 1 ? 's' : ''}${failed ? ` (${failed} failed)` : ''} — it now appears on their "My Performance".`);
                 setCustom({ ...emptyCustom });
             } else {
-                if (!templateId) { setError('Template chuno.'); setSaving(false); return; }
+                if (!templateId) { setError('Select a template.'); setSaving(false); return; }
                 const res = await fetch('/api/kra/assign', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -162,7 +162,7 @@ export default function AssignKraPage() {
                 });
                 const body = await res.json();
                 if (!res.ok) throw new Error(body.error || 'Assign failed');
-                setSuccess(`Template assign ho gaya (${body.created || 0} naye, ${body.updated || 0} updated) — ${whoLabel()} ke dashboard pe dikhega.`);
+                setSuccess(`Template assigned (${body.created || 0} new, ${body.updated || 0} updated) — it appears on ${whoLabel()}'s dashboard.`);
             }
             loadGoals();
         } catch (e: any) {
@@ -195,7 +195,7 @@ export default function AssignKraPage() {
             });
             const body = await res.json();
             if (!res.ok) throw new Error(body.error || 'Update failed');
-            setSuccess('Goal update ho gaya.');
+            setSuccess('Goal updated.');
             cancelEdit();
             loadGoals();
         } catch (e: any) { setError(e.message); }
@@ -223,7 +223,7 @@ export default function AssignKraPage() {
                     <Target className="w-7 h-7 text-indigo-600" />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Assign KRA / Goals</h1>
-                        <p className="text-sm text-gray-500">Apni team ke kisi member ko KRA goal do — custom ya template se. Employee ko turant uske dashboard pe dikhega.</p>
+                        <p className="text-sm text-gray-500">Assign a KRA goal to a team member — custom or from a template. It appears instantly on their dashboard.</p>
                     </div>
                 </div>
 
@@ -268,7 +268,7 @@ export default function AssignKraPage() {
                             </div>
                         </div>
                         <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-50">
-                            {visible.length === 0 ? <p className="text-sm text-gray-400 px-3 py-4">Koi team member nahi mila.</p>
+                            {visible.length === 0 ? <p className="text-sm text-gray-400 px-3 py-4">No team members found.</p>
                                 : visible.map((a) => (
                                     <label key={a.employeeId} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" checked={selected.has(a.employeeId)} onChange={() => toggle(a.employeeId)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
@@ -328,7 +328,7 @@ export default function AssignKraPage() {
                                         {templates.map((t) => <option key={t.id} value={t.id}>{t.name}{t.items ? ` (${t.items.length} metrics)` : ''}</option>)}
                                     </select>
                                 </label>
-                                <div className="text-xs text-gray-400 self-end pb-2">Template ke saare metrics selected members ko is period ke liye assign ho jaayenge. Default target chhodo — sirf jahan alag chahiye wahan bharo.</div>
+                                <div className="text-xs text-gray-400 self-end pb-2">All the template's metrics will be assigned to the selected members for this period. Leave the default target — only fill it where you need a different one.</div>
                             </div>
 
                             {/* Per-member target overrides */}
@@ -393,7 +393,7 @@ export default function AssignKraPage() {
                     <section className="bg-white rounded-xl border border-gray-200 p-5">
                         <h2 className="font-semibold text-gray-900 mb-4">Current goals · {assignees.find((a) => a.employeeId === soleEmployeeId)?.name} · {period.toLowerCase()}</h2>
                         {loadingGoals ? <p className="text-sm text-gray-400">Loading…</p>
-                            : goals.length === 0 ? <p className="text-sm text-gray-400">Is period me abhi koi goal nahi.</p>
+                            : goals.length === 0 ? <p className="text-sm text-gray-400">No goals for this period yet.</p>
                                 : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">

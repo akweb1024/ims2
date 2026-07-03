@@ -143,7 +143,7 @@ export default function TeamKraAnalyticsPage() {
 
                         {data.summary.totalGoals === 0 ? (
                             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
-                                Is period me koi KRA goal nahi mila. Period badlo ya pehle goals assign karo.
+                                No KRA goals found for this period. Change the period or assign goals first.
                             </div>
                         ) : (
                             <>

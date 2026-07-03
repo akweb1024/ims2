@@ -23,7 +23,7 @@ export default function KraAdminPage() {
             <FiTarget className="text-indigo-600" /> KRA & Targets
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Department-wise metrics define karo, templates banao, aur employees ko unke monthly/quarterly targets assign karo.
+            Define department-wise metrics, build templates, and assign employees their monthly/quarterly targets.
           </p>
         </header>
 
@@ -115,7 +115,7 @@ function MetricsTab() {
       </div>
 
       {loading ? <p className="text-gray-500">Loading…</p> : Object.keys(grouped).length === 0 ? (
-        <p className="text-gray-500">Koi metric nahi — upar diye New Metric button se shuru karo ya seed chalao.</p>
+        <p className="text-gray-500">No metrics yet — start with the New Metric button above, or run a seed.</p>
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([dept, list]) => (
@@ -257,7 +257,7 @@ function TemplatesTab() {
       </div>
 
       {loading ? <p className="text-gray-500">Loading…</p> : templates.length === 0 ? (
-        <p className="text-gray-500">Koi template nahi.</p>
+        <p className="text-gray-500">No templates yet.</p>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {templates.map((t) => (
@@ -308,7 +308,7 @@ function TemplatesTab() {
             <span className="col-span-1"></span>
           </div>
           <div className="space-y-2 mt-1">
-            {editing.items.length === 0 && <p className="text-sm text-gray-400">Koi metric add nahi kiya.</p>}
+            {editing.items.length === 0 && <p className="text-sm text-gray-400">No metrics added.</p>}
             {editing.items.map((it: any, idx: number) => (
               <div key={idx} className="grid grid-cols-12 gap-2 items-center">
                 <select className={`${inputCls} col-span-3`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
@@ -373,9 +373,9 @@ function AssignTab() {
   const selectedTemplate = templates.find((t) => t.id === templateId);
 
   const apply = async () => {
-    if (!templateId) return toast.error('Template select karo');
-    if (mode === 'department' && !departmentId) return toast.error('Department select karo');
-    if (mode === 'employees' && employeeIds.length === 0) return toast.error('Kam se kam ek employee select karo');
+    if (!templateId) return toast.error('Select a template');
+    if (mode === 'department' && !departmentId) return toast.error('Select a department');
+    if (mode === 'employees' && employeeIds.length === 0) return toast.error('Select at least one employee');
     setBusy(true);
     try {
       const body: any = { templateId, periodType };
@@ -440,7 +440,7 @@ function AssignTab() {
                   </label>
                 );
               })}
-              {employees.length === 0 && <p className="text-sm text-gray-400 px-3 py-2">Koi employee nahi mila.</p>}
+              {employees.length === 0 && <p className="text-sm text-gray-400 px-3 py-2">No employees found.</p>}
             </div>
           </Field>
         )}
@@ -450,7 +450,7 @@ function AssignTab() {
           <FiCheck /> {busy ? 'Applying…' : 'Apply targets'}
         </button>
         <p className="text-xs text-gray-400">
-          Same period par dobara apply karne se targets update honge (duplicate goals nahi banenge).
+          Applying again for the same period updates the targets (no duplicate goals are created).
         </p>
       </div>
     </div>
@@ -501,7 +501,7 @@ function ReviewTab() {
   if (items.length === 0) return (
     <div className="text-center py-12 text-gray-400">
       <FiInbox className="mx-auto text-3xl mb-2" />
-      <p>Review ke liye kuch nahi — sab clear ✅</p>
+      <p>Nothing to review — all clear ✅</p>
     </div>
   );
 
@@ -595,7 +595,7 @@ function PerformanceTab() {
       </div>
 
       {loading ? <p className="text-gray-500">Computing…</p> : rows.length === 0 ? (
-        <p className="text-gray-500">Koi data nahi.</p>
+        <p className="text-gray-500">No data.</p>
       ) : (
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
           <table className="min-w-full text-sm">
@@ -694,7 +694,7 @@ function RatingTab() {
   useEffect(() => { loadRatings(); }, [loadRatings]);
 
   const save = async () => {
-    if (!employeeId) return toast.error('Employee select karo');
+    if (!employeeId) return toast.error('Select an employee');
     setBusy(true);
     try {
       const res = await kraFetch<any>('/api/kra/rating', {
@@ -747,12 +747,12 @@ function RatingTab() {
             <FiStar /> {busy ? 'Saving…' : 'Save rating'}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Letter grade weighted KRA achievement se compute hota hai (A+ ≥90 … D &lt;50).</p>
+        <p className="text-xs text-gray-400 mt-2">Letter grade is computed from weighted KRA achievement (A+ ≥90 … D &lt;50).</p>
       </div>
 
       {/* Saved ratings */}
       {loading ? <p className="text-gray-500">Loading…</p> : ratings.length === 0 ? (
-        <p className="text-gray-500">Is period ke liye koi rating save nahi hui.</p>
+        <p className="text-gray-500">No ratings saved for this period.</p>
       ) : (
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
           <table className="min-w-full text-sm">
@@ -823,15 +823,20 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Modal({ title, children, onClose, onSave, wide }: {
   title: string; children: ReactNode; onClose: () => void; onSave: () => void; wide?: boolean;
 }) {
+  // Right-side drawer: at least 40% of the screen (wider for the template editor), full
+  // height, with a sticky header/footer and a scrollable body.
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className={`bg-white rounded-2xl shadow-xl w-full ${wide ? 'max-w-3xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
+      <div
+        className={`bg-white shadow-2xl h-full flex flex-col w-full min-w-[380px] ${wide ? 'sm:w-[60%] sm:max-w-[860px]' : 'sm:w-[42%] sm:max-w-[640px]'} animate-in slide-in-from-right duration-200`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <h2 className="font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
         </div>
-        <div className="px-5 py-4">{children}</div>
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-6 py-5 overflow-y-auto flex-1">{children}</div>
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
           <button onClick={onSave} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
         </div>
