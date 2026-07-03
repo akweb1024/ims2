@@ -23,6 +23,16 @@ export default function DocumentTemplateManager() {
     const [bulkTarget, setBulkTarget] = useState<'ALL' | 'DESIGNATION' | 'EMPLOYEE_TYPE'>('ALL');
     const [bulkDesignation, setBulkDesignation] = useState('');
     const [bulkEmployeeType, setBulkEmployeeType] = useState('');
+    // Person-specific values not on the employee record (e.g. relievingDate, freelanceFee).
+    const [customText, setCustomText] = useState('');
+    const parseCustomFields = (text: string): Record<string, string> => {
+        const out: Record<string, string> = {};
+        text.split('\n').forEach((line) => {
+            const i = line.indexOf(':');
+            if (i > 0) { const k = line.slice(0, i).trim(); if (k) out[k] = line.slice(i + 1).trim(); }
+        });
+        return out;
+    };
 
     const designationOptions = useMemo(
         () => Array.from(new Set((employees || []).map((e: any) => e.designation).filter(Boolean))).sort(),
@@ -67,7 +77,7 @@ export default function DocumentTemplateManager() {
                 const ok = (res?.results || []).filter((r: any) => r.status === 'SUCCESS').length;
                 alert(`Document issued to ${ok}/${res?.total ?? ok} employees.`);
             } else {
-                await generate.mutateAsync(issueData);
+                await generate.mutateAsync({ ...issueData, customFields: parseCustomFields(customText) });
                 alert('Document generated and sent to employee portal!');
             }
             setIsIssuing(false);
@@ -79,7 +89,7 @@ export default function DocumentTemplateManager() {
     const [previewing, setPreviewing] = useState(false);
     // Live preview: renders the letter to a PDF (sample data, or a chosen employee's real
     // data) WITHOUT saving anything, and opens it in a new tab.
-    const previewPdf = async (payload: { content?: string; templateId?: string; employeeId?: string; title?: string }) => {
+    const previewPdf = async (payload: { content?: string; templateId?: string; employeeId?: string; title?: string; customFields?: Record<string, string> }) => {
         setPreviewing(true);
         try {
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
@@ -257,9 +267,15 @@ export default function DocumentTemplateManager() {
                         )}
                     </div>
 
+                    <div className="mt-4">
+                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Custom fields (optional)</label>
+                        <textarea value={customText} onChange={e => setCustomText(e.target.value)} rows={3} className="input w-full mt-1 font-mono text-xs bg-white border-secondary-200" placeholder={"One per line, e.g.\nrelievingDate: 09/06/2026\nfreelanceFee: 700\nserviceScope: Proof Reading"} />
+                        <p className="text-[10px] text-secondary-400 mt-1">Fills any {'{{placeholder}}'} not on the employee record — e.g. fees, relieving/resignation dates, service scope.</p>
+                    </div>
+
                     <div className="flex justify-end gap-4 mt-8">
                         <button onClick={() => setIsIssuing(false)} className="btn bg-secondary-100 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
-                        <button onClick={() => previewPdf({ templateId: issueData.templateId, employeeId: issueMode === 'SINGLE' ? (issueData.employeeId || undefined) : undefined })} disabled={previewing || !issueData.templateId} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
+                        <button onClick={() => previewPdf({ templateId: issueData.templateId, employeeId: issueMode === 'SINGLE' ? (issueData.employeeId || undefined) : undefined, customFields: parseCustomFields(customText) })} disabled={previewing || !issueData.templateId} className="btn bg-secondary-100 text-secondary-700 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50">
                             <Eye size={16} /> {previewing ? 'Preview…' : 'Preview'}
                         </button>
                         <button onClick={handleIssue} disabled={!canIssue} className="btn bg-secondary-900 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2 disabled:opacity-50">
