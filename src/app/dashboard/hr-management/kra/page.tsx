@@ -298,32 +298,41 @@ function TemplatesTab() {
             <span className="text-sm font-medium text-gray-700">Metrics</span>
             <button onClick={addItem} className="text-indigo-600 text-sm inline-flex items-center gap-1"><FiPlus /> Add metric</button>
           </div>
-          <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-400 px-1">
-            <span className="col-span-3 flex items-center gap-1">Metric <FiInfo className="cursor-help" title="Which metric this target applies to (from the Metrics tab)." /></span>
-            <span className="col-span-2 flex items-center gap-1">Target <FiInfo className="cursor-help" title="The goal value to hit for the period (e.g. 20 articles)." /></span>
-            <span className="col-span-2 flex items-center gap-1">₹ / unit <FiInfo className="cursor-help" title="Optional. Revenue earned per unit — auto-records revenue when the employee logs progress. Leave blank if not revenue-linked." /></span>
-            <span className="col-span-1 flex items-center gap-1">Weight <FiInfo className="cursor-help" title="Relative importance as a percentage. All weights in a template should total about 100." /></span>
-            <span className="col-span-2 flex items-center gap-1">Dimension <FiInfo className="cursor-help" title="The performance dimension this metric measures: Output, Quality, TAT, Collaboration, Improvement or Behavior." /></span>
-            <span className="col-span-1 flex items-center gap-1">Period <FiInfo className="cursor-help" title="How often this target resets — Monthly, Quarterly, etc." /></span>
-            <span className="col-span-1"></span>
-          </div>
-          <div className="space-y-2 mt-1">
+          <div className="space-y-3 mt-1">
             {editing.items.length === 0 && <p className="text-sm text-gray-400">No metrics added.</p>}
             {editing.items.map((it: any, idx: number) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                <select className={`${inputCls} col-span-3`} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
-                  {metrics.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
-                </select>
-                <input type="number" className={`${inputCls} col-span-2`} value={it.defaultTarget} onChange={(e) => setItem(idx, { defaultTarget: e.target.value })} placeholder="target" />
-                <input type="number" className={`${inputCls} col-span-2`} value={it.ratePerUnit ?? ''} onChange={(e) => setItem(idx, { ratePerUnit: e.target.value })} placeholder="₹/unit" />
-                <input type="number" className={`${inputCls} col-span-1`} value={it.weight} onChange={(e) => setItem(idx, { weight: e.target.value })} placeholder="w" />
-                <select className={`${inputCls} col-span-2`} value={it.dimension || 'OUTPUT'} onChange={(e) => setItem(idx, { dimension: e.target.value })}>
-                  {KRA_DIMENSIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <select className={`${inputCls} col-span-1`} value={it.periodType} onChange={(e) => setItem(idx, { periodType: e.target.value })}>
-                  {PERIOD_TYPES.map((p) => <option key={p}>{p}</option>)}
-                </select>
-                <button onClick={() => delItem(idx)} className="text-gray-400 hover:text-red-600 col-span-1"><FiTrash2 /></button>
+              <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-3 bg-gray-50/40">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 min-w-0">
+                    <Field label="Metric" hint="Which metric this target applies to (from the Metrics tab).">
+                      <select className={inputCls} value={it.metricId} onChange={(e) => setItem(idx, { metricId: e.target.value })}>
+                        {metrics.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <button onClick={() => delItem(idx)} title="Remove metric" className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md p-2 mb-1 shrink-0"><FiTrash2 /></button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <Field label="Target" hint="The goal value to hit for the period (e.g. 20 articles).">
+                    <input type="number" className={inputCls} value={it.defaultTarget} onChange={(e) => setItem(idx, { defaultTarget: e.target.value })} placeholder="e.g. 20" />
+                  </Field>
+                  <Field label="₹ / unit" hint="Optional. Revenue earned per unit — auto-records revenue when the employee logs progress. Leave blank if the target isn't revenue-per-unit.">
+                    <input type="number" className={inputCls} value={it.ratePerUnit ?? ''} onChange={(e) => setItem(idx, { ratePerUnit: e.target.value })} placeholder="blank" />
+                  </Field>
+                  <Field label="Weight" hint="Relative importance as a percentage. All weights in a template should total about 100.">
+                    <input type="number" className={inputCls} value={it.weight} onChange={(e) => setItem(idx, { weight: e.target.value })} placeholder="e.g. 50" />
+                  </Field>
+                  <Field label="Dimension" hint="The performance dimension this metric measures: Output, Quality, TAT, Collaboration, Improvement or Behavior.">
+                    <select className={inputCls} value={it.dimension || 'OUTPUT'} onChange={(e) => setItem(idx, { dimension: e.target.value })}>
+                      {KRA_DIMENSIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Period" hint="How often this target resets — Monthly, Quarterly, etc.">
+                    <select className={inputCls} value={it.periodType} onChange={(e) => setItem(idx, { periodType: e.target.value })}>
+                      {PERIOD_TYPES.map((p) => <option key={p}>{p}</option>)}
+                    </select>
+                  </Field>
+                </div>
               </div>
             ))}
           </div>
