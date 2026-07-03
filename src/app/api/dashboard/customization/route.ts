@@ -73,7 +73,7 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user) => {
       context: input.context,
       selectedScope: input.selectedScope,
       widgetOrder: input.widgetOrder,
-      widgetVisibility: input.widgetVisibility,
+      widgetVisibility: input.widgetVisibility as Record<string, boolean>,
       widgetConfig: input.widgetConfig || {},
     });
 
