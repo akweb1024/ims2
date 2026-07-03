@@ -211,7 +211,7 @@ function TemplatesTab() {
       const [t, m, d] = await Promise.all([
         kraFetch<{ templates: KraTemplate[] }>('/api/kra/templates?includeInactive=true'),
         kraFetch<{ metrics: KraMetric[] }>('/api/kra/metrics'),
-        kraFetch<any[]>('/api/hr/departments').catch(() => []),
+        kraFetch<any[]>('/api/hr/departments?own=1').catch(() => []),
       ]);
       setTemplates(t.templates); setMetrics(m.metrics); setDepartments(Array.isArray(d) ? d : []);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
@@ -292,7 +292,7 @@ function TemplatesTab() {
             <Field label="Name"><input className={inputCls} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
             <Field label="Department"><select className={inputCls} value={editing.departmentId} onChange={(e) => setEditing({ ...editing, departmentId: e.target.value })}>
               <option value="">— None —</option>
-              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Field>
+              {uniqueByName(departments).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Field>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Metrics</span>
@@ -360,7 +360,7 @@ function AssignTab() {
       try {
         const [t, d, e] = await Promise.all([
           kraFetch<{ templates: KraTemplate[] }>('/api/kra/templates'),
-          kraFetch<any[]>('/api/hr/departments').catch(() => []),
+          kraFetch<any[]>('/api/hr/departments?own=1').catch(() => []),
           kraFetch<any[]>('/api/hr/employees').catch(() => []),
         ]);
         setTemplates(t.templates);
@@ -423,7 +423,7 @@ function AssignTab() {
           <Field label="Department">
             <select className={inputCls} value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
               <option value="">— Select —</option>
-              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              {uniqueByName(departments).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </Field>
         ) : (
@@ -796,6 +796,18 @@ function RatingTab() {
 }
 
 /* ------------------------------- Shared UI ----------------------------- */
+
+// Departments are effectively shared across companies (same name per company), so the
+// dropdowns show each name once. Case-insensitive; keeps the first occurrence.
+function uniqueByName<T extends { name?: string | null }>(list: T[]): T[] {
+  const seen = new Set<string>();
+  return (list || []).filter((d) => {
+    const key = (d?.name || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none';
 
