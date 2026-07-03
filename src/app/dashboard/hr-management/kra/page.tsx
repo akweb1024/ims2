@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ReactElement } from 'react';
-import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2, FiStar } from 'react-icons/fi';
+import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2, FiStar, FiInfo } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -169,23 +169,23 @@ function MetricsTab() {
       {editing && (
         <Modal title={editing.id ? 'Edit Metric' : 'New Metric'} onClose={() => setEditing(null)} onSave={save}>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Key (machine)"><input className={inputCls} disabled={!!editing.id}
+            <Field label="Key (machine)" hint="Unique machine ID in lowercase_with_underscores (e.g. articles_published). Used internally and cannot be changed once created."><input className={inputCls} disabled={!!editing.id}
               value={editing.key} onChange={(e) => setEditing({ ...editing, key: e.target.value })} placeholder="articles_published" /></Field>
-            <Field label="Name"><input className={inputCls}
+            <Field label="Name" hint="The human-readable name shown in templates, targets and reports (e.g. Articles Published)."><input className={inputCls}
               value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Articles Published" /></Field>
-            <Field label="Unit"><input className={inputCls}
+            <Field label="Unit" hint="What this metric is measured in — e.g. articles, calls, %, ₹, tickets, count."><input className={inputCls}
               value={editing.unit} onChange={(e) => setEditing({ ...editing, unit: e.target.value })} placeholder="articles / ₹ / %" /></Field>
-            <Field label="Department tag"><input className={inputCls}
+            <Field label="Department tag" hint="The department this metric belongs to. Used to group metrics and default them into a department's templates."><input className={inputCls}
               value={editing.department} onChange={(e) => setEditing({ ...editing, department: e.target.value })} placeholder="Publication" /></Field>
-            <Field label="Data source"><select className={inputCls}
+            <Field label="Data source" hint="MANUAL = the employee self-reports the value in their daily report. SYSTEM/AUTO = the value is pulled automatically from another module."><select className={inputCls}
               value={editing.dataSource} onChange={(e) => setEditing({ ...editing, dataSource: e.target.value })}>
               {DATA_SOURCES.map((d) => <option key={d}>{d}</option>)}</select></Field>
-            <Field label="Source type (auto-verify)"><input className={inputCls}
+            <Field label="Source type (auto-verify)" hint="For auto/system metrics, the module the value is verified against (e.g. REVENUE_TRANSACTION). Leave blank for MANUAL metrics."><input className={inputCls}
               value={editing.sourceType} onChange={(e) => setEditing({ ...editing, sourceType: e.target.value })} placeholder="REVENUE_TRANSACTION" /></Field>
-            <Field label="Aggregation"><select className={inputCls}
+            <Field label="Aggregation" hint="How multiple entries combine over the period — SUM adds them up, AVG averages them, etc."><select className={inputCls}
               value={editing.aggregation} onChange={(e) => setEditing({ ...editing, aggregation: e.target.value })}>
               {AGGREGATIONS.map((a) => <option key={a}>{a}</option>)}</select></Field>
-            <Field label="Direction"><select className={inputCls}
+            <Field label="Direction" hint="Whether a higher value is better (e.g. sales, articles) or a lower value is better (e.g. bugs, turnaround time)."><select className={inputCls}
               value={editing.direction} onChange={(e) => setEditing({ ...editing, direction: e.target.value })}>
               <option value="HIGHER_BETTER">Higher is better</option>
               <option value="LOWER_BETTER">Lower is better</option></select></Field>
@@ -299,12 +299,12 @@ function TemplatesTab() {
             <button onClick={addItem} className="text-indigo-600 text-sm inline-flex items-center gap-1"><FiPlus /> Add metric</button>
           </div>
           <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-400 px-1">
-            <span className="col-span-3">Metric</span>
-            <span className="col-span-2">Target</span>
-            <span className="col-span-2">₹ / unit</span>
-            <span className="col-span-1">Weight</span>
-            <span className="col-span-2">Dimension</span>
-            <span className="col-span-1">Period</span>
+            <span className="col-span-3 flex items-center gap-1">Metric <FiInfo className="cursor-help" title="Which metric this target applies to (from the Metrics tab)." /></span>
+            <span className="col-span-2 flex items-center gap-1">Target <FiInfo className="cursor-help" title="The goal value to hit for the period (e.g. 20 articles)." /></span>
+            <span className="col-span-2 flex items-center gap-1">₹ / unit <FiInfo className="cursor-help" title="Optional. Revenue earned per unit — auto-records revenue when the employee logs progress. Leave blank if not revenue-linked." /></span>
+            <span className="col-span-1 flex items-center gap-1">Weight <FiInfo className="cursor-help" title="Relative importance as a percentage. All weights in a template should total about 100." /></span>
+            <span className="col-span-2 flex items-center gap-1">Dimension <FiInfo className="cursor-help" title="The performance dimension this metric measures: Output, Quality, TAT, Collaboration, Improvement or Behavior." /></span>
+            <span className="col-span-1 flex items-center gap-1">Period <FiInfo className="cursor-help" title="How often this target resets — Monthly, Quarterly, etc." /></span>
             <span className="col-span-1"></span>
           </div>
           <div className="space-y-2 mt-1">
@@ -811,10 +811,13 @@ function uniqueByName<T extends { name?: string | null }>(list: T[]): T[] {
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="block text-xs font-medium text-gray-600 mb-1">{label}</span>
+      <span className="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+        {label}
+        {hint && <FiInfo className="text-gray-400 cursor-help" title={hint} aria-label={hint} />}
+      </span>
       {children}
     </label>
   );
