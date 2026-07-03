@@ -9,9 +9,15 @@ export const GET = authorizedRoute(
         try {
             const { searchParams } = new URL(req.url);
             const queryCompanyId = searchParams.get('companyId');
+            // `own=1` forces the caller's own company even for SUPER_ADMIN. Used by company-
+            // scoped actions (e.g. KRA templates/assignment) so the list shows this company's
+            // copy of each (shared) department once, and the chosen departmentId is valid here.
+            const ownOnly = ['1', 'true'].includes((searchParams.get('own') || '').toLowerCase());
 
             const where: any = {};
-            if (queryCompanyId) {
+            if (ownOnly && user.companyId) {
+                where.companyId = user.companyId;
+            } else if (queryCompanyId) {
                 where.companyId = queryCompanyId;
             } else if (user.role !== 'SUPER_ADMIN' && user.companyId) {
                 where.companyId = user.companyId;
