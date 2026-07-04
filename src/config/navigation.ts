@@ -27,6 +27,7 @@ import {
     Globe,
     GraduationCap,
     Home,
+    Inbox,
     KeyRound,
     Landmark,
     Laptop,
@@ -128,6 +129,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Team Overview',
                 items: [
+                    { name: 'Review Inbox', href: '/dashboard/review-inbox', icon: Inbox, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                     { name: 'My Team', href: '/dashboard/manager/team', icon: Users, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Work Reports', href: '/dashboard/manager/team/work-reports', icon: FileText, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance', href: '/dashboard/manager/team/performance', icon: BarChart3, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
@@ -168,6 +170,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Team Management',
                 items: [
+                    { name: 'Review Inbox', href: '/dashboard/review-inbox', icon: Inbox, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
                     { name: 'Work Reports', href: '/dashboard/hr-management?tab=reports', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
                     { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: Palmtree, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
                     { name: 'Attendance', icon: Clock, href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
