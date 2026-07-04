@@ -48,7 +48,7 @@ export default function Sidebar({
 
     return (
         <aside
-            className={`fixed left-0 h-full transition-all duration-500 ease-in-out z-20 flex flex-col
+            className={`fixed left-0 bottom-0 transition-all duration-500 ease-in-out z-20 flex flex-col
                 ${sidebarOpen ? 'translate-x-0 w-72 lg:w-64' : '-translate-x-full lg:translate-x-0 w-72 lg:w-12'}
                 ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-14 lg:top-[65px]'}
             `}
@@ -60,7 +60,7 @@ export default function Sidebar({
                 boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
             }}
         >
-            <nav aria-label="Sidebar" className="custom-scrollbar flex flex-1 flex-col space-y-1 overflow-x-hidden overflow-y-auto p-3">
+            <nav aria-label="Sidebar" className="custom-scrollbar min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto p-3">
                 {/* Mobile Module Selector */}
                 <div className="lg:hidden mb-4 space-y-1.5 overflow-hidden">
                     <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-2">Switch Module</label>
@@ -83,7 +83,7 @@ export default function Sidebar({
                     </div>
                 </div>
 
-                <div className="flex-1 space-y-1 overflow-hidden">
+                <div className="space-y-1">
                     {sideNavigation.map((category: NavCategory, idx: number) => (
                         <div key={category.title || idx} className="group/category">
                             {/* Category Header */}
@@ -150,8 +150,10 @@ export default function Sidebar({
                     ))}
                 </div>
 
-                {/* Logout Button */}
-                <div className="border-t border-sidebar-border/60 pt-2 mt-1 overflow-hidden shrink-0">
+            </nav>
+
+            {/* Logout Button — pinned footer, outside the scroll area so it's always reachable */}
+            <div className="border-t border-sidebar-border/60 px-3 py-2 shrink-0">
                     <button
                         onClick={handleLogout}
                         title={!sidebarOpen ? 'Logout' : ''}
@@ -164,8 +166,7 @@ export default function Sidebar({
                             Logout
                         </span>
                     </button>
-                </div>
-            </nav>
+            </div>
         </aside>
     );
 }
