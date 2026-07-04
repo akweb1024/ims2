@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     CRMPageShell,
     CRMStatCard,
@@ -167,7 +166,7 @@ export default function CouponsPage() {
     const isLimitReached = (c: Coupon) => !!(c.usageLimit && c.usedCount >= c.usageLimit);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Promotion Management"
                 subtitle="Configure and track high-impact discount vectors and promotional matrices."
@@ -540,6 +539,6 @@ export default function CouponsPage() {
                     </div>
                 </form>
             </CRMModal>
-        </DashboardLayout>
+        </>
     );
 }

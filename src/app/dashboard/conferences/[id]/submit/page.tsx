@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, FileText, Upload, Save, AlertCircle } from 'lucide-react';
 
 export default function SubmitPaperPage() {
@@ -89,7 +88,7 @@ export default function SubmitPaperPage() {
     if (!conference) return <div className="p-8 text-center">Conference not found</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-3xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link href={`/dashboard/conferences/${conferenceId}`} className="btn btn-secondary btn-sm">
@@ -172,6 +171,6 @@ export default function SubmitPaperPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { KNOWLEDGE_BASE_CATEGORIES } from '@/lib/knowledge-base';
 
 export default function NewArticlePage() {
@@ -47,7 +46,7 @@ export default function NewArticlePage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
                     <button
@@ -166,6 +165,6 @@ export default function NewArticlePage() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

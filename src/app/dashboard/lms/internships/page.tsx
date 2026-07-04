@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Calendar, User, DollarSign, Briefcase } from 'lucide-react';
 
 export default function InternshipsPage() {
@@ -54,7 +53,7 @@ export default function InternshipsPage() {
     if (loading) return <div className="p-8">Loading internships...</div>;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -141,6 +140,6 @@ export default function InternshipsPage() {
                     ))}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { MapPin, Globe } from 'lucide-react';
 
 export default function NewAgencyPage() {
@@ -107,7 +106,7 @@ export default function NewAgencyPage() {
     };
 
     return (
-        <DashboardLayout userRole="ADMIN">
+        <>
             <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center space-x-4 mb-6">
                     <button onClick={() => router.back()} className="p-2 hover:bg-white rounded-full transition-colors text-secondary-500">
@@ -387,6 +386,6 @@ export default function NewAgencyPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

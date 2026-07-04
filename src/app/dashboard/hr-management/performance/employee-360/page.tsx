@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Activity, BarChart3, Clock3, Target, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { downloadCSV } from '@/lib/csv-utils';
@@ -148,7 +147,7 @@ export default function EmployeePerformance360Page() {
   }, [fetchData]);
 
   return (
-    <DashboardLayout userRole={user?.role}>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -336,7 +335,7 @@ export default function EmployeePerformance360Page() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

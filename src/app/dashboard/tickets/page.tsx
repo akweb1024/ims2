@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -90,7 +89,7 @@ export default function TicketsPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -220,7 +219,7 @@ export default function TicketsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

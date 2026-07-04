@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   FolderKanban,
   Save,
@@ -193,7 +192,7 @@ export default function NewProjectPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="min-h-screen pb-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat">
         <div className="max-w-5xl mx-auto space-y-12">
           {/* Header */}
@@ -764,6 +763,6 @@ export default function NewProjectPage() {
           />
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Upload, Check, Trash2 } from 'lucide-react';
 
 export default function SubmitRevision(props: { params: Promise<{ id: string }> }) {
@@ -71,17 +70,17 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-6">
                     <div className="text-center py-12">Loading manuscript...</div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!manuscript) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-6">
                     <div className="text-center py-12">
                         <p className="text-secondary-600 mb-4">Manuscript not found</p>
@@ -90,13 +89,13 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
                         </button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (manuscript.manuscriptStatus !== 'REVISION_REQUIRED') {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-6">
                     <div className="text-center py-12">
                         <p className="text-secondary-600 mb-4">This manuscript is not in revision status</p>
@@ -105,12 +104,12 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
                         </button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto p-6 space-y-6 pb-20">
                 {/* Header */}
                 <div className="flex items-start gap-4">
@@ -304,6 +303,6 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
                     </p>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

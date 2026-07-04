@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function NewTicketPage() {
     const router = useRouter();
@@ -76,7 +75,7 @@ export default function NewTicketPage() {
     };
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="max-w-3xl mx-auto space-y-6">
                 <div>
                     <button
@@ -174,6 +173,6 @@ export default function NewTicketPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

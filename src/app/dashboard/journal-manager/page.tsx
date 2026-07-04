@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import JournalManagerBoard from '@/components/dashboard/journals/JournalManagerBoard';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
@@ -26,7 +25,7 @@ export default async function JournalManagerPage() {
     const manuscripts = await getManuscripts();
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                     <div>
@@ -39,6 +38,6 @@ export default async function JournalManagerPage() {
                     <JournalManagerBoard initialManuscripts={manuscripts} />
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

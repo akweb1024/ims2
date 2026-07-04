@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ListTodo, FolderKanban, Clock, CheckCircle2, CircleDot,
     AlertCircle, ArrowRight, BarChart3, RefreshCw, Eye, ChevronRight, Calendar, User, Tag, LayoutGrid, Zap, Sparkles, TrendingUp
@@ -98,17 +97,17 @@ export default function MyTasksPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Workspace Intel...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-20 space-y-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
                 
                 {/* Modern Header */}
@@ -294,6 +293,6 @@ export default function MyTasksPage() {
                     </div>
                 </motion.div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

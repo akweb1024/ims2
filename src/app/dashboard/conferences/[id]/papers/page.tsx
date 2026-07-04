@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowLeft, FileText, CheckCircle, XCircle, Clock,
     Filter, Search, Eye, ThumbsUp, ThumbsDown
@@ -74,7 +73,7 @@ export default function PaperManagementPage() {
     if (loading) return <div className="p-8 text-center">Loading papers...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -194,6 +193,6 @@ export default function PaperManagementPage() {
                     </table>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

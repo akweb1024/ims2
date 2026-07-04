@@ -1,4 +1,3 @@
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import InvoicingResetControl from "@/components/dashboard/super-admin/InvoicingResetControl";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { AlertTriangle } from "lucide-react";
@@ -14,7 +13,7 @@ export default async function SuperAdminInvoicingResetPage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <main className="min-h-screen bg-slate-50 p-6 md:p-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <div className="rounded-[2rem] border border-rose-200 bg-white p-6 shadow-xl shadow-rose-100/50">
@@ -42,6 +41,6 @@ export default async function SuperAdminInvoicingResetPage() {
           <InvoicingResetControl />
         </div>
       </main>
-    </DashboardLayout>
+    </>
   );
 }

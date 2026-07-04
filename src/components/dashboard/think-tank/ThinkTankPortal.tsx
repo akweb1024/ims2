@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../DashboardLayout';
 import ThinkTankLeaderboard from './ThinkTankLeaderboard';
 import AIInsightsPanel from './AIInsightsPanel';
 import IdeaSubmissionForm from './IdeaSubmissionForm';

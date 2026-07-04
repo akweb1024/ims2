@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function CoursesPage() {
     const [courses, setCourses] = useState<any[]>([]);
@@ -69,7 +68,7 @@ export default function CoursesPage() {
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading courses...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -182,6 +181,6 @@ export default function CoursesPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

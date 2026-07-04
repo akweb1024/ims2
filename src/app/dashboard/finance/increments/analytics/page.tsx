@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import IncrementAnalyticsDashboard from '@/components/dashboard/hr/IncrementAnalyticsDashboard';
 import { Activity, RefreshCw, ChevronRight, Home } from 'lucide-react';
 import Link from 'next/link';
@@ -32,19 +31,19 @@ export default function FinanceIncrementAnalyticsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-12 text-center animate-pulse">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <RefreshCw className="text-blue-600 animate-spin" size={32} />
                     </div>
                     <p className="text-secondary-600 font-bold text-lg">Loading Financial Budget Intelligence...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-8">
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 mb-8 text-sm font-bold">
@@ -72,7 +71,7 @@ export default function FinanceIncrementAnalyticsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

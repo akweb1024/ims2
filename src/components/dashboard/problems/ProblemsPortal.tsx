@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type ProblemsMode = 'dashboard' | 'my' | 'queue' | 'insights';
 
@@ -456,7 +455,7 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
     };
 
     return (
-        <DashboardLayout userRole={user?.role || 'EMPLOYEE'}>
+        <>
             <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
                 <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8 text-white shadow-xl">
                     <div className="flex flex-wrap items-start justify-between gap-4">
@@ -792,7 +791,7 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                     <EmptyState text="Problems insights are available only to management roles." />
                 ) : null}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

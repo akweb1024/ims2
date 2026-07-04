@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { KNOWLEDGE_BASE_LIBRARY_TABS, getKnowledgeCategoryLabel } from '@/lib/knowledge-base';
 
@@ -135,7 +134,7 @@ export default function KnowledgeBasePage() {
     ];
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-8 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -288,6 +287,6 @@ export default function KnowledgeBasePage() {
                         ))}
                     </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

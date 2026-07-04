@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Clock, CheckCircle, FileText, Users, MessageSquare, AlertCircle, Upload } from 'lucide-react';
 
 export default function ManuscriptDetail(props: { params: Promise<{ id: string }> }) {
@@ -92,17 +91,17 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-6">
                     <div className="text-center py-12">Loading manuscript...</div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!manuscript) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-6">
                     <div className="text-center py-12">
                         <p className="text-secondary-600 mb-4">Manuscript not found</p>
@@ -111,12 +110,12 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
                         </Link>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6 pb-20">
                 {/* Header */}
                 <div className="flex items-start gap-4">
@@ -376,6 +375,6 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

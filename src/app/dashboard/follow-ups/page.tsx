@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 import { 
@@ -188,7 +187,7 @@ export default function FollowUpsPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Follow-up Matrix"
                 subtitle="Integrated orchestration of scheduled customer interactions, pending task cycles, and engagement milestones."
@@ -429,6 +428,6 @@ export default function FollowUpsPage() {
                     </form>
                 )}
             </CRMModal>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import SafeHTML from '@/components/common/SafeHTML';
 import {
@@ -117,12 +116,12 @@ export default function IncrementDetailPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-12 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="text-secondary-600 mt-4">Loading increment details...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -155,7 +154,7 @@ export default function IncrementDetailPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-8">
                 <div className="max-w-6xl mx-auto space-y-6">
                     {/* Header */}
@@ -1036,6 +1035,6 @@ export default function IncrementDetailPage() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, Award, AlertCircle, Calendar, Play, Download, Filter, Target, BarChart } from 'lucide-react';
 
 export default function PerformanceDashboard() {
@@ -120,7 +119,7 @@ export default function PerformanceDashboard() {
     };
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -305,6 +304,6 @@ export default function PerformanceDashboard() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

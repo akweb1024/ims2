@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function Error({
     error,
@@ -15,7 +14,7 @@ export default function Error({
     }, [error]);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <div className="text-6xl">🎓</div>
                 <h2 className="text-2xl font-bold text-secondary-900">LMS Dashboard Error</h2>
@@ -40,6 +39,6 @@ export default function Error({
                     <p className="text-xs text-secondary-300 font-mono mt-8">Error ID: {error.digest}</p>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     DollarSign, TrendingUp, GitCommit, Rocket, Server, Code, 
     Download, Zap, GitPullRequest, ArrowUpRight, Cpu, 
@@ -58,7 +57,7 @@ export default function RevenuePage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-6">
                     <div className="relative">
                         <div className="h-16 w-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
@@ -68,7 +67,7 @@ export default function RevenuePage() {
                     </div>
                     <p className="font-bold text-slate-400 uppercase tracking-[0.3em] text-[10px] animate-pulse">Aggregating Fiscal Intel...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -88,7 +87,7 @@ export default function RevenuePage() {
         }).format(value || 0);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen bg-slate-50 relative overflow-hidden pb-20">
                 {/* Visual Background Elements */}
                 <div className="absolute top-0 right-0 w-full h-full pointer-events-none opacity-40">
@@ -365,7 +364,7 @@ export default function RevenuePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

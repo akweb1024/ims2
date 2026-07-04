@@ -1,4 +1,3 @@
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import LMSParticipantsView from '@/components/dashboard/lms/participants/LMSParticipantsView';
 import { Metadata } from 'next';
 import Link from 'next/link';
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ParticipantsPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Breadcrumbs & Header */}
         <div className="flex flex-col gap-4">
@@ -46,6 +45,6 @@ export default function ParticipantsPage() {
 
         <LMSParticipantsView />
       </div>
-    </DashboardLayout>
+    </>
   );
 }

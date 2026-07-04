@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap, Send, BadgeDollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SUPPORTED_INTEGRATION_PROVIDERS } from '@/lib/integrations';
@@ -147,7 +146,7 @@ export default function IntegrationsGatewayPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto space-y-8">
                 
                 {/* Header */}
@@ -359,6 +358,6 @@ export default function IntegrationsGatewayPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

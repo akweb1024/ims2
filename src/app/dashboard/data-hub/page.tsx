@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
 import DocumentIngestionCenter from '@/components/dashboard/DocumentIngestionCenter';
 import { Sparkles, Database } from 'lucide-react';
@@ -87,7 +86,7 @@ export default function DataHubPage() {
     ];
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-8 max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -200,7 +199,7 @@ export default function DataHubPage() {
                     <DocumentIngestionCenter />
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

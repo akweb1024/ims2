@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import GuidelineHelp from '@/components/dashboard/GuidelineHelp';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 import {
     calculateInvoiceTaxBreakdown,
@@ -236,7 +235,7 @@ export default function NewSubscriptionPage() {
     const currencySymbol = formData.currency === 'INR' ? '₹' : (formData.currency === 'USD' ? '$' : (formData.currency === 'EUR' ? '€' : (formData.currency === 'GBP' ? '£' : '$')));
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center space-x-4 mb-8">
@@ -677,7 +676,7 @@ export default function NewSubscriptionPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 
 }

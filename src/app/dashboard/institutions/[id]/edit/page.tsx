@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Building2, ArrowLeft, Save, Globe, MapPin, Phone, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -252,16 +251,16 @@ export default function EditInstitutionPage() {
 
     if (isFetchingData) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
@@ -751,6 +750,6 @@ export default function EditInstitutionPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

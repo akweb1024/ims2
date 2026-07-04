@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowLeft, FileText, CheckCircle, XCircle, AlertTriangle,
     Download, ExternalLink, MessageSquare, Star, Save
@@ -184,7 +183,7 @@ export default function PaperDetailPage() {
     if (!paper) return <div className="p-8 text-center">Paper not found</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
@@ -411,6 +410,6 @@ export default function PaperDetailPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

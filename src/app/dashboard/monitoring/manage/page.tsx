@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, ArrowLeft } from 'lucide-react';
 
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function ManageMonitorsPage() {
     const router = useRouter();
@@ -72,7 +71,7 @@ export default function ManageMonitorsPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto p-6 space-y-8 pb-20">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.back()} className="p-2 hover:bg-secondary-100 rounded-full transition-colors">
@@ -277,6 +276,6 @@ export default function ManageMonitorsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

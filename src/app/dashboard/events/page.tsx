@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function EventsPage() {
     const [events, setEvents] = useState<any[]>([]);
@@ -64,7 +63,7 @@ export default function EventsPage() {
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading events...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -168,6 +167,6 @@ export default function EventsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

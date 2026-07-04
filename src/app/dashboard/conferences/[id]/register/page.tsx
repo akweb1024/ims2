@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowLeft, Ticket, Calendar, DollarSign, User, Mail,
     Briefcase, Phone, Utensils, Shirt, CheckCircle, AlertCircle
@@ -98,7 +97,7 @@ export default function RegisterPage() {
     const selectedTicketType = conference.ticketTypes.find((t: any) => t.id === selectedTicket);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link href={`/dashboard/conferences/${conferenceId}`} className="btn btn-secondary btn-sm">
@@ -273,6 +272,6 @@ export default function RegisterPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

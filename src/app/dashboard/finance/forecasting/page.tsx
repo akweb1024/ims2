@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     TrendingUp,
     TrendingDown,
@@ -106,7 +105,7 @@ export default function CashflowForecastingPage() {
 
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
@@ -271,6 +270,6 @@ export default function CashflowForecastingPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

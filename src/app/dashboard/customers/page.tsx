@@ -2,7 +2,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -206,7 +205,7 @@ export default function CustomersPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Customers"
                 subtitle="View existing customers, who owns each account, and recent activity."
@@ -530,6 +529,6 @@ export default function CustomersPage() {
                     </div>
                 </CRMModal>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

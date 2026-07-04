@@ -14,7 +14,6 @@ import {
     ShieldAlert,
     Users,
 } from 'lucide-react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { ACCESS_POLICY_MODULES } from '@/lib/access-policy';
@@ -235,7 +234,7 @@ export default async function AccessPolicyAuditPage() {
     const inactivePrivilegedUsers = policyRows.filter((row) => !row.isActive && row.riskLevel !== 'low').length;
 
     return (
-        <DashboardLayout userRole={user.role}>
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
@@ -439,7 +438,7 @@ export default async function AccessPolicyAuditPage() {
                     </aside>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

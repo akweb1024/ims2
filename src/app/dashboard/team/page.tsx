@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { useTeam } from '@/hooks/useHR';
 
@@ -18,7 +17,7 @@ export default function TeamPage() {
     }, []);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold text-secondary-900">Our Team</h1>
@@ -69,7 +68,7 @@ export default function TeamPage() {
                     ))}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

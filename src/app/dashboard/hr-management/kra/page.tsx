@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ReactElement } from 'react';
 import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2, FiStar, FiInfo } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
   kraFetch, PERIOD_TYPES, DATA_SOURCES, AGGREGATIONS, KRA_DIMENSIONS,
   type KraMetric, type KraTemplate, type KraTemplateItem,
@@ -16,7 +15,7 @@ export default function KraAdminPage() {
   const [tab, setTab] = useState<Tab>('metrics');
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -55,7 +54,7 @@ export default function KraAdminPage() {
         {tab === 'rating' && <RatingTab />}
         {tab === 'performance' && <PerformanceTab />}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

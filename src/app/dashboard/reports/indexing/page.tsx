@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { Target, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
@@ -39,7 +38,7 @@ export default function IndexingReportPage() {
         : 0;
 
     return (
-        <DashboardLayout userRole="ADMIN"> {/* Adjust Role as needed */}
+        <> {/* Adjust Role as needed */}
             <div className="max-w-7xl mx-auto space-y-8">
                 <div>
                     <h1 className="text-3xl font-black text-secondary-900">Indexing Progress Report</h1>
@@ -159,7 +158,7 @@ export default function IndexingReportPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LifeBuoy,
     Send,
@@ -129,7 +128,7 @@ export default function RequestITServicePage() {
 
     if (success) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center p-6">
                     <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
                         <CheckCircle2 className="h-10 w-10 text-green-600" />
@@ -146,14 +145,14 @@ export default function RequestITServicePage() {
                         Go to My Requests
                     </button>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     const selectedService = services.find(s => s.id === selectedServiceId);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto page-animate">
                 {/* Header */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -470,6 +469,6 @@ export default function RequestITServicePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Layers, Plus, Pencil, Trash2, Sparkles, X } from 'lucide-react';
 import { inr } from '@/lib/format';
 
@@ -92,7 +91,7 @@ export default function GradesPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-6xl mx-auto space-y-6">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3">
@@ -179,6 +178,6 @@ export default function GradesPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

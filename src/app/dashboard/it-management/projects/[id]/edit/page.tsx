@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     FolderKanban, Save, X, Calendar, DollarSign, Users, AlertCircle, Plus, Trash2, 
     ArrowLeft, Globe, Cpu, Shield, Layers, Tag, Briefcase, Zap, Eye
@@ -151,17 +150,17 @@ export default function EditProjectPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Accessing Project Core...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat">
                 <div className="max-w-5xl mx-auto space-y-12">
                     
@@ -506,6 +505,6 @@ export default function EditProjectPage() {
                     />
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

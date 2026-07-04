@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Target, Plus, LayoutTemplate, PencilLine, CheckCircle2, Users, Pencil, Trash2, X, Check } from 'lucide-react';
 
 const PERIODS = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'WEEKLY', 'DAILY'] as const;
@@ -217,7 +216,7 @@ export default function AssignKraPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center gap-3">
                     <Target className="w-7 h-7 text-indigo-600" />
@@ -450,6 +449,6 @@ export default function AssignKraPage() {
                     </section>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

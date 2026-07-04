@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import EmployeeOnboardingWorkflow from '@/components/dashboard/hr/EmployeeOnboardingWorkflow';
 
@@ -19,7 +18,7 @@ export default function EmployeeWorkflowPage() {
   }, []);
 
   return (
-    <DashboardLayout userRole={userRole}>
+    <>
       <div className="mx-auto max-w-7xl space-y-6 pb-20">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -49,6 +48,6 @@ export default function EmployeeWorkflowPage() {
 
         <EmployeeOnboardingWorkflow />
       </div>
-    </DashboardLayout>
+    </>
   );
 }

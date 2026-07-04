@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     Ticket, Plus, User, Clock, Loader2, X, Save, 
     Filter, Search, ArrowRight, CheckCircle2, AlertCircle,
@@ -18,6 +17,23 @@ interface TicketItem {
     requester: { id: string; name: string; email: string };
     createdAt: string; updatedAt: string;
 }
+
+// Employee-facing service requests live on ITTask (type=SERVICE_REQUEST),
+// a different model from ITSupportTicket — surfaced here so admin sees both.
+interface ServiceRequest {
+    id: string; taskCode: string; title: string; description: string | null;
+    priority: string; status: string; createdAt: string;
+    createdBy?: { name: string } | null;
+    assignedTo?: { name: string } | null;
+    service?: { name: string } | null;
+}
+
+// TaskStatus → tab mapping (tasks use PENDING/…/COMPLETED, tickets use OPEN/…/CLOSED)
+const REQUEST_TAB_STATUSES: Record<string, string[]> = {
+    OPEN: ['PENDING', 'IN_PROGRESS', 'UNDER_REVIEW'],
+    RESOLVED: ['COMPLETED'],
+    CLOSED: ['CANCELLED'],
+};
 
 const PRIORITY_THEME: Record<string, { bg: string, text: string, shadow: string, icon: any }> = {
     CRITICAL: { bg: 'bg-rose-500', text: 'text-rose-500', shadow: 'shadow-rose-200', icon: Shield },
@@ -35,6 +51,8 @@ const CATEGORY_ICON: Record<string, any> = {
 
 export default function ITTicketsPage() {
     const [tickets, setTickets] = useState<TicketItem[]>([]);
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
+    const [source, setSource] = useState<'TICKETS' | 'REQUESTS'>('TICKETS');
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [userRole, setUserRole] = useState('');
@@ -51,17 +69,23 @@ export default function ITTicketsPage() {
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
-        fetchTickets();
+        fetchAll();
     }, []);
 
-    const fetchTickets = async () => {
+    const fetchAll = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/it/tickets');
-            if (res.ok) setTickets(await res.json());
+            const [ticketsRes, requestsRes] = await Promise.all([
+                fetch('/api/it/tickets'),
+                fetch('/api/it/tasks?view=all&type=SERVICE_REQUEST'),
+            ]);
+            if (ticketsRes.ok) setTickets(await ticketsRes.json());
+            if (requestsRes.ok) setRequests(await requestsRes.json());
         } catch { console.error('Uplink failed'); }
         finally { setLoading(false); }
     };
+
+    const fetchTickets = fetchAll;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,18 +122,27 @@ export default function ITTicketsPage() {
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
 
     const filteredTickets = tickets.filter((t) => {
-        const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                              t.description.toLowerCase().includes(searchQuery.toLowerCase());
         if (!matchesSearch) return false;
-        
+
         if (activeTab === 'ALL') return true;
         if (activeTab === 'OPEN') return ['OPEN', 'IN_PROGRESS'].includes(t.status);
         if (activeTab === 'RESOLVED') return t.status === 'RESOLVED';
         return t.status === activeTab;
     });
 
+    const filteredRequests = requests.filter((r) => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = r.title.toLowerCase().includes(q) ||
+                             (r.description || '').toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+        if (activeTab === 'ALL') return true;
+        return (REQUEST_TAB_STATUSES[activeTab] || []).includes(r.status);
+    });
+
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen bg-slate-50 relative overflow-hidden">
                 {/* Visual Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-40">
@@ -158,6 +191,20 @@ export default function ITTicketsPage() {
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                         className="bg-white/70 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-xl shadow-slate-200/40 flex flex-col lg:flex-row items-center gap-6"
                     >
+                        {/* Source toggle — ITSupportTicket vs employee ITTask service requests */}
+                        <div className="flex bg-indigo-50 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
+                            {(['TICKETS', 'REQUESTS'] as const).map(s => (
+                                <button key={s} onClick={() => setSource(s)}
+                                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                        source === s
+                                        ? 'bg-white text-indigo-600 shadow-md ring-1 ring-indigo-100'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    {s === 'TICKETS' ? `Support Tickets (${tickets.length})` : `Service Requests (${requests.length})`}
+                                </button>
+                            ))}
+                        </div>
                         <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
                             {['OPEN', 'RESOLVED', 'CLOSED', 'ALL'].map(tab => (
                                 <button key={tab} onClick={() => setActiveTab(tab)}
@@ -192,14 +239,60 @@ export default function ITTicketsPage() {
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest animate-pulse">Synchronizing Node Data...</p>
                         </div>
-                    ) : filteredTickets.length === 0 ? (
+                    ) : (source === 'TICKETS' ? filteredTickets.length === 0 : filteredRequests.length === 0) ? (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-24 text-center bg-white/40 backdrop-blur-md rounded-[3rem] border border-dashed border-slate-300">
                             <div className="w-24 h-24 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
                                 <Ticket className="h-10 w-10 text-slate-300" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Active Logs Detected</h3>
-                            <p className="text-slate-500 font-medium">All systems nominal across current filter parameters.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                                {source === 'TICKETS' ? 'No Active Logs Detected' : 'No Service Requests Found'}
+                            </h3>
+                            <p className="text-slate-500 font-medium">
+                                {source === 'TICKETS'
+                                    ? 'All systems nominal across current filter parameters.'
+                                    : 'No employee service requests match the current filters.'}
+                            </p>
                         </motion.div>
+                    ) : source === 'REQUESTS' ? (
+                        <div className="grid grid-cols-1 gap-6">
+                            {filteredRequests.map((r) => (
+                                <a key={r.id} href={`/dashboard/it-management/tasks/${r.id}`}
+                                    className="group block bg-white/60 hover:bg-white backdrop-blur-xl rounded-[2.5rem] border border-white/80 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-indigo-100 transition-all p-8 relative overflow-hidden"
+                                >
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                                        <div className="flex-1 space-y-3">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] bg-indigo-50 px-3 py-1.5 rounded-lg">
+                                                    {r.service?.name || 'General Request'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.taskCode}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-slate-900 text-white">{r.priority}</span>
+                                            </div>
+                                            <h3 className="text-2xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{r.title}</h3>
+                                            {r.description && (
+                                                <p className="text-slate-500 text-sm font-medium line-clamp-2 max-w-3xl leading-relaxed">{r.description}</p>
+                                            )}
+                                            <div className="flex flex-wrap items-center gap-6 pt-1 text-xs font-bold text-slate-500">
+                                                <span className="flex items-center gap-2"><User className="h-3.5 w-3.5 text-slate-300" /> {r.createdBy?.name || 'Unknown'}</span>
+                                                <span>Assigned: {r.assignedTo?.name || 'Unassigned'}</span>
+                                                <span className="flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-slate-300" /> {new Date(r.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 shrink-0">
+                                            <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border ${
+                                                r.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                r.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                r.status === 'CANCELLED' ? 'bg-slate-50 text-slate-400 border-slate-200' :
+                                                'bg-amber-50 text-amber-600 border-amber-100'
+                                            }`}>
+                                                {r.status.replace('_', ' ')}
+                                            </div>
+                                            <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-6">
                             <AnimatePresence mode='popLayout'>
@@ -401,6 +494,6 @@ export default function ITTicketsPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </DashboardLayout>
+        </>
     );
 }

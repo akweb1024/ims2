@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ChatProvider } from '@/components/dashboard/chat/ChatContext';
 import ChatSidebar from '@/components/dashboard/chat/ChatSidebar';
 import ChatWindow from '@/components/dashboard/chat/ChatWindow';
@@ -19,7 +18,7 @@ function ChatLayout() {
 
 export default function ChatPage() {
     return (
-        <DashboardLayout>
+        <>
             <Suspense fallback={
                 <div className="h-[80vh] flex items-center justify-center">
                     <Loader2 className="animate-spin text-indigo-600" size={40} />
@@ -29,7 +28,7 @@ export default function ChatPage() {
                     <ChatLayout />
                 </ChatProvider>
             </Suspense>
-        </DashboardLayout>
+        </>
     );
 }
 
