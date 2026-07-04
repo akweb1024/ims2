@@ -65,6 +65,12 @@ const EMPTY_METRIC = {
   dataSource: 'MANUAL', sourceType: '', aggregation: 'SUM', department: '', isActive: true,
 };
 
+/** Source modules the validation engine can auto-verify against. */
+const KNOWN_SOURCE_TYPES = ['REVENUE_TRANSACTION', 'COMMUNICATION_LOG'];
+
+/** CommunicationType values a COMMUNICATION_LOG metric may count. */
+const COMM_TYPES = ['CALL', 'EMAIL', 'MEETING', 'COMMENT', 'INQUIRY', 'INVOICE_SENT', 'CATALOGUE_SENT'];
+
 function MetricsTab() {
   const [metrics, setMetrics] = useState<KraMetric[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,8 +185,9 @@ function MetricsTab() {
             <Field label="Data source" hint="MANUAL = the employee self-reports the value in their daily report. SYSTEM/AUTO = the value is pulled automatically from another module."><select className={inputCls}
               value={editing.dataSource} onChange={(e) => setEditing({ ...editing, dataSource: e.target.value })}>
               {DATA_SOURCES.map((d) => <option key={d}>{d}</option>)}</select></Field>
-            <Field label="Source type (auto-verify)" hint="For auto/system metrics, the module the value is verified against (e.g. REVENUE_TRANSACTION). Leave blank for MANUAL metrics."><input className={inputCls}
-              value={editing.sourceType} onChange={(e) => setEditing({ ...editing, sourceType: e.target.value })} placeholder="REVENUE_TRANSACTION" /></Field>
+            <Field label="Source type (auto-verify)" hint="For auto/system metrics, the module the value is verified against — REVENUE_TRANSACTION (verified revenue) or COMMUNICATION_LOG (calls/emails logged in Communications). Leave blank for MANUAL metrics."><input className={inputCls} list="kra-source-types"
+              value={editing.sourceType} onChange={(e) => setEditing({ ...editing, sourceType: e.target.value })} placeholder="REVENUE_TRANSACTION" />
+              <datalist id="kra-source-types">{KNOWN_SOURCE_TYPES.map((s) => <option key={s} value={s} />)}</datalist></Field>
             <Field label="Aggregation" hint="How multiple entries combine over the period — SUM adds them up, AVG averages them, etc."><select className={inputCls}
               value={editing.aggregation} onChange={(e) => setEditing({ ...editing, aggregation: e.target.value })}>
               {AGGREGATIONS.map((a) => <option key={a}>{a}</option>)}</select></Field>
@@ -188,6 +195,35 @@ function MetricsTab() {
               value={editing.direction} onChange={(e) => setEditing({ ...editing, direction: e.target.value })}>
               <option value="HIGHER_BETTER">Higher is better</option>
               <option value="LOWER_BETTER">Lower is better</option></select></Field>
+            {String(editing.sourceType || '').trim().toUpperCase() === 'COMMUNICATION_LOG' && (
+              <div className="col-span-2">
+                <Field label="Count which communication types?" hint="Auto-verification counts the employee's Communications entries for the day. Tick the types this metric should count — none ticked = every type counts.">
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    {COMM_TYPES.map((t) => {
+                      const selected: string[] = editing.metadata?.communicationTypes
+                        ?? (editing.metadata?.communicationType ? [editing.metadata.communicationType] : []);
+                      const checked = selected.includes(t);
+                      const toggle = () => {
+                        const next = checked ? selected.filter((x) => x !== t) : [...selected, t];
+                        const { communicationType: _drop, ...restMeta } = editing.metadata || {};
+                        setEditing({
+                          ...editing,
+                          metadata: next.length > 0
+                            ? { ...restMeta, communicationTypes: next }
+                            : (() => { const { communicationTypes: _also, ...clean } = restMeta; return clean; })(),
+                        });
+                      };
+                      return (
+                        <label key={t} className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-gray-100">
+                          <input type="checkbox" checked={checked} onChange={toggle} className="rounded border-gray-300 text-indigo-600" />
+                          {t.replace('_', ' ')}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </div>
+            )}
           </div>
         </Modal>
       )}
