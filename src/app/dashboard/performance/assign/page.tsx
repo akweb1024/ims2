@@ -328,7 +328,7 @@ export default function AssignKraPage() {
                                         {templates.map((t) => <option key={t.id} value={t.id}>{t.name}{t.items ? ` (${t.items.length} metrics)` : ''}</option>)}
                                     </select>
                                 </label>
-                                <div className="text-xs text-gray-400 self-end pb-2">All the template's metrics will be assigned to the selected members for this period. Leave the default target — only fill it where you need a different one.</div>
+                                <div className="text-xs text-gray-400 self-end pb-2">All the template&apos;s metrics will be assigned to the selected members for this period. Leave the default target — only fill it where you need a different one.</div>
                             </div>
 
                             {/* Per-member target overrides */}

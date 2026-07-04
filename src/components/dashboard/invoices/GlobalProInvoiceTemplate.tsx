@@ -87,10 +87,15 @@ export default function GlobalProInvoiceTemplate({
       ? invoice.invoiceNumber
       : invoice.proformaNumber || invoice.invoiceNumber;
 
-  const invoiceUrl =
+  const invoiceBaseUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/p/${invoice.id}`
       : `https://stmjournals.com/p/${invoice.id}`;
+  // Per-invoice token (from GET /api/invoices/[id]) lets the QR open the
+  // public page directly, without the legacy shared access code.
+  const invoiceUrl = invoice.publicToken
+    ? `${invoiceBaseUrl}?token=${invoice.publicToken}`
+    : invoiceBaseUrl;
 
   // Determine accent color based on export/domestic
   const accentColor = isExport ? "#1a56db" : "#0d6efd";

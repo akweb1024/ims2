@@ -6,6 +6,7 @@ import { releaseInvoiceStockReservations, replaceInvoiceStockReservations } from
 import { buildTrackingMetadata } from '@/lib/dispatch';
 import { loadInvoiceAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 import { assertCompanyAccess } from '@/lib/access-policy';
+import { publicInvoiceToken } from '@/lib/public-invoice-token';
 
 export const GET = authorizedRoute(
     [],
@@ -81,6 +82,9 @@ export const GET = authorizedRoute(
                 ...invoice,
                 dispatchOrders,
                 dispatchOrder,
+                // Per-invoice share token — embedded in the QR/share link so the
+                // public page works without the legacy shared access code.
+                publicToken: publicInvoiceToken(invoice.id),
             });
         } catch (error) {
             return handleApiError(error, 'Failed to fetch invoice');

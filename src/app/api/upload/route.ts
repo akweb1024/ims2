@@ -5,6 +5,19 @@ import { StorageService, FileCategory } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+// Categories this generic endpoint may write to. Publicly-served categories
+// (publications, profile_pictures) have their own dedicated endpoints — letting
+// callers pick them here would allow dumping arbitrary files onto public URLs.
+const ALLOWED_CATEGORIES: FileCategory[] = ['general', 'documents'];
+
+// Extension allowlist for attachments (receipts, resumes, request docs).
+// Actively-rendered types (svg, html, js) are deliberately excluded — an SVG
+// served inline can run script in the viewer's session.
+const ALLOWED_EXTENSIONS = new Set([
+    'png', 'jpg', 'jpeg', 'gif', 'webp',
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt', 'zip',
+]);
+
 // POST /api/upload — unified upload endpoint using StorageService + FileRecord
 export async function POST(req: NextRequest) {
     try {
@@ -24,8 +37,23 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        if (!ALLOWED_EXTENSIONS.has(extension)) {
+            return NextResponse.json(
+                { error: `File type .${extension || 'unknown'} is not allowed` },
+                { status: 400 }
+            );
+        }
+
         // Optional metadata
-        const category      = (formData.get('category') as FileCategory) || 'general';
+        const requestedCategory = (formData.get('category') as FileCategory) || 'general';
+        if (!ALLOWED_CATEGORIES.includes(requestedCategory)) {
+            return NextResponse.json(
+                { error: `Category '${requestedCategory}' is not allowed on this endpoint` },
+                { status: 400 }
+            );
+        }
+        const category = requestedCategory;
         const context       = formData.get('context') as string | null;
         const journalId     = formData.get('journalId') as string | null;
         const volumeNumber  = formData.get('volumeNumber') ? parseInt(formData.get('volumeNumber') as string) : undefined;

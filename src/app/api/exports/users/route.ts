@@ -5,11 +5,18 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 export async function GET(req: NextRequest) {
     try {
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // Only SUPER_ADMIN may export across companies; everyone else is
+        // scoped to their own company.
+        const where = decoded.role === 'SUPER_ADMIN'
+            ? {}
+            : { companyId: decoded.companyId ?? '__none__' };
+
         const users = await prisma.user.findMany({
+            where,
             include: {
                 company: true,
                 department: true,
