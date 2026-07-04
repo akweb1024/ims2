@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'react-hot-toast';
 import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 
@@ -145,7 +146,9 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
             setSelectedReport(null);
         } catch (error) {
             console.error('Validation failed:', error);
-            alert('Failed to submit validation');
+            // Surface the API's reason (e.g. "Approval blocked: mandatory agenda
+            // pending (…)") so the manager knows to use the override checkbox.
+            toast.error(error instanceof Error && error.message ? error.message : 'Failed to submit validation', { duration: 8000 });
         } finally {
             setSubmitting(false);
         }
