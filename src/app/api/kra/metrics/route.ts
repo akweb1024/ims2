@@ -47,14 +47,14 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
         name: d.name, unit: d.unit, direction: d.direction, dataSource: d.dataSource,
         sourceType: d.sourceType ?? null, aggregation: d.aggregation,
         department: d.department ?? null, isActive: d.isActive,
-        ...(d.metadata !== undefined ? { metadata: d.metadata as any } : {}),
+        ...(d.metadata != null ? { metadata: d.metadata as any } : {}),
       },
       create: {
         companyId: user.companyId, scope: 'KRA', sourceModule: 'KRA', key: d.key,
         name: d.name, unit: d.unit, direction: d.direction, dataSource: d.dataSource,
         sourceType: d.sourceType ?? null, aggregation: d.aggregation,
         department: d.department ?? null, isActive: d.isActive,
-        ...(d.metadata !== undefined ? { metadata: d.metadata as any } : {}),
+        ...(d.metadata != null ? { metadata: d.metadata as any } : {}),
       },
     });
 
@@ -88,7 +88,7 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
         ...(rest.aggregation !== undefined ? { aggregation: rest.aggregation } : {}),
         ...(rest.department !== undefined ? { department: rest.department ?? null } : {}),
         ...(rest.isActive !== undefined ? { isActive: rest.isActive } : {}),
-        ...(rest.metadata !== undefined ? { metadata: rest.metadata as any } : {}),
+        ...(rest.metadata != null ? { metadata: rest.metadata as any } : {}),
       },
     });
 

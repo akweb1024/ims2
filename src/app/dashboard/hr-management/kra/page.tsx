@@ -155,7 +155,7 @@ function MetricsTab() {
                         </td>
                         <td className="px-3 py-2 text-gray-600">{m.aggregation}</td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
-                          <button onClick={() => setEditing({ ...m, sourceType: m.sourceType || '', department: m.department || '' })}
+                          <button onClick={() => setEditing({ ...m, sourceType: m.sourceType || '', department: m.department || '', metadata: (m as any).metadata ?? undefined })}
                             className="text-gray-400 hover:text-indigo-600 p-1"><FiEdit2 /></button>
                           {m.isActive && (
                             <button onClick={() => deactivate(m.id)} className="text-gray-400 hover:text-red-600 p-1"><FiTrash2 /></button>
