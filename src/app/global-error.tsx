@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 function isStaleBuildAssetError(message: string) {
@@ -21,6 +22,11 @@ export default function GlobalError({
 }) {
     useEffect(() => {
         console.error('Global Application Error:', error);
+
+        // Stale-deploy chunk errors are expected churn, not bugs.
+        if (!isStaleBuildAssetError(error.message || '')) {
+            Sentry.captureException(error);
+        }
     }, [error]);
 
     const isStaleBuildError = isStaleBuildAssetError(error.message || '');

@@ -49,4 +49,17 @@ const nextConfig = {
     poweredByHeader: false,
 };
 
-module.exports = nextConfig;
+const { withSentryConfig } = require('@sentry/nextjs');
+
+// Sentry wrapping is inert without a DSN at runtime. Source-map upload is
+// disabled (no SENTRY_AUTH_TOKEN required; keeps the memory-fragile build
+// unchanged) — errors report against minified frames, which is acceptable
+// for errors-first monitoring.
+module.exports = withSentryConfig(nextConfig, {
+    silent: true,
+    telemetry: false,
+    sourcemaps: { disable: true },
+    disableLogger: true,
+    automaticVercelMonitors: false,
+    widenClientFileUpload: false,
+});
