@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { NavModule, NavCategory, NavItem } from '@/config/navigation';
 
 interface SidebarProps {
@@ -25,9 +25,26 @@ export default function Sidebar({
 }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const activeMod = navigationModules.find(m => m.id === activeModule) || navigationModules[0];
     const sideNavigation = activeMod?.categories || [];
+
+    // An item like "/dashboard/hr-management?tab=attendance" is active only when
+    // the path AND its query params match; a query-less item yields to its tab
+    // siblings whenever a ?tab= is present on the same path.
+    const isItemActive = (href: string) => {
+        const [itemPath, itemQuery] = href.split('?');
+        if (itemQuery) {
+            if (pathname !== itemPath) return false;
+            return Array.from(new URLSearchParams(itemQuery).entries())
+                .every(([key, value]) => searchParams.get(key) === value);
+        }
+        const pathMatch = itemPath === '/dashboard'
+            ? pathname === '/dashboard'
+            : pathname === itemPath || pathname?.startsWith(`${itemPath}/`);
+        return !!pathMatch && !(pathname === itemPath && searchParams.get('tab'));
+    };
 
     return (
         <aside
@@ -43,7 +60,7 @@ export default function Sidebar({
                 boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
             }}
         >
-            <nav className="custom-scrollbar flex flex-1 flex-col space-y-1 overflow-x-hidden overflow-y-auto p-3">
+            <nav aria-label="Sidebar" className="custom-scrollbar flex flex-1 flex-col space-y-1 overflow-x-hidden overflow-y-auto p-3">
                 {/* Mobile Module Selector */}
                 <div className="lg:hidden mb-4 space-y-1.5 overflow-hidden">
                     <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-2">Switch Module</label>
@@ -85,11 +102,12 @@ export default function Sidebar({
 
                             <div className="space-y-1">
                                 {category.items.map((item: NavItem) => {
-                                    const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                                    const isActive = isItemActive(item.href);
                                     return (
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            aria-current={isActive ? 'page' : undefined}
                                             onClick={() => {
                                                 if (window.innerWidth < 1024) {
                                                     setSidebarOpen(false);

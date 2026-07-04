@@ -54,7 +54,7 @@ export const GET = authorizedRoute(
 
             const targetUserId = searchParams.get('targetUserId');
 
-            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'].includes(user.role)) {
                 if (user.companyId) {
                     where.companyId = user.companyId;
                 }

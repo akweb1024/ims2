@@ -41,7 +41,7 @@ export const GET = authorizedRoute(
                 }
 
                 // Manager/Team Leader/Admin viewing specific employee
-                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
                 }
 
@@ -57,7 +57,7 @@ export const GET = authorizedRoute(
 
                 where.employeeId = resolvedEmployeeId;
                 if (user.companyId) where.employee = { user: { companyId: user.companyId } };
-            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'].includes(user.role)) {
 
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);

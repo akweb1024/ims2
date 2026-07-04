@@ -31,15 +31,14 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
                     { name: 'Digital Twin', href: '/dashboard/digital-twin', icon: '🌍', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
-                    { name: 'Think Tank', href: '/dashboard/think-tank', icon: '💡', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT'] },
-                    { name: 'Problems', href: '/dashboard/problems', icon: '🚨', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EDITOR', 'EDITOR_IN_CHIEF', 'JOURNAL_MANAGER'] },
+                    { name: 'Think Tank', href: '/dashboard/think-tank', icon: '💡', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN'] },
+                    { name: 'Problems', href: '/dashboard/problems', icon: '🚨', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'EDITOR', 'EDITOR_IN_CHIEF', 'JOURNAL_MANAGER'] },
                     { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
                     { name: 'File Manager', href: '/dashboard/files', icon: '🗂️', roles: ['*'] },
                     { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                     { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
                     { name: 'Automation Forms', href: '/dashboard/automation/forms', icon: '🧩', roles: ['SUPER_ADMIN'] },
                     { name: 'Sentinel Automation', href: '/dashboard/sentinel/automation', icon: '🛡️', roles: ['SUPER_ADMIN', 'ADMIN'] },
-                    { name: 'Team Dashboard', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
             },
             {
@@ -63,8 +62,8 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Team', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Work Reports', href: '/dashboard/manager/team/work-reports', icon: '📝', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance', href: '/dashboard/manager/team/performance', icon: '📊', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
-                    { name: 'Performance Workspace', href: '/dashboard/performance/workspace', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
-                    { name: 'My Performance', href: '/dashboard/my-performance', icon: '📈', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'Performance Workspace', href: '/dashboard/performance/workspace', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'My Performance', href: '/dashboard/my-performance', icon: '📈', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Goal Verification', href: '/dashboard/performance/verify', icon: '🛡️', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                     { name: 'KRA Analytics', href: '/dashboard/performance/team', icon: '📊', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                     { name: 'Assign KRA', href: '/dashboard/performance/assign', icon: '🎯', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
@@ -89,21 +88,21 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Operations',
                 items: [
-                    { name: 'HR Dashboard', href: '/dashboard/hr-management', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Recruitment', href: '/dashboard/recruitment', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'HR Dashboard', href: '/dashboard/hr-management', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'] },
+                    { name: 'Recruitment', href: '/dashboard/recruitment', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'] },
                     { name: 'Screening Templates', href: '/dashboard/hr/screening-templates', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
-                    { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Payroll', href: '/dashboard/hr-management/payroll', icon: '💵', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
-                    { name: 'Reimbursements', href: '/dashboard/hr-management?tab=reimbursements', icon: '🧾', roles: ['SUPER_ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'] },
+                    { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER'] },
+                    { name: 'Payroll', href: '/dashboard/hr-management/payroll', icon: '💵', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'HR_MANAGER'] },
+                    { name: 'Reimbursements', href: '/dashboard/hr-management?tab=reimbursements', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'] },
                 ]
             },
             {
                 title: 'Team Management',
                 items: [
-                    { name: 'Work Reports', href: '/dashboard/hr-management?tab=reports', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Attendance', icon: '🕒', href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Productivity', icon: '⚡', href: '/dashboard/hr-management?tab=productivity', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                    { name: 'Work Reports', href: '/dashboard/hr-management?tab=reports', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
+                    { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
+                    { name: 'Attendance', icon: '🕒', href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
+                    { name: 'Productivity', icon: '⚡', href: '/dashboard/hr-management?tab=productivity', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'] },
                     { name: 'Performance Workspace', icon: '📊', href: '/dashboard/performance/workspace?tab=review', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Employee Performance 360', icon: '🧭', href: '/dashboard/hr-management/performance/employee-360', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'KRA & Targets', icon: '🎯', href: '/dashboard/hr-management/kra', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'] },
@@ -113,7 +112,6 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Salary Increments', icon: '💰', href: '/dashboard/hr-management/increments', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Increment Advisor', icon: '📈', href: '/dashboard/hr-management/increments/recommend', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'] },
                     { name: 'Increment 360 Analysis', icon: '📉', href: '/dashboard/hr-management/increments/analytics', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Manage Team', icon: '👥', href: '/dashboard/manager/team', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
             }
         ]
@@ -259,7 +257,6 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Content',
                 items: [
                     { name: 'Articles', href: '/dashboard/articles', icon: '📄', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
-                    { name: 'Volumes & Issues', href: '/dashboard/volumes', icon: '📚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                     { name: 'Indexing Report', href: '/dashboard/reports/indexing', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                 ]
             },
@@ -328,7 +325,7 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Logistics Hub',
                 items: [
                     { name: 'Shipment Hub', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
-                    { name: 'Track Orders', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'Follow-ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                 ]
             }
         ]
@@ -431,18 +428,28 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
         'TEAM_LEADER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'IT', 'QUALITY'],
         'FINANCE_ADMIN': ['CORE', 'FINANCE', 'QUALITY', 'HR'],
         'HR_MANAGER': ['CORE', 'HR', 'STAFF_MANAGEMENT', 'LMS', 'QUALITY'],
+        'HR': ['CORE', 'HR', 'QUALITY'],
         'EXECUTIVE': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY', 'LOGISTIC'],
-        'EMPLOYEE': ['CORE', 'IT'],
         'IT_MANAGER': ['CORE', 'IT', 'QUALITY'],
         'IT_ADMIN': ['CORE', 'IT', 'QUALITY'],
-        'IT_SUPPORT': ['CORE', 'IT'],
+        'EDITOR': ['CORE', 'PUBLICATION'],
+        'EDITOR_IN_CHIEF': ['CORE', 'PUBLICATION'],
+        'SECTION_EDITOR': ['CORE', 'PUBLICATION'],
+        'JOURNAL_MANAGER': ['CORE', 'PUBLICATION'],
+        'PLAGIARISM_CHECKER': ['CORE', 'PUBLICATION'],
+        'QUALITY_CHECKER': ['CORE', 'PUBLICATION'],
+        'REVIEWER': ['CORE', 'PUBLICATION'],
+        'CUSTOMER': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY'],
+        'AGENCY': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY'],
     };
 
-    const rawMods = defaultModulesByRole[role] || ['CORE', 'IT'];
+    const rawMods = defaultModulesByRole[role] || ['CORE'];
     const defaultMods = [...rawMods];
 
-    // Ensure IT is in everyone's list if they are an internal role
-    if (!defaultMods.includes('IT') && !defaultMods.includes('*')) {
+    // Ensure IT (service desk) is in the list for internal roles only —
+    // external accounts (customers, agencies, reviewers) don't get IT tooling.
+    const externalRoles = ['CUSTOMER', 'AGENCY', 'REVIEWER'];
+    if (!externalRoles.includes(role) && !defaultMods.includes('IT') && !defaultMods.includes('*')) {
         defaultMods.push('IT');
     }
 
