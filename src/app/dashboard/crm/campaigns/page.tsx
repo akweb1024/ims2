@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     CRMPageShell, 
     CRMStatCard, 
@@ -65,7 +64,7 @@ export default function CRMCampaignsPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <CRMPageShell
                 title="Automations & Sequences"
                 subtitle="Design, target, and launch automated drip campaigns and high-impact marketing sequences."
@@ -301,6 +300,6 @@ export default function CRMCampaignsPage() {
                     </form>
                 </CRMModal>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

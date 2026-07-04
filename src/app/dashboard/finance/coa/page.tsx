@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { AccountType } from '@prisma/client';
 
 export default function ChartOfAccountsPage() {
@@ -56,10 +55,10 @@ export default function ChartOfAccountsPage() {
 
     const groupByType = (type: string) => accounts.filter(a => a.type === type);
 
-    if (loading) return <DashboardLayout><div>Loading...</div></DashboardLayout>;
+    if (loading) return <><div>Loading...</div></>;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -166,6 +165,6 @@ export default function ChartOfAccountsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

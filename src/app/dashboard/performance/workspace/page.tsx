@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type TabKey = 'goals' | 'kpis' | 'tasks' | 'review';
 
@@ -422,7 +421,7 @@ function PerformanceWorkspaceClient() {
   });
 
   return (
-    <DashboardLayout userRole={userRole}>
+    <>
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -794,18 +793,18 @@ function PerformanceWorkspaceClient() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 
 export default function PerformanceWorkspacePage() {
   return (
     <Suspense fallback={
-      <DashboardLayout>
+      <>
         <div className="p-8">
           <div className="card-premium p-8 text-center text-secondary-500 font-bold">Loading performance workspace...</div>
         </div>
-      </DashboardLayout>
+      </>
     }>
       <PerformanceWorkspaceClient />
     </Suspense>

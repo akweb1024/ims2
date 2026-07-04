@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CreateInvoiceModal from "@/components/dashboard/CreateInvoiceModal";
 
 export default function NewInvoicePage() {
@@ -14,7 +13,7 @@ export default function NewInvoicePage() {
   const returnTo = searchParams.get("returnTo") || "/dashboard/crm/invoices";
 
   return (
-    <DashboardLayout userRole={userRole}>
+    <>
       <CreateInvoiceModal
         isOpen={true}
         onClose={() => router.push(returnTo)}
@@ -22,6 +21,6 @@ export default function NewInvoicePage() {
         editId={editId}
         renderMode="page"
       />
-    </DashboardLayout>
+    </>
   );
 }

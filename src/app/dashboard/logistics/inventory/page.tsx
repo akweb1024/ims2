@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Search, Plus, Package, MapPin, AlertTriangle, Loader2, ArrowRight, Pencil, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -237,7 +236,7 @@ export default function InventoryLedgerPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 
                 {/* Header */}
@@ -579,6 +578,6 @@ export default function InventoryLedgerPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

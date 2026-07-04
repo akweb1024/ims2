@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import AuthorStats from './AuthorStats';
@@ -9,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AuthorDashboard() {
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6 pb-20">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -31,6 +30,6 @@ export default async function AuthorDashboard() {
                     <AuthorStats />
                 </Suspense>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

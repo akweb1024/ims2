@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
@@ -214,7 +213,7 @@ export default function RazorpayTrackerPage() {
 
     return (
         <>
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6 animate-fade-in pb-20">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -772,7 +771,7 @@ export default function RazorpayTrackerPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
 
         {/* Toast Notification */}
         {toast && (

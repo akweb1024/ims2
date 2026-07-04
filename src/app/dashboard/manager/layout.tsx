@@ -24,16 +24,16 @@ export default function ManagerDashboardLayout({
     children: ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:block fixed h-full z-10">
+        <div className="flex min-h-full bg-gray-50">
+            {/* Sub-navigation — rendered inside the dashboard chrome, so it must stay in-flow (not fixed) */}
+            <aside className="w-64 bg-white border-r border-gray-200 hidden md:block shrink-0 self-start">
                 <div className="h-16 flex items-center px-6 border-b border-gray-200">
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800">
                         Manager Portal
                     </span>
                 </div>
 
-                <div className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
+                <div className="p-4 space-y-1">
                     <div className="mb-6">
                         <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                             Cross-Company Management
@@ -70,7 +70,7 @@ export default function ManagerDashboardLayout({
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-8">
+            <main className="flex-1 p-8">
                 {children}
             </main>
         </div>

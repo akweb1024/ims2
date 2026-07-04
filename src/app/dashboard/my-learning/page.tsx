@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
@@ -47,7 +46,7 @@ export default function MyLearningPage() {
     if (loading) return <div className="p-8 text-center">Loading your learning journey...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -290,7 +289,7 @@ export default function MyLearningPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

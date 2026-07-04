@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Plus, Search, Filter, ListTodo, DollarSign, Clock, User, AlertCircle, BookOpen,
     ChevronRight, MoreVertical, LayoutGrid, Kanban, Target, CheckCircle2, AlertTriangle,
@@ -225,7 +224,7 @@ export default function TasksPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-24 space-y-8">
 
                 {/* ── HEADER ──────────────────────────────────── */}
@@ -412,6 +411,6 @@ export default function TasksPage() {
                     otherTasks={tasks}
                 />
             </div>
-        </DashboardLayout>
+        </>
     );
 }

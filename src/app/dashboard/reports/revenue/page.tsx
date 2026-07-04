@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { Download } from 'lucide-react';
@@ -76,7 +75,7 @@ export default async function RevenueReportPage() {
     const { monthly, yearly } = await getRevenueData();
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -103,6 +102,6 @@ export default async function RevenueReportPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

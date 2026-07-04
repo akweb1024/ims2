@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, CheckCircle, AlertOctagon, Trash2, Calendar, User, Search, Loader2 } from 'lucide-react';
 
 interface DiaryEntry {
@@ -117,7 +116,7 @@ export default function RedGreenDiaryPage() {
     });
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -302,6 +301,6 @@ export default function RedGreenDiaryPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

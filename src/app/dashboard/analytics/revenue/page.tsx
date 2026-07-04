@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DollarSign, TrendingUp, Users, CreditCard, Calendar, Award, Building2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -59,18 +58,18 @@ export default function RevenueDashboard() {
 
     if (loading || !revenueData) {
         return (
-            <DashboardLayout userRole={user?.role}>
+            <>
                 <div className="flex justify-center items-center min-h-[60vh]">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     const { summary, breakdown, trends, counts } = revenueData;
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -306,7 +305,7 @@ export default function RevenueDashboard() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

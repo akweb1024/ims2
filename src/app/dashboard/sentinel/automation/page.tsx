@@ -1,5 +1,4 @@
 import React from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { AutomationBuilder } from '@/components/sentinel/AutomationBuilder';
 import { Cpu, Zap, Activity } from 'lucide-react';
 
@@ -11,7 +10,7 @@ const stats = [
 
 export default function AutomationPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="p-8 max-w-7xl mx-auto space-y-12">
         {/* Header Section */}
         <header className="relative py-12 px-8 rounded-[40px] bg-gradient-to-br from-indigo-950 via-slate-900 to-black overflow-hidden border border-indigo-500/10">
@@ -54,6 +53,6 @@ export default function AutomationPage() {
           <AutomationBuilder />
         </section>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

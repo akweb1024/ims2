@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { MapPin, Globe } from 'lucide-react';
 
 export default function EditAgencyPage() {
@@ -155,16 +154,16 @@ export default function EditAgencyPage() {
 
     if (isFetchingData) {
         return (
-            <DashboardLayout userRole="ADMIN">
+            <>
                 <div className="flex items-center justify-center h-96">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout userRole="ADMIN">
+        <>
             <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center space-x-4 mb-6">
                     <button onClick={() => router.push(`/dashboard/crm/agencies/${id}`)} className="p-2 hover:bg-white rounded-full transition-colors text-secondary-500">
@@ -444,6 +443,6 @@ export default function EditAgencyPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

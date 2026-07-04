@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Building2, ArrowLeft, Save, Globe, MapPin, Phone, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -183,7 +182,7 @@ export default function NewInstitutionPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
@@ -673,6 +672,6 @@ export default function NewInstitutionPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

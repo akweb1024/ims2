@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, use, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Users,
     UserPlus,
@@ -180,7 +179,7 @@ export default function JournalReviewersPage({ params }: { params: Promise<{ id:
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/editorial" className="p-2 hover:bg-secondary-100 rounded-full transition-colors">
@@ -410,7 +409,7 @@ export default function JournalReviewersPage({ params }: { params: Promise<{ id:
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

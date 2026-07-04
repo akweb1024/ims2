@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LayoutDashboard,
     BookOpen,
@@ -33,7 +32,7 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
     ];
 
     return (
-        <DashboardLayout>
+        <>
             <div className="flex flex-col h-full page-animate">
                 {/* Finance Sub-Navigation */}
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-secondary-200 sticky top-[64px] z-20 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
@@ -61,7 +60,7 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
                     {children}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LayoutDashboard,
     BookOpen,
@@ -57,15 +56,15 @@ export default function ReviewerDashboardPage() {
     };
 
     if (loading) return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-        </DashboardLayout>
+        </>
     );
 
     if (!data?.isReviewer) return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto p-12 text-center bg-white rounded-[3rem] border border-secondary-100 shadow-sm mt-10">
                 <ShieldCheck size={64} className="mx-auto mb-6 text-secondary-200" />
                 <h1 className="text-3xl font-black text-secondary-900 mb-4">Not Registered as a Reviewer</h1>
@@ -74,13 +73,13 @@ export default function ReviewerDashboardPage() {
                 </p>
                 <Link href="/dashboard" className="btn btn-primary px-10">Return to Dashboard</Link>
             </div>
-        </DashboardLayout>
+        </>
     );
 
     const { statistics, recentAssignments, upcomingDeadlines } = data;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-7xl mx-auto space-y-8 pb-12">
                 <div className="flex justify-between items-center">
                     <div>
@@ -315,7 +314,7 @@ export default function ReviewerDashboardPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

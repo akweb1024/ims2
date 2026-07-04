@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Search, User, Mail, Award, BookOpen, Briefcase } from 'lucide-react';
 
 export default function MentorsPage() {
@@ -37,7 +36,7 @@ export default function MentorsPage() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -82,6 +81,6 @@ export default function MentorsPage() {
                     ))}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

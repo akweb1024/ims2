@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 
 export default function BulkCommunicationPage() {
@@ -60,7 +59,7 @@ export default function BulkCommunicationPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/communications" className="p-2 hover:bg-secondary-100 rounded-full transition-colors">
@@ -150,6 +149,6 @@ export default function BulkCommunicationPage() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

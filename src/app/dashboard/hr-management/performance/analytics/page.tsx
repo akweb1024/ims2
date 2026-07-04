@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, Users, Building, Calendar, Filter, DollarSign, Target, Award } from 'lucide-react';
 import { FormattedNumber } from '@/components/common/FormattedNumber';
 import PerformanceVsTargetChart from '@/components/dashboard/hr/PerformanceVsTargetChart';
@@ -129,7 +128,7 @@ export default function PerformanceAnalyticsPage() {
     };
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -269,6 +268,6 @@ export default function PerformanceAnalyticsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

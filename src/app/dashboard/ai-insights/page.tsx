@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 
 export default function AIPredictionPage() {
@@ -49,16 +48,16 @@ export default function AIPredictionPage() {
 
     if (loading && !data) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -214,7 +213,7 @@ export default function AIPredictionPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

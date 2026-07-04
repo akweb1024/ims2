@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function PerformanceWorkspaceHelpPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
         <div className="flex items-center gap-3 border-b border-secondary-200 pb-5">
           <Link href="/dashboard/performance/workspace" className="text-sm font-bold text-primary-600 hover:underline">
@@ -108,7 +107,7 @@ export default function PerformanceWorkspaceHelpPage() {
           </ul>
         </section>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

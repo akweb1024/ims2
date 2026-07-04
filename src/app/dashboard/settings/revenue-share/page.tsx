@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Share2, Plus, Trash2, Building2, Layers, Info, BarChart3, Settings2, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type DepartmentType = 'REVENUE' | 'PRODUCTION' | 'SUPPORT';
@@ -245,7 +244,7 @@ export default function RevenueSharePage() {
     }, [rules]);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-6xl mx-auto space-y-8">
                 <div className="flex items-center gap-3">
                     <Share2 className="w-7 h-7 text-indigo-600" />
@@ -477,7 +476,7 @@ export default function RevenueSharePage() {
                     </>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

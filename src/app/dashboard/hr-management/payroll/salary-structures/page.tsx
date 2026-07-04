@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Download, Upload, Save, Search, DollarSign, FileText } from 'lucide-react';
 
 export default function SalaryStructurePage() {
@@ -142,7 +141,7 @@ export default function SalaryStructurePage() {
     );
 
     return (
-        <DashboardLayout userRole="HR_MANAGER">
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -211,6 +210,6 @@ export default function SalaryStructurePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

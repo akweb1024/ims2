@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, Users, Building, Filter, DollarSign, PieChart, CheckCircle, Clock, Target } from 'lucide-react';
 import { FormattedNumber } from '@/components/common/FormattedNumber';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
@@ -81,7 +80,7 @@ export default function IncrementAnalyticsPage() {
     }, [fetchAnalytics]);
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -332,7 +331,7 @@ export default function IncrementAnalyticsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout >
+        </>
     );
 }
 

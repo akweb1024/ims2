@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import {
     CRMPageShell,
@@ -183,7 +182,7 @@ export default function InvoicesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Billing & Invoices"
                 subtitle="High-level financial overview and transaction lifecycle management."
@@ -385,6 +384,6 @@ export default function InvoicesPage() {
                 </div>
             </CRMPageShell>
 
-        </DashboardLayout>
+        </>
     );
 }

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
 import GlobalProInvoiceTemplate from "@/components/dashboard/invoices/GlobalProInvoiceTemplate";
 import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
@@ -622,17 +621,17 @@ export default function InvoiceDetailPage({
 
   if (loading) {
     return (
-      <DashboardLayout userRole={userRole}>
+      <>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (error || !invoice) {
     return (
-      <DashboardLayout userRole={userRole}>
+      <>
         <div className="card-premium p-12 text-center">
           <div className="text-danger-500 text-4xl mb-4">⚠️</div>
           <h2 className="text-xl font-bold text-secondary-900">
@@ -645,7 +644,7 @@ export default function InvoiceDetailPage({
             Go Back
           </button>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -779,7 +778,7 @@ export default function InvoiceDetailPage({
   const validUntilDate = new Date(invoice.dueDate);
 
   return (
-    <DashboardLayout userRole={userRole}>
+    <>
       <style>{`
                 @media print {
                     @page {
@@ -2031,6 +2030,6 @@ export default function InvoiceDetailPage({
         </div>
       )}
 
-    </DashboardLayout>
+    </>
   );
 }

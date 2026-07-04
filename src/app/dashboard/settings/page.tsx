@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type Tab = 'General' | 'Security' | 'Notifications' | 'Allocations' | 'Dashboard';
 
@@ -212,7 +211,7 @@ export default function SettingsPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-5xl mx-auto space-y-8">
                 <div>
                     <h1 className="text-3xl font-bold text-secondary-900">Settings</h1>
@@ -590,6 +589,6 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

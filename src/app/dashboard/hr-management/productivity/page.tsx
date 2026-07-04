@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell, PieChart, Pie
@@ -50,7 +49,7 @@ export default function ProductivityAnalysisPage() {
     const COLORS = ['#2563eb', '#4f46e5', '#db2777', '#ea580c', '#16a34a'];
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6 animate-fade-in">
                 <div className="flex justify-between items-end">
                     <div>
@@ -261,7 +260,7 @@ export default function ProductivityAnalysisPage() {
                     </>
                 )}
             </div>
-        </DashboardLayout >
+        </>
     );
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Edit2, Trash2, Search, Briefcase, Target, Info, AlertCircle, Zap, GraduationCap, TrendingUp, ArrowRight } from 'lucide-react';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import SafeHTML from '@/components/common/SafeHTML';
@@ -130,7 +129,7 @@ export default function DesignationsPage() {
     const uniqueLevels = Array.from(new Set(designations.map(d => d.level))).sort((a, b) => a - b);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-8 pb-20">
                 {/* Hero Header */}
                 <div className="relative overflow-hidden bg-secondary-900 rounded-[2.5rem] p-10 md:p-14 text-white shadow-2xl">
@@ -464,6 +463,6 @@ export default function DesignationsPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import CommunicationForm from '@/components/dashboard/CommunicationForm';
 import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignmentManager';
@@ -141,11 +140,11 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     if (loading) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -403,7 +402,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1477,6 +1476,6 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

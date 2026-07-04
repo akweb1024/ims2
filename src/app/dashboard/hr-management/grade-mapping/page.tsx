@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Layers, Save, Wand2 } from 'lucide-react';
 
 interface Grade { id: string; code: string; name: string; minCtc: number | null; midCtc: number | null; maxCtc: number | null }
@@ -76,7 +75,7 @@ export default function GradeMappingPage() {
     const assignedCount = employees.filter((e) => assign[e.id]).length;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-6xl mx-auto space-y-6">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3">
@@ -163,6 +162,6 @@ export default function GradeMappingPage() {
                             )}
                 </section>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

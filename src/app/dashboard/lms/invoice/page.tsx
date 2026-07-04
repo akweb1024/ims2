@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import {
     CRMPageShell,
@@ -88,7 +87,7 @@ export default function LMSInvoicesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="LMS Workshop Invoices"
                 subtitle="Dedicated view for invoices generated through workshop registrations."
@@ -185,6 +184,6 @@ export default function LMSInvoicesPage() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
             />
-        </DashboardLayout>
+        </>
     );
 }

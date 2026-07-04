@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -55,27 +54,27 @@ export default function InstitutionDetailPage() {
 
     if (loading) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center h-96">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                         <p className="mt-4 text-secondary-500 font-bold">Loading institution intelligence...</p>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!institution) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="text-center py-20">
                     <h2 className="text-2xl font-black text-secondary-400">Institution Not Found</h2>
                     <Link href="/dashboard/crm/partners?tab=institutions" className="btn btn-primary mt-4">
                         Back to Partner Institutions
                     </Link>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -385,7 +384,7 @@ export default function InstitutionDetailPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title={institution.name}
                 subtitle="Institution intelligence, affiliation mapping, linked customers, and revenue visibility."
@@ -517,7 +516,7 @@ export default function InstitutionDetailPage() {
                     )}
                 </div>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }
 

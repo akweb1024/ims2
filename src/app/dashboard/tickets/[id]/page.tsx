@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -93,17 +92,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     };
 
     if (loading) return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-        </DashboardLayout>
+        </>
     );
 
     if (!ticket) return null;
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
@@ -270,6 +269,6 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

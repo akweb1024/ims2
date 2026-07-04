@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Award,
     Download,
@@ -144,7 +143,7 @@ export default function ReviewerCertificatesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-7xl mx-auto space-y-8 pb-20">
                 <div className="flex items-center gap-6">
                     <Link href="/dashboard/reviewer" className="p-3 hover:bg-white rounded-2xl transition-colors border border-transparent hover:border-secondary-100 flex items-center justify-center bg-secondary-50">
@@ -264,7 +263,7 @@ export default function ReviewerCertificatesPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

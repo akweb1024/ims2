@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, use } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Download, Mail, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GlobalProPOTemplate from '@/components/dashboard/supply-chain/GlobalProPOTemplate';
@@ -156,7 +155,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-5xl mx-auto space-y-6 print:max-w-none print:space-y-3">
                 <div className="flex items-center justify-between gap-3 print:hidden">
                     <Link
@@ -201,7 +200,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                     </>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

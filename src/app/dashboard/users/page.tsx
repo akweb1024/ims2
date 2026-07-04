@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
 
@@ -471,7 +470,7 @@ function UsersContent() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
@@ -1138,18 +1137,18 @@ function UsersContent() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }
 
 export default function UsersPage() {
     return (
         <Suspense fallback={
-            <DashboardLayout userRole="CUSTOMER">
+            <>
                 <div className="flex items-center justify-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         }>
             <UsersContent />
         </Suspense>

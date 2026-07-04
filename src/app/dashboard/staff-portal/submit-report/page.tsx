@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
@@ -627,7 +626,7 @@ export default function SubmitReportPage() {
 
     if (savedReport) {
         return (
-            <DashboardLayout userRole={user?.role}>
+            <>
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                     <div className="w-24 h-24 bg-success-100 text-success-600 rounded-full flex items-center justify-center mb-6 animate-bounce">
                         <CheckCircle size={48} />
@@ -641,12 +640,12 @@ export default function SubmitReportPage() {
                         </div>
                     )}
                 </div>
-            </DashboardLayout>
+            </>
         )
     }
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -1698,6 +1697,6 @@ export default function SubmitReportPage() {
                     ) : null)
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

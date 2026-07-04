@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CheckCircle, XCircle, Clock, Award, AlertCircle, ChevronRight } from 'lucide-react';
 
 export default function QuizPage() {
@@ -106,7 +105,7 @@ export default function QuizPage() {
 
     if (!quiz.canAttempt) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="max-w-2xl mx-auto">
                     <div className="card-premium p-8 text-center">
                         <AlertCircle size={64} className="mx-auto text-warning-600 mb-4" />
@@ -127,13 +126,13 @@ export default function QuizPage() {
                         </button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (results) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="max-w-2xl mx-auto">
                     <div className="card-premium p-8">
                         <div className="text-center mb-8">
@@ -235,7 +234,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -243,7 +242,7 @@ export default function QuizPage() {
     const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-3xl mx-auto">
                 <div className="card-premium p-8">
                     {/* Header */}
@@ -385,6 +384,6 @@ export default function QuizPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
