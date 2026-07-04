@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import GlobalSearch from './GlobalSearch';
 import { NavModule } from '@/config/navigation';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
+import { Home } from 'lucide-react';
 
 interface HeaderProps {
     sidebarOpen: boolean;
@@ -192,8 +193,11 @@ export default function Header({
                         {/* Module Switcher - Premium Dropdown */}
                         <div className="relative group/module-switcher hidden sm:block ml-2 sm:ml-4 lg:ml-8">
                             <button className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-4 py-2 transition-all duration-300 hover:border-border hover:bg-accent/50 hover:shadow-sm">
-                                <span className="text-xl drop-shadow-sm">
-                                    {navigationModules.find(m => m.id === activeModule)?.icon || '🏠'}
+                                <span className="text-primary">
+                                    {(() => {
+                                        const ActiveIcon = navigationModules.find(m => m.id === activeModule)?.icon || Home;
+                                        return <ActiveIcon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />;
+                                    })()}
                                 </span>
                                 <span className="text-sm font-semibold text-foreground">
                                     {navigationModules.find(m => m.id === activeModule)?.name || 'Select Module'}
@@ -223,8 +227,8 @@ export default function Header({
                                                 }
                                             `}
                                         >
-                                            <span className={`text-xl transition-transform duration-200 ${activeModule === mod.id ? 'scale-110 drop-shadow-sm' : 'grayscale group-hover/module-switcher:grayscale-0'}`}>
-                                                {mod.icon}
+                                            <span className={`transition-transform duration-200 ${activeModule === mod.id ? 'scale-110 text-primary' : 'text-muted-foreground'}`}>
+                                                <mod.icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                                             </span>
                                             <span className="font-semibold text-sm">
                                                 {mod.name}
