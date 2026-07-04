@@ -10,7 +10,6 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import FeedbackWidget from './FeedbackWidget';
 import AIChatWidget from './AIChatWidget';
-import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
 import { CommandNexus } from '@/components/nexus/CommandNexus';
 
 
@@ -26,8 +25,6 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const [isImpersonating, setIsImpersonating] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
-    const [isTerminating, setIsTerminating] = useState(false);
-    const [isInitialMount, setIsInitialMount] = useState(true);
     const pathname = usePathname();
     const router = useRouter();
 
@@ -140,16 +137,6 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             }
         }, 60000);
 
-        // Trigger materialization shortly after mount to ensure DOM is ready
-        if (status === 'authenticated') {
-            const timer = setTimeout(() => setIsInitialMount(false), 300);
-            return () => {
-                clearInterval(interval);
-                clearTimeout(timer);
-                if (cleanupSSE) cleanupSSE();
-            }
-        }
-
         return () => {
             clearInterval(interval);
             if (cleanupSSE) cleanupSSE();
@@ -183,12 +170,6 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
 
     const handleLogout = async () => {
         try {
-            // Trigger Disintegration Effect
-            setIsTerminating(true);
-            
-            // Wait for snap duration (2.5s) + buffer
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
             localStorage.clear();
             // Use NextAuth to sign out and redirect, ensuring the server cleans up the session
             await signOut({ callbackUrl: '/login', redirect: true });
@@ -373,9 +354,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-14 lg:pt-[65px]'}`}
             >
                 <div className="page-wrapper page-animate">
-                    <ThanosSnapWrapper isSnapped={isInitialMount || isTerminating} snapDuration={2.5}>
-                        {children}
-                    </ThanosSnapWrapper>
+                    {children}
                 </div>
             </main>
 

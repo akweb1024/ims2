@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Search, Plus, FileText, ShoppingCart, Loader2, ArrowRight, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -256,7 +255,7 @@ useEffect(() => {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 
                 {/* Header */}
@@ -751,6 +750,6 @@ useEffect(() => {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

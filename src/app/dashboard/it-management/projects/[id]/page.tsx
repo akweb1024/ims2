@@ -5,7 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     FolderKanban, Edit, Trash2, Calendar, DollarSign, Users, CheckCircle2,
     Clock, TrendingUp, AlertCircle, ArrowLeft, Plus, ListTodo, BookOpen, Target,
@@ -99,7 +98,7 @@ export default function ProjectDetailPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8">
                     <div className="relative">
                         <div className="h-24 w-24 border-8 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
@@ -112,13 +111,13 @@ export default function ProjectDetailPage() {
                         <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Accessing Secure Data Cluster: IMS-IT-01</p>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!project) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex items-center justify-center">
                     <div className="p-16 bg-slate-800/80 backdrop-blur-xl rounded-[4rem] border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] text-center max-w-xl space-y-10 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-rose-500" />
@@ -132,7 +131,7 @@ export default function ProjectDetailPage() {
                         <button onClick={() => router.push('/dashboard/it-management/projects')} className="px-12 py-5 bg-slate-700/50 border border-white/10 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-600/80 hover:scale-105 active:scale-95 transition-all shadow-2xl">Return to Fleet Command</button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -144,7 +143,7 @@ export default function ProjectDetailPage() {
     const canManageProject = isAuthorized || isProjectManager || isTeamLead;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-32 space-y-8">
                 
                 {/* Visual Decorative Grid */}
@@ -760,7 +759,7 @@ export default function ProjectDetailPage() {
                 onClose={() => setShowFleetAudit(false)}
                 projects={[project]}
             />
-        </DashboardLayout>
+        </>
     );
 }
 

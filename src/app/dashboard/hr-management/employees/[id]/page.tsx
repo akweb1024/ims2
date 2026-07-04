@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import {
     User, Mail, Phone, MapPin, Briefcase, DollarSign,
@@ -376,7 +375,7 @@ export default function EmployeeProfilePage() {
     if (!employee) return <div className="p-8 text-center">Employee not found</div>;
 
     return (
-        <DashboardLayout userRole={currentUser?.role || employee.user.role}>
+        <>
             <div className="space-y-6">
                 {/* Header Actions */}
                 <div className="flex items-center gap-4">
@@ -1451,6 +1450,6 @@ export default function EmployeeProfilePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

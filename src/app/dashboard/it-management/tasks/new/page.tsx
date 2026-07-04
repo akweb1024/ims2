@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ListTodo, Save, X, Calendar, DollarSign, User, AlertCircle, FolderKanban,
     ArrowLeft, Activity, Target, Zap, Shield, Briefcase, Tag, Clock
@@ -304,7 +303,7 @@ function NewTaskForm() {
 
 export default function NewTaskPage() {
     return (
-        <DashboardLayout>
+        <>
             <Suspense fallback={
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
@@ -313,6 +312,6 @@ export default function NewTaskPage() {
             }>
                 <NewTaskForm />
             </Suspense>
-        </DashboardLayout>
+        </>
     );
 }

@@ -16,7 +16,6 @@ import toast from 'react-hot-toast';
 import GoalList from '@/components/dashboard/performance/GoalList';
 import GoalModal from '@/components/dashboard/performance/GoalModal';
 import EvaluationModal from '@/components/dashboard/performance/EvaluationModal';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Goal } from '@/types/performance';
 
 export default function GoalsPage() {
@@ -81,7 +80,7 @@ export default function GoalsPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole || 'EMPLOYEE'}>
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -162,6 +161,6 @@ export default function GoalsPage() {
                     />
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

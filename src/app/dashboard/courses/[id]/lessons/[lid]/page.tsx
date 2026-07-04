@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function LessonPlayerPage() {
     const { id: courseId, lid: lessonId } = useParams();
@@ -59,7 +58,7 @@ export default function LessonPlayerPage() {
     const isCompleted = lesson.progress?.[0]?.isCompleted;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
                 {/* Main Content Area */}
                 <div className="flex-1 space-y-6 overflow-y-auto pr-2">
@@ -131,6 +130,6 @@ export default function LessonPlayerPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

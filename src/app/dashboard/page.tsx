@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import SearchableFilterSelect, { SearchableFilterOption } from '@/components/dashboard/SearchableFilterSelect';
 import { formatToISTDate } from '@/lib/date-utils';
 import { DashboardScope, DashboardWidgetKey, DASHBOARD_WIDGETS } from '@/lib/dashboard/widgets';
@@ -494,7 +493,7 @@ export default function DashboardPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
                     <div className="grid gap-0 lg:grid-cols-[1.25fr_0.95fr]">
@@ -953,6 +952,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

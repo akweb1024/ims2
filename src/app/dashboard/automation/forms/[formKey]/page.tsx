@@ -1,4 +1,3 @@
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import AutomationFormDetailClient from "@/components/dashboard/automation/AutomationFormDetailClient";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -23,7 +22,7 @@ export default async function AutomationFormDetailPage({
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mx-auto max-w-6xl space-y-4 p-6">
         <h1 className="text-2xl font-bold text-slate-900">
           {formKey === "invoice" ? "Invoice" : "Proforma"} Automation
@@ -33,7 +32,7 @@ export default async function AutomationFormDetailPage({
         </p>
         <AutomationFormDetailClient formKey={formKey as "invoice" | "proforma"} />
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

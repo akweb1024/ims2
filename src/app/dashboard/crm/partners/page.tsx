@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
 import AgencyList from './AgencyList';
 import InstitutionList from './InstitutionList';
@@ -31,7 +30,7 @@ export default function PartnersPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Partner Ecosystem"
                 subtitle="Manage your global network of agencies and institutions."
@@ -83,6 +82,6 @@ export default function PartnersPage() {
                     </AnimatePresence>
                 </div>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

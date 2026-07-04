@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     BookOpen, Plus, Edit2, Trash2, Save, Eye, Upload,
     Video, FileText, CheckCircle, GripVertical, X, HelpCircle
@@ -198,7 +197,7 @@ export default function CourseBuilderPage() {
     if (!course) return <div className="p-8 text-center">Course not found</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -507,6 +506,6 @@ export default function CourseBuilderPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout >
+        </>
     );
 }

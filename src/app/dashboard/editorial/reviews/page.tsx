@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function ReviewerDashboard() {
     const [reviews, setReviews] = useState<any[]>([]);
@@ -56,7 +55,7 @@ export default function ReviewerDashboard() {
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading your reviews...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-black text-secondary-900">My Review Assignments</h1>
@@ -146,6 +145,6 @@ export default function ReviewerDashboard() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

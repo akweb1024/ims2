@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import { DollarSign, TrendingUp, Save, X, User } from 'lucide-react';
 
@@ -250,7 +249,7 @@ function NewIncrementContent() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-8">
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
@@ -1137,7 +1136,7 @@ function NewIncrementContent() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

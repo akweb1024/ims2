@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 
@@ -107,17 +106,17 @@ export default function SubscriptionDetailsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (error || !subscription) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="card-premium p-8 text-center">
                     <div className="text-danger-600 text-5xl mb-4">⚠️</div>
                     <h2 className="text-2xl font-bold text-secondary-900">Error</h2>
@@ -126,7 +125,7 @@ export default function SubscriptionDetailsPage() {
                         Back to Subscriptions
                     </Link>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -143,7 +142,7 @@ export default function SubscriptionDetailsPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6 animate-fade-in">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -354,7 +353,7 @@ export default function SubscriptionDetailsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

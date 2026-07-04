@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { redirect } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import EmailLogFilters from './EmailLogFilters';
 import Link from 'next/link';
@@ -61,7 +60,7 @@ export default async function EmailLogsPage({ searchParams }: { searchParams: Pr
     const totalPages = Math.ceil(totalCount / limit);
 
     return (
-        <DashboardLayout userRole={user.role}>
+        <>
             <div className="max-w-7xl mx-auto space-y-6 p-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -149,7 +148,7 @@ export default async function EmailLogsPage({ searchParams }: { searchParams: Pr
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

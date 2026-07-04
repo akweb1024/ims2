@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Edit } from 'lucide-react'; // Import Edit icon
 
 export default function MonitoringDashboard() {
@@ -103,7 +102,7 @@ export default function MonitoringDashboard() {
         : monitors.filter(m => m.category === selectedCategory);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6 pb-20">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-black text-secondary-900">Web Monitor Overview</h1>
@@ -332,6 +331,6 @@ export default function MonitoringDashboard() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

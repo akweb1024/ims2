@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Upload, FileText, CheckCircle, AlertTriangle, Clock, BookOpen, UserCheck, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
@@ -182,7 +181,7 @@ export default function EditorialPage() {
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -431,6 +430,6 @@ export default function EditorialPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AiConsultantDashboard from '@/components/dashboard/AiConsultantDashboard';
 import { Zap, Sparkles, Building2 } from 'lucide-react';
 
@@ -16,7 +15,7 @@ export default function AiConsultantPage() {
     }, []);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 {/* AI Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-8 bg-secondary-900 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
@@ -67,6 +66,6 @@ export default function AiConsultantPage() {
                     </p>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

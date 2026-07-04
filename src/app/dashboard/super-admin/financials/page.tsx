@@ -1,5 +1,4 @@
 
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FinancialAnalyticsView from "@/components/dashboard/super-admin/FinancialAnalyticsView";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -14,10 +13,10 @@ export default async function SuperAdminFinancialsPage() {
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-8">
                 <FinancialAnalyticsView />
             </div>
-        </DashboardLayout>
+        </>
     );
 }

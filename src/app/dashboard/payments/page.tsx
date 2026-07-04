@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell
@@ -95,7 +94,7 @@ export default function PaymentsPage() {
     if (loading) return <div className="p-8 text-center text-secondary-500">Processing financial data...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6 animate-fade-in">
                 <div className="flex justify-between items-end">
                     <div>
@@ -296,6 +295,6 @@ export default function PaymentsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

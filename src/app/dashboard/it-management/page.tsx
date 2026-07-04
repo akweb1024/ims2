@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     FolderKanban, ListTodo, TrendingUp, Clock, DollarSign, Users, AlertCircle,
     CheckCircle2, ArrowUpRight, Briefcase, Target, Zap, ChevronRight, Activity,
@@ -63,7 +62,7 @@ export default function ITManagementDashboard() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-6">
                     <div className="relative">
                         <div className="h-20 w-20 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
@@ -76,13 +75,13 @@ export default function ITManagementDashboard() {
                         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Connecting to intelligence mainframe...</p>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!stats) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex items-center justify-center">
                     <div className="p-12 bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-red-500/20 text-center max-w-md space-y-6 shadow-2xl shadow-red-500/10">
                         <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto text-red-400 border border-red-500/20">
@@ -97,7 +96,7 @@ export default function ITManagementDashboard() {
                         </button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -108,7 +107,7 @@ export default function ITManagementDashboard() {
     const totalPriority = stats.tasksByPriority.high + stats.tasksByPriority.medium + stats.tasksByPriority.low;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-24 space-y-10">
 
                 {/* ── HERO HEADER ─────────────────────────────── */}
@@ -412,7 +411,7 @@ export default function ITManagementDashboard() {
                     </motion.div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

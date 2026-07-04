@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, use, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ChevronLeft,
     UserPlus,
@@ -111,17 +110,17 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
     };
 
     if (loading) return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-        </DashboardLayout>
+        </>
     );
 
     if (!article) return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="p-8 text-center text-danger-600">Article not found.</div>
-        </DashboardLayout>
+        </>
     );
 
     const filteredReviewers = reviewers.filter(rev =>
@@ -131,7 +130,7 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-7xl mx-auto space-y-8 pb-20">
                 {/* Header */}
                 <div className="flex items-center gap-6">
@@ -322,6 +321,6 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Key, Cloud, MessageSquare, CreditCard, Mail, Database, Lock, Eye, EyeOff, Plus, Trash2, Save, X } from 'lucide-react';
 
 interface Configuration {
@@ -138,7 +137,7 @@ export default function ConfigurationsPage() {
     const CategoryIcon = CATEGORIES.find(c => c.value === selectedCategory)?.icon || Settings;
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -382,6 +381,6 @@ export default function ConfigurationsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Plus, Search, Filter, FolderKanban, Calendar, DollarSign,
     TrendingUp, CheckCircle2, AlertCircle, Pause, LayoutGrid, PieChart,
@@ -232,7 +231,7 @@ export default function ProjectsPage() {
 
     /* ══════════════════════════════════════════════════════ */
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-24 space-y-5">
 
                 {/* ── HEADER ───────────────────────────────────────── */}
@@ -598,6 +597,6 @@ export default function ProjectsPage() {
 
                 <FleetAuditModal isOpen={showFleetAudit} onClose={() => setShowFleetAudit(false)} projects={projects} />
             </div>
-        </DashboardLayout>
+        </>
     );
 }

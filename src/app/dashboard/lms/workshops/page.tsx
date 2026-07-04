@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Search, Calendar, User, DollarSign, Clock, MapPin, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -56,7 +55,7 @@ export default function WorkshopsPage() {
     if (loading) return <div className="p-8">Loading workshops...</div>;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -155,6 +154,6 @@ export default function WorkshopsPage() {
                     ))}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

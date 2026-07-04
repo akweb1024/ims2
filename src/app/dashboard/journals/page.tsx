@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
 
@@ -56,7 +55,7 @@ export default function JournalsPage() {
     const [selectedJournal, setSelectedJournal] = useState<any>(null);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
@@ -229,6 +228,6 @@ export default function JournalsPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

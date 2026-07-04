@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     BarChart,
     Bar,
@@ -82,7 +81,7 @@ export default function AnalyticsPage() {
     }, []);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-8 pb-20">
                 <h1 className="text-2xl font-black text-secondary-900">Monitoring Analytics</h1>
 
@@ -138,7 +137,7 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     Computer, Plus, Search, Filter, AlertCircle, CheckCircle, 
     User, Server, Smartphone, List, LayoutGrid, X, Save,
@@ -133,17 +132,17 @@ export default function ITAssetsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-slate-600/20 border-t-slate-900 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Scanning Asset Matrix...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="min-h-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat pb-20">
                 <div className="max-w-7xl mx-auto space-y-10">
                     
@@ -411,6 +410,6 @@ export default function ITAssetsPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </DashboardLayout>
+        </>
     );
 }
