@@ -32,6 +32,7 @@ import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard
 import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
 import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
+import PerformancePipelineExplainer from '@/components/dashboard/hr/PerformancePipelineExplainer';
 import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
@@ -611,6 +612,8 @@ const HRManagementContent = () => {
                         </Link>
                     </div>
                 </section>
+
+                <PerformancePipelineExplainer onNavigate={setActiveTab} />
 
             </div>
 
