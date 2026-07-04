@@ -35,7 +35,6 @@ const CATEGORY_ICON: Record<string, any> = {
 
 export default function ITTicketsPage() {
     const [tickets, setTickets] = useState<TicketItem[]>([]);
-    const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [userRole, setUserRole] = useState('');
@@ -53,7 +52,6 @@ export default function ITTicketsPage() {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
         fetchTickets();
-        fetchMyAssets();
     }, []);
 
     const fetchTickets = async () => {
@@ -63,13 +61,6 @@ export default function ITTicketsPage() {
             if (res.ok) setTickets(await res.json());
         } catch { console.error('Uplink failed'); }
         finally { setLoading(false); }
-    };
-
-    const fetchMyAssets = async () => {
-        try {
-            const res = await fetch('/api/it/assets');
-            if (res.ok) setAssets(await res.json());
-        } catch { console.error('Asset scan failed'); }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

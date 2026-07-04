@@ -51,7 +51,7 @@ export default function MyITServicesPage() {
             const response = await fetch('/api/it/tasks?view=my&type=SERVICE_REQUEST');
             if (response.ok) {
                 const data = await response.json();
-                setTasks(data);
+                setTasks(data.map((t: any) => ({ ...t, serviceName: t.serviceName ?? t.service?.name ?? 'General Request' })));
             }
         } catch (error) {
             console.error('Failed to fetch tasks:', error);

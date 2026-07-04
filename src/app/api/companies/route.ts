@@ -58,7 +58,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, decoded) => {
         try {
             const body = await req.json();
-            const { name, address, phone, email, website } = body;
+            const { name, domain, address, phone, email, website } = body;
 
             if (!name) {
                 return createErrorResponse('Company Name is required', 400);
@@ -67,6 +67,7 @@ export const POST = authorizedRoute(
             const company = await prisma.company.create({
                 data: {
                     name,
+                    domain,
                     address,
                     phone,
                     email,

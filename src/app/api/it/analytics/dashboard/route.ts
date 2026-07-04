@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         const view = searchParams.get('view') || 'my'; // my, team, all
 
         // Determine access level
-        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(user.role);
+        const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER'].includes(user.role);
         const isManager = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER'].includes(user.role);
 
         // Build where clauses based on view

@@ -790,10 +790,6 @@ const HRManagementContent = () => {
                     <DocumentTemplateManager />
                 )}
 
-                {activeTab === 'analytics' && (
-                    <PerformanceAnalytics />
-                )}
-
                 {activeTab === 'budgets' && (
                     <BudgetManager />
                 )}
@@ -1122,6 +1118,7 @@ const HRManagementContent = () => {
                 )}
                 {activeTab === 'analytics' && (
                     <div className="space-y-8">
+                        <PerformanceAnalytics />
                         {/* AI Insights Section */}
                         {hrInsights && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

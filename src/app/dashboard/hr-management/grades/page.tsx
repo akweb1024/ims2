@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Layers, Plus, Pencil, Trash2, Sparkles, X } from 'lucide-react';
+import { inr } from '@/lib/format';
 
 interface Grade {
     id: string;
@@ -19,7 +20,6 @@ interface Grade {
 }
 
 const empty = { code: '', name: '', order: 0, minCtc: '', midCtc: '', maxCtc: '', noticeDays: '', typicalExperience: '', decisionRights: '' };
-const inr = (n: number | null) => (n == null ? '—' : `₹${n.toLocaleString('en-IN')}`);
 
 export default function GradesPage() {
     const [grades, setGrades] = useState<Grade[]>([]);

@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, AlertTriangle, CheckCircle2, Info, Ban } from 'lucide-react';
+import { inr } from '@/lib/format';
 
 interface Note { key: string; severity: 'BLOCK' | 'WARN' | 'INFO' | 'OK'; message: string }
 interface Rec { mode: string; minPct: number | null; maxPct: number | null; recommendedPct: number | null; equityCorrection: boolean; moderatedForHighCompa: boolean; notes: Note[] }
 interface Ctx { employeeName?: string | null; grade?: { code: string; name: string; midCtc: number | null } | null; baseSalary?: number | null; rating?: string | null; ratingPeriod?: string | null; compaRatio?: number | null }
 
-const inr = (n: number | null | undefined) => (n == null ? '—' : `₹${n.toLocaleString('en-IN')}`);
 const sev = {
     BLOCK: { icon: Ban, cls: 'bg-red-50 border-red-200 text-red-800' },
     WARN: { icon: AlertTriangle, cls: 'bg-amber-50 border-amber-200 text-amber-800' },
