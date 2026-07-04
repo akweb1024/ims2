@@ -112,8 +112,8 @@ const TeamTaskMasterView: React.FC = () => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Task Master</h2>
-                <p className="text-secondary-500 font-medium">Real-time oversight of daily team activities and assignments</p>
+                <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Daily Task Checklists</h2>
+                <p className="text-secondary-500 font-medium">Real-time oversight of your team&apos;s daily checklist tasks and assignments</p>
             </div>
 
             <div className="card-premium p-5 space-y-4">

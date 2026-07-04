@@ -7,7 +7,21 @@ import {
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
-const CATEGORIES = [
+interface NavTab {
+    id: string;
+    label: string;
+    /** Optional group header rendered above this tab inside the dropdown. */
+    section?: string;
+}
+
+interface NavCategory {
+    id: string;
+    title: string;
+    icon: React.ReactNode;
+    tabs: NavTab[];
+}
+
+const CATEGORIES: NavCategory[] = [
     {
         id: 'core',
         title: 'Core HR',
@@ -67,16 +81,18 @@ const CATEGORIES = [
     },
     {
         id: 'analytics',
-        title: 'Analytics',
+        title: 'Performance',
         icon: <BarChart2 size={18} />,
+        // Ordered as the performance pipeline flows:
+        // daily work → targets → recognition → insights
         tabs: [
-            { id: 'analytics', label: 'Performance Reviews' },
-            { id: 'goals', label: 'Goal Tracking (KRA/KPI)' },
-            { id: 'tasks', label: 'Task Master' },
-            { id: 'points', label: 'Points & Rewards' },
-            { id: 'reports', label: 'Work Reports' },
-            { id: 'productivity', label: 'Productivity Insights' },
-            { id: 'potential', label: 'Company Potential' },
+            { id: 'reports', label: 'Work Reports (Daily Review)', section: 'Daily Work' },
+            { id: 'tasks', label: 'Daily Task Checklists', section: 'Daily Work' },
+            { id: 'goals', label: 'Goals & Targets (KRA/KPI)', section: 'Targets' },
+            { id: 'points', label: 'Points & Rewards', section: 'Recognition' },
+            { id: 'analytics', label: 'Performance Reviews', section: 'Insights' },
+            { id: 'productivity', label: 'Productivity Insights', section: 'Insights' },
+            { id: 'potential', label: 'Company Potential', section: 'Insights' },
         ]
     }
 ];
@@ -139,25 +155,31 @@ export default function HRNavigation({ activeTab, onTabChange, onHelpClick }: { 
                                         <div className="text-[10px] font-black text-secondary-400 uppercase tracking-widest px-3 py-2 mb-1 border-b border-secondary-50">
                                             {cat.title} Menu
                                         </div>
-                                        {cat.tabs.map(tab => (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => {
-                                                    onTabChange(tab.id);
-                                                    setOpenDropdown(null);
-                                                }}
-                                                className={`
-                                                    w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all
-                                                    flex items-center justify-between group/item
-                                                    ${activeTab === tab.id
-                                                        ? 'bg-primary-50 text-primary-700'
-                                                        : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
-                                                    }
-                                                `}
-                                            >
-                                                {tab.label}
-                                                {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary-600" />}
-                                            </button>
+                                        {cat.tabs.map((tab, i) => (
+                                            <div key={tab.id}>
+                                                {tab.section && tab.section !== cat.tabs[i - 1]?.section && (
+                                                    <div className="text-[9px] font-black text-primary-400 uppercase tracking-widest px-3 pt-2 pb-1">
+                                                        {tab.section}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        onTabChange(tab.id);
+                                                        setOpenDropdown(null);
+                                                    }}
+                                                    className={`
+                                                        w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all
+                                                        flex items-center justify-between group/item
+                                                        ${activeTab === tab.id
+                                                            ? 'bg-primary-50 text-primary-700'
+                                                            : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                                        }
+                                                    `}
+                                                >
+                                                    {tab.label}
+                                                    {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary-600" />}
+                                                </button>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -208,20 +230,26 @@ export default function HRNavigation({ activeTab, onTabChange, onHelpClick }: { 
                                 {cat.icon} {cat.title}
                             </div>
                             <div className="p-2 space-y-1">
-                                {cat.tabs.map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            onTabChange(tab.id);
-                                            setOpenDropdown(null);
-                                        }}
-                                        className={`
-                                            w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all
-                                            ${activeTab === tab.id ? 'bg-primary-50 text-primary-900' : 'text-secondary-600 hover:bg-secondary-50'}
-                                        `}
-                                    >
-                                        {tab.label}
-                                    </button>
+                                {cat.tabs.map((tab, i) => (
+                                    <div key={tab.id}>
+                                        {tab.section && tab.section !== cat.tabs[i - 1]?.section && (
+                                            <div className="text-[9px] font-black text-primary-400 uppercase tracking-widest px-4 pt-2 pb-1">
+                                                {tab.section}
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                onTabChange(tab.id);
+                                                setOpenDropdown(null);
+                                            }}
+                                            className={`
+                                                w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all
+                                                ${activeTab === tab.id ? 'bg-primary-50 text-primary-900' : 'text-secondary-600 hover:bg-secondary-50'}
+                                            `}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>
