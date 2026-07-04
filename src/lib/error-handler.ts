@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/nextjs';
 import { logger } from './logger';
 import { isProduction } from './env-validation';
 
@@ -89,6 +90,18 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
     } else {
         // Log unexpected failures using error severity.
         logger.error(`API Error on ${path || 'unknown path'}`, error, { path });
+
+        // Report unexpected (5xx-class) failures to Sentry. Expected client
+        // errors — AppError < 500, Prisma known codes, Zod validation — are
+        // request problems, not bugs, and would only add noise.
+        const isExpected =
+            (error instanceof AppError && error.statusCode < 500) ||
+            error instanceof Prisma.PrismaClientKnownRequestError ||
+            error instanceof Prisma.PrismaClientValidationError ||
+            (error && typeof error === 'object' && 'name' in error && (error as any).name === 'ZodError');
+        if (!isExpected) {
+            Sentry.captureException(error, { extra: { path } });
+        }
     }
 
     // Handle custom app errors

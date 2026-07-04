@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import Link from 'next/link';
 
@@ -24,10 +25,10 @@ export default function Error({
         // Log error to console in development
         console.error('Application Error:', error);
 
-        // Production error tracking: Uncomment when Sentry or similar service is integrated
-        // if (process.env.NODE_ENV === 'production') {
-        //     Sentry.captureException(error);
-        // }
+        // Stale-deploy chunk errors are expected churn, not bugs.
+        if (!isStaleBuildAssetError(error.message || '')) {
+            Sentry.captureException(error);
+        }
     }, [error]);
 
     const isStaleBuildError = isStaleBuildAssetError(error.message || '');
