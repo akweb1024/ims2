@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/error-handler';
+import { verifyPublicInvoiceToken } from '@/lib/public-invoice-token';
 
+// Legacy shared access code — kept only so already-printed invoices (whose QR
+// carries no token) keep working. Unset PUBLIC_INVOICE_ACCESS_CODE to disable.
 function isValidAccessCode(providedCode: string | null) {
     const expectedCode = process.env.PUBLIC_INVOICE_ACCESS_CODE;
-    if (!expectedCode) return false;
+    if (!expectedCode || !providedCode) return false;
     return providedCode === expectedCode;
 }
 
@@ -16,12 +19,10 @@ export async function GET(
         const { id } = await params;
         const { searchParams } = new URL(req.url);
         const accessCode = searchParams.get('accessCode');
+        const token = searchParams.get('token');
 
-        if (!process.env.PUBLIC_INVOICE_ACCESS_CODE) {
-            return NextResponse.json({ error: 'Public invoice access is not configured.' }, { status: 503 });
-        }
-
-        if (!isValidAccessCode(accessCode)) {
+        const authorized = verifyPublicInvoiceToken(id, token) || isValidAccessCode(accessCode);
+        if (!authorized) {
             return NextResponse.json({ error: 'Unauthorized. Invalid access code.' }, { status: 401 });
         }
 

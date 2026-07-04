@@ -89,10 +89,15 @@ export default function AnvInvoiceTemplate({
       : invoice.proformaNumber || invoice.invoiceNumber;
 
   // Dynamic Invoice URL for QR Code
-  const invoiceUrl =
+  const invoiceBaseUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/p/${invoice.id}`
       : `https://stmjournals.com/p/${invoice.id}`;
+  // Per-invoice token (from GET /api/invoices/[id]) lets the QR open the
+  // public page directly, without the legacy shared access code.
+  const invoiceUrl = invoice.publicToken
+    ? `${invoiceBaseUrl}?token=${invoice.publicToken}`
+    : invoiceBaseUrl;
 
   return (
     <div className="anv-invoice-template bg-white text-black font-serif p-0 border border-black max-w-[800px] mx-auto overflow-hidden">
