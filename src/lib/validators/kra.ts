@@ -17,6 +17,9 @@ export const kraMetricSchema = z.object({
   aggregation: z.enum(AGGREGATIONS).default('SUM'),
   department: z.string().max(64).nullish(),
   isActive: z.boolean().default(true),
+  // Verifier-specific config, e.g. COMMUNICATION_LOG metrics can narrow the
+  // counted types: { "communicationType": "CALL" } or { "communicationTypes": ["CALL","EMAIL"] }
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const kraMetricUpdateSchema = kraMetricSchema.partial().extend({
