@@ -5,8 +5,11 @@ build/
 dist/
 .DS_Store
 *.pem
-.env
-.env*.local
+# Never commit any env variant (this includes .env.bak, which once leaked
+# live secrets) — only the two example templates are allowed.
+.env*
+!.env.example
+!.env.production.example
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -40,6 +43,18 @@ dev_logs.txt
 
 # Test scripts
 scripts/test-rate-limit.sh
+
+# Documents at the repo root (HR letters, contracts — PII must never enter git)
+/*.pdf
+/*.docx
+/*.odt
+
+# Backups & one-off artifacts
+*.bak
+/build_log.txt
+/dev_server*.log
+/dev_server*.pid
+.codex
 
 # Development data & policy documents
 mydata/
