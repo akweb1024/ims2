@@ -77,7 +77,7 @@ export default function Sidebar({
                             }}
                         >
                             {navigationModules.map(mod => (
-                                <option key={mod.id} value={mod.id}>{mod.icon} {mod.name}</option>
+                                <option key={mod.id} value={mod.id}>{mod.name}</option>
                             ))}
                         </select>
                     </div>
@@ -128,8 +128,8 @@ export default function Sidebar({
                                                 <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
                                             )}
 
-                                                <span className={`text-base flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-primary' : ''}`}>
-                                                {item.icon}
+                                                <span className={`flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-primary' : 'text-sidebar-foreground/60'}`}>
+                                                <item.icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden="true" />
                                             </span>
                                             
                                             <span className={`text-[13px] font-semibold tracking-wide whitespace-nowrap transition-all duration-300
