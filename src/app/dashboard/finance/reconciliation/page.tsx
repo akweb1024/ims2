@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowRightLeft, CheckCircle2, XCircle, AlertCircle,
     RefreshCw, Wand2, Upload, FileSpreadsheet
@@ -232,7 +231,7 @@ export default function ReconciliationPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6">
                     <div>
@@ -434,7 +433,7 @@ export default function ReconciliationPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

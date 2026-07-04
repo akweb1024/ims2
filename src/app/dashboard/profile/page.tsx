@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { getCustomerDisplayType } from '@/lib/customer-display';
 
@@ -117,16 +116,16 @@ export default function ProfilePage() {
 
     if (loading || !user) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center space-x-6">
                     <div className="w-24 h-24 rounded-3xl bg-primary-600 text-white flex items-center justify-center text-4xl font-black shadow-2xl shadow-primary-200">
@@ -311,6 +310,6 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

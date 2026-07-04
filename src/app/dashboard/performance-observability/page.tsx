@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type Metric = {
   id: string;
@@ -111,7 +110,7 @@ export default function PerformanceObservabilityPage() {
   }, [events]);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between">
@@ -206,7 +205,7 @@ export default function PerformanceObservabilityPage() {
           Next: we can add drill-down charts + intervention playbooks and embed the anomaly stream in `/dashboard/digital-twin`.
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

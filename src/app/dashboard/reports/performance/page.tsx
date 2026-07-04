@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import PerformanceReportTable from './PerformanceReportTable';
@@ -64,7 +63,7 @@ export default async function TopPerformersPage() {
     const data = await getPerformanceData();
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -77,6 +76,6 @@ export default async function TopPerformersPage() {
                     <PerformanceReportTable data={data} />
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

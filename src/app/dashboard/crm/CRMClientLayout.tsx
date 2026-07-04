@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/classnames';
 import { Users, TrendingUp, FileText, Phone, BarChart3, Tags } from 'lucide-react';
@@ -74,7 +73,7 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
         tab.matchPaths?.some(p => pathname === p || (p !== '/dashboard/crm' && pathname.startsWith(p))) ?? false;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             {/* ── CRM Sub-Navigation ──────────────────────────────────────────── */}
             <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-secondary-100/60 px-6 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
                 {/* Tab strip */}
@@ -117,6 +116,6 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
                 <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-indigo-100/10 blur-[100px] rounded-full pointer-events-none -z-10" />
                 {children}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

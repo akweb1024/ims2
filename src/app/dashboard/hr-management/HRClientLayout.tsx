@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     LayoutDashboard,
     Briefcase,
@@ -38,7 +37,7 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
     ];
 
     return (
-        <DashboardLayout>
+        <>
             <div className="flex flex-col h-full">
                 {/* HR Sub-Navigation */}
                 <div className="bg-white border-b border-secondary-200 sticky top-0 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
@@ -71,6 +70,6 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
                     {children}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

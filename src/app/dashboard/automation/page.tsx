@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import {
     Cpu, Play, CheckCircle2, AlertCircle,
@@ -94,7 +93,7 @@ export default function AutomationPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-gray-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
@@ -216,6 +215,6 @@ export default function AutomationPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

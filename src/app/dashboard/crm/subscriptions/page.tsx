@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { SubscriptionStatus } from '@/types';
 import Link from 'next/link';
@@ -115,7 +114,7 @@ export default function SubscriptionsPage() {
     const isAdmin = ['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Subscriptions"
                 subtitle={userRole === 'CUSTOMER' ? 'View your active subscriptions and access periods.' : 'Manage subscriptions, access periods, and renewals.'}
@@ -345,6 +344,6 @@ export default function SubscriptionsPage() {
                     </div>
                 </div>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Download, RefreshCw, TrendingUp, DollarSign, Mail,
     PlusCircle, Calendar, Settings, Users, X, Check
@@ -149,7 +148,7 @@ export default function LMSFinancialsPage() {
     const pendingPayments = mentorPayments.reduce((acc, p) => acc + p.amount, 0);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -480,6 +479,6 @@ export default function LMSFinancialsPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

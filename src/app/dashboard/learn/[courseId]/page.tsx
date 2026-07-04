@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ChevronLeft, ChevronRight, CheckCircle, Circle, Lock,
     BookOpen, Clock, Award, Menu, X, FileText, Video
@@ -205,7 +204,7 @@ export default function CoursePlayerPage() {
     const previousLesson = getPreviousLesson();
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="flex gap-6 h-[calc(100vh-8rem)]">
                 {/* Sidebar - Course Content */}
                 <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden`}>
@@ -457,6 +456,6 @@ export default function CoursePlayerPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

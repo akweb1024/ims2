@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Search, Edit, Trash2, Zap, LayoutGrid, Loader2, X, Save, DollarSign, Clock, Layers, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface ServiceDefinition {
@@ -81,7 +80,7 @@ export default function ITServiceManagementPage() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-20 space-y-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
                 
                 {/* Modern Header */}
@@ -289,6 +288,6 @@ export default function ITServiceManagementPage() {
                     )}
                 </AnimatePresence>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

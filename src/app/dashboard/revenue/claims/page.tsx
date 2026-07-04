@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Award, CheckCircle2, XCircle, Clock, AlertTriangle,
     User, DollarSign, Calendar, FileText, Filter,
@@ -70,7 +69,7 @@ export default function RevenueClaimsPage() {
     };
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-black text-secondary-900 flex items-center gap-3">
@@ -187,7 +186,7 @@ export default function RevenueClaimsPage() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

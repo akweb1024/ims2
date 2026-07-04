@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Edit2, Trash2, Search, Building, User, Info, Layout, Layers, Users, ArrowRight } from 'lucide-react';
 
 export default function DepartmentsPage() {
@@ -134,7 +133,7 @@ export default function DepartmentsPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-8 pb-20">
                 {/* Hero Header */}
                 <div className="relative overflow-hidden bg-primary-900 rounded-[2.5rem] p-10 md:p-14 text-white shadow-2xl">
@@ -392,6 +391,6 @@ export default function DepartmentsPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

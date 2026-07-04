@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormField from '@/components/ui/FormField';
 import DesignationCombobox from '@/components/crm/DesignationCombobox';
 import { customerSchema, type CustomerFormData } from '@/lib/validation/schemas';
@@ -251,7 +250,7 @@ export default function NewCustomerPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Create Customer"
                 subtitle="Add a new customer profile with contact and address details."
@@ -700,6 +699,6 @@ export default function NewCustomerPage() {
                     </div>
                 </form>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

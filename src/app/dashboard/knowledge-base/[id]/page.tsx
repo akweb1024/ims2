@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import ReactMarkdown from 'react-markdown';
 import { KNOWLEDGE_BASE_CATEGORIES, getKnowledgeCategoryLabel } from '@/lib/knowledge-base';
@@ -126,22 +125,22 @@ export default function KnowledgeArticleDetailPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="max-w-5xl mx-auto p-8 text-center text-secondary-500">Loading article...</div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!article) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="max-w-5xl mx-auto p-8 text-center text-secondary-500">Article not found.</div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center justify-between gap-4">
                     <div>
@@ -272,6 +271,6 @@ export default function KnowledgeArticleDetailPage() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

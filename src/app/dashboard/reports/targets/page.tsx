@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import TargetAchievementTable from './TargetAchievementTable';
@@ -74,7 +73,7 @@ export default async function TargetReportPage() {
     const data = await getTargetData();
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -87,6 +86,6 @@ export default async function TargetReportPage() {
                     <TargetAchievementTable data={data} />
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

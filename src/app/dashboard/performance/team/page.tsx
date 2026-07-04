@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BarChart3, Users, Target, CheckCircle2, Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -93,7 +92,7 @@ export default function TeamKraAnalyticsPage() {
     const isCompanyScope = data?.scope === 'COMPANY';
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -222,7 +221,7 @@ export default function TeamKraAnalyticsPage() {
                     </>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

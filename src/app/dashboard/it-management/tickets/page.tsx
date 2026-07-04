@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     Ticket, Plus, User, Clock, Loader2, X, Save, 
     Filter, Search, ArrowRight, CheckCircle2, AlertCircle,
@@ -118,7 +117,7 @@ export default function ITTicketsPage() {
     });
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen bg-slate-50 relative overflow-hidden">
                 {/* Visual Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-40">
@@ -410,6 +409,6 @@ export default function ITTicketsPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </DashboardLayout>
+        </>
     );
 }

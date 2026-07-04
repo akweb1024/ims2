@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { Users, BookOpen, Layers, Save, Trash2, Plus, Edit2, X, Check, Target } from 'lucide-react';
 import IndexingReadinessAudit from '@/components/journals/IndexingReadinessAudit';
@@ -205,7 +204,7 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-6xl mx-auto space-y-6">
                 <div className="flex items-center gap-3 mb-6">
                     <Link href="/dashboard/journals" className="p-2 hover:bg-secondary-100 rounded-full text-secondary-600 transition-colors">
@@ -497,6 +496,6 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                     </form>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

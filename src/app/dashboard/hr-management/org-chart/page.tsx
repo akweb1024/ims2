@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useEmployees, useDepartments } from '@/hooks/useHR';
 import {
     Users, Search, ChevronRight, ChevronDown,
@@ -98,7 +97,7 @@ export default function OrgChartPage() {
     }, [groupedData, searchTerm]);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8 animate-in fade-in duration-500 min-h-screen pb-20">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
@@ -177,6 +176,6 @@ export default function OrgChartPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

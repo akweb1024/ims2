@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     BarChart3, TrendingUp, Users, Clock, Award, Target,
     ArrowUpRight, ArrowDownRight, Search, Zap,
@@ -41,12 +40,12 @@ export default function PerformancePage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-amber-600/20 border-t-amber-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Calibrating Achievements...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -60,7 +59,7 @@ export default function PerformancePage() {
     const totalHours = data?.trends.reduce((sum, t) => sum + t.hours, 0) || 0;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat pb-20">
                 <div className="max-w-7xl mx-auto space-y-10">
                     
@@ -261,6 +260,6 @@ export default function PerformancePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

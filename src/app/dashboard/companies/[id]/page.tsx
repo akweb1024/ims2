@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Building2, Globe, MapPin, Mail, Phone, MoreVertical,
     Activity, DollarSign, Briefcase, AlertCircle, Server,
@@ -132,18 +131,18 @@ export default function CompanyDetailsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!company) return null;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
                 {/* Header Profile Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 shadow-xl shadow-indigo-100 dark:shadow-none border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
@@ -600,7 +599,7 @@ export default function CompanyDetailsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

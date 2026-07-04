@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Scale, AlertTriangle, CheckCircle2, Info, Ban } from 'lucide-react';
 
 interface Grade { id: string; code: string; name: string; minCtc: number | null; midCtc: number | null; maxCtc: number | null }
@@ -66,7 +65,7 @@ export default function FitmentPage() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-3xl mx-auto space-y-6">
                 <div className="flex items-center gap-3">
                     <Scale className="w-7 h-7 text-indigo-600" />
@@ -140,6 +139,6 @@ export default function FitmentPage() {
                     </section>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

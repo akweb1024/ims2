@@ -2,7 +2,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import EmployeeIDCard from '@/components/dashboard/EmployeeIDCard';
@@ -315,7 +314,7 @@ export default function StaffPortalPage() {
     };
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             {user && (
                 <StaffReimbursementReminder 
                     onNavigateToReimbursements={() => handleTabChange('reimbursements')} 
@@ -831,7 +830,7 @@ export default function StaffPortalPage() {
                     )}
                 </div>
         </div>
-    </DashboardLayout>
+    </>
     );
 }
 

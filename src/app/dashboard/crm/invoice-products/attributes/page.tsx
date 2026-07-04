@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CRMPageShell, CRMModal } from '@/components/crm/CRMPageShell';
 import { Layers, Plus, Trash2 } from 'lucide-react';
 
@@ -60,7 +59,7 @@ export default function GlobalAttributesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Global Product Attributes"
                 subtitle="Manage shared attributes like Size, Color, or Material applicable to variants."
@@ -115,6 +114,6 @@ export default function GlobalAttributesPage() {
                     </form>
                 </CRMModal>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }

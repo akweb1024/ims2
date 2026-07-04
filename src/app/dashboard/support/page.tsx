@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function SupportPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -110,7 +109,7 @@ export default function SupportPage() {
     const categories = ['ALL', 'BILLING', 'IT', 'HR', 'CRM', 'SUBSCRIPTION'];
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-6xl mx-auto space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                     <div>
@@ -323,6 +322,6 @@ export default function SupportPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

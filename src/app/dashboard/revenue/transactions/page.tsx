@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     DollarSign, Plus, Filter, Search, CheckCircle2, XCircle,
     Clock, AlertTriangle, FileText, Download, Building2,
@@ -171,7 +170,7 @@ export default function RevenueTransactionsPage() {
     );
 
     return (
-        <DashboardLayout userRole={user?.role}>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -499,6 +498,6 @@ export default function RevenueTransactionsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

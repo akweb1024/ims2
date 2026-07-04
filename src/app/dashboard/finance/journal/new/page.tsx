@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useRouter } from 'next/navigation';
 
 export default function NewJournalEntryPage() {
@@ -94,7 +93,7 @@ export default function NewJournalEntryPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900">New Journal Entry</h1>
@@ -203,6 +202,6 @@ export default function NewJournalEntryPage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

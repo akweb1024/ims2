@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function EmployeePerformanceTimelinePage() {
   const params = useParams<{ employeeId: string }>();
@@ -48,7 +47,7 @@ export default function EmployeePerformanceTimelinePage() {
   }, [endpoint, employeeId]);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -117,7 +116,7 @@ export default function EmployeePerformanceTimelinePage() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 

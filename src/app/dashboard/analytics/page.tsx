@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar, Legend
@@ -42,18 +41,18 @@ export default function AnalyticsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <>
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!data) return null;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -333,7 +332,7 @@ export default function AnalyticsPage() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

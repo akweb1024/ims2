@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import { DollarSign, TrendingUp, Save, X, User, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -249,17 +248,17 @@ export default function EditIncrementPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="p-12 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="text-secondary-600 mt-4">Loading increment...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-8">
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
@@ -1154,6 +1153,6 @@ export default function EditIncrementPage() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

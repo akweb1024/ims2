@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function HolidayCalendarPage() {
     const [holidays, setHolidays] = useState<any[]>([]);
@@ -128,7 +127,7 @@ export default function HolidayCalendarPage() {
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'].includes(userRole);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-wrap items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-secondary-100 shadow-sm relative overflow-hidden">
                     <div className="relative z-10 flex-1">
@@ -312,6 +311,6 @@ export default function HolidayCalendarPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

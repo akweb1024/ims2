@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function SubmitArticlePage() {
     const router = useRouter();
@@ -66,7 +65,7 @@ export default function SubmitArticlePage() {
     };
 
     return (
-        <DashboardLayout userRole={formData.userRole}>
+        <>
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="flex items-center gap-3">
                     <button onClick={() => router.back()} className="p-2 hover:bg-white rounded-full transition-colors text-secondary-500">
@@ -187,6 +186,6 @@ export default function SubmitArticlePage() {
                     </div>
                 </form>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

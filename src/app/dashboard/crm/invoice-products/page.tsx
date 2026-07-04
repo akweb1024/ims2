@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   CRMPageShell,
   CRMStatCard,
@@ -1061,7 +1060,7 @@ export default function InvoiceProductsPage() {
   };
 
   return (
-    <DashboardLayout userRole={userRole}>
+    <>
       <CRMPageShell
         title="Invoice Products"
         subtitle="Manage billable products, categories, pricing, and import/export from one place."
@@ -2055,6 +2054,6 @@ export default function InvoiceProductsPage() {
           </div>
         </CRMModal>
       </CRMPageShell>
-    </DashboardLayout>
+    </>
   );
 }

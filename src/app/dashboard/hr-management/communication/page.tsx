@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Mail, Send, Users, CheckCircle, AlertCircle, Filter } from 'lucide-react';
 
 export default function CommunicationPage() {
@@ -87,7 +86,7 @@ export default function CommunicationPage() {
     const roles = Array.from(new Set(employees.map(e => e.user.role)));
 
     return (
-        <DashboardLayout userRole="ADMIN">
+        <>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-black text-secondary-900">Internal Communication</h1>
@@ -183,6 +182,6 @@ export default function CommunicationPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

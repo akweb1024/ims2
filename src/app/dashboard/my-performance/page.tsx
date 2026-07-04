@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiTarget, FiTrendingUp, FiTrash2, FiSend, FiPlus, FiSettings, FiEye, FiEyeOff, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { kraFetch, GOAL_PERIOD_TYPES, type MyGoal } from '@/lib/kra/client';
 import { DimensionBadge, StatusBadge, OnTrackPill, VerificationTimeline, PendingHint } from '@/components/dashboard/kra/badges';
 
@@ -123,7 +122,7 @@ export default function MyPerformancePage() {
   const visibleStats = order.filter((k) => k !== 'goals' && !isHidden(k));
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-4 sm:p-6 max-w-5xl mx-auto">
         <header className="mb-6 flex items-center justify-between gap-3">
           <div>
@@ -223,7 +222,7 @@ export default function MyPerformancePage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 import {
@@ -64,7 +63,7 @@ export default function CommunicationsPage() {
     }, [fetchLogs]);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <CRMPageShell
                 title="Engagement Intelligence"
                 subtitle="High-fidelity audit trail of cross-channel customer interactions and correspondence."
@@ -267,7 +266,7 @@ export default function CommunicationsPage() {
                     )}
                 </div>
             </CRMPageShell>
-        </DashboardLayout>
+        </>
     );
 }
 

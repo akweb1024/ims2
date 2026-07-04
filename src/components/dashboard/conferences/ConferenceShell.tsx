@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ConferenceModuleNav from '@/components/dashboard/conferences/ConferenceModuleNav';
 
 type ConferenceShellProps = {
@@ -24,7 +23,7 @@ export default function ConferenceShell({
     children,
 }: ConferenceShellProps) {
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <section className="relative overflow-hidden rounded-[2rem] border border-sky-100 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.22),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_24%),linear-gradient(135deg,_#f8fdff_0%,_#eef6ff_48%,_#f8fafc_100%)] p-6 md:p-8 shadow-[0_24px_60px_rgba(14,165,233,0.10)]">
                     <div className="absolute inset-0 opacity-40 pointer-events-none">
@@ -59,6 +58,6 @@ export default function ConferenceShell({
 
                 {children}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

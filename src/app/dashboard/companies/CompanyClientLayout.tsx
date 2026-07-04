@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Building2,
     LayoutGrid,
@@ -27,7 +26,7 @@ export default function CompanyClientLayout({ children }: CompanyClientLayoutPro
     ];
 
     return (
-        <DashboardLayout>
+        <>
             <div className="flex flex-col h-full">
                 {/* Company Sub-Navigation */}
                 <div className="bg-white border-b border-secondary-200 sticky top-0 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
@@ -58,6 +57,6 @@ export default function CompanyClientLayout({ children }: CompanyClientLayoutPro
                     {children}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

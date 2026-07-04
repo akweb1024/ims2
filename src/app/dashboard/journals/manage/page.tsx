@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 interface Journal {
     id: string;
@@ -147,7 +146,7 @@ export default function JournalManagementPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -351,6 +350,6 @@ export default function JournalManagementPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

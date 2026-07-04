@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
@@ -304,7 +303,7 @@ export default function LogisticsPage() {
     const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
@@ -984,6 +983,6 @@ export default function LogisticsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, ArrowRight, Check, Upload, Plus, Trash2, Save } from 'lucide-react';
 
 const STEPS = [
@@ -502,7 +501,7 @@ function SubmitManuscriptContent() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-4xl mx-auto p-6 space-y-8 pb-20">
                 {/* Header */}
                 <div className="flex items-center gap-4">
@@ -600,7 +599,7 @@ function SubmitManuscriptContent() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

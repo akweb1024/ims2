@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function ExecutiveDashboardPage() {
     const [stats, setStats] = useState<any>(null);
@@ -28,15 +27,15 @@ export default function ExecutiveDashboardPage() {
     };
 
     if (loading) return (
-        <DashboardLayout>
+        <>
             <div className="flex items-center justify-center h-[80vh]">
                 <div className="animate-spin text-4xl">🌕</div>
             </div>
-        </DashboardLayout>
+        </>
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8 max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
@@ -175,7 +174,7 @@ export default function ExecutiveDashboardPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

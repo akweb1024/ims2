@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus } from 'lucide-react';
 import ProductionTabs from './ProductionTabs';
 import ProductionHubSkeleton from './ProductionHubSkeleton';
@@ -28,7 +27,7 @@ async function ProductionData() {
 
 export default async function ProductionPage() {
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8 pb-20">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -48,6 +47,6 @@ export default async function ProductionPage() {
                     <ProductionData />
                 </Suspense>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

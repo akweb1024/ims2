@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, Pencil, Power } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -173,7 +172,7 @@ export default function VendorsPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 
                 {/* Header */}
@@ -488,6 +487,6 @@ export default function VendorsPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

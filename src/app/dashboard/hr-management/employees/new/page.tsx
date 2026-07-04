@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import EmployeeForm from '@/components/dashboard/hr/EmployeeForm';
 import { ArrowLeft } from 'lucide-react';
 
@@ -131,7 +130,7 @@ export default function NewEmployeePage() {
     if (loading) return <div className="p-8 text-center animate-pulse">Initializing Onboarding System...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <>
             <div className="max-w-5xl mx-auto space-y-6 pb-20">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.back()} className="p-2 hover:bg-secondary-100 rounded-full transition-colors">
@@ -160,7 +159,7 @@ export default function NewEmployeePage() {
                     saving={saving}
                 />
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

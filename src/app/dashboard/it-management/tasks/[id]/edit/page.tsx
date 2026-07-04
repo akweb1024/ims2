@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ListTodo, Save, X, Calendar, DollarSign, User, AlertCircle, FolderKanban,
     ArrowLeft, Activity, Tag, Clock, Zap
@@ -113,17 +112,17 @@ export default function EditTaskPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
                     <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Recalibrating Task Data...</p>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen pb-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat">
                 <div className="max-w-5xl mx-auto space-y-12">
                     
@@ -335,6 +334,6 @@ export default function EditTaskPage() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import LMSStats from './LMSStats';
@@ -8,7 +7,7 @@ import TopMentors from './TopMentors';
 
 export default async function LMSDashboard() {
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -40,6 +39,6 @@ export default async function LMSDashboard() {
                     </Suspense>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     FileText,
     Search,
@@ -81,7 +80,7 @@ export default function TaxDeclarationsAdminPage() {
     });
 
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -211,6 +210,6 @@ export default function TaxDeclarationsAdminPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

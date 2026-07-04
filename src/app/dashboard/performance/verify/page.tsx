@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FiCheckCircle, FiXCircle, FiShield, FiExternalLink } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { kraFetch, type KraProof, type KraGoalVerification } from '@/lib/kra/client';
 import { DimensionBadge, StatusBadge, VerificationTimeline } from '@/components/dashboard/kra/badges';
 
@@ -53,7 +52,7 @@ export default function VerifyPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -120,6 +119,6 @@ export default function VerifyPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

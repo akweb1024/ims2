@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 interface QualityReport {
     id: string;
@@ -127,7 +126,7 @@ export default function QualityDashboard() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -348,6 +347,6 @@ export default function QualityDashboard() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 }
