@@ -9,6 +9,7 @@
  * else is PENDING (manager approval). Anomalies are FLAGGED regardless.
  */
 import { prisma } from '@/lib/prisma';
+import { communicationTypeFilter } from '@/lib/kra/communication-filter';
 
 export type ContributionStatus =
   | 'PENDING'
@@ -21,6 +22,8 @@ export interface MetricLike {
   id: string;
   dataSource: string | null;
   sourceType: string | null;
+  /** PerformanceMetricDefinition.metadata — verifier-specific filters live here. */
+  metadata?: unknown;
 }
 
 export interface EvaluateArgs {
@@ -53,7 +56,12 @@ function dayWindow(date: Date): { start: Date; end: Date } {
  * System verifiers: given an employee + day, return the authoritative value from
  * the source module. Returning null means "no source data found for this day".
  */
-type SystemVerifier = (args: { employeeId: string; companyId: string; date: Date }) => Promise<number | null>;
+type SystemVerifier = (args: {
+  employeeId: string;
+  companyId: string;
+  date: Date;
+  metric: MetricLike;
+}) => Promise<number | null>;
 
 const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
   // Revenue claimed by this employee that is already VERIFIED, on the report day.
@@ -69,6 +77,30 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
     return agg._sum.amount ?? 0;
+  },
+  // Supporting-activity metrics (calls made, emails sent, client replies…):
+  // counts the employee's CommunicationLog entries for the report day.
+  // Metric metadata may narrow the type, e.g. { "communicationType": "CALL" }.
+  COMMUNICATION_LOG: async ({ employeeId, companyId, date, metric }) => {
+    // Goals/contributions key on EmployeeProfile.id; CommunicationLog keys on User.id.
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const { start, end } = dayWindow(date);
+    const types = communicationTypeFilter(metric.metadata);
+    const count = await prisma.communicationLog.count({
+      where: {
+        userId: profile.userId,
+        date: { gte: start, lte: end },
+        // Older log rows may predate company tagging — count them too.
+        OR: [{ companyId }, { companyId: null }],
+        ...(types ? { type: { in: types as any } } : {}),
+      },
+    });
+    return count;
   },
   // Future: SUPPORT_TICKET, SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
   // Until a verifier exists, those sourceTypes fall through to MANUAL (manager approval).
@@ -108,7 +140,7 @@ export async function evaluateContribution(args: EvaluateArgs): Promise<Evaluate
   const wantsSystem = metric.dataSource === 'SYSTEM' || metric.dataSource === 'HYBRID';
   if (wantsSystem && hasSystemVerifier(metric.sourceType)) {
     const verifier = SYSTEM_VERIFIERS[metric.sourceType as string];
-    const systemValue = await verifier({ employeeId, companyId, date });
+    const systemValue = await verifier({ employeeId, companyId, date, metric });
 
     if (systemValue === null) {
       // HYBRID with no source row → fall back to manager; SYSTEM with no row → flag mismatch.

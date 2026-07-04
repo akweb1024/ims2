@@ -31,7 +31,7 @@ export async function recordContributions(args: RecordArgs) {
   for (const entry of args.entries) {
     const metric = await prisma.performanceMetricDefinition.findFirst({
       where: { id: entry.metricId, companyId: args.companyId, scope: 'KRA' },
-      select: { id: true, dataSource: true, sourceType: true },
+      select: { id: true, dataSource: true, sourceType: true, metadata: true },
     });
     if (!metric) {
       results.push({ metricId: entry.metricId, status: 'REJECTED', verifiedValue: null, note: 'Unknown metric' });
