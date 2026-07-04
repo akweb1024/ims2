@@ -8,154 +8,154 @@ datasource db {
 }
 
 model Company {
-  id                          String                       @id @default(uuid())
-  name                        String
-  registrationNumber          String?
-  domain                      String?
-  address                     String?
-  phone                       String?
-  email                       String?
-  website                     String?
-  logoUrl                     String?
-  fiscalYearStart             Int?
-  currency                    String                       @default("INR")
-  timezone                    String                       @default("Asia/Kolkata")
-  employeeIdPrefix            String?
-  createdAt                   DateTime                     @default(now())
-  updatedAt                   DateTime                     @updatedAt
-  latitude                    Float?
-  longitude                   Float?
-  bankAccountHolder           String?
-  bankAccountNumber           String?
-  bankIfscCode                String?
-  bankName                    String?
-  bankSwiftCode               String?
-  cinNo                       String?
-  gstin                       String?
-  iecCode                     String?
-  legalEntityName             String?
-  panNo                       String?
-  paymentMode                 String?
-  stateCode                   String?
-  tagline                     String?
-  brandRelationType           String?                      @default("A Brand of")
-  invoiceCompanyLogoUrl       String?                      @map("invoiceCompanyLogoUrl")
-  universityId                String?
-  invoiceTerms                String?
-  documentWebhookConfig       Json?
-  documentEmailConfig         Json?
-  regdOfficeAddress           String?
-  salesOfficeAddress          String?
-  invoiceNextNumber           Int                          @default(1)
-  invoicePrefix               String?                      @default("INV-")
-  invoiceEntityCode           String?
-  invoiceYearFormat           String?                      @default("CALENDAR")
-  allowCrossCompanyCustomerInvoices Boolean                @default(false)
-  allowedInvoiceCustomerCompanyIds String[]                @default([])
-  defaultInvoiceBrandId        String?
-  proformaNextNumber          Int                          @default(1)
-  proformaPrefix              String?                      @default("PRO-")
-  accounts                    Account[]
-  appConfigurations           AppConfiguration[]
-  attendance                  Attendance[]
-  automationJobs              AutomationJob[]
-  automationRuns              AutomationRun[]
-  reconciliationSessions      BankReconciliationSession[]
-  bonusSchemas                BonusSchema[]
-  brands                      Brand[]
-  campaignAudiences           CampaignAudience[]
-  chatRooms                   ChatRoom[]
-  commissionPayouts           CommissionPayout[]
-  communications              CommunicationLog[]
-  grades                      Grade[]
-  integrations                CompanyIntegration[]
-  companyPerformance          CompanyPerformance[]
-  potential                   CompanyPotential?
-  conferences                 Conference[]
-  coupons                     Coupon[]
-  courses                     Course[]
-  customers                   CustomerProfile[]
-  deals                       Deal[]
-  departments                 Department[]
-  departmentBudgets           DepartmentBudget[]
-  departmentPerformance       DepartmentPerformance[]
-  dispatchOrders              DispatchOrder[]
-  documentTemplates           DocumentTemplate[]
-  emailTemplates              EmailTemplate[]
-  employeeCompanyDesignations EmployeeCompanyDesignation[]
-  expenseAllocations          EmployeeExpenseAllocation[]
-  employeeGoals               EmployeeGoal[]
-  employeeKpis                EmployeeKPI[]
-  pointLogs                   EmployeePointLog[]
-  taskTemplates               EmployeeTaskTemplate[]
-  expenseAllocationRules      ExpenseAllocationRule[]
-  revenueShareSourceRules     RevenueShareRule[]           @relation("ShareSourceCompany")
-  financialRecords            FinancialRecord[]
-  holidays                    Holiday[]
-  itAssets                    ITAsset[]
-  itDepartmentRevenue         ITDepartmentRevenue[]        @relation("CompanyITRevenue")
-  itPerformanceMetrics        ITPerformanceMetric[]        @relation("CompanyITPerformance")
-  itProjects                  ITProject[]                  @relation("CompanyITProjects")
-  itServices                  ITServiceDefinition[]        @relation("CompanyITServices")
-  itTickets                   ITSupportTicket[]
-  itTasks                     ITTask[]                     @relation("CompanyITTasks")
-  itTimeEntries               ITTimeEntry[]                @relation("CompanyITTimeEntries")
-  incentiveSchemas            IncentiveSchema[]
-  institutions                Institution[]
-  internships                 Internship[]
-  inventoryItems              InventoryItem[]
-  invoices                    Invoice[]
-  issues                      Issue[]
-  jobPostings                 JobPosting[]
-  journalEntries              JournalEntry[]
-  leaveLedgers                LeaveLedger[]
-  leaveRequests               LeaveRequest[]
-  marketingCampaigns          MarketingCampaign[]
-  performanceSnapshots        MonthlyPerformanceSnapshot[]
-  onboardingModules           OnboardingModule[]
-  payments                    Payment[]
-  performanceInsights         PerformanceInsight[]
-  performanceReviews          PerformanceReview[]
-  problems                    ProblemIssue[]
-  productionOrders            ProductionOrder[]
-  projects                    Project[]
-  purchaseOrders              PurchaseOrder[]
-  dashboardLayoutPreferences  DashboardLayoutPreference[]
-  dashboardRoleDefaults        DashboardRoleDefault[]
-  dashboardWidgetPolicies      DashboardWidgetPolicy[]
-  companyAttendancePolicy     CompanyAttendancePolicy?
+  id                                String                             @id @default(uuid())
+  name                              String
+  registrationNumber                String?
+  domain                            String?
+  address                           String?
+  phone                             String?
+  email                             String?
+  website                           String?
+  logoUrl                           String?
+  fiscalYearStart                   Int?
+  currency                          String                             @default("INR")
+  timezone                          String                             @default("Asia/Kolkata")
+  employeeIdPrefix                  String?
+  createdAt                         DateTime                           @default(now())
+  updatedAt                         DateTime                           @updatedAt
+  latitude                          Float?
+  longitude                         Float?
+  bankAccountHolder                 String?
+  bankAccountNumber                 String?
+  bankIfscCode                      String?
+  bankName                          String?
+  bankSwiftCode                     String?
+  cinNo                             String?
+  gstin                             String?
+  iecCode                           String?
+  legalEntityName                   String?
+  panNo                             String?
+  paymentMode                       String?
+  stateCode                         String?
+  tagline                           String?
+  brandRelationType                 String?                            @default("A Brand of")
+  invoiceCompanyLogoUrl             String?                            @map("invoiceCompanyLogoUrl")
+  universityId                      String?
+  invoiceTerms                      String?
+  documentWebhookConfig             Json?
+  documentEmailConfig               Json?
+  regdOfficeAddress                 String?
+  salesOfficeAddress                String?
+  invoiceNextNumber                 Int                                @default(1)
+  invoicePrefix                     String?                            @default("INV-")
+  invoiceEntityCode                 String?
+  invoiceYearFormat                 String?                            @default("CALENDAR")
+  allowCrossCompanyCustomerInvoices Boolean                            @default(false)
+  allowedInvoiceCustomerCompanyIds  String[]                           @default([])
+  defaultInvoiceBrandId             String?
+  proformaNextNumber                Int                                @default(1)
+  proformaPrefix                    String?                            @default("PRO-")
+  accounts                          Account[]
+  appConfigurations                 AppConfiguration[]
+  attendance                        Attendance[]
+  automationJobs                    AutomationJob[]
+  automationRuns                    AutomationRun[]
+  reconciliationSessions            BankReconciliationSession[]
+  bonusSchemas                      BonusSchema[]
+  brands                            Brand[]
+  campaignAudiences                 CampaignAudience[]
+  chatRooms                         ChatRoom[]
+  commissionPayouts                 CommissionPayout[]
+  communications                    CommunicationLog[]
+  grades                            Grade[]
+  integrations                      CompanyIntegration[]
+  companyPerformance                CompanyPerformance[]
+  potential                         CompanyPotential?
+  conferences                       Conference[]
+  coupons                           Coupon[]
+  courses                           Course[]
+  customers                         CustomerProfile[]
+  deals                             Deal[]
+  departments                       Department[]
+  departmentBudgets                 DepartmentBudget[]
+  departmentPerformance             DepartmentPerformance[]
+  dispatchOrders                    DispatchOrder[]
+  documentTemplates                 DocumentTemplate[]
+  emailTemplates                    EmailTemplate[]
+  employeeCompanyDesignations       EmployeeCompanyDesignation[]
+  expenseAllocations                EmployeeExpenseAllocation[]
+  employeeGoals                     EmployeeGoal[]
+  employeeKpis                      EmployeeKPI[]
+  pointLogs                         EmployeePointLog[]
+  taskTemplates                     EmployeeTaskTemplate[]
+  expenseAllocationRules            ExpenseAllocationRule[]
+  revenueShareSourceRules           RevenueShareRule[]                 @relation("ShareSourceCompany")
+  financialRecords                  FinancialRecord[]
+  holidays                          Holiday[]
+  itAssets                          ITAsset[]
+  itDepartmentRevenue               ITDepartmentRevenue[]              @relation("CompanyITRevenue")
+  itPerformanceMetrics              ITPerformanceMetric[]              @relation("CompanyITPerformance")
+  itProjects                        ITProject[]                        @relation("CompanyITProjects")
+  itServices                        ITServiceDefinition[]              @relation("CompanyITServices")
+  itTickets                         ITSupportTicket[]
+  itTasks                           ITTask[]                           @relation("CompanyITTasks")
+  itTimeEntries                     ITTimeEntry[]                      @relation("CompanyITTimeEntries")
+  incentiveSchemas                  IncentiveSchema[]
+  institutions                      Institution[]
+  internships                       Internship[]
+  inventoryItems                    InventoryItem[]
+  invoices                          Invoice[]
+  issues                            Issue[]
+  jobPostings                       JobPosting[]
+  journalEntries                    JournalEntry[]
+  leaveLedgers                      LeaveLedger[]
+  leaveRequests                     LeaveRequest[]
+  marketingCampaigns                MarketingCampaign[]
+  performanceSnapshots              MonthlyPerformanceSnapshot[]
+  onboardingModules                 OnboardingModule[]
+  payments                          Payment[]
+  performanceInsights               PerformanceInsight[]
+  performanceReviews                PerformanceReview[]
+  problems                          ProblemIssue[]
+  productionOrders                  ProductionOrder[]
+  projects                          Project[]
+  purchaseOrders                    PurchaseOrder[]
+  dashboardLayoutPreferences        DashboardLayoutPreference[]
+  dashboardRoleDefaults             DashboardRoleDefault[]
+  dashboardWidgetPolicies           DashboardWidgetPolicy[]
+  companyAttendancePolicy           CompanyAttendancePolicy?
   employeeAttendancePolicyOverrides EmployeeAttendancePolicyOverride[]
-  redGreenDiaries             RedGreenDiary[]
-  revenueTransactions         RevenueTransaction[]
-  salaryAdvances              SalaryAdvance[]
-  salarySlips                 SalarySlip[]
-  screeningTemplates          ScreeningTemplate[]
-  shifts                      Shift[]
-  shiftRosters                ShiftRoster[]
-  statutoryConfig             StatutoryConfig?
-  subscriptions               Subscription[]
-  supportTickets              SupportTicket[]
-  tasks                       Task[]
-  taxRates                    TaxRate[]
-  teamMembers                 TeamMember[]
-  thinkTankIdeas              ThinkTankIdea[]
-  thinkTankCycles             ThinkTankIdeaCycle[]
-  thinkTankVotes              ThinkTankIdeaVote[]
-  thinkTankPointAccounts      ThinkTankPointAccount[]
-  primaryUsers                User[]                       @relation("PrimaryCompany")
-  vendors                     Vendor[]
-  warehouses                  Warehouse[]
-  workPlans                   WorkPlan[]
-  workReports                 WorkReport[]
-  workshops                   Workshop[]
-  performanceMetricDefinitions PerformanceMetricDefinition[]
-  performanceSignalEvents     PerformanceSignalEvent[]
-  privateDailyNotes           PrivateDailyNote[]
-  designations                Designation[]                @relation("CompanyToDesignation")
-  users                       User[]                       @relation("UserCompanies")
-  kraTemplates                KraTemplate[]
-  metricContributions         MetricContribution[]
-  performanceIndices          PerformanceIndex[]
+  redGreenDiaries                   RedGreenDiary[]
+  revenueTransactions               RevenueTransaction[]
+  salaryAdvances                    SalaryAdvance[]
+  salarySlips                       SalarySlip[]
+  screeningTemplates                ScreeningTemplate[]
+  shifts                            Shift[]
+  shiftRosters                      ShiftRoster[]
+  statutoryConfig                   StatutoryConfig?
+  subscriptions                     Subscription[]
+  supportTickets                    SupportTicket[]
+  tasks                             Task[]
+  taxRates                          TaxRate[]
+  teamMembers                       TeamMember[]
+  thinkTankIdeas                    ThinkTankIdea[]
+  thinkTankCycles                   ThinkTankIdeaCycle[]
+  thinkTankVotes                    ThinkTankIdeaVote[]
+  thinkTankPointAccounts            ThinkTankPointAccount[]
+  primaryUsers                      User[]                             @relation("PrimaryCompany")
+  vendors                           Vendor[]
+  warehouses                        Warehouse[]
+  workPlans                         WorkPlan[]
+  workReports                       WorkReport[]
+  workshops                         Workshop[]
+  performanceMetricDefinitions      PerformanceMetricDefinition[]
+  performanceSignalEvents           PerformanceSignalEvent[]
+  privateDailyNotes                 PrivateDailyNote[]
+  designations                      Designation[]                      @relation("CompanyToDesignation")
+  users                             User[]                             @relation("UserCompanies")
+  kraTemplates                      KraTemplate[]
+  metricContributions               MetricContribution[]
+  performanceIndices                PerformanceIndex[]
 }
 
 model CompanyIntegration {
@@ -220,37 +220,37 @@ model AutomationRun {
 }
 
 model Department {
-  id                     String                       @id @default(uuid())
-  companyId              String
-  name                   String
-  code                   String?
-  description            String?
-  parentDepartmentId     String?
-  headUserId             String?
-  isActive               Boolean                      @default(true)
-  departmentType         DepartmentType               @default(REVENUE)
-  createdAt              DateTime                     @default(now())
-  updatedAt              DateTime                     @updatedAt
-  company                Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  headUser               User?                        @relation("DepartmentHead", fields: [headUserId], references: [id])
-  parentDepartment       Department?                  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
-  subDepartments         Department[]                 @relation("DepartmentHierarchy")
-  budgets                DepartmentBudget[]
-  departmentPerformance  DepartmentPerformance[]
-  expenseAllocations     EmployeeExpenseAllocation[]
-  taskTemplates          EmployeeTaskTemplate[]
-  expenseAllocationRules ExpenseAllocationRule[]
-  itProjects             ITProject[]                  @relation("DepartmentITProjects")
-  jobApplications        JobApplication[]
-  jobPostings            JobPosting[]
-  performanceSnapshots   MonthlyPerformanceSnapshot[]
-  onboardingModules      OnboardingModule[]
-  revenueTransactions    RevenueTransaction[]
-  users                  User[]                       @relation("DepartmentMembers")
-  designations           Designation[]                @relation("DepartmentToDesignation")
-  shareRulesAsBeneficiary RevenueShareRule[]          @relation("BeneficiaryDept")
-  shareRulesAsSource      RevenueShareRule[]          @relation("SourceDept")
-  revenueSharesReceived   DepartmentRevenueShare[]    @relation("ShareBeneficiary")
+  id                      String                       @id @default(uuid())
+  companyId               String
+  name                    String
+  code                    String?
+  description             String?
+  parentDepartmentId      String?
+  headUserId              String?
+  isActive                Boolean                      @default(true)
+  departmentType          DepartmentType               @default(REVENUE)
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  company                 Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  headUser                User?                        @relation("DepartmentHead", fields: [headUserId], references: [id])
+  parentDepartment        Department?                  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  subDepartments          Department[]                 @relation("DepartmentHierarchy")
+  budgets                 DepartmentBudget[]
+  departmentPerformance   DepartmentPerformance[]
+  expenseAllocations      EmployeeExpenseAllocation[]
+  taskTemplates           EmployeeTaskTemplate[]
+  expenseAllocationRules  ExpenseAllocationRule[]
+  itProjects              ITProject[]                  @relation("DepartmentITProjects")
+  jobApplications         JobApplication[]
+  jobPostings             JobPosting[]
+  performanceSnapshots    MonthlyPerformanceSnapshot[]
+  onboardingModules       OnboardingModule[]
+  revenueTransactions     RevenueTransaction[]
+  users                   User[]                       @relation("DepartmentMembers")
+  designations            Designation[]                @relation("DepartmentToDesignation")
+  shareRulesAsBeneficiary RevenueShareRule[]           @relation("BeneficiaryDept")
+  shareRulesAsSource      RevenueShareRule[]           @relation("SourceDept")
+  revenueSharesReceived   DepartmentRevenueShare[]     @relation("ShareBeneficiary")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -277,7 +277,7 @@ model User {
   roles                          UserRole[]                       @default([EXECUTIVE])
   announcements                  Announcement[]
   auditLogs                      AuditLog[]
-  createdPrivateDailyNotes       PrivateDailyNote[]                @relation("PrivateDailyNoteCreator")
+  createdPrivateDailyNotes       PrivateDailyNote[]               @relation("PrivateDailyNoteCreator")
   automationRunsTriggered        AutomationRun[]                  @relation("AutomationRunTrigger")
   uploadedReconciliationSessions BankReconciliationSession[]      @relation("ReconciliationSessionUploader")
   certificates                   Certificate[]
@@ -521,86 +521,86 @@ model KnowledgeArticleRevision {
 }
 
 model CustomerProfile {
-  id                  String               @id @default(uuid())
-  userId              String?              @unique
-  customerType        CustomerType         @default(INDIVIDUAL)
-  governanceType      GovernanceType?
-  organizationType    OrganizationType?
-  universityCategory  UniversityCategory?
+  id                     String               @id @default(uuid())
+  userId                 String?              @unique
+  customerType           CustomerType         @default(INDIVIDUAL)
+  governanceType         GovernanceType?
+  organizationType       OrganizationType?
+  universityCategory     UniversityCategory?
   affiliatedUniversityId String?
   associatedAgencyId     String?
-  discountOffered     Float?               @default(10)
-  defaultDiscountType String?              @default("PERCENTAGE")
-  defaultDiscountValue Float?              @default(0)
-  discountUpdatedAt   DateTime?
-  discountUpdatedById String?
-  region              String?
-  assignedToUserId    String?
-  name                String
-  organizationName    String?
-  primaryEmail        String
-  secondaryEmail      String?
-  primaryPhone        String
-  secondaryPhone      String?
-  gstVatTaxId         String?
-  billingAddress      String?
-  shippingAddress     String?
-  country             String?
-  state               String?
-  city                String?
-  pincode             String?
-  preferredChannel    String?
-  notes               String?
-  tags                String?
-  leadStatus          LeadStatus?          @default(NEW)
-  leadScore           Int?                 @default(0)
-  source              String?              @default("DIRECT")
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  companyId           String?
-  sharedCompanyIds    String[]             @default([])
-  designation         String?
-  institutionId       String?
-  billingCity         String?
-  billingCountry      String?              @default("India")
-  billingPincode      String?
-  billingState        String?
-  billingStateCode    String?
-  shippingCity        String?
-  shippingCountry     String?              @default("India")
-  shippingPincode     String?
-  shippingState       String?
-  shippingStateCode   String?
-  shippingEnduserName String?
-  zoneCode            String?
-  agencyId            String?
-  agencyDetails       AgencyDetails?
-  commissionPayouts   CommissionPayout[]
-  communications      CommunicationLog[]
-  assignments         CustomerAssignment[]
-  agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
-  subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
-  assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
-  discountUpdatedBy   User?                @relation("CustomerDiscountUpdatedBy", fields: [discountUpdatedById], references: [id])
-  company             Company?             @relation(fields: [companyId], references: [id])
-  institution         Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
-  user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deals               Deal[]
+  discountOffered        Float?               @default(10)
+  defaultDiscountType    String?              @default("PERCENTAGE")
+  defaultDiscountValue   Float?               @default(0)
+  discountUpdatedAt      DateTime?
+  discountUpdatedById    String?
+  region                 String?
+  assignedToUserId       String?
+  name                   String
+  organizationName       String?
+  primaryEmail           String
+  secondaryEmail         String?
+  primaryPhone           String
+  secondaryPhone         String?
+  gstVatTaxId            String?
+  billingAddress         String?
+  shippingAddress        String?
+  country                String?
+  state                  String?
+  city                   String?
+  pincode                String?
+  preferredChannel       String?
+  notes                  String?
+  tags                   String?
+  leadStatus             LeadStatus?          @default(NEW)
+  leadScore              Int?                 @default(0)
+  source                 String?              @default("DIRECT")
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  companyId              String?
+  sharedCompanyIds       String[]             @default([])
+  designation            String?
+  institutionId          String?
+  billingCity            String?
+  billingCountry         String?              @default("India")
+  billingPincode         String?
+  billingState           String?
+  billingStateCode       String?
+  shippingCity           String?
+  shippingCountry        String?              @default("India")
+  shippingPincode        String?
+  shippingState          String?
+  shippingStateCode      String?
+  shippingEnduserName    String?
+  zoneCode               String?
+  agencyId               String?
+  agencyDetails          AgencyDetails?
+  commissionPayouts      CommissionPayout[]
+  communications         CommunicationLog[]
+  assignments            CustomerAssignment[]
+  agencyPartner          CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
+  subCustomers           CustomerProfile[]    @relation("AgencyToSubCustomers")
+  assignedTo             User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
+  discountUpdatedBy      User?                @relation("CustomerDiscountUpdatedBy", fields: [discountUpdatedById], references: [id])
+  company                Company?             @relation(fields: [companyId], references: [id])
+  institution            Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
+  user                   User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deals                  Deal[]
 
-  affiliatedUniversity    CustomerProfile?   @relation("UniversityToAffiliateCustomer", fields: [affiliatedUniversityId], references: [id])
-  affiliates              CustomerProfile[]  @relation("UniversityToAffiliateCustomer")
+  affiliatedUniversity CustomerProfile?  @relation("UniversityToAffiliateCustomer", fields: [affiliatedUniversityId], references: [id])
+  affiliates           CustomerProfile[] @relation("UniversityToAffiliateCustomer")
 
-  associatedAgencyCentral CustomerProfile?   @relation("AgencyToAssociatedInstitutions", fields: [associatedAgencyId], references: [id])
-  associatedInstitutions  CustomerProfile[]  @relation("AgencyToAssociatedInstitutions")
-  dispatchOrders      DispatchOrder[]
-  agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
-  institutionDetails  InstitutionDetails?
-  invoices            Invoice[]
-  proformaInvoices    ProformaInvoice[]
-  revenueTransactions RevenueTransaction[]
-  subscriptions       Subscription[]
-  supportTickets      SupportTicket[]
-  assignedExecutives  User[]               @relation("CustomerToExecutives")
+  associatedAgencyCentral CustomerProfile?     @relation("AgencyToAssociatedInstitutions", fields: [associatedAgencyId], references: [id])
+  associatedInstitutions  CustomerProfile[]    @relation("AgencyToAssociatedInstitutions")
+  dispatchOrders          DispatchOrder[]
+  agencyInstitutions      Institution[]        @relation("AgencyInstitutions")
+  institutionDetails      InstitutionDetails?
+  invoices                Invoice[]
+  proformaInvoices        ProformaInvoice[]
+  revenueTransactions     RevenueTransaction[]
+  subscriptions           Subscription[]
+  supportTickets          SupportTicket[]
+  assignedExecutives      User[]               @relation("CustomerToExecutives")
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -1214,6 +1214,7 @@ model Invoice {
   @@index([companyId])
   @@index([brandId])
   @@index([couponId])
+  @@index([lmsParticipantId])
 }
 
 model Coupon {
@@ -1243,44 +1244,44 @@ model Coupon {
 }
 
 model Brand {
-  id                 String    @id @default(uuid())
-  name               String
-  companyId          String
-  logoUrl            String?
-  companyLogoUrl     String?
-  description        String?
-  address            String?
-  email              String?
-  website            String?
-  tagline            String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  brandRelationType  String?   @default("A Brand of")
-  bankAccountHolder  String?
-  bankAccountNumber  String?
-  bankIfscCode       String?
-  bankName           String?
-  bankSwiftCode      String?
-  cinNo              String?
-  gstin              String?
-  iecCode            String?
-  legalEntityName    String?
-  panNo              String?
-  paymentMode        String?   @default("Online")
-  invoiceTerms       String?
+  id                    String    @id @default(uuid())
+  name                  String
+  companyId             String
+  logoUrl               String?
+  companyLogoUrl        String?
+  description           String?
+  address               String?
+  email                 String?
+  website               String?
+  tagline               String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  brandRelationType     String?   @default("A Brand of")
+  bankAccountHolder     String?
+  bankAccountNumber     String?
+  bankIfscCode          String?
+  bankName              String?
+  bankSwiftCode         String?
+  cinNo                 String?
+  gstin                 String?
+  iecCode               String?
+  legalEntityName       String?
+  panNo                 String?
+  paymentMode           String?   @default("Online")
+  invoiceTerms          String?
   documentWebhookConfig Json?
-  documentEmailConfig Json?
-  regdOfficeAddress  String?
-  salesOfficeAddress String?
-  invoiceNextNumber  Int?      @default(1)
-  invoicePrefix      String?   @default("INV-")
-  invoiceEntityCode  String?
-  invoiceYearFormat  String?   @default("CALENDAR")
-  proformaNextNumber Int?      @default(1)
-  proformaPrefix     String?   @default("PRO-")
-  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  coupons            Coupon[]
-  invoices           Invoice[]
+  documentEmailConfig   Json?
+  regdOfficeAddress     String?
+  salesOfficeAddress    String?
+  invoiceNextNumber     Int?      @default(1)
+  invoicePrefix         String?   @default("INV-")
+  invoiceEntityCode     String?
+  invoiceYearFormat     String?   @default("CALENDAR")
+  proformaNextNumber    Int?      @default(1)
+  proformaPrefix        String?   @default("PRO-")
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  coupons               Coupon[]
+  invoices              Invoice[]
 
   @@index([companyId])
 }
@@ -1376,28 +1377,28 @@ model ConversationChecklist {
 }
 
 model Task {
-  id                    String     @id @default(uuid())
+  id                    String         @id @default(uuid())
   userId                String
   assignedById          String?
   title                 String
   description           String?
   dueDate               DateTime
-  priority              Priority   @default(MEDIUM)
-  status                TaskStatus @default(PENDING)
+  priority              Priority       @default(MEDIUM)
+  status                TaskStatus     @default(PENDING)
   estimatedEffort       Float?
   actualEffort          Float?
   relatedCustomerId     String?
   relatedSubscriptionId String?
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
   companyId             String?
   projectId             String?
   inventoryItemId       String?
-  assignedBy            User?      @relation("TaskAssigner", fields: [assignedById], references: [id])
-  company               Company?   @relation(fields: [companyId], references: [id])
-  project               Project?   @relation(fields: [projectId], references: [id])
+  assignedBy            User?          @relation("TaskAssigner", fields: [assignedById], references: [id])
+  company               Company?       @relation(fields: [companyId], references: [id])
+  project               Project?       @relation(fields: [projectId], references: [id])
   inventoryItem         InventoryItem? @relation(fields: [inventoryItemId], references: [id])
-  user                  User       @relation(fields: [userId], references: [id])
+  user                  User           @relation(fields: [userId], references: [id])
   workPlans             WorkPlan[]
 
   @@index([userId])
@@ -1467,6 +1468,7 @@ model ChatMessage {
 
   @@index([roomId])
   @@index([senderId])
+  @@index([roomId, createdAt])
 }
 
 model SupportTicket {
@@ -1504,6 +1506,7 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+  @@index([userId, isRead])
 }
 
 model PushSubscription {
@@ -1605,43 +1608,47 @@ model DashboardRoleDefault {
 }
 
 model AttendancePolicy {
-  id               String   @id @default("singleton")
-  timezone         String   @default("Asia/Kolkata")
-  lateCheckInTime  String   @default("09:30")
-  shortLeaveTime   String   @default("10:30")
-  graceMinutes     Int      @default(0)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default("singleton")
+  timezone        String   @default("Asia/Kolkata")
+  lateCheckInTime String   @default("09:30")
+  shortLeaveTime  String   @default("10:30")
+  graceMinutes    Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model CompanyAttendancePolicy {
-  id               String   @id @default(uuid())
-  companyId        String   @unique
-  timezone         String   @default("Asia/Kolkata")
-  lateCheckInTime  String   @default("09:30")
-  shortLeaveTime   String   @default("10:30")
-  graceMinutes     Int      @default(0)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  companyId       String   @unique
+  timezone        String   @default("Asia/Kolkata")
+  lateCheckInTime String   @default("09:30")
+  shortLeaveTime  String   @default("10:30")
+  graceMinutes    Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model EmployeeAttendancePolicyOverride {
-  id               String          @id @default(uuid())
-  employeeId       String          @unique
-  companyId        String?
-  timezone         String?         @default("Asia/Kolkata")
-  lateCheckInTime  String?
-  shortLeaveTime   String?
-  graceMinutes     Int?
-  isActive         Boolean         @default(true)
-  notes            String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  company          Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee         EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id              String          @id @default(uuid())
+  employeeId      String          @unique
+  companyId       String?
+  timezone        String?         @default("Asia/Kolkata")
+  lateCheckInTime String?
+  shortLeaveTime  String?
+  graceMinutes    Int?
+  isActive        Boolean         @default(true)
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  company         Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model Designation {
@@ -1719,33 +1726,33 @@ model GlobalDesignation {
 }
 
 model EmployeeProfile {
-  id                       String                       @id @default(uuid())
-  userId                   String                       @unique
-  employeeId               String?                      @unique
+  id                       String                            @id @default(uuid())
+  userId                   String                            @unique
+  employeeId               String?                           @unique
   gradeId                  String?
-  gradeRef                 Grade?                       @relation("EmployeeGrade", fields: [gradeId], references: [id])
+  gradeRef                 Grade?                            @relation("EmployeeGrade", fields: [gradeId], references: [id])
   designation              String?
   dateOfJoining            DateTime?
   dateOfBirth              DateTime?
   baseSalary               Float?
   fixedSalary              Float?
   variableSalary           Float?
-  hasVariable              Boolean                      @default(false)
+  hasVariable              Boolean                           @default(false)
   variablePerTarget        Float?
   variableUpperCap         Float?
   variableDefinition       String?
   incentiveSalary          Float?
-  hasIncentive             Boolean                      @default(false)
+  hasIncentive             Boolean                           @default(false)
   incentivePercentage      Float?
   incentiveDefinition      String?
-  monthlyTarget            Float?                       @default(0)
-  yearlyTarget             Float?                       @default(0)
-  salaryFixed              Float?                       @default(0)
-  baseTarget               Float?                       @default(0)
-  salaryVariable           Float?                       @default(0)
-  variableRate             Float?                       @default(0)
-  variableUnit             Float?                       @default(0)
-  salaryIncentive          Float?                       @default(0)
+  monthlyTarget            Float?                            @default(0)
+  yearlyTarget             Float?                            @default(0)
+  salaryFixed              Float?                            @default(0)
+  baseTarget               Float?                            @default(0)
+  salaryVariable           Float?                            @default(0)
+  variableRate             Float?                            @default(0)
+  variableUnit             Float?                            @default(0)
+  salaryIncentive          Float?                            @default(0)
   skills                   String[]
   expertise                String[]
   bankName                 String?
@@ -1756,8 +1763,8 @@ model EmployeeProfile {
   phoneNumber              String?
   emergencyContact         String?
   address                  String?
-  createdAt                DateTime                     @default(now())
-  updatedAt                DateTime                     @updatedAt
+  createdAt                DateTime                          @default(now())
+  updatedAt                DateTime                          @updatedAt
   contractUrl              String?
   offerLetterUrl           String?
   jobDescription           String?
@@ -1773,10 +1780,10 @@ model EmployeeProfile {
   lastPromotionDate        DateTime?
   nextReviewDate           DateTime?
   qualification            String?
-  relevantExperienceMonths Int                          @default(0)
-  relevantExperienceYears  Int                          @default(0)
-  totalExperienceMonths    Int                          @default(0)
-  totalExperienceYears     Int                          @default(0)
+  relevantExperienceMonths Int                               @default(0)
+  relevantExperienceYears  Int                               @default(0)
+  totalExperienceMonths    Int                               @default(0)
+  totalExperienceYears     Int                               @default(0)
   aadharNumber             String?
   educationDetails         Json?
   esicNumber               String?
@@ -1786,12 +1793,12 @@ model EmployeeProfile {
   permanentAddress         String?
   pfNumber                 String?
   uanNumber                String?
-  manualLeaveAdjustment    Float                        @default(0)
-  leaveBalance             Float                        @default(0)
-  initialLeaveBalance      Float                        @default(0)
-  currentLeaveBalance      Float                        @default(0)
+  manualLeaveAdjustment    Float                             @default(0)
+  leaveBalance             Float                             @default(0)
+  initialLeaveBalance      Float                             @default(0)
+  currentLeaveBalance      Float                             @default(0)
   metrics                  Json?
-  employeeType             EmployeeType                 @default(FULL_TIME)
+  employeeType             EmployeeType                      @default(FULL_TIME)
   attendancePolicyOverride EmployeeAttendancePolicyOverride?
   attendance               Attendance[]
   dailyTaskCompletions     DailyTaskCompletion[]
@@ -1804,19 +1811,19 @@ model EmployeeProfile {
   incentives               EmployeeIncentive[]
   kpis                     EmployeeKPI[]
   pointLogs                EmployeePointLog[]
-  designatRef              Designation?                 @relation(fields: [designationId], references: [id])
-  user                     User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designatRef              Designation?                      @relation(fields: [designationId], references: [id])
+  user                     User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskTemplates            EmployeeTaskTemplate[]
   leaveLedgers             LeaveLedger[]
   leaveRequests            LeaveRequest[]
   performanceSnapshots     MonthlyPerformanceSnapshot[]
   onboardingProgress       OnboardingProgress[]
-  evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
+  evaluations              PerformanceEvaluation[]           @relation("EvaluatedEmployee")
   performanceInsights      PerformanceInsight[]
-  performanceReviews       PerformanceReview[]          @relation("EmployeeReviews")
+  performanceReviews       PerformanceReview[]               @relation("EmployeeReviews")
   revenueClaims            RevenueClaim[]
-  approvedRevenue          RevenueTransaction[]         @relation("ApprovedRevenue")
-  claimedRevenue           RevenueTransaction[]         @relation("ClaimedRevenue")
+  approvedRevenue          RevenueTransaction[]              @relation("ApprovedRevenue")
+  claimedRevenue           RevenueTransaction[]              @relation("ClaimedRevenue")
   salaryAdvances           SalaryAdvance[]
   incrementHistory         SalaryIncrementRecord[]
   salarySlips              SalarySlip[]
@@ -2349,6 +2356,8 @@ model StatutoryConfig {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model TaxDeclaration {
@@ -2512,22 +2521,23 @@ model PerformanceInsight {
 }
 
 model LeaveRequest {
-  id           String          @id @default(uuid())
-  employeeId   String
-  startDate    DateTime
-  endDate      DateTime
-  reason       String
-  type         String
-  status       String          @default("PENDING")
+  id             String          @id @default(uuid())
+  employeeId     String
+  startDate      DateTime
+  endDate        DateTime
+  reason         String
+  type           String
+  status         String          @default("PENDING")
   managerComment String?
-  approvedById String?
-  createdAt    DateTime        @default(now())
-  companyId    String?
-  approvedBy   User?           @relation("LeaveApprover", fields: [approvedById], references: [id])
-  company      Company?        @relation(fields: [companyId], references: [id])
-  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedById   String?
+  createdAt      DateTime        @default(now())
+  companyId      String?
+  approvedBy     User?           @relation("LeaveApprover", fields: [approvedById], references: [id])
+  company        Company?        @relation(fields: [companyId], references: [id])
+  employee       EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
+  @@index([employeeId])
 }
 
 model WorkPlan {
@@ -2674,6 +2684,8 @@ model JobPosting {
   company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   department   Department?      @relation(fields: [departmentId], references: [id])
   exam         RecruitmentExam?
+
+  @@index([companyId])
 }
 
 model JobApplication {
@@ -3018,7 +3030,7 @@ model CompanyPerformance {
 }
 
 model PerformanceMetricDefinition {
-  id                String   @id @default(uuid())
+  id                String               @id @default(uuid())
   companyId         String?
   scope             String
   key               String
@@ -3029,16 +3041,16 @@ model PerformanceMetricDefinition {
   warningThreshold  Float?
   criticalThreshold Float?
   sourceModule      String
-  isActive          Boolean  @default(true)
+  isActive          Boolean              @default(true)
   metadata          Json?
   // --- KRA system extensions (Phase 0) ---
-  dataSource        String?  @default("MANUAL") // SYSTEM | MANUAL | HYBRID
-  sourceType        String?  // REVENUE_TRANSACTION | PUBLICATION_ARTICLE | JOURNAL_ISSUE | SUPPORT_TICKET | COURSE_SALE | SUBSCRIPTION | DISPATCH | INVOICE
-  aggregation       String?  @default("SUM") // SUM | COUNT | AVG
-  department        String?  // department tag for template suggestions
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dataSource        String?              @default("MANUAL") // SYSTEM | MANUAL | HYBRID
+  sourceType        String? // REVENUE_TRANSACTION | PUBLICATION_ARTICLE | JOURNAL_ISSUE | SUPPORT_TICKET | COURSE_SALE | SUBSCRIPTION | DISPATCH | INVOICE
+  aggregation       String?              @default("SUM") // SUM | COUNT | AVG
+  department        String? // department tag for template suggestions
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  company           Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   templateItems     KraTemplateItem[]
   contributions     MetricContribution[]
   kraGoals          EmployeeGoal[]
@@ -3200,6 +3212,8 @@ model Conference {
   ticketTypes      ConferenceTicketType[]
   tracks           ConferenceTrack[]
   feedbacks        ConferenceFeedback[]
+
+  @@index([companyId])
 }
 
 model ConferenceTicketType {
@@ -3324,6 +3338,8 @@ model Course {
   enrollments       CourseEnrollment[]
   modules           CourseModule[]
   subscriptionItems SubscriptionItem[]
+
+  @@index([companyId])
 }
 
 model Workshop {
@@ -3351,6 +3367,8 @@ model Workshop {
   company           Company?             @relation(fields: [companyId], references: [id])
   mentor            User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
   enrollments       WorkshopEnrollment[]
+
+  @@index([companyId])
 }
 
 model WorkshopEnrollment {
@@ -3390,6 +3408,8 @@ model Internship {
   company      Company?                @relation(fields: [companyId], references: [id])
   mentor       User?                   @relation("InternshipMentor", fields: [mentorId], references: [id])
   applications InternshipApplication[]
+
+  @@index([companyId])
 }
 
 model InternshipApplication {
@@ -3726,20 +3746,20 @@ model LeaveLedger {
 }
 
 model EmployeeGoal {
-  id                    String           @id @default(uuid())
+  id                    String                       @id @default(uuid())
   employeeId            String
   title                 String
   description           String?
   kra                   String?
   targetValue           Float
-  currentValue          Float            @default(0)
-  achievementPercentage Float            @default(0)
+  currentValue          Float                        @default(0)
+  achievementPercentage Float                        @default(0)
   unit                  String
-  type                  GoalType         @default(MONTHLY)
+  type                  GoalType                     @default(MONTHLY)
   startDate             DateTime
   endDate               DateTime
-  status                String           @default("IN_PROGRESS")
-  visibility            String           @default("MANAGER")
+  status                String                       @default("IN_PROGRESS")
+  visibility            String                       @default("MANAGER")
   reviewerId            String?
   reviewNotes           String?
   companyId             String
@@ -3748,25 +3768,25 @@ model EmployeeGoal {
   metricId              String?
   templateId            String?
   dataSource            String?
-  weight                Float            @default(1)
-  verifiedValue         Float            @default(0)
-  isKra                 Boolean          @default(false)
-  ratePerUnit           Float?           // INR earned per unit (override of template rate)
+  weight                Float                        @default(1)
+  verifiedValue         Float                        @default(0)
+  isKra                 Boolean                      @default(false)
+  ratePerUnit           Float? // INR earned per unit (override of template rate)
   // --- Goals & KRA module extensions (Plan B, Phase 1) ---
-  dimension             KraDimension?    // performance dimension tag (OUTPUT/QUALITY/...)
-  dailyTarget           Float?           // optional per-day target for pace rollup
-  assignedById          String?          // plain ref to the user who assigned this goal
-  dueDate               DateTime?        // verification due date (defaults to endDate)
+  dimension             KraDimension? // performance dimension tag (OUTPUT/QUALITY/...)
+  dailyTarget           Float? // optional per-day target for pace rollup
+  assignedById          String? // plain ref to the user who assigned this goal
+  dueDate               DateTime? // verification due date (defaults to endDate)
   // status value set: PENDING | IN_PROGRESS | SUBMITTED | TL_VERIFIED | MANAGER_VERIFIED | REJECTED | ACHIEVED
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  company               Company          @relation(fields: [companyId], references: [id])
-  employee              EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  kpi                   EmployeeKPI?     @relation(fields: [kpiId], references: [id])
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  company               Company                      @relation(fields: [companyId], references: [id])
+  employee              EmployeeProfile              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  kpi                   EmployeeKPI?                 @relation(fields: [kpiId], references: [id])
   metric                PerformanceMetricDefinition? @relation(fields: [metricId], references: [id])
-  reviewer              User?            @relation("GoalReviewer", fields: [reviewerId], references: [id])
+  reviewer              User?                        @relation("GoalReviewer", fields: [reviewerId], references: [id])
   evaluations           GoalEvaluation[]
-  workPlans             WorkPlan[]       @relation("GoalWorkPlans")
+  workPlans             WorkPlan[]                   @relation("GoalWorkPlans")
   verifications         GoalVerification[]
   proofs                Proof[]
 
@@ -3789,6 +3809,8 @@ model IncentiveSchema {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   company     Company    @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model BonusSchema {
@@ -3802,6 +3824,8 @@ model BonusSchema {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   company     Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model EmployeeIncentive {
@@ -3834,6 +3858,8 @@ model CompanyPotential {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model EditorialBoardMember {
@@ -3988,18 +4014,18 @@ model ReviewCertificate {
   @@index([certificateNumber])
   @@index([journalId])
 }
- 
+
 model ConferenceFeedback {
-  id              String     @id @default(uuid())
-  conferenceId    String
-  userId          String?
-  rating          Int        @default(5) // 1-5 scale
-  content         String     @db.Text
-  category        String?    @default("GENERAL") // VENUE, CONTENT, SPEAKER, etc.
-  createdAt       DateTime   @default(now())
-  conference      Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
-  user            User?      @relation(fields: [userId], references: [id])
- 
+  id           String     @id @default(uuid())
+  conferenceId String
+  userId       String?
+  rating       Int        @default(5) // 1-5 scale
+  content      String     @db.Text
+  category     String?    @default("GENERAL") // VENUE, CONTENT, SPEAKER, etc.
+  createdAt    DateTime   @default(now())
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id])
+
   @@index([conferenceId])
 }
 
@@ -4022,6 +4048,8 @@ model WebsiteMonitor {
   category       String?
   itProjects     ITProject[]         @relation("WebsiteITProjects")
   logs           WebsiteMonitorLog[]
+
+  @@index([companyId])
 }
 
 model WebsiteMonitorLog {
@@ -4075,7 +4103,7 @@ model DigitalTwinDepartmentConfig {
 }
 
 model DigitalTwinFollowUp {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   companyId        String
   departmentId     String?
   employeeId       String
@@ -4083,14 +4111,14 @@ model DigitalTwinFollowUp {
   questionCategory String
   questionText     String
   actionPlan       String
-  status           String   @default("OPEN")
+  status           String    @default("OPEN")
   outcome          String?
   outcomeRating    Int?
   dueDate          DateTime?
   resolvedAt       DateTime?
   signalSnapshot   Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([companyId])
   @@index([departmentId])
@@ -4644,53 +4672,53 @@ model ITServiceDefinition {
 }
 
 model RevenueTransaction {
-  id                  String                      @id @default(uuid())
-  companyId           String
-  transactionNumber   String                      @unique
-  amount              Float
-  currency            String                      @default("INR")
-  paymentMethod       String
-  paymentDate         DateTime
-  customerName        String?
-  customerEmail       String?
-  customerPhone       String?
-  customerProfileId   String?
-  institutionId       String?
-  referenceNumber     String?
-  bankName            String?
-  proofDocument       String?
-  claimedByEmployeeId String?
-  approvedByManagerId String?
-  departmentId        String?
-  status              RevenueStatus               @default(PENDING)
-  verificationStatus  VerificationStatus          @default(UNVERIFIED)
-  verifiedAt          DateTime?
-  workReportId        String?
-  invoiceId           String?
-  paymentId           String?
-  description         String?
-  notes               String?
-  tags                Json?
-  createdAt           DateTime                    @default(now())
-  updatedAt           DateTime                    @updatedAt
-  createdBy           String?
-  revenueType         RevenueType?                @default(NEW)
-  source              String?                     @default("Subscription")
-  sourceOther         String?
-  metricContributionId String?                    // KRA auto-revenue: cascades when the progress log is deleted
-  metricContribution  MetricContribution?         @relation("ContributionRevenue", fields: [metricContributionId], references: [id], onDelete: Cascade)
-  expenseAllocations  EmployeeExpenseAllocation[]
-  revenueShares       DepartmentRevenueShare[]
-  claims              RevenueClaim[]
-  approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
-  claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
-  company             Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customerProfile     CustomerProfile?            @relation(fields: [customerProfileId], references: [id])
-  department          Department?                 @relation(fields: [departmentId], references: [id])
-  institution         Institution?                @relation(fields: [institutionId], references: [id])
-  invoice             Invoice?                    @relation(fields: [invoiceId], references: [id])
-  payment             Payment?                    @relation(fields: [paymentId], references: [id])
-  workReport          WorkReport?                 @relation(fields: [workReportId], references: [id])
+  id                   String                      @id @default(uuid())
+  companyId            String
+  transactionNumber    String                      @unique
+  amount               Float
+  currency             String                      @default("INR")
+  paymentMethod        String
+  paymentDate          DateTime
+  customerName         String?
+  customerEmail        String?
+  customerPhone        String?
+  customerProfileId    String?
+  institutionId        String?
+  referenceNumber      String?
+  bankName             String?
+  proofDocument        String?
+  claimedByEmployeeId  String?
+  approvedByManagerId  String?
+  departmentId         String?
+  status               RevenueStatus               @default(PENDING)
+  verificationStatus   VerificationStatus          @default(UNVERIFIED)
+  verifiedAt           DateTime?
+  workReportId         String?
+  invoiceId            String?
+  paymentId            String?
+  description          String?
+  notes                String?
+  tags                 Json?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  createdBy            String?
+  revenueType          RevenueType?                @default(NEW)
+  source               String?                     @default("Subscription")
+  sourceOther          String?
+  metricContributionId String? // KRA auto-revenue: cascades when the progress log is deleted
+  metricContribution   MetricContribution?         @relation("ContributionRevenue", fields: [metricContributionId], references: [id], onDelete: Cascade)
+  expenseAllocations   EmployeeExpenseAllocation[]
+  revenueShares        DepartmentRevenueShare[]
+  claims               RevenueClaim[]
+  approvedBy           EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
+  claimedBy            EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
+  company              Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerProfile      CustomerProfile?            @relation(fields: [customerProfileId], references: [id])
+  department           Department?                 @relation(fields: [departmentId], references: [id])
+  institution          Institution?                @relation(fields: [institutionId], references: [id])
+  invoice              Invoice?                    @relation(fields: [invoiceId], references: [id])
+  payment              Payment?                    @relation(fields: [paymentId], references: [id])
+  workReport           WorkReport?                 @relation(fields: [workReportId], references: [id])
 
   @@index([companyId])
   @@index([transactionNumber])
@@ -4720,21 +4748,21 @@ model ExpenseAllocationRule {
 // A beneficiary (typically a SUPPORT/PRODUCTION department) earns a fixed share of
 // revenue arising in a source company (optionally narrowed to one source department).
 model RevenueShareRule {
-  id                      String     @id @default(uuid())
+  id                      String    @id @default(uuid())
   beneficiaryDepartmentId String
   sourceCompanyId         String
-  sourceDepartmentId      String?    // null = applies to the whole source company
-  percentage              Float      @default(0)
-  effectiveFrom           DateTime   @default(now())
-  effectiveTo             DateTime?  // null = open-ended
-  isActive                Boolean    @default(true)
+  sourceDepartmentId      String? // null = applies to the whole source company
+  percentage              Float     @default(0)
+  effectiveFrom           DateTime  @default(now())
+  effectiveTo             DateTime? // null = open-ended
+  isActive                Boolean   @default(true)
   note                    String?
-  createdAt               DateTime   @default(now())
-  updatedAt               DateTime   @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
-  beneficiaryDepartment   Department  @relation("BeneficiaryDept", fields: [beneficiaryDepartmentId], references: [id], onDelete: Cascade)
-  sourceCompany           Company     @relation("ShareSourceCompany", fields: [sourceCompanyId], references: [id], onDelete: Cascade)
-  sourceDepartment        Department? @relation("SourceDept", fields: [sourceDepartmentId], references: [id])
+  beneficiaryDepartment Department  @relation("BeneficiaryDept", fields: [beneficiaryDepartmentId], references: [id], onDelete: Cascade)
+  sourceCompany         Company     @relation("ShareSourceCompany", fields: [sourceCompanyId], references: [id], onDelete: Cascade)
+  sourceDepartment      Department? @relation("SourceDept", fields: [sourceDepartmentId], references: [id])
 
   @@index([sourceCompanyId, sourceDepartmentId, isActive])
   @@index([beneficiaryDepartmentId])
@@ -4746,21 +4774,21 @@ model RevenueShareRule {
 model DepartmentRevenueShare {
   id                      String   @id @default(uuid())
   revenueTransactionId    String
-  ruleId                  String?  // null = residual (kept-remainder) or manual row
+  ruleId                  String? // null = residual (kept-remainder) or manual row
   sourceCompanyId         String
   sourceDepartmentId      String?
   beneficiaryDepartmentId String
-  beneficiaryCompanyId    String   // denormalized for cross-company P&L grouping
+  beneficiaryCompanyId    String // denormalized for cross-company P&L grouping
   amount                  Float
   percentage              Float
   isResidual              Boolean  @default(false)
-  periodMonth             Int      // snapshot of paymentDate (IST) for immutable period close
+  periodMonth             Int // snapshot of paymentDate (IST) for immutable period close
   periodYear              Int
   isLocked                Boolean  @default(false)
   createdAt               DateTime @default(now())
 
-  revenueTransaction      RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
-  beneficiaryDepartment   Department         @relation("ShareBeneficiary", fields: [beneficiaryDepartmentId], references: [id])
+  revenueTransaction    RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
+  beneficiaryDepartment Department         @relation("ShareBeneficiary", fields: [beneficiaryDepartmentId], references: [id])
 
   @@index([beneficiaryDepartmentId, periodYear, periodMonth])
   @@index([sourceCompanyId, periodYear, periodMonth])
@@ -5113,6 +5141,8 @@ model ScreeningTemplate {
   screenings InterviewScreening[]
   company    Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   creator    User                 @relation(fields: [createdBy], references: [id])
+
+  @@index([companyId])
 }
 
 model InterviewScreening {
@@ -5502,6 +5532,7 @@ model ThinkTankIdeaVote {
   @@unique([ideaId, cycleId, voterHash])
   @@index([ideaId])
   @@index([cycleId])
+  @@index([companyId])
 }
 
 model ThinkTankPointAccount {
@@ -5892,8 +5923,8 @@ model VaultAccess {
 }
 
 model LMSParticipant {
-  id                 String   @id @default(uuid())
-  pid                String   @unique
+  id                 String    @id @default(uuid())
+  pid                String    @unique
   workshopTitle      String?
   name               String
   email              String
@@ -5906,20 +5937,20 @@ model LMSParticipant {
   country            String?
   pinCode            String?
   gstVatNo           String?
-  courseFee          Float?   @default(0)
-  hasCoupon          Boolean  @default(false)
+  courseFee          Float?    @default(0)
+  hasCoupon          Boolean   @default(false)
   couponCode         String?
-  payableAmount      Float?   @default(0)
+  payableAmount      Float?    @default(0)
   otherCurrency      String?
   referralSource     String?
   paymentStatus      String?
-  razorpayOrderId    String?  @unique
-  razorpayPaymentId  String?  @unique
+  razorpayOrderId    String?   @unique
+  razorpayPaymentId  String?   @unique
   razorpaySignature  String?
   learningMode       String?
   category           String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   invoices           Invoice[]
 
   @@index([email])
@@ -6523,20 +6554,20 @@ enum SuggestionStatus {
 }
 
 model ReimbursementRecord {
-  id                  String   @id @default(uuid())
-  userId              String
-  month               Int
-  year                Int
-  healthCare          Float    @default(0)
-  travelling          Float    @default(0)
-  mobile              Float    @default(0)
-  internet            Float    @default(0)
-  booksAndPeriodicals Float    @default(0)
-  totalAmount         Float    @default(0)
-  status              String   @default("SUBMITTED") // SUBMITTED, APPROVED, PAID
+  id                   String   @id @default(uuid())
+  userId               String
+  month                Int
+  year                 Int
+  healthCare           Float    @default(0)
+  travelling           Float    @default(0)
+  mobile               Float    @default(0)
+  internet             Float    @default(0)
+  booksAndPeriodicals  Float    @default(0)
+  totalAmount          Float    @default(0)
+  status               String   @default("SUBMITTED") // SUBMITTED, APPROVED, PAID
   employeeSignatureUrl String? // Snapshot of the signature used at the time of submission
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -6556,8 +6587,8 @@ model KraTemplate {
   companyId     String
   name          String
   description   String?
-  departmentId  String?           // plain ref (no relation to keep Department model untouched)
-  designationId String?           // plain ref
+  departmentId  String? // plain ref (no relation to keep Department model untouched)
+  designationId String? // plain ref
   isActive      Boolean           @default(true)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -6579,7 +6610,7 @@ model KraTemplateItem {
   periodType    GoalType                    @default(MONTHLY)
   dimension     KraDimension                @default(OUTPUT) // carried into goals on assignment
   minThreshold  Float?
-  ratePerUnit   Float?                      // INR earned per unit (e.g. ₹/article)
+  ratePerUnit   Float? // INR earned per unit (e.g. ₹/article)
   createdAt     DateTime                    @default(now())
   template      KraTemplate                 @relation(fields: [templateId], references: [id], onDelete: Cascade)
   metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
@@ -6591,27 +6622,27 @@ model KraTemplateItem {
 /// Validation ledger: every reported metric value from a work report.
 /// Rolls into EmployeeGoal.verifiedValue by (employeeId, metricId, date-in-window).
 model MetricContribution {
-  id            String                      @id @default(uuid())
-  companyId     String
-  employeeId    String
-  metricId      String
-  workReportId  String?                     // plain ref (no relation to keep WorkReport model untouched)
-  reportedValue Float
-  verifiedValue Float?
-  status        String                      @default("PENDING") // PENDING | AUTO_VERIFIED | MANAGER_APPROVED | REJECTED | FLAGGED
-  source        String                      @default("MANUAL")  // MANUAL | SYSTEM
-  sourceRefId   String?
-  pointsValue   Float?                      // normalized weight for focus score
-  verifiedById  String?                     // plain ref to reviewing user
-  verifiedAt    DateTime?
-  note          String?
-  date          DateTime                    @default(now())
-  createdAt     DateTime                    @default(now())
-  updatedAt     DateTime                    @updatedAt
-  company       Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee      EmployeeProfile             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  metric        PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
-  revenueEntries RevenueTransaction[]       @relation("ContributionRevenue") // auto-revenue cascades when this log is deleted
+  id             String                      @id @default(uuid())
+  companyId      String
+  employeeId     String
+  metricId       String
+  workReportId   String? // plain ref (no relation to keep WorkReport model untouched)
+  reportedValue  Float
+  verifiedValue  Float?
+  status         String                      @default("PENDING") // PENDING | AUTO_VERIFIED | MANAGER_APPROVED | REJECTED | FLAGGED
+  source         String                      @default("MANUAL") // MANUAL | SYSTEM
+  sourceRefId    String?
+  pointsValue    Float? // normalized weight for focus score
+  verifiedById   String? // plain ref to reviewing user
+  verifiedAt     DateTime?
+  note           String?
+  date           DateTime                    @default(now())
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  company        Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee       EmployeeProfile             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  metric         PerformanceMetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  revenueEntries RevenueTransaction[]        @relation("ContributionRevenue") // auto-revenue cascades when this log is deleted
 
   @@index([companyId])
   @@index([employeeId, metricId, date])
@@ -6625,7 +6656,7 @@ model PerformanceIndex {
   companyId          String
   employeeId         String
   periodType         GoalType        @default(MONTHLY)
-  period             String          // "2026-06" | "2026-Q2" | "2026"
+  period             String // "2026-06" | "2026-Q2" | "2026"
   achievementScore   Float           @default(0)
   attendanceScore    Float           @default(0)
   managerRatingScore Float           @default(0)
@@ -6634,12 +6665,12 @@ model PerformanceIndex {
   grade              String?
   weights            Json?
   // --- Quarterly rating layer (Plan B, Phase 1) ---
-  letterRating       String?         // A+ | A | B+ | B | C | D (spec rating scale)
-  kraAchievement     Json?           // { kraGoalId: achievementPercent }
+  letterRating       String? // A+ | A | B+ | B | C | D (spec rating scale)
+  kraAchievement     Json? // { kraGoalId: achievementPercent }
   managerComments    String?
-  hrModeration       String?         // HR moderation note
+  hrModeration       String? // HR moderation note
   ratingStatus       String          @default("SUBMITTED") // SUBMITTED | HR_MODERATED | FINAL
-  raterId            String?         // plain ref to the user who saved the rating
+  raterId            String? // plain ref to the user who saved the rating
   computedAt         DateTime        @default(now())
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
@@ -6653,14 +6684,14 @@ model PerformanceIndex {
 
 /// Goal-level verification step (2-step TL -> MANAGER approval chain). Spec §10.
 model GoalVerification {
-  id         String        @id @default(uuid())
+  id         String       @id @default(uuid())
   goalId     String
-  level      String        // TL | MANAGER
-  verifierId String        // plain ref to reviewing user
-  status     String        // APPROVED | REJECTED
+  level      String // TL | MANAGER
+  verifierId String // plain ref to reviewing user
+  status     String // APPROVED | REJECTED
   comment    String?
-  createdAt  DateTime      @default(now())
-  goal       EmployeeGoal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  goal       EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@index([goalId])
   @@index([verifierId])
@@ -6670,7 +6701,7 @@ model GoalVerification {
 model Proof {
   id        String       @id @default(uuid())
   goalId    String
-  type      String       // FILE | LINK | NOTE
+  type      String // FILE | LINK | NOTE
   url       String?
   note      String?
   createdAt DateTime     @default(now())
