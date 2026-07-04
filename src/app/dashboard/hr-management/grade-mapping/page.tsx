@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Layers, Save, Wand2 } from 'lucide-react';
+import { inr } from '@/lib/format';
 
 interface Grade { id: string; code: string; name: string; minCtc: number | null; midCtc: number | null; maxCtc: number | null }
 interface Emp { id: string; name: string; designation: string | null; department: string | null; baseSalary: number | null; gradeId: string | null }
-
-const inr = (n: number | null) => (n == null ? '—' : `₹${n.toLocaleString('en-IN')}`);
 
 export default function GradeMappingPage() {
     const [employees, setEmployees] = useState<Emp[]>([]);

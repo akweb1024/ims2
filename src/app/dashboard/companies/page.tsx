@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CompanyClientLayout from './CompanyClientLayout';
-import FormattedDate from '@/components/common/FormattedDate';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
 import { CardSkeleton } from '@/components/ui/skeletons';
 

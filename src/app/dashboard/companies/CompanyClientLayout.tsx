@@ -7,10 +7,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Building2,
     LayoutGrid,
-    Settings,
-    Globe,
-    Shield,
-    Users
+    Globe
 } from 'lucide-react';
 
 interface CompanyClientLayoutProps {
@@ -33,7 +30,6 @@ export default function CompanyClientLayout({ children }: CompanyClientLayoutPro
                 <div className="bg-white border-b border-secondary-200 sticky top-0 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
                     <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar">
                         {navItems.map((item) => {
-                            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname === item.href);
                             // Exact match for most, but allow subpaths if we add them later
                             const isCurrent = pathname === item.href;
 

@@ -28,17 +28,11 @@ const ALL_ACCESS_ROLES = [
   "MANAGER",
 ];
 
-// GET /api/it/tasks - List tasks based on user role and view type
+// GET /api/it/tasks - List tasks based on user role and view type.
+// Open to all authenticated users so the service-desk portal (nav roles: '*')
+// works for every staff role; "team"/"all" views stay gated below.
 export const GET = authorizedRoute(
-  [
-    "SUPER_ADMIN",
-    "ADMIN",
-    "IT_MANAGER",
-    "IT_ADMIN",
-    "IT_SUPPORT",
-    "MANAGER",
-    "EXECUTIVE",
-  ],
+  [],
   async (req: NextRequest, user) => {
     try {
       const companyId = user.companyId;
@@ -98,6 +92,7 @@ export const GET = authorizedRoute(
         where,
         include: {
           project: { select: { id: true, name: true, projectCode: true } },
+          service: { select: { id: true, name: true } },
           assignedTo: {
             select: {
               id: true,
@@ -120,17 +115,11 @@ export const GET = authorizedRoute(
   },
 );
 
-// POST /api/it/tasks - Create new task
+// POST /api/it/tasks - Create new task.
+// Open to all authenticated users so anyone can raise a SERVICE_REQUEST via
+// the service-desk portal; other task types remain restricted to IT/managers.
 export const POST = authorizedRoute(
-  [
-    "SUPER_ADMIN",
-    "ADMIN",
-    "IT_MANAGER",
-    "IT_ADMIN",
-    "IT_SUPPORT",
-    "MANAGER",
-    "EXECUTIVE",
-  ],
+  [],
   async (req: NextRequest, user) => {
     try {
       const companyId = user.companyId;
@@ -139,14 +128,14 @@ export const POST = authorizedRoute(
       const body = await req.json();
       const validatedData = itTaskSchema.parse(body);
 
-      // Access control for specific types if needed
       if (
-        validatedData.type === "SERVICE_REQUEST" &&
-        user.role === "EXECUTIVE"
+        validatedData.type !== "SERVICE_REQUEST" &&
+        !IT_MANAGER_ROLES.includes(user.role) &&
+        user.role !== "EXECUTIVE"
       ) {
-        // Executives can create service requests
-      } else if (!IT_MANAGER_ROLES.includes(user.role)) {
-        // Non-IT managers might have restricted task creation but let's follow existing logic which allowed it
+        throw new AuthorizationError(
+          "Only IT staff and managers can create non-service-request tasks",
+        );
       }
 
       // Auto-set 100% IT cut for service requests

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Scale, AlertTriangle, CheckCircle2, Info, Ban } from 'lucide-react';
+import { inr } from '@/lib/format';
 
 interface Grade { id: string; code: string; name: string; minCtc: number | null; midCtc: number | null; maxCtc: number | null }
 interface Check { key: string; severity: 'BLOCK' | 'WARN' | 'INFO' | 'OK'; message: string }
@@ -11,8 +12,6 @@ interface Result {
     band: string; compaRatio: number | null; compaBucket: { label: string };
     peer: { count: number; max: number | null }; checks: Check[];
 }
-
-const inr = (n: number | null) => (n == null ? '—' : `₹${n.toLocaleString('en-IN')}`);
 
 const sev = {
     BLOCK: { icon: Ban, cls: 'bg-red-50 border-red-200 text-red-800' },

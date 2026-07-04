@@ -62,28 +62,3 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function PATCH(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT'].includes(user.role)) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
-
-        const body = await req.json();
-        const { id, status, assignedToId, resolution } = body;
-
-        const ticket = await prisma.iTSupportTicket.update({
-            where: { id },
-            data: {
-                status: status,
-                ...(assignedToId !== undefined ? { assignedTo: assignedToId ? { connect: { id: assignedToId } } : { disconnect: true } } : {}),
-                resolution: resolution || undefined
-            }
-        });
-
-        return NextResponse.json(ticket);
-    } catch (error) {
-        console.error('Update IT Ticket Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-    }
-}
