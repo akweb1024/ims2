@@ -34,7 +34,9 @@ const fetchJson = async (url: string, method: string = 'GET', body?: any) => {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `API Error: ${res.statusText}`);
+        // handleApiError puts the human-readable reason in `message`; `error` is
+        // just the error class name (e.g. "ValidationError") — prefer the reason.
+        throw new Error(err.message || err.error || `API Error: ${res.statusText}`);
     }
     return res.json();
 };

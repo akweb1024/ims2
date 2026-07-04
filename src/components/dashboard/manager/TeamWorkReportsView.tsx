@@ -18,22 +18,20 @@ const TeamWorkReportsView: React.FC = () => {
         evaluation?: any,
         allowMandatoryOverride?: boolean
     ) => {
-        try {
-            await updateStatus.mutateAsync({
-                id,
-                status: 'APPROVED',
-                approvedTaskIds,
-                rejectedTaskIds,
-                managerComment,
-                managerRating,
-                evaluation,
-                allowMandatoryOverride
-            });
-            toast.success('Report approved and validated successfully');
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to update report');
-        }
+        // No catch: let the error propagate so WorkReportValidator keeps the
+        // modal open and shows the API's actual reason (e.g. mandatory-agenda
+        // block with override instructions).
+        await updateStatus.mutateAsync({
+            id,
+            status: 'APPROVED',
+            approvedTaskIds,
+            rejectedTaskIds,
+            managerComment,
+            managerRating,
+            evaluation,
+            allowMandatoryOverride
+        });
+        toast.success('Report approved and validated successfully');
     };
 
     const handleAddComment = async (id: string, content: string) => {

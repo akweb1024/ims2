@@ -429,7 +429,9 @@ const HRManagementContent = () => {
         approvedTaskIds: string[],
         rejectedTaskIds: string[],
         managerComment: string,
-        managerRating: number
+        managerRating: number,
+        evaluation?: any,
+        allowMandatoryOverride?: boolean
     ) => {
         try {
             await updateStatusMutation.mutateAsync({
@@ -438,7 +440,9 @@ const HRManagementContent = () => {
                 managerComment,
                 managerRating,
                 approvedTaskIds,
-                rejectedTaskIds
+                rejectedTaskIds,
+                evaluation,
+                allowMandatoryOverride
             });
         } catch (err) {
             console.error(err);
