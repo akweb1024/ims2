@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { registerPush } from '@/lib/push-register';
 import { useSession, signOut, signIn } from 'next-auth/react';
@@ -354,15 +354,18 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 />
             )}
 
-            <Sidebar
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeModule={activeModule}
-                setActiveModule={setActiveModule}
-                navigationModules={navigationModules}
-                isImpersonating={isImpersonating}
-                handleLogout={handleLogout}
-            />
+            {/* Suspense: Sidebar reads useSearchParams for ?tab= active states */}
+            <Suspense fallback={null}>
+                <Sidebar
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
+                    activeModule={activeModule}
+                    setActiveModule={setActiveModule}
+                    navigationModules={navigationModules}
+                    isImpersonating={isImpersonating}
+                    handleLogout={handleLogout}
+                />
+            </Suspense>
 
             <main
                 className={`relative z-10 overflow-x-hidden transition-all duration-500

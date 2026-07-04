@@ -90,7 +90,7 @@ export const GET = authorizedRoute(
             // ...
 
             // Role-based Access & Filtering
-            if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+            if (['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'].includes(user.role)) {
                 if (targetEmployeeId && targetEmployeeId !== 'all') {
                     where.employeeId = targetEmployeeId;
                 }
