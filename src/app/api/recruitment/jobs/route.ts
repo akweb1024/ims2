@@ -66,6 +66,8 @@ export const POST = authorizedRoute(
                     title: jobData.title,
                     description: jobData.description,
                     requirements: jobData.requirements,
+                    qualifications: jobData.qualifications,
+                    tags: jobData.tags ?? [],
                     location: jobData.location,
                     salaryRange: jobData.salaryRange,
                     type: jobData.type,

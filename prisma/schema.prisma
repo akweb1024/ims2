@@ -2668,22 +2668,24 @@ model DigitalDocument {
 }
 
 model JobPosting {
-  id           String           @id @default(uuid())
-  companyId    String
-  title        String
-  description  String
-  requirements String?
-  location     String?
-  salaryRange  String?
-  type         String           @default("FULL_TIME")
-  status       String           @default("OPEN")
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  departmentId String?
-  applications JobApplication[]
-  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  department   Department?      @relation(fields: [departmentId], references: [id])
-  exam         RecruitmentExam?
+  id             String           @id @default(uuid())
+  companyId      String
+  title          String
+  description    String
+  requirements   String?
+  qualifications String?
+  tags           String[]         @default([])
+  location       String?
+  salaryRange    String?
+  type           String           @default("FULL_TIME")
+  status         String           @default("OPEN")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  departmentId   String?
+  applications   JobApplication[]
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department     Department?      @relation(fields: [departmentId], references: [id])
+  exam           RecruitmentExam?
 
   @@index([companyId])
 }

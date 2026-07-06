@@ -38,7 +38,8 @@ export default function CareersPage() {
     // Filter Logic
     const filteredJobs = jobs.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchQuery.toLowerCase());
+            job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (Array.isArray(job.tags) && job.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
         const matchesDept = selectedDepartments.length === 0 || (job.department?.name && selectedDepartments.includes(job.department.name));
         const matchesType = selectedTypes.length === 0 || selectedTypes.includes(job.type);
         const matchesLoc = selectedLocations.length === 0 || (job.location && selectedLocations.includes(job.location));
@@ -203,7 +204,7 @@ export default function CareersPage() {
 
                                         <h3 className="text-xl font-bold text-secondary-900 mb-2 group-hover:text-primary-600 transition-colors leading-tight">{job.title}</h3>
 
-                                        <div className="space-y-2 mt-2 mb-6 w-full">
+                                        <div className="space-y-2 mt-2 mb-4 w-full">
                                             <div className="flex items-center gap-2 text-secondary-500 text-sm font-medium">
                                                 <MapPin size={14} className="text-primary-400" />
                                                 {job.location || 'Remote'}
@@ -213,6 +214,19 @@ export default function CareersPage() {
                                                 {job.salaryRange || 'Competitive'}
                                             </div>
                                         </div>
+
+                                        {Array.isArray(job.tags) && job.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                                {job.tags.slice(0, 4).map((tag: string) => (
+                                                    <span key={tag} className="bg-secondary-50 border border-secondary-100 text-secondary-500 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                                        #{tag}
+                                                    </span>
+                                                ))}
+                                                {job.tags.length > 4 && (
+                                                    <span className="text-[10px] font-bold text-secondary-400 px-1 py-0.5">+{job.tags.length - 4} more</span>
+                                                )}
+                                            </div>
+                                        )}
 
                                         <div className="mt-auto pt-6 w-full border-t border-secondary-50 flex justify-between items-center">
                                             <span className="text-xs font-bold text-secondary-400 uppercase group-hover:text-primary-600 transition-colors">View Details</span>
