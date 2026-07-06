@@ -119,6 +119,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 
+      # The e2e specs log in as the seeded admin@stm.com user — without this
+      # step the whole suite fails at the login page. The destructive-seed
+      # confirmation flags are safe here: the service-container DB is disposable.
+      - name: Seed database
+        run: npx prisma db seed
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          ALLOW_DESTRUCTIVE_SEED: "true"
+          CONFIRM_DESTRUCTIVE_SEED: "DELETE_IMS_BUSINESS_DATA"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Run tests
         run: npm test --if-present
         env:
