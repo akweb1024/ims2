@@ -17,9 +17,12 @@ export const POST = authorizedRoute(ROLES, async (req: NextRequest, user) => {
         const body = await req.json().catch(() => ({}));
 
         let content: string | null = body.content ?? null;
+        // Live editor previews pass settings inline; templateId previews use the stored ones.
+        let settings: any = body.settings ?? null;
         if (!content && body.templateId) {
-            const t = await prisma.documentTemplate.findUnique({ where: { id: body.templateId }, select: { content: true } });
+            const t = await prisma.documentTemplate.findUnique({ where: { id: body.templateId }, select: { content: true, settings: true } });
             content = t?.content ?? null;
+            settings = settings ?? t?.settings ?? null;
         }
         if (!content) return createErrorResponse('Provide content or a templateId to preview', 400);
 
@@ -28,7 +31,7 @@ export const POST = authorizedRoute(ROLES, async (req: NextRequest, user) => {
         let companyAddress: string | null = null;
 
         if (body.employeeId) {
-            const employee = await prisma.employeeProfile.findUnique({ where: { id: body.employeeId }, include: { user: true } });
+            const employee = await prisma.employeeProfile.findUnique({ where: { id: body.employeeId }, include: { user: true, salaryStructure: true } });
             if (!employee) return createErrorResponse('Employee not found', 404);
             const companyId = (employee.user as any)?.companyId || user.companyId || null;
             const company = companyId ? await prisma.company.findUnique({ where: { id: companyId } }) : null;
@@ -42,12 +45,16 @@ export const POST = authorizedRoute(ROLES, async (req: NextRequest, user) => {
             companyAddress = company?.address || null;
         }
 
+        const s = (settings || {}) as any;
         const pdf = renderLetterPdf(hydrate(content, vars), {
             title: body.title || 'Preview',
             companyName,
             companyAddress,
             signedAt: null,
             signatureIp: null,
+            topMarginMm: s.topMarginMm,
+            footerText: s.footerText,
+            showPageNumbers: s.showPageNumbers,
         });
 
         return new NextResponse(Buffer.from(pdf), {

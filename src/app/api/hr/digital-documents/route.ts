@@ -56,7 +56,7 @@ export const POST = authorizedRoute(
             const template = await prisma.documentTemplate.findUnique({ where: { id: templateId } });
             const employee = await prisma.employeeProfile.findUnique({
                 where: { id: employeeId },
-                include: { user: true }
+                include: { user: true, salaryStructure: true }
             });
 
             if (!template || !employee) return createErrorResponse('Template or Employee not found', 404);

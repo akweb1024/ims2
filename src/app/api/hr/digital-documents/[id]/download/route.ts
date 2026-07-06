@@ -15,7 +15,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
         const doc = (await prisma.digitalDocument.findUnique({
             where: { id },
-            include: { employee: { include: { user: { include: { company: true } } } } },
+            include: {
+                employee: { include: { user: { include: { company: true } } } },
+                template: { select: { settings: true } },
+            },
         })) as any;
         if (!doc) return NextResponse.json({ error: 'Document not found' }, { status: 404 });
 
@@ -26,12 +29,16 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         }
 
         const company = doc.employee?.user?.company || null;
+        const s = (doc.template?.settings || {}) as any;
         const pdf = renderLetterPdf(doc.content, {
             title: doc.title,
             companyName: company?.name || null,
             companyAddress: company?.address || null,
             signedAt: doc.signedAt,
             signatureIp: doc.signatureIp,
+            topMarginMm: s.topMarginMm,
+            footerText: s.footerText,
+            showPageNumbers: s.showPageNumbers,
         });
 
         const safeName = String(doc.title || 'document').replace(/[^a-z0-9]+/gi, '_');

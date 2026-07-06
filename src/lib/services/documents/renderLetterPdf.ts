@@ -15,7 +15,15 @@ export interface LetterPdfMeta {
     companyAddress?: string | null;
     signedAt?: Date | string | null;
     signatureIp?: string | null;
+    /** Extra top margin in mm (e.g. to clear pre-printed letterhead paper). Default 4mm. */
+    topMarginMm?: number | null;
+    /** Custom per-page footer line. Use " | " to split into a left and right label. */
+    footerText?: string | null;
+    /** Show the "Page X of Y" footer (default true). */
+    showPageNumbers?: boolean | null;
 }
+
+const mmToPt = (mm: number) => (mm * 72) / 25.4;
 
 function decodeEntities(s: string): string {
     return s
@@ -54,12 +62,13 @@ function parseTable(tableHtml: string): { head: string[][]; body: string[][] } {
 export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): ArrayBuffer {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const M = 56;
+    const top = M + mmToPt(meta.topMarginMm ?? 4);
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const maxW = pageW - M * 2;
-    let y = M;
+    let y = top;
 
-    const ensure = (h: number) => { if (y + h > pageH - M) { doc.addPage(); y = M; } };
+    const ensure = (h: number) => { if (y + h > pageH - M) { doc.addPage(); y = top; } };
 
     // Letterhead
     doc.setFont('helvetica', 'bold');
@@ -128,14 +137,27 @@ export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): Array
         doc.text('Authorized Signatory', M, y + 14);
     }
 
-    // Page numbers
+    // Per-page footer: optional custom line + optional page numbers.
     const pages = doc.getNumberOfPages();
     for (let i = 1; i <= pages; i++) {
         doc.setPage(i);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(140);
-        doc.text(`${meta.title} · Page ${i} of ${pages}`, pageW / 2, pageH - 24, { align: 'center' });
+        if (meta.footerText) {
+            doc.setFontSize(9);
+            doc.setTextColor(90);
+            const [left, right] = meta.footerText.split(' | ');
+            if (right !== undefined) {
+                doc.text(left, M, pageH - 36);
+                doc.text(right, pageW - M, pageH - 36, { align: 'right' });
+            } else {
+                doc.text(left, pageW / 2, pageH - 36, { align: 'center' });
+            }
+        }
+        if (meta.showPageNumbers !== false) {
+            doc.setFontSize(8);
+            doc.setTextColor(140);
+            doc.text(`${meta.title} · Page ${i} of ${pages}`, pageW / 2, pageH - 24, { align: 'center' });
+        }
         doc.setTextColor(0);
     }
 
