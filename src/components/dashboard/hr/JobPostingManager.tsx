@@ -21,6 +21,8 @@ interface JobForm {
     salaryRange: string;
     description: string;
     requirements: string;
+    qualifications: string;
+    tags: string[];
     status: string;
 }
 
@@ -32,6 +34,8 @@ const initialForm: JobForm = {
     salaryRange: '',
     description: '',
     requirements: '',
+    qualifications: '',
+    tags: [],
     status: 'OPEN'
 };
 
@@ -57,9 +61,23 @@ export default function JobPostingManager() {
             salaryRange: job.salaryRange || '',
             description: job.description || '',
             requirements: job.requirements || '',
+            qualifications: job.qualifications || '',
+            tags: Array.isArray(job.tags) ? job.tags : [],
             status: job.status
         });
         setShowModal(true);
+    };
+
+    const [tagInput, setTagInput] = useState('');
+    const addTag = () => {
+        const tag = tagInput.trim().replace(/,+$/, '');
+        if (tag && !formData.tags.includes(tag) && formData.tags.length < 20) {
+            setFormData({ ...formData, tags: [...formData.tags, tag] });
+        }
+        setTagInput('');
+    };
+    const removeTag = (tag: string) => {
+        setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
     };
 
     const handleCreate = () => {
@@ -307,10 +325,50 @@ export default function JobPostingManager() {
                                             <RichTextEditor
                                                 value={formData.requirements}
                                                 onChange={(val) => setFormData({ ...formData, requirements: val })}
-                                                placeholder="Skills, qualifications, experience..."
+                                                placeholder="Skills, experience, responsibilities..."
                                                 className="min-h-[100px]"
                                             />
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Qualifications</label>
+                                        <div className="bg-white rounded-2xl overflow-hidden border border-secondary-100 focus-within:ring-2 focus-within:ring-primary-500">
+                                            <RichTextEditor
+                                                value={formData.qualifications}
+                                                onChange={(val) => setFormData({ ...formData, qualifications: val })}
+                                                placeholder="Education, degrees, certifications (e.g. B.Tech/M.Sc, PMP)..."
+                                                className="min-h-[100px]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Tags</label>
+                                        <div className="bg-secondary-50 rounded-2xl p-3 focus-within:ring-2 focus-within:ring-primary-500">
+                                            {formData.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {formData.tags.map((tag) => (
+                                                        <span key={tag} className="inline-flex items-center gap-1 bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-bold">
+                                                            {tag}
+                                                            <button type="button" onClick={() => removeTag(tag)} className="text-primary-400 hover:text-primary-800" aria-label={`Remove tag ${tag}`}>×</button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <input
+                                                className="w-full bg-transparent border-none p-1 font-bold focus:outline-none text-sm"
+                                                value={tagInput}
+                                                onChange={(e) => setTagInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ',') {
+                                                        e.preventDefault();
+                                                        addTag();
+                                                    }
+                                                }}
+                                                onBlur={addTag}
+                                                placeholder="Type a tag and press Enter (e.g. React, Remote, Editorial)"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-secondary-400">Tags appear on the careers site and help candidates find this role. Max 20.</p>
                                     </div>
                                 </div>
                             </div>

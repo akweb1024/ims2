@@ -202,6 +202,8 @@ export const jobPostingSchema = z.object({
     title: z.string().min(1, "Job title is required"),
     description: z.string().min(10, "Description must be at least 10 characters"),
     requirements: z.string().optional(),
+    qualifications: z.string().optional(),
+    tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
     location: z.string().optional(),
     salaryRange: z.string().optional(),
     type: JobType.default("FULL_TIME"),

@@ -15,22 +15,22 @@ export default function JobDetailPage() {
 
     const fetchJob = useCallback(async (id: string) => {
         try {
-            const res = await fetch('/api/recruitment/jobs');
+            // Public endpoint — candidates browse job details without logging in.
+            // (The previous /api/recruitment/jobs endpoint requires a session, so
+            // anonymous visitors always saw "Job Not Found".)
+            const res = await fetch(`/api/public/recruitment/jobs/${id}`);
             if (res.ok) {
-                const jobs = await res.json();
-                const found = jobs.find((j: any) => j.id === id);
-                if (found) {
-                    setJob(found);
-                } else {
-                    setJob(null); // Explicitly set null to trigger Not Found
-                }
+                setJob(await res.json());
+            } else {
+                setJob(null); // 404 (closed/unknown) → Not Found state
             }
         } catch (err) {
             console.error(err);
+            setJob(null);
         } finally {
             setLoading(false);
         }
-    }, []); // Removed router dependency to avoid unnecessary re-creations
+    }, []);
 
     useEffect(() => {
         if (params.id) {
@@ -118,11 +118,21 @@ export default function JobDetailPage() {
                             <>
                                 <span className="text-primary-600 font-bold tracking-widest uppercase text-xs mb-2 block">{job.type.replace(/_/g, ' ')}</span>
                                 <h1 className="text-3xl md:text-5xl font-black text-secondary-900 mb-4">{job.title}</h1>
-                                <div className="flex flex-wrap gap-4 text-sm font-medium text-secondary-500 mb-10">
+                                <div className="flex flex-wrap gap-4 text-sm font-medium text-secondary-500 mb-6">
                                     <span className="bg-secondary-100 px-3 py-1 rounded-full text-secondary-700">📍 {job.location || 'Remote'}</span>
                                     <span className="bg-success-50 text-success-700 px-3 py-1 rounded-full">💰 {job.salaryRange || 'Competitive'}</span>
                                     {job.department && <span className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full">🏢 {job.department.name}</span>}
                                 </div>
+
+                                {Array.isArray(job.tags) && job.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-10">
+                                        {job.tags.map((tag: string) => (
+                                            <span key={tag} className="bg-secondary-50 border border-secondary-200 text-secondary-600 px-3 py-1 rounded-full text-xs font-bold">
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <div className="prose prose-slate max-w-none mb-10">
                                     <h3 className="text-sm font-bold uppercase tracking-widest text-secondary-900 mb-4">About the Role</h3>
@@ -137,6 +147,16 @@ export default function JobDetailPage() {
                                             <div
                                                 className="text-secondary-600 leading-relaxed prose prose-sm max-w-none text-justify"
                                                 dangerouslySetInnerHTML={{ __html: job.requirements }}
+                                            />
+                                        </>
+                                    )}
+
+                                    {job.qualifications && (
+                                        <>
+                                            <h3 className="text-sm font-bold uppercase tracking-widest text-secondary-900 mt-8 mb-4">Qualifications</h3>
+                                            <div
+                                                className="text-secondary-600 leading-relaxed prose prose-sm max-w-none text-justify"
+                                                dangerouslySetInnerHTML={{ __html: job.qualifications }}
                                             />
                                         </>
                                     )}
