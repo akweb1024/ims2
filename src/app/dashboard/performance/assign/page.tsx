@@ -179,7 +179,7 @@ export default function AssignKraPage() {
     const cancelEdit = () => { setEditingId(null); setEditVals({ target: '', ratePerUnit: '', dailyTarget: '' }); };
 
     const saveEdit = async (goalId: string) => {
-        if (editVals.target === '' || !Number.isFinite(Number(editVals.target))) { setError('Target ek valid number hona chahiye.'); return; }
+        if (editVals.target === '' || !Number.isFinite(Number(editVals.target))) { setError('Target must be a valid number.'); return; }
         setRowBusy(goalId); setError(null); setSuccess(null);
         try {
             const res = await fetch('/api/kra/goal', {

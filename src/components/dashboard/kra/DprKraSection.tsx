@@ -48,7 +48,7 @@ export default function DprKraSection() {
     const entries = goals
       .filter((g) => g.metricId && todays[g.id] && Number(todays[g.id]) > 0)
       .map((g) => ({ metricId: g.metricId as string, value: Number(todays[g.id]) }));
-    if (entries.length === 0) { toast.error('Kisi KRA ke aaj ke progress daalein'); return; }
+    if (entries.length === 0) { toast.error("Enter today's progress for at least one KRA"); return; }
     setBusy(true);
     try {
       const res = await kraFetch<{ summary: { autoVerified: number; pending: number; flagged: number } }>(
@@ -68,9 +68,9 @@ export default function DprKraSection() {
   return (
     <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 my-4">
       <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
-        <FiTarget className="text-indigo-600" /> Aaj ka KRA progress
+        <FiTarget className="text-indigo-600" /> Today&apos;s KRA progress
       </h3>
-      <p className="text-xs text-gray-500 mb-3">Aaj jitna kaam kiya wo daalein (incremental). Manager validate karega.</p>
+      <p className="text-xs text-gray-500 mb-3">Enter what you completed today (incremental). Your manager will validate it.</p>
 
       <div className="space-y-2">
         {goals.map((g) => (
@@ -93,7 +93,7 @@ export default function DprKraSection() {
               type="number"
               min="0"
               className="col-span-3 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder={`+ aaj`}
+              placeholder={`+ today`}
               value={todays[g.id] ?? ''}
               onChange={(e) => setTodays((p) => ({ ...p, [g.id]: e.target.value }))}
             />

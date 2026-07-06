@@ -839,7 +839,7 @@ export default function SubmitReportPage() {
                         <TrendingUp className="text-indigo-600" size={24} />
                         <div>
                             <h3 className="font-bold text-lg text-secondary-900">Plan for Tomorrow</h3>
-                            <p className="text-xs text-secondary-400 font-medium">Kal ka agenda — submit karte hi tomorrow ka WorkPlan ban jayega. Manager execution se pehle adjust kar sakta hai.</p>
+                            <p className="text-xs text-secondary-400 font-medium">Tomorrow&apos;s agenda — submitting it creates tomorrow&apos;s WorkPlan. Your manager can adjust it before execution.</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">

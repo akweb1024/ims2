@@ -252,9 +252,9 @@ export const PATCH = authorizedRoute(
 
             // 3. Update Employee Profile - Strip relations and metadata
             const {
-                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds, allowedModules, departmentId,
+                role, id: _unusedId, isActive, name, designationId, gradeId, email, password, managerId, companyId, companyIds, allowedModules, departmentId,
                 userId, createdAt, updatedAt, user: _userRel, incrementHistory, hrComments, workReports, attendance,
-                documents, designatRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
+                documents, designatRef, gradeRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
                 goals, incentives, kpis, performance, performanceInsights, salaryAdvances, salarySlips,
                 salaryStructure, shiftRosters, taxDeclarations, workPlans, companyDesignations,
                 ...rest
@@ -279,6 +279,17 @@ export const PATCH = authorizedRoute(
                     updateData.designatRef = { disconnect: true };
                 } else {
                     updateData.designatRef = { connect: { id: designationId } };
+                }
+            }
+
+            // Grade is a relation FK (gradeId → gradeRef). Writing designatRef above
+            // puts Prisma in checked-update mode, where the raw gradeId scalar is not
+            // accepted — it must be set through its relation, same as designation.
+            if (gradeId !== undefined) {
+                if (gradeId === null) {
+                    updateData.gradeRef = { disconnect: true };
+                } else {
+                    updateData.gradeRef = { connect: { id: gradeId } };
                 }
             }
 
