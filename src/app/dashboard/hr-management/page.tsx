@@ -33,6 +33,7 @@ import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
 import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
 import PerformancePipelineExplainer from '@/components/dashboard/hr/PerformancePipelineExplainer';
+import PunchInOut from '@/components/dashboard/staff-management/PunchInOut';
 import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
@@ -1026,6 +1027,11 @@ const HRManagementContent = () => {
                             toast.success('Attendance updated');
                         }}
                     />
+                )}
+                {activeTab === 'punch' && (
+                    // Migrated from Staff Management (retirement phase 1) —
+                    // manual punch add/delete against the same attendance records.
+                    <PunchInOut filters={{ companyId: 'all', teamId: 'all', employeeId: 'all' }} />
                 )}
                 {activeTab === 'payroll' && (
                     <div className="flex flex-col items-center justify-center p-20 card-premium">
