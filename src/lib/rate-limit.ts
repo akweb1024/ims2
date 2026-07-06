@@ -30,6 +30,14 @@ export function rateLimit(config?: RateLimitConfig) {
     const bypassInDev = config?.bypassInDev !== false;
 
     return (request: NextRequest) => {
+        // Test-environment escape hatch (e.g. CI e2e: 12 parallel Playwright
+        // tests each performing a multi-request NextAuth login trip the
+        // 30/min auth limiter instantly). Refuses to disable in production,
+        // so brute-force protection cannot be switched off where it matters.
+        if (process.env.DISABLE_RATE_LIMIT === 'true' && process.env.NODE_ENV !== 'production') {
+            return NextResponse.next();
+        }
+
         // Skip rate limiting in development mode, except for security-critical
         // limiters (e.g. auth) which must stay active everywhere.
         if (bypassInDev && process.env.NODE_ENV === 'development') {

@@ -139,6 +139,10 @@ jobs:
           AUTH_SECRET: test-secret-for-tests-only-min-32-chars
           NEXTAUTH_URL: http://localhost:3000
           JWT_SECRET: test-jwt-secret
+          # Parallel Playwright logins trip the 30/min auth limiter and every
+          # spec then dies at the login page. The bypass refuses to activate
+          # when NODE_ENV=production.
+          DISABLE_RATE_LIMIT: "true"
 
   # Security Audit
   security:
