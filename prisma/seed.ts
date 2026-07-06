@@ -211,7 +211,8 @@ async function main() {
             companyId: company.id,
             customerProfile: {
                 create: {
-                    customerType: 'AGENCY',
+                    customerType: 'ORGANIZATION',
+                    organizationType: 'AGENCY',
                     name: 'Global Subscription Partners',
                     organizationName: 'Global Subscription Partners LLC',
                     primaryEmail: 'agency@partner.com',
@@ -341,7 +342,8 @@ async function main() {
                 companyId: company.id,
                 customerProfile: {
                     create: {
-                        customerType: 'INSTITUTION',
+                        customerType: 'ORGANIZATION',
+                        organizationType: 'INSTITUTION',
                         name: inst.name,
                         organizationName: inst.orgName,
                         primaryEmail: inst.email,
