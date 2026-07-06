@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 
-// GET /api/staff-management/employees/[id]/full-profile
+// GET /api/hr/employees/[id]/full-profile
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {

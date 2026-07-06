@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 import { logger } from '@/lib/logger';
 
-// POST /api/staff-management/punch/manual
+// POST /api/hr/punch/manual
 // Add a manual punch entry (maps to an Attendance check-in/check-out)
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],

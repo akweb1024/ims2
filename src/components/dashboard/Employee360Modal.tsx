@@ -74,7 +74,7 @@ export default function Employee360Modal({ employeeId, onClose, viewAs = 'all' }
         const controller = new AbortController();
         (async () => {
             try {
-                const res = await fetch(`/api/staff-management/employees/${employeeId}/full-profile`, { signal: controller.signal });
+                const res = await fetch(`/api/hr/employees/${employeeId}/full-profile`, { signal: controller.signal });
                 if (res.ok) setData(await res.json());
             } catch (_) { /* ignore abort */ }
             finally { setLoading(false); }
