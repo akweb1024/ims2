@@ -409,7 +409,7 @@ export default function SuperAdminOverhaulDashboard() {
                                     <h3 className="text-lg font-black text-slate-800 tracking-tight">Talent Ecosystem</h3>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs font-black text-slate-500">{stats?.health.hr.label}</span>
-                                        <Link href="/dashboard/staff-management?tab=analytics" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
+                                        <Link href="/dashboard/hr-management?tab=productivity" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
                                             Open staff analytics
                                         </Link>
                                     </div>
