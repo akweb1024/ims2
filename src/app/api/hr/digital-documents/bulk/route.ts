@@ -25,13 +25,13 @@ export const POST = authorizedRoute(
             if (Array.isArray(employeeIds) && employeeIds.length > 0) {
                 targetEmployees = await prisma.employeeProfile.findMany({
                     where: { id: { in: employeeIds } },
-                    include: { user: true },
+                    include: { user: true, salaryStructure: true },
                 });
             } else if (filters) {
                 const where: any = { user: { isActive: true, companyId: user.companyId } };
                 if (typeof filters.designation === 'string' && filters.designation) where.designation = filters.designation;
                 if (typeof filters.employeeType === 'string' && filters.employeeType) where.employeeType = filters.employeeType;
-                targetEmployees = await prisma.employeeProfile.findMany({ where, include: { user: true } });
+                targetEmployees = await prisma.employeeProfile.findMany({ where, include: { user: true, salaryStructure: true } });
             }
 
             if (targetEmployees.length === 0) return createErrorResponse('No employees matched the criteria', 404);

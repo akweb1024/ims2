@@ -28,7 +28,7 @@ export const POST = authorizedRoute(
             if (!user.companyId) return createErrorResponse('Company association required', 403);
 
             const body = await req.json();
-            const { title, type, content } = body;
+            const { title, type, content, settings } = body;
 
             if (!title || !type || !content) {
                 return createErrorResponse('Missing required fields', 400);
@@ -39,7 +39,8 @@ export const POST = authorizedRoute(
                     companyId: user.companyId,
                     title,
                     type,
-                    content
+                    content,
+                    settings: settings ?? undefined
                 }
             });
 

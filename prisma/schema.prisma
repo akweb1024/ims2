@@ -2641,6 +2641,7 @@ model DocumentTemplate {
   title            String
   type             String
   content          String
+  settings         Json? // page setup: { topMarginMm, footerText, showPageNumbers }
   companyId        String
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
