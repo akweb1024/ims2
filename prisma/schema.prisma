@@ -6614,6 +6614,7 @@ model KraTemplateItem {
   periodType    GoalType                    @default(MONTHLY)
   dimension     KraDimension                @default(OUTPUT) // carried into goals on assignment
   minThreshold  Float?
+  dailyTarget   Float? // optional per-day pace target, carried into goals on assignment
   ratePerUnit   Float? // INR earned per unit (e.g. ₹/article)
   createdAt     DateTime                    @default(now())
   template      KraTemplate                 @relation(fields: [templateId], references: [id], onDelete: Cascade)
