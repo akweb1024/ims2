@@ -5,6 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { kraAssignSchema } from '@/lib/validators/kra';
 import { computePeriodWindow, KraPeriodType } from '@/lib/kra/period';
+import { computeCarryForward } from '@/lib/kra/carry-forward';
 
 const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
@@ -65,8 +66,18 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
       for (const profile of profiles) {
         for (const item of template.items) {
           const ov = overrideMap.get(`${profile.id}:${item.metricId}`);
-          const target = ov?.target ?? item.defaultTarget;
+          const base = ov?.target ?? item.defaultTarget;
           const ratePerUnit = ov?.ratePerUnit ?? item.ratePerUnit ?? null;
+
+          // Roll any unmet target from the prior period into this one (OUTPUT/monthly only).
+          const carry = await computeCarryForward(tx, {
+            employeeId: profile.id,
+            metricId: item.metricId,
+            periodType,
+            windowStart: win.startDate,
+            base,
+            dimension: item.dimension,
+          });
 
           const existing = await tx.employeeGoal.findFirst({
             where: {
@@ -82,7 +93,10 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
             title: item.metric.name,
             kra: item.metric.name,
             unit: item.metric.unit,
-            targetValue: target,
+            targetValue: carry.targetValue,
+            baseTargetValue: carry.baseTargetValue,
+            carriedInValue: carry.carriedInValue,
+            sourceGoalId: carry.sourceGoalId,
             type: periodType,
             startDate: win.startDate,
             endDate: win.endDate,
