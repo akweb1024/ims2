@@ -105,6 +105,7 @@ export interface KraTemplateItem {
   periodType: string;
   dimension?: string;
   minThreshold?: number | null;
+  dailyTarget?: number | null;
   ratePerUnit?: number | null;
   metric?: KraMetric;
 }

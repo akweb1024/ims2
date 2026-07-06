@@ -91,6 +91,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
             templateId: template.id,
             dataSource: item.metric.dataSource ?? 'MANUAL',
             weight: item.weight,
+            dailyTarget: item.dailyTarget ?? null,
             ratePerUnit,
             visibility: 'MANAGER',
             ...(input.reviewerId ? { reviewerId: input.reviewerId } : {}),

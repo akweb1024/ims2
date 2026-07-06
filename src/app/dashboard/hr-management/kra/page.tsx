@@ -227,6 +227,7 @@ function TemplatesTab() {
           metricId: i.metricId, defaultTarget: Number(i.defaultTarget) || 0,
           weight: Number(i.weight) || 1, periodType: i.periodType || 'MONTHLY',
           dimension: i.dimension || 'OUTPUT',
+          dailyTarget: i.dailyTarget != null && i.dailyTarget !== ('' as any) ? Number(i.dailyTarget) : null,
           ratePerUnit: i.ratePerUnit != null && i.ratePerUnit !== ('' as any) ? Number(i.ratePerUnit) : null,
         })),
       };
@@ -243,7 +244,7 @@ function TemplatesTab() {
   };
 
   const newTemplate = () => setEditing({ name: '', description: '', departmentId: '', isActive: true, items: [] });
-  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY', dimension: 'OUTPUT', ratePerUnit: '' }] });
+  const addItem = () => setEditing({ ...editing, items: [...editing.items, { metricId: metrics[0]?.id || '', defaultTarget: 0, weight: 1, periodType: 'MONTHLY', dimension: 'OUTPUT', dailyTarget: '', ratePerUnit: '' }] });
   const setItem = (idx: number, patch: any) => setEditing({ ...editing, items: editing.items.map((it: any, i: number) => i === idx ? { ...it, ...patch } : it) });
   const delItem = (idx: number) => setEditing({ ...editing, items: editing.items.filter((_: any, i: number) => i !== idx) });
 
@@ -276,7 +277,7 @@ function TemplatesTab() {
                 {t.items.map((i) => (
                   <li key={i.id} className="flex justify-between text-gray-600">
                     <span>{i.metric?.name}</span>
-                    <span className="text-gray-400">{i.defaultTarget}{i.metric?.unit}{i.ratePerUnit ? ` · ₹${i.ratePerUnit}/unit` : ''} · w{i.weight} · {i.periodType}</span>
+                    <span className="text-gray-400">{i.defaultTarget}{i.metric?.unit}{i.dailyTarget ? ` · ${i.dailyTarget}/day` : ''}{i.ratePerUnit ? ` · ₹${i.ratePerUnit}/unit` : ''} · w{i.weight} · {i.periodType}</span>
                   </li>
                 ))}
               </ul>
@@ -311,9 +312,12 @@ function TemplatesTab() {
                   </div>
                   <button onClick={() => delItem(idx)} title="Remove metric" className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md p-2 mb-1 shrink-0"><FiTrash2 /></button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   <Field label="Target" hint="The goal value to hit for the period (e.g. 20 articles).">
                     <input type="number" className={inputCls} value={it.defaultTarget} onChange={(e) => setItem(idx, { defaultTarget: e.target.value })} placeholder="e.g. 20" />
+                  </Field>
+                  <Field label="Daily target" hint="Optional. Expected per-day pace (e.g. 1/day). Carried onto each employee's goal for pace tracking in the daily report. Leave blank if there's no daily cadence.">
+                    <input type="number" className={inputCls} value={it.dailyTarget ?? ''} onChange={(e) => setItem(idx, { dailyTarget: e.target.value })} placeholder="blank" />
                   </Field>
                   <Field label="₹ / unit" hint="Optional. Revenue earned per unit — auto-records revenue when the employee logs progress. Leave blank if the target isn't revenue-per-unit.">
                     <input type="number" className={inputCls} value={it.ratePerUnit ?? ''} onChange={(e) => setItem(idx, { ratePerUnit: e.target.value })} placeholder="blank" />

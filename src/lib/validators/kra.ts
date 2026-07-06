@@ -34,6 +34,7 @@ export const kraTemplateItemSchema = z.object({
   periodType: z.enum(PERIOD_TYPES).default('MONTHLY'),
   dimension: z.enum(KRA_DIMENSIONS).default('OUTPUT'),
   minThreshold: z.number().nonnegative().nullish(),
+  dailyTarget: z.number().nonnegative().nullish(),
   ratePerUnit: z.number().nonnegative().nullish(),
 });
 
