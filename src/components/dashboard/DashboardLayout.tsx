@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import { getNavigationModules } from '@/config/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import Breadcrumbs from './Breadcrumbs';
 import FeedbackWidget from './FeedbackWidget';
 import AIChatWidget from './AIChatWidget';
 import { CommandNexus } from '@/components/nexus/CommandNexus';
@@ -354,6 +355,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-14 lg:pt-[65px]'}`}
             >
                 <div className="page-wrapper page-animate">
+                    <Breadcrumbs />
                     {children}
                 </div>
             </main>
