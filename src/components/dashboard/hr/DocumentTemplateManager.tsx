@@ -5,7 +5,7 @@ import { useDocumentTemplates, useDocumentTemplateMutations, useEmployees, useDi
 import { FileText, Plus, Trash2, Edit2, Save, X, Send, User, Eye, Code2, Type } from 'lucide-react';
 import { HR_PRESETS } from '@/lib/hr-presets';
 import { DOCUMENT_TYPES } from '@/lib/document-types';
-import RichTextEditor, { type RichTextEditorHandle } from '@/components/common/RichTextEditor';
+import TipTapEditor, { type RichEditorHandle } from '@/components/common/TipTapEditor';
 import { LETTER_SHORTCODES } from '@/lib/services/documents/letterVars';
 
 type LetterSettings = { topMarginMm: number; footerText: string; showPageNumbers: boolean };
@@ -21,9 +21,9 @@ export default function DocumentTemplateManager() {
     const [editingObj, setEditingObj] = useState<any>(null);
     const [formData, setFormData] = useState<{ title: string; type: string; content: string; settings: LetterSettings }>({ title: '', type: 'OFFER_LETTER', content: '', settings: { ...DEFAULT_SETTINGS } });
 
-    // Content editor: rich-text (WYSIWYG) by default; HTML source for tables / power edits.
+    // Content editor: rich-text (WYSIWYG, with tables) by default; HTML source for power edits.
     const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich');
-    const richEditorRef = useRef<RichTextEditorHandle>(null);
+    const richEditorRef = useRef<RichEditorHandle>(null);
     const htmlAreaRef = useRef<HTMLTextAreaElement>(null);
     const insertShortcode = (key: string) => {
         const code = `{{${key}}}`;
@@ -35,20 +35,6 @@ export default function DocumentTemplateManager() {
         const next = ta.value.slice(0, start) + code + ta.value.slice(end);
         setFormData((f) => ({ ...f, content: next }));
         requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(start + code.length, start + code.length); });
-    };
-    // Quill can't edit tables reliably; drop a starter table and switch to HTML mode.
-    const insertTable = () => {
-        const table = `\n<table border="1" style="width:100%; border-collapse:collapse; text-align:left;">\n<tr><th>Column 1</th><th>Column 2</th></tr>\n<tr><td>Value</td><td>Value</td></tr>\n</table>\n`;
-        setEditorMode('html');
-        setFormData((f) => ({ ...f, content: (f.content || '') + table }));
-    };
-    // Rich Text (Quill) strips tables — warn before switching if the content has one.
-    const switchToRich = () => {
-        if (/<table/i.test(formData.content) &&
-            !confirm('Rich Text mode cannot edit tables and will remove them. Keep editing in HTML mode to preserve tables.\n\nSwitch to Rich Text anyway?')) {
-            return;
-        }
-        setEditorMode('rich');
     };
 
     const [isIssuing, setIsIssuing] = useState(false);
@@ -181,7 +167,7 @@ export default function DocumentTemplateManager() {
                                 key={idx}
                                 onClick={() => {
                                     setFormData({ title: p.title, type: p.type, content: p.content.trim(), settings: { ...DEFAULT_SETTINGS, ...(p.settings || {}) } });
-                                    setEditorMode(/<table/i.test(p.content) ? 'html' : 'rich');
+                                    setEditorMode('rich');
                                     setIsEditing(true);
                                     setEditingObj(null);
                                 }}
@@ -228,19 +214,14 @@ export default function DocumentTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Content</label>
                                 <div className="bg-secondary-100 p-1 rounded-lg flex gap-1">
-                                    <button type="button" onClick={switchToRich} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'rich' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Type size={12} /> Rich Text</button>
+                                    <button type="button" onClick={() => setEditorMode('rich')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'rich' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Type size={12} /> Rich Text</button>
                                     <button type="button" onClick={() => setEditorMode('html')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'html' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Code2 size={12} /> HTML</button>
                                 </div>
                             </div>
 
                             {/* Shortcode palette — click to insert; resolved to real data when the letter is issued */}
                             <div className="bg-secondary-50 border border-secondary-200 rounded-xl p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Insert shortcode</p>
-                                    <button type="button" onClick={insertTable} className="text-[10px] font-bold bg-white border border-secondary-200 hover:border-primary-400 hover:text-primary-600 text-secondary-600 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                        <Code2 size={11} /> Insert table
-                                    </button>
-                                </div>
+                                <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Insert shortcode</p>
                                 {LETTER_SHORTCODES.map((group) => (
                                     <div key={group.group} className="flex flex-wrap gap-1.5 items-center">
                                         <span className="text-[9px] font-black text-secondary-400 uppercase w-14 shrink-0">{group.group}</span>
@@ -260,17 +241,16 @@ export default function DocumentTemplateManager() {
                             </div>
 
                             {editorMode === 'rich' ? (
-                                <RichTextEditor
+                                <TipTapEditor
                                     ref={richEditorRef}
                                     value={formData.content}
                                     onChange={(v) => setFormData({ ...formData, content: v })}
                                     placeholder="Compose the letter…"
-                                    className="bg-white"
                                 />
                             ) : (
                                 <textarea ref={htmlAreaRef} value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} className="input w-full h-[400px] py-4 font-mono text-sm leading-relaxed bg-white border-secondary-200" placeholder="<h1>EMPLOYMENT CONTRACT</h1><p>This agreement is between...</p>" />
                             )}
-                            <p className="text-[10px] text-secondary-400">Use <strong>HTML</strong> mode for tables and advanced layout. The salary annexure is best inserted via the <strong>Full salary annexure</strong> shortcode.</p>
+                            <p className="text-[10px] text-secondary-400">Insert tables with the <strong>table</strong> button in the toolbar (drag the column borders to resize). Switch to <strong>HTML</strong> for raw source. The salary annexure is best inserted via the <strong>Full salary annexure</strong> shortcode.</p>
                         </div>
 
                         {/* Page setup — letterhead top margin + footer */}
@@ -407,7 +387,7 @@ export default function DocumentTemplateManager() {
                                 <FileText size={20} />
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => { setEditingObj(template); setFormData({ title: template.title, type: template.type, content: template.content, settings: { ...DEFAULT_SETTINGS, ...(template.settings || {}) } }); setEditorMode(/<table/i.test(template.content || '') ? 'html' : 'rich'); setIsEditing(true); }} className="p-2 text-secondary-300 hover:text-secondary-900 hover:bg-secondary-50 rounded-lg">
+                                <button onClick={() => { setEditingObj(template); setFormData({ title: template.title, type: template.type, content: template.content, settings: { ...DEFAULT_SETTINGS, ...(template.settings || {}) } }); setEditorMode('rich'); setIsEditing(true); }} className="p-2 text-secondary-300 hover:text-secondary-900 hover:bg-secondary-50 rounded-lg">
                                     <Edit2 size={14} />
                                 </button>
                                 <button onClick={() => { if (confirm('Delete template?')) remove.mutate(template.id); }} className="p-2 text-secondary-300 hover:text-danger-500 hover:bg-rose-50 rounded-lg">
