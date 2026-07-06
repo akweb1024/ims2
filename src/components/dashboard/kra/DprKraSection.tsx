@@ -17,6 +17,8 @@ interface Goal {
   title: string;
   unit: string;
   target: number;
+  baseTargetValue: number | null;
+  carriedInValue: number;
   current: number;
   remaining: number;
   overflow: number;
@@ -81,6 +83,11 @@ export default function DprKraSection() {
                 Done {g.current}/{g.target} {g.unit}
                 {g.ratePerUnit ? ` · ₹${Math.round(g.earned).toLocaleString('en-IN')}` : ''}
               </div>
+              {g.carriedInValue > 0 && (
+                <div className="text-[11px] text-amber-600 font-medium mt-0.5">
+                  Target {g.target} = {g.baseTargetValue ?? (g.target - g.carriedInValue)} base + {g.carriedInValue} carried over
+                </div>
+              )}
             </div>
             <div className="col-span-4 text-xs">
               {g.overflow > 0 ? (

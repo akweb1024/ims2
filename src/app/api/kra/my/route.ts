@@ -112,6 +112,8 @@ export const GET = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) => 
           dimension: g.dimension,
           unit: g.unit,
           target: g.targetValue,
+          baseTargetValue: g.baseTargetValue,
+          carriedInValue: g.carriedInValue,
           dailyTarget: g.dailyTarget,
           current: g.currentValue,
           remaining,

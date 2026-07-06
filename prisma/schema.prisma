@@ -3781,6 +3781,10 @@ model EmployeeGoal {
   dailyTarget           Float? // optional per-day target for pace rollup
   assignedById          String? // plain ref to the user who assigned this goal
   dueDate               DateTime? // verification due date (defaults to endDate)
+  // --- Carry-forward (unmet OUTPUT target rolls into the next period) ---
+  baseTargetValue       Float? // the period's own recurring target, before carry-in
+  carriedInValue        Float                        @default(0) // shortfall carried in from the prior period
+  sourceGoalId          String? // prior-period goal this carry-in came from (audit)
   // status value set: PENDING | IN_PROGRESS | SUBMITTED | TL_VERIFIED | MANAGER_VERIFIED | REJECTED | ACHIEVED
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
