@@ -189,37 +189,6 @@ export const ALL_MODULES: NavModule[] = [
         ]
     },
     {
-        id: 'STAFF_MANAGEMENT',
-        name: 'Staff Management',
-        icon: Users,
-        categories: [
-            {
-                title: 'Staff Operations',
-                items: [
-                    { name: 'Staff Dashboard', href: '/dashboard/staff-management', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Employees', href: '/dashboard/staff-management?tab=employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Attendance', href: '/dashboard/staff-management?tab=attendance', icon: Clock, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Punch In/Out', href: '/dashboard/staff-management?tab=punch', icon: Timer, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                ]
-            },
-            {
-                title: 'Leave & Salary',
-                items: [
-                    { name: 'Leave Management', href: '/dashboard/staff-management?tab=leave', icon: Palmtree, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Balance Leave', href: '/dashboard/staff-management?tab=balance-leave', icon: ClipboardList, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Salary Management', href: '/dashboard/staff-management?tab=salary', icon: Wallet, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                    { name: 'Work Reports', href: '/dashboard/staff-management?tab=work-reports', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                ]
-            },
-            {
-                title: 'Analytics',
-                items: [
-                    { name: 'Staff Analytics', href: '/dashboard/staff-management?tab=analytics', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
-                ]
-            }
-        ]
-    },
-    {
         id: 'FINANCE',
         name: 'Finance & Accounts',
         icon: Wallet,
@@ -495,11 +464,11 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
     // Core list of modules that should be visible based on role, even if not explicitly in allowedModules
     const defaultModulesByRole: Record<string, string[]> = {
         'SUPER_ADMIN': ['*'],
-        'ADMIN': ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY', 'STAFF_MANAGEMENT'],
+        'ADMIN': ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY'],
         'MANAGER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'PUBLICATION', 'IT', 'QUALITY'],
         'TEAM_LEADER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'IT', 'QUALITY'],
         'FINANCE_ADMIN': ['CORE', 'FINANCE', 'QUALITY', 'HR'],
-        'HR_MANAGER': ['CORE', 'HR', 'STAFF_MANAGEMENT', 'LMS', 'QUALITY'],
+        'HR_MANAGER': ['CORE', 'HR', 'LMS', 'QUALITY'],
         'HR': ['CORE', 'HR', 'QUALITY'],
         'EXECUTIVE': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY', 'LOGISTIC'],
         'IT_MANAGER': ['CORE', 'IT', 'QUALITY'],
