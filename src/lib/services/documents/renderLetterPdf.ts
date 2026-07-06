@@ -137,26 +137,35 @@ export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): Array
         doc.text('Authorized Signatory', M, y + 14);
     }
 
-    // Per-page footer: optional custom line + optional page numbers.
+    // Per-page footer — everything sits on ONE baseline so it never stacks:
+    // custom footer left | right at the margins, page number in the middle.
     const pages = doc.getNumberOfPages();
+    const footerY = pageH - 28;
+    const pageNumbers = meta.showPageNumbers !== false;
     for (let i = 1; i <= pages; i++) {
         doc.setPage(i);
         doc.setFont('helvetica', 'normal');
+        const [left, right] = (meta.footerText || '').split(' | ');
+        const hasSplit = meta.footerText && right !== undefined;
+
         if (meta.footerText) {
             doc.setFontSize(9);
             doc.setTextColor(90);
-            const [left, right] = meta.footerText.split(' | ');
-            if (right !== undefined) {
-                doc.text(left, M, pageH - 36);
-                doc.text(right, pageW - M, pageH - 36, { align: 'right' });
+            if (hasSplit) {
+                doc.text(left, M, footerY);
+                doc.text(right, pageW - M, footerY, { align: 'right' });
             } else {
-                doc.text(left, pageW / 2, pageH - 36, { align: 'center' });
+                // Single-part footer: left-aligned so the page number can share the line.
+                doc.text(meta.footerText, M, footerY);
             }
         }
-        if (meta.showPageNumbers !== false) {
+        if (pageNumbers) {
             doc.setFontSize(8);
             doc.setTextColor(140);
-            doc.text(`${meta.title} · Page ${i} of ${pages}`, pageW / 2, pageH - 24, { align: 'center' });
+            // Center it when the sides are free, else tuck it to the right.
+            const label = `${meta.title} · Page ${i} of ${pages}`;
+            if (hasSplit || !meta.footerText) doc.text(label, pageW / 2, footerY, { align: 'center' });
+            else doc.text(label, pageW - M, footerY, { align: 'right' });
         }
         doc.setTextColor(0);
     }

@@ -42,6 +42,14 @@ export default function DocumentTemplateManager() {
         setEditorMode('html');
         setFormData((f) => ({ ...f, content: (f.content || '') + table }));
     };
+    // Rich Text (Quill) strips tables — warn before switching if the content has one.
+    const switchToRich = () => {
+        if (/<table/i.test(formData.content) &&
+            !confirm('Rich Text mode cannot edit tables and will remove them. Keep editing in HTML mode to preserve tables.\n\nSwitch to Rich Text anyway?')) {
+            return;
+        }
+        setEditorMode('rich');
+    };
 
     const [isIssuing, setIsIssuing] = useState(false);
     const [issueData, setIssueData] = useState({ templateId: '', employeeId: '' });
@@ -173,6 +181,7 @@ export default function DocumentTemplateManager() {
                                 key={idx}
                                 onClick={() => {
                                     setFormData({ title: p.title, type: p.type, content: p.content.trim(), settings: { ...DEFAULT_SETTINGS, ...(p.settings || {}) } });
+                                    setEditorMode(/<table/i.test(p.content) ? 'html' : 'rich');
                                     setIsEditing(true);
                                     setEditingObj(null);
                                 }}
@@ -219,7 +228,7 @@ export default function DocumentTemplateManager() {
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Content</label>
                                 <div className="bg-secondary-100 p-1 rounded-lg flex gap-1">
-                                    <button type="button" onClick={() => setEditorMode('rich')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'rich' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Type size={12} /> Rich Text</button>
+                                    <button type="button" onClick={switchToRich} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'rich' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Type size={12} /> Rich Text</button>
                                     <button type="button" onClick={() => setEditorMode('html')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${editorMode === 'html' ? 'bg-white text-secondary-900 shadow-sm' : 'text-secondary-500'}`}><Code2 size={12} /> HTML</button>
                                 </div>
                             </div>
@@ -398,7 +407,7 @@ export default function DocumentTemplateManager() {
                                 <FileText size={20} />
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => { setEditingObj(template); setFormData({ title: template.title, type: template.type, content: template.content, settings: { ...DEFAULT_SETTINGS, ...(template.settings || {}) } }); setIsEditing(true); }} className="p-2 text-secondary-300 hover:text-secondary-900 hover:bg-secondary-50 rounded-lg">
+                                <button onClick={() => { setEditingObj(template); setFormData({ title: template.title, type: template.type, content: template.content, settings: { ...DEFAULT_SETTINGS, ...(template.settings || {}) } }); setEditorMode(/<table/i.test(template.content || '') ? 'html' : 'rich'); setIsEditing(true); }} className="p-2 text-secondary-300 hover:text-secondary-900 hover:bg-secondary-50 rounded-lg">
                                     <Edit2 size={14} />
                                 </button>
                                 <button onClick={() => { if (confirm('Delete template?')) remove.mutate(template.id); }} className="p-2 text-secondary-300 hover:text-danger-500 hover:bg-rose-50 rounded-lg">
