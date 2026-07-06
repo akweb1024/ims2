@@ -50,6 +50,7 @@ const CATEGORIES: NavCategory[] = [
         icon: <Calendar size={18} />,
         tabs: [
             { id: 'attendance', label: 'Attendance Logs' },
+            { id: 'punch', label: 'Punch In/Out' },
             { id: 'leaves', label: 'Leave Requests' },
             { id: 'leave-ledger', label: 'Leave Balances' },
             { id: 'holidays', label: 'Holiday Calendar' },
