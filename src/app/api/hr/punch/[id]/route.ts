@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 
-// DELETE /api/staff-management/punch/[id]
+// DELETE /api/hr/punch/[id]
 // Delete a punch (attendance) record
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],

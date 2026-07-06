@@ -25,7 +25,6 @@ const SENSITIVE_MODULE_ROUTES: Array<{ prefix: string; moduleId: string }> = [
     { prefix: '/api/revenue', moduleId: 'FINANCE' },
     { prefix: '/api/proforma', moduleId: 'FINANCE' },
     { prefix: '/api/hr', moduleId: 'HR' },
-    { prefix: '/api/staff-management', moduleId: 'HR' },
     { prefix: '/api/recruitment', moduleId: 'HR' },
 ];
 

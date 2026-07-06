@@ -38,7 +38,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
 
-                const res = await fetch(`/api/staff-management/punch?${params.toString()}`);
+                const res = await fetch(`/api/hr/punch?${params.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
                     setPunchRecords(data);
@@ -59,7 +59,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
     const handleManualEntry = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/staff-management/punch/manual', {
+            const res = await fetch('/api/hr/punch/manual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(manualEntry)
@@ -82,7 +82,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
         if (!confirm('Are you sure you want to delete this punch entry?')) return;
 
         try {
-            const res = await fetch(`/api/staff-management/punch/${id}`, {
+            const res = await fetch(`/api/hr/punch/${id}`, {
                 method: 'DELETE'
             });
 
