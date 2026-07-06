@@ -209,12 +209,28 @@ export const jobPostingSchema = z.object({
     type: JobType.default("FULL_TIME"),
     status: JobStatus.default("OPEN"),
     departmentId: z.string().optional(),
-    companyId: z.string().optional(),
+    // Optional: a job with no company is a "global" posting. '' (from the
+    // form's Global option) and null both mean global.
+    companyId: z.union([z.string().uuid(), z.literal(''), z.null()]).optional(),
     examQuestions: z.array(z.any()).optional(),
 });
 
 export const updateJobPostingSchema = jobPostingSchema.partial().extend({
     id: z.string().uuid(),
+});
+
+// --- Candidate communication / follow-up (CRM-style) ---
+export const applicationCommunicationSchema = z.object({
+    type: z.enum(['CALL', 'EMAIL', 'MEETING', 'COMMENT']).default('CALL'),
+    subject: z.string().min(1, 'Subject is required').max(200),
+    notes: z.string().min(1, 'Notes are required').max(2000),
+    outcome: z.string().max(500).optional(),
+    nextFollowUpDate: z.string().datetime().optional(),
+});
+
+export const applicationCommunicationReviewSchema = z.object({
+    communicationId: z.string().uuid(),
+    isFollowUpCompleted: z.boolean(),
 });
 
 // --- Performance Review Schemas ---

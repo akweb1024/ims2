@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Briefcase, Users, UserPlus,
     Search, Filter, MapPin, DollarSign,
@@ -16,6 +16,7 @@ interface JobForm {
     id?: string;
     title: string;
     departmentId: string;
+    companyId: string;
     type: string;
     location: string;
     salaryRange: string;
@@ -29,6 +30,7 @@ interface JobForm {
 const initialForm: JobForm = {
     title: '',
     departmentId: '',
+    companyId: '', // '' = global (all companies)
     type: 'FULL_TIME',
     location: 'On-site',
     salaryRange: '',
@@ -51,11 +53,27 @@ export default function JobPostingManager() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState<JobForm>(initialForm);
 
+    // Companies the viewer can pin a posting to (leaving it blank = global).
+    const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (Array.isArray(data?.availableCompanies)) setCompanies(data.availableCompanies);
+            } catch { /* non-fatal — dropdown simply falls back to Global only */ }
+        })();
+    }, []);
+
     const handleEdit = (job: any) => {
         setFormData({
             id: job.id,
             title: job.title,
             departmentId: job.departmentId || '',
+            companyId: job.companyId || '',
             type: job.type,
             location: job.location || '',
             salaryRange: job.salaryRange || '',
@@ -143,8 +161,13 @@ export default function JobPostingManager() {
                             <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-xl font-bold shadow-inner">
                                 {job.title.charAt(0)}
                             </div>
-                            <div className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest ${job.status === 'OPEN' ? 'bg-success-50 text-success-600' : 'bg-secondary-100 text-secondary-500'}`}>
-                                {job.status}
+                            <div className="flex flex-col items-end gap-1">
+                                <div className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest ${job.status === 'OPEN' ? 'bg-success-50 text-success-600' : 'bg-secondary-100 text-secondary-500'}`}>
+                                    {job.status}
+                                </div>
+                                <div className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest ${job.company?.name ? 'bg-primary-50 text-primary-600' : 'bg-secondary-100 text-secondary-500'}`}>
+                                    {job.company?.name || 'Global'}
+                                </div>
                             </div>
                         </div>
 
@@ -258,6 +281,19 @@ export default function JobPostingManager() {
                                                 {departments?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                             </select>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Company</label>
+                                        <select
+                                            className="w-full bg-secondary-50 border-none rounded-2xl p-4 font-bold focus:ring-2 focus:ring-primary-500"
+                                            value={formData.companyId}
+                                            onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
+                                        >
+                                            <option value="">Global — visible under all companies</option>
+                                            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                        <p className="text-[10px] text-secondary-400">Leave as Global to post org-wide, or pin this role to a specific company.</p>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-4">

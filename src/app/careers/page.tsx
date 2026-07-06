@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Briefcase, DollarSign, Filter } from 'lucide-react';
+import { Search, MapPin, Briefcase, DollarSign, Filter, Building2, Sparkles } from 'lucide-react';
+
+// Qualifications are stored as rich-text HTML; strip tags so the search box
+// can match on the plain-text content.
+const stripHtml = (html?: string) => (html || '').replace(/<[^>]*>/g, ' ');
 
 export default function CareersPage() {
     const [jobs, setJobs] = useState<any[]>([]);
@@ -13,6 +17,7 @@ export default function CareersPage() {
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
     const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
     useEffect(() => {
@@ -34,17 +39,37 @@ export default function CareersPage() {
     const departments = useMemo(() => Array.from(new Set(jobs.map(j => j.department?.name).filter(Boolean))), [jobs]);
     const jobTypes = useMemo(() => Array.from(new Set(jobs.map(j => j.type))), [jobs]);
     const locations = useMemo(() => Array.from(new Set(jobs.map(j => j.location).filter(Boolean))), [jobs]);
+    // Skills facet is built from the structured tags array on each posting.
+    const skills = useMemo(
+        () => Array.from(new Set(jobs.flatMap(j => (Array.isArray(j.tags) ? j.tags : [])))).sort() as string[],
+        [jobs]
+    );
+
+    // Public statistics for the hero strip.
+    const stats = useMemo(() => {
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        return {
+            openRoles: jobs.length,
+            departments: departments.length,
+            locations: locations.length,
+            newThisWeek: jobs.filter(j => j.createdAt && new Date(j.createdAt).getTime() >= weekAgo).length,
+        };
+    }, [jobs, departments, locations]);
 
     // Filter Logic
     const filteredJobs = jobs.filter(job => {
-        const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (Array.isArray(job.tags) && job.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = q === '' ||
+            job.title.toLowerCase().includes(q) ||
+            job.description.toLowerCase().includes(q) ||
+            stripHtml(job.qualifications).toLowerCase().includes(q) ||
+            (Array.isArray(job.tags) && job.tags.some((tag: string) => tag.toLowerCase().includes(q)));
         const matchesDept = selectedDepartments.length === 0 || (job.department?.name && selectedDepartments.includes(job.department.name));
         const matchesType = selectedTypes.length === 0 || selectedTypes.includes(job.type);
         const matchesLoc = selectedLocations.length === 0 || (job.location && selectedLocations.includes(job.location));
+        const matchesSkills = selectedSkills.length === 0 || (Array.isArray(job.tags) && selectedSkills.some(s => job.tags.includes(s)));
 
-        return matchesSearch && matchesDept && matchesType && matchesLoc;
+        return matchesSearch && matchesDept && matchesType && matchesLoc && matchesSkills;
     });
 
     const toggleFilter = (item: string, current: string[], setter: (v: string[]) => void) => {
@@ -60,6 +85,7 @@ export default function CareersPage() {
         setSelectedDepartments([]);
         setSelectedTypes([]);
         setSelectedLocations([]);
+        setSelectedSkills([]);
     };
 
     return (
@@ -80,6 +106,23 @@ export default function CareersPage() {
                 <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                     <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight">Join the <span className="text-primary-400">Revolution.</span></h1>
                     <p className="text-lg text-secondary-400 max-w-2xl mx-auto">Find your next role at STM and help us build the future of intelligence.</p>
+
+                    {!isLoading && jobs.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mt-12">
+                            {[
+                                { icon: <Briefcase size={18} />, value: stats.openRoles, label: 'Open Roles' },
+                                { icon: <Building2 size={18} />, value: stats.departments, label: 'Departments' },
+                                { icon: <MapPin size={18} />, value: stats.locations, label: 'Locations' },
+                                { icon: <Sparkles size={18} />, value: stats.newThisWeek, label: 'New This Week' },
+                            ].map((s) => (
+                                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-4 py-5 backdrop-blur-sm">
+                                    <div className="flex items-center justify-center gap-2 text-primary-400 mb-1">{s.icon}</div>
+                                    <div className="text-3xl font-black text-white leading-none">{s.value}</div>
+                                    <div className="text-[11px] font-bold text-secondary-400 uppercase tracking-widest mt-1">{s.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -104,7 +147,7 @@ export default function CareersPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                 <input
                                     type="text"
-                                    placeholder="Job title, keywords..."
+                                    placeholder="Title, skills, qualifications..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 bg-secondary-50 border border-secondary-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all text-secondary-900 placeholder:text-secondary-400"
@@ -160,6 +203,26 @@ export default function CareersPage() {
                                             </div>
                                             <input type="checkbox" className="hidden" checked={selectedLocations.includes(loc)} onChange={() => toggleFilter(loc, selectedLocations, setSelectedLocations)} />
                                             <span className={`text-sm font-bold ${selectedLocations.includes(loc) ? 'text-primary-900' : 'text-secondary-600'}`}>{loc}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Skills / Qualifications */}
+                        {skills.length > 0 && (
+                            <div className="card-premium animate-in fade-in slide-in-from-left-4 duration-1000">
+                                <h3 className="text-xs font-bold text-secondary-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Sparkles size={14} className="text-primary-400" /> Skills
+                                </h3>
+                                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                    {skills.map((skill) => (
+                                        <label key={skill} className="flex items-center gap-3 cursor-pointer group">
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedSkills.includes(skill) ? 'bg-primary-600 border-primary-600' : 'border-secondary-300 bg-secondary-50 group-hover:border-primary-400'}`}>
+                                                {selectedSkills.includes(skill) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                            </div>
+                                            <input type="checkbox" className="hidden" checked={selectedSkills.includes(skill)} onChange={() => toggleFilter(skill, selectedSkills, setSelectedSkills)} />
+                                            <span className={`text-sm font-bold ${selectedSkills.includes(skill) ? 'text-primary-900' : 'text-secondary-600'}`}>{skill}</span>
                                         </label>
                                     ))}
                                 </div>

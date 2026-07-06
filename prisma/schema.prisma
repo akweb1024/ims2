@@ -287,6 +287,7 @@ model User {
   commissionPayoutRequests       CommissionPayout[]               @relation("CommissionPayoutRequester")
   commissionPayoutReviews        CommissionPayout[]               @relation("CommissionPayoutReviewer")
   communications                 CommunicationLog[]               @relation("UserCommunications")
+  applicationCommunications      ApplicationCommunication[]       @relation("ApplicationCommunicationUser")
   committeeRoles                 ConferenceCommitteeMember[]
   conferenceRegistrations        ConferenceRegistration[]
   mentoredCourses                Course[]                         @relation("CourseMentor")
@@ -2669,7 +2670,7 @@ model DigitalDocument {
 
 model JobPosting {
   id             String           @id @default(uuid())
-  companyId      String
+  companyId      String?
   title          String
   description    String
   requirements   String?
@@ -2683,7 +2684,7 @@ model JobPosting {
   updatedAt      DateTime         @updatedAt
   departmentId   String?
   applications   JobApplication[]
-  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company        Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   department     Department?      @relation(fields: [departmentId], references: [id])
   exam           RecruitmentExam?
 
@@ -2691,27 +2692,28 @@ model JobPosting {
 }
 
 model JobApplication {
-  id                  String                 @id @default(uuid())
+  id                  String                     @id @default(uuid())
   jobPostingId        String
   applicantName       String
   applicantEmail      String
   applicantPhone      String?
   resumeUrl           String?
-  aiMatchScore        Int                    @default(0)
-  aiTags              String[]               @default([])
-  status              String                 @default("APPLIED")
+  aiMatchScore        Int                        @default(0)
+  aiTags              String[]                   @default([])
+  status              String                     @default("APPLIED")
   offerLetterUrl      String?
   contractUrl         String?
   notes               String?
   rating              Int?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
   departmentId        String?
   examAttempt         ExamAttempt?
   interviewScreenings InterviewScreening[]
-  department          Department?            @relation(fields: [departmentId], references: [id])
-  jobPosting          JobPosting             @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  department          Department?                @relation(fields: [departmentId], references: [id])
+  jobPosting          JobPosting                 @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
   interviews          RecruitmentInterview[]
+  communications      ApplicationCommunication[]
 }
 
 model RecruitmentExam {
@@ -6710,4 +6712,24 @@ model Proof {
   goal      EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@index([goalId])
+}
+
+model ApplicationCommunication {
+  id                  String            @id @default(uuid())
+  applicationId       String
+  userId              String?
+  type                CommunicationType @default(CALL)
+  subject             String
+  notes               String
+  outcome             String?
+  date                DateTime          @default(now())
+  nextFollowUpDate    DateTime?
+  isFollowUpCompleted Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  application         JobApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  user                User?             @relation("ApplicationCommunicationUser", fields: [userId], references: [id])
+
+  @@index([applicationId])
+  @@index([nextFollowUpDate])
 }

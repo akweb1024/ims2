@@ -19,10 +19,13 @@ export const GET = authorizedRoute(
                 where = {}; // Management roles can see all status
             }
 
-            const finalCompanyId = (user.role === 'SUPER_ADMIN' && queryCompanyId) ? queryCompanyId : user.companyId;
-
-            if (finalCompanyId) {
-                where.companyId = finalCompanyId;
+            // Jobs are global by default; recruiters see all postings (global +
+            // every company's). An optional companyId narrows the list, and the
+            // 'GLOBAL' sentinel isolates company-less postings.
+            if (queryCompanyId === 'GLOBAL') {
+                where.companyId = null;
+            } else if (queryCompanyId) {
+                where.companyId = queryCompanyId;
             }
 
             const jobs = await prisma.jobPosting.findMany({
@@ -54,11 +57,9 @@ export const POST = authorizedRoute(
 
             const { examQuestions, companyId, ...jobData } = validation.data;
 
-            const finalCompanyId = (user.role === 'SUPER_ADMIN' && companyId) ? companyId : user.companyId;
-
-            if (!finalCompanyId) {
-                return createErrorResponse('Company association required.', 400);
-            }
+            // Global by default; the poster may optionally pin the job to a
+            // specific company. Empty string / null both mean global.
+            const finalCompanyId = companyId ? companyId : null;
 
             const job = await prisma.jobPosting.create({
                 data: {
@@ -103,6 +104,12 @@ export const PATCH = authorizedRoute(
 
             const { id, examQuestions, ...updates } = validation.data;
             if (!id) return createErrorResponse('ID is required', 400);
+
+            // Only touch companyId when the field was actually sent (partial
+            // updates like close/reopen omit it). '' clears it → global.
+            if ('companyId' in updates) {
+                (updates as any).companyId = updates.companyId ? updates.companyId : null;
+            }
 
             const job = await prisma.jobPosting.update({
                 where: { id },
