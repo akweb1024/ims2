@@ -5,6 +5,8 @@ build/
 dist/
 .DS_Store
 *.pem
+# Local throwaway smoke/verify scripts — never part of the app.
+scratch/
 # Never commit any env variant (this includes .env.bak, which once leaked
 # live secrets) — only the two example templates are allowed.
 .env*

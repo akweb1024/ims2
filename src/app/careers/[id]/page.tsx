@@ -12,6 +12,7 @@ export default function JobDetailPage() {
     const [applying, setApplying] = useState(false);
     const [applicationStatus, setApplicationStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
     const [examLink, setExamLink] = useState('');
+    const [statusUrl, setStatusUrl] = useState('');
 
     const fetchJob = useCallback(async (id: string) => {
         try {
@@ -60,6 +61,7 @@ export default function JobDetailPage() {
             if (res.ok) {
                 const responseData = await res.json();
                 setExamLink(responseData.examLink);
+                setStatusUrl(responseData.statusUrl || '');
                 setApplicationStatus('success');
             } else {
                 alert('Application failed. Please try again.');
@@ -179,6 +181,27 @@ export default function JobDetailPage() {
                                             <h4 className="font-bold text-primary-900 mb-4">Complete your Skill Assessment to proceed.</h4>
                                             <a href={examLink || '#'} className="btn bg-primary-600 text-white w-full py-3 rounded-xl font-bold block hover:scale-105 transition-transform shadow-lg shadow-primary-200">Start Assessment Now ⚡</a>
                                         </div>
+
+                                        {statusUrl && (
+                                            <div className="bg-secondary-50 p-6 rounded-2xl border border-secondary-200 mb-6 text-left">
+                                                <p className="text-xs font-bold text-secondary-500 uppercase tracking-widest mb-2">Track your application</p>
+                                                <p className="text-sm text-secondary-600 mb-3">
+                                                    Save this personal link — it shows your live application status anytime, no account needed.
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    <a href={statusUrl} className="flex-1 btn bg-white border border-secondary-300 text-secondary-800 py-2.5 rounded-xl font-bold text-sm text-center hover:border-primary-400">
+                                                        Open Tracker
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { navigator.clipboard.writeText(window.location.origin + statusUrl); alert('Tracking link copied — save it somewhere safe!'); }}
+                                                        className="btn bg-secondary-900 text-white px-4 py-2.5 rounded-xl font-bold text-sm"
+                                                    >
+                                                        Copy Link
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <form onSubmit={handleApply} className="text-left space-y-6 animate-in slide-in-from-right duration-300">

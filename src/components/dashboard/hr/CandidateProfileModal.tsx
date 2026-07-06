@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Mail, Phone, ExternalLink, Calendar, MapPin, Download, Sparkles, Save, Clock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 import { createPortal } from 'react-dom';
+import ApplicationCommunications from './ApplicationCommunications';
 
 interface CandidateProfileModalProps {
     application: any;
@@ -281,6 +282,8 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                     <div className="text-secondary-400 text-sm font-medium italic">No interviews scheduled yet.</div>
                                 )}
                             </div>
+
+                            <ApplicationCommunications applicationId={application.id} />
                         </div>
                     </div>
                 </div>
