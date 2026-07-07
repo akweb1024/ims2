@@ -3,11 +3,13 @@ import autoTable from 'jspdf-autotable';
 
 /**
  * Render a hydrated HTML letter (from DigitalDocument.content) into a clean, professional
- * PDF. Not pixel-perfect — it lays out headings, paragraphs, and tables on a company
- * letterhead. Reuses the jspdf stack already in the repo (see renderPayslipPdf).
+ * PDF. Not pixel-perfect — it lays out headings, paragraphs, lists, and tables on a company
+ * letterhead, preserving bold/italic/underline/strike, alignment and bullet/numbered lists
+ * produced by the rich-text editor. Reuses the jspdf stack already in the repo (see
+ * renderPayslipPdf).
  *
- * Template authoring guidance: numbered clauses should be plain <p> with literal numbers
- * (e.g. "<p>1. ...</p>"); use <h1..h3> for headings and <table> for the salary annexure.
+ * Template authoring guidance: use <h1..h3> for headings, <table> for the salary annexure,
+ * and either literal "1. ..." numbering in a <p> or a real <ol>/<ul> — both render correctly.
  */
 export interface LetterPdfMeta {
     title: string;
@@ -23,11 +25,32 @@ export interface LetterPdfMeta {
     showPageNumbers?: boolean | null;
 }
 
+interface Run {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    strike: boolean;
+}
+
+interface Token {
+    word: string;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    strike: boolean;
+    isSpace: boolean;
+}
+
+type Align = 'left' | 'center' | 'right';
+
 const mmToPt = (mm: number) => (mm * 72) / 25.4;
 
 function decodeEntities(s: string): string {
     return s
-        .replace(/&nbsp;/g, ' ')
+        // A real non-breaking space, not a plain space — so runs of &nbsp; (a common trick for
+        // widening a signature-line gap) survive the whitespace-collapse in tokenizeWords below.
+        .replace(/&nbsp;/g, '\u00A0')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
@@ -49,6 +72,188 @@ function stripInline(html: string): string {
         .trim();
 }
 
+// Void elements never get a closing tag — if pushed onto the style stack they'd never be
+// popped, permanently corrupting bold/italic state for the rest of the document.
+const VOID_TAGS = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr']);
+
+/**
+ * Parses inline HTML into style-tagged text runs, tracking nested <strong>/<em>/<u>/<s>.
+ * Matches ANY tag (not just the known style ones) so unrecognized markup like <span>/<a>/<div>
+ * — which can appear via the template editor's raw-HTML mode — is stripped rather than leaking
+ * its literal tag text into the PDF; such tags just inherit the current run's style.
+ */
+function parseInlineRuns(html: string): Run[] {
+    const runs: Run[] = [];
+    const stack: Array<{ bold: boolean; italic: boolean; underline: boolean; strike: boolean }> = [
+        { bold: false, italic: false, underline: false, strike: false },
+    ];
+    const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(\/)?>/g;
+    let lastIndex = 0;
+    let m: RegExpExecArray | null;
+
+    const pushText = (raw: string) => {
+        const text = decodeEntities(raw);
+        if (text) runs.push({ text, ...stack[stack.length - 1] });
+    };
+
+    while ((m = tagRe.exec(html))) {
+        if (m.index > lastIndex) pushText(html.slice(lastIndex, m.index));
+        lastIndex = tagRe.lastIndex;
+        const closing = m[1] === '/';
+        const tag = m[2].toLowerCase();
+        const selfClosing = !!m[3];
+
+        if (tag === 'br') {
+            runs.push({ text: '\n', bold: false, italic: false, underline: false, strike: false });
+            continue;
+        }
+        if (closing) {
+            if (stack.length > 1) stack.pop();
+            continue;
+        }
+        if (VOID_TAGS.has(tag) || selfClosing) continue;
+
+        const top = { ...stack[stack.length - 1] };
+        if (tag === 'strong' || tag === 'b') top.bold = true;
+        else if (tag === 'em' || tag === 'i') top.italic = true;
+        else if (tag === 'u') top.underline = true;
+        else if (tag === 's' || tag === 'strike') top.strike = true;
+        stack.push(top);
+    }
+    if (lastIndex < html.length) pushText(html.slice(lastIndex));
+    return runs;
+}
+
+function tokenizeWords(runs: Run[]): Token[] {
+    const tokens: Token[] = [];
+    for (const r of runs) {
+        // Collapse ordinary whitespace like HTML does, but leave \u00A0 (&nbsp;) runs intact —
+        // otherwise repeated &nbsp; used to pad a signature line collapse to a single space.
+        const normalized = r.text.replace(/[ \t\n\r\f\v]+/g, ' ');
+        for (const p of normalized.split(/( )/)) {
+            if (!p) continue;
+            tokens.push({ word: p, bold: r.bold, italic: r.italic, underline: r.underline, strike: r.strike, isSpace: p === ' ' });
+        }
+    }
+    while (tokens.length && tokens[0].isSpace) tokens.shift();
+    while (tokens.length && tokens[tokens.length - 1].isSpace) tokens.pop();
+    return tokens;
+}
+
+function fontStyleFor(bold: boolean, italic: boolean): string {
+    if (bold && italic) return 'bolditalic';
+    if (bold) return 'bold';
+    if (italic) return 'italic';
+    return 'normal';
+}
+
+function measure(doc: jsPDF, token: Token, fontSize: number): number {
+    doc.setFont('helvetica', fontStyleFor(token.bold, token.italic));
+    doc.setFontSize(fontSize);
+    return doc.getTextWidth(token.word);
+}
+
+function wrapTokens(doc: jsPDF, tokens: Token[], boxW: number, fontSize: number): Token[][] {
+    const lines: Token[][] = [];
+    let current: Token[] = [];
+    let currentW = 0;
+    for (const t of tokens) {
+        const w = measure(doc, t, fontSize);
+        if (t.isSpace) {
+            if (current.length) { current.push(t); currentW += w; }
+            continue;
+        }
+        if (current.length && currentW + w > boxW) {
+            while (current.length && current[current.length - 1].isSpace) current.pop();
+            lines.push(current);
+            current = [];
+            currentW = 0;
+        }
+        current.push(t);
+        currentW += w;
+    }
+    while (current.length && current[current.length - 1].isSpace) current.pop();
+    if (current.length) lines.push(current);
+    return lines;
+}
+
+function drawLine(doc: jsPDF, line: Token[], x0: number, boxW: number, y: number, fontSize: number, align: Align) {
+    const w = line.reduce((sum, t) => sum + measure(doc, t, fontSize), 0);
+    let x = x0;
+    if (align === 'center') x = x0 + Math.max(0, (boxW - w) / 2);
+    else if (align === 'right') x = x0 + Math.max(0, boxW - w);
+    for (const t of line) {
+        doc.setFont('helvetica', fontStyleFor(t.bold, t.italic));
+        doc.setFontSize(fontSize);
+        const tw = doc.getTextWidth(t.word);
+        doc.text(t.word, x, y);
+        if (t.underline) doc.line(x, y + 2, x + tw, y + 2);
+        if (t.strike) doc.line(x, y - fontSize * 0.32, x + tw, y - fontSize * 0.32);
+        x += tw;
+    }
+}
+
+interface RenderTextBlockOpts {
+    x0: number;
+    boxW: number;
+    y: number;
+    fontSize: number;
+    baseBold?: boolean;
+    align?: Align;
+    lineH?: number;
+    ensure: (y: number, h: number) => number;
+    /** Hanging-indent prefix (bullet/number) drawn once, before the first line only. */
+    firstLinePrefix?: { text: string; width: number };
+}
+
+/** Renders inline-formatted HTML as wrapped, styled text; returns the new y. */
+function renderTextBlock(doc: jsPDF, html: string, opts: RenderTextBlockOpts): number {
+    const { x0, boxW, fontSize, ensure } = opts;
+    const align = opts.align ?? 'left';
+    const baseBold = !!opts.baseBold;
+    const lineH = opts.lineH ?? fontSize * 1.3;
+    const prefix = opts.firstLinePrefix;
+    const effX0 = prefix ? x0 + prefix.width : x0;
+    const effBoxW = prefix ? boxW - prefix.width : boxW;
+    let y = opts.y;
+
+    const runs = parseInlineRuns(html).map((r) => (r.text === '\n' ? r : { ...r, bold: r.bold || baseBold }));
+    const segments: Run[][] = [[]];
+    for (const r of runs) {
+        if (r.text === '\n') segments.push([]);
+        else segments[segments.length - 1].push(r);
+    }
+
+    let first = true;
+    for (const seg of segments) {
+        const lines = wrapTokens(doc, tokenizeWords(seg), effBoxW, fontSize);
+        if (!lines.length) lines.push([]);
+        for (const line of lines) {
+            y = ensure(y, lineH);
+            if (first && prefix) {
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fontSize);
+                doc.text(prefix.text, x0, y);
+            }
+            drawLine(doc, line, effX0, effBoxW, y, fontSize, prefix ? 'left' : align);
+            y += lineH;
+            first = false;
+        }
+    }
+    return y;
+}
+
+function parseAlign(attrs: string): Align {
+    const m = /ql-align-(center|right|justify|left)/.exec(attrs || '');
+    if (!m || m[1] === 'justify' || m[1] === 'left') return 'left';
+    return m[1] as Align;
+}
+
+function parseIndent(attrs: string): number {
+    const m = /ql-indent-(\d+)/.exec(attrs || '');
+    return m ? parseInt(m[1], 10) : 0;
+}
+
 function parseTable(tableHtml: string): { head: string[][]; body: string[][] } {
     const rows = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map((m) => m[1]);
     const parsed = rows.map((r) =>
@@ -68,7 +273,10 @@ export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): Array
     const maxW = pageW - M * 2;
     let y = top;
 
-    const ensure = (h: number) => { if (y + h > pageH - M) { doc.addPage(); y = top; } };
+    const ensure = (yy: number, h: number): number => {
+        if (yy + h > pageH - M) { doc.addPage(); return top; }
+        return yy;
+    };
 
     // Letterhead
     doc.setFont('helvetica', 'bold');
@@ -91,13 +299,16 @@ export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): Array
 
     // Body — split into table and non-table segments, preserving order.
     const parts = contentHtml.split(/(<table[\s\S]*?<\/table>)/gi);
+    const blockRe = /<(h[1-6]|p|ul|ol)([^>]*)>([\s\S]*?)<\/\1>/gi;
+    const liRe = /<li([^>]*)>([\s\S]*?)<\/li>/gi;
+
     for (const part of parts) {
         if (!part || !part.trim()) continue;
 
         if (/^<table/i.test(part)) {
             const { head, body } = parseTable(part);
             if (!body.length && !head.length) continue;
-            ensure(50);
+            y = ensure(y, 50);
             autoTable(doc, {
                 startY: y, head, body,
                 margin: { left: M, right: M },
@@ -108,23 +319,63 @@ export function renderLetterPdf(contentHtml: string, meta: LetterPdfMeta): Array
             continue;
         }
 
-        const blocks = [...part.matchAll(/<(h[1-6]|p)[^>]*>([\s\S]*?)<\/(h[1-6]|p)>/gi)];
-        for (const b of blocks) {
-            const tag = b[1].toLowerCase();
-            const text = stripInline(b[2]);
-            if (!text) { y += 6; continue; }
+        blockRe.lastIndex = 0;
+        let bm: RegExpExecArray | null;
+        while ((bm = blockRe.exec(part))) {
+            const tag = bm[1].toLowerCase();
+            const attrs = bm[2] || '';
+            const inner = bm[3];
+
+            if (tag === 'ul' || tag === 'ol') {
+                let counter = 0;
+                liRe.lastIndex = 0;
+                let lm: RegExpExecArray | null;
+                while ((lm = liRe.exec(inner))) {
+                    const indent = parseIndent(lm[1] || '');
+                    const indentPx = indent * 16;
+                    counter += 1;
+                    const bulletText = tag === 'ol' ? `${counter}.` : indent > 0 ? '-' : '•';
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    const bulletWidth = doc.getTextWidth(`${bulletText}  `);
+                    y = renderTextBlock(doc, lm[2], {
+                        x0: M + indentPx,
+                        boxW: maxW - indentPx,
+                        fontSize: 10,
+                        ensure,
+                        y,
+                        firstLinePrefix: { text: bulletText, width: bulletWidth },
+                    });
+                    y += 4;
+                }
+                y += 4;
+                continue;
+            }
+
+            const plain = decodeEntities(inner.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+            if (!plain) { y += 6; continue; }
+
             const isHeading = tag[0] === 'h';
-            doc.setFont('helvetica', isHeading ? 'bold' : 'normal');
-            doc.setFontSize(isHeading ? (tag === 'h1' ? 14 : tag === 'h2' ? 12 : 11) : 10);
+            const fontSize = isHeading ? (tag === 'h1' ? 14 : tag === 'h2' ? 12 : 11) : 10;
             const lineH = isHeading ? 16 : 13;
-            const lines = text.split('\n').flatMap((seg) => (seg.trim() ? doc.splitTextToSize(seg, maxW) : ['']));
-            for (const ln of lines) { ensure(lineH); doc.text(ln, M, y); y += lineH; }
-            y += isHeading ? 6 : 6;
+            const align = parseAlign(attrs);
+            const indentPx = parseIndent(attrs) * 16;
+            y = renderTextBlock(doc, inner, {
+                x0: M + indentPx,
+                boxW: maxW - indentPx,
+                fontSize,
+                baseBold: isHeading,
+                align,
+                lineH,
+                ensure,
+                y,
+            });
+            y += 6;
         }
     }
 
     // Signature / footer
-    ensure(60);
+    y = ensure(y, 60);
     y += 10;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
