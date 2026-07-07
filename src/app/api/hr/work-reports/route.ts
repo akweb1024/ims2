@@ -8,6 +8,8 @@ import { getISTDateString, getISTDateRange } from '@/lib/hr/work-agenda';
 import { recordContributions } from '@/lib/kra/contributions';
 import { approveWorkReport } from '@/lib/hr/workReportApproval';
 import { evaluateWorkReportForAutoApproval } from '@/lib/hr/workReportAutoApproval';
+import { summarizeWorkReport } from '@/lib/hr/workReportSummary';
+import { annotateTaskQuantitySuggestions } from '@/lib/hr/taskQuantitySuggester';
 
 const SUBMISSION_COOLDOWN_MS = 10_000;
 const BLOCKED_SUBMISSION_COOLDOWN_MS = 30_000;
@@ -171,7 +173,20 @@ export const GET = authorizedRoute(
                 take: 100
             });
 
-            return NextResponse.json(reports);
+            // Instant rule-based digest for list views (Review Inbox, report history) so a
+            // manager can scan without opening every report's full content. Free, synchronous —
+            // the optional AI-enhanced version is a separate on-demand endpoint (see [id]/ai-summary).
+            let reportsWithSummary: any[] = reports.map((r) => ({ ...r, summary: summarizeWorkReport(r) }));
+
+            // Task suggester (validation queue only): flag SCALED task quantities that are way
+            // out of line with the employee's own history, so a manager can tell at a glance
+            // which tasks deserve a closer look. Only worth the extra queries for the actual
+            // validation queue, not every report-list view.
+            if (where.status === 'SUBMITTED') {
+                reportsWithSummary = await annotateTaskQuantitySuggestions(reportsWithSummary);
+            }
+
+            return NextResponse.json(reportsWithSummary);
         } catch (error) {
             return handleApiError(error, req.nextUrl.pathname);
         }
