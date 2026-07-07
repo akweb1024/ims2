@@ -129,7 +129,12 @@ export default function StaffWorkReports({ workReports, todayAttendance, user, o
                                 {report.chatsHandled > 0 && <span className="text-blue-600 font-bold text-[10px] bg-blue-50 px-2 py-0.5 rounded">{report.chatsHandled} Chats</span>}
                                 {report.followUpsCompleted > 0 && <span className="text-cyan-600 font-bold text-[10px] bg-cyan-50 px-2 py-0.5 rounded">{report.followUpsCompleted} Followups</span>}
                             </div>
-                            <span className={`badge ${report.status === 'APPROVED' ? 'badge-success' : 'badge-secondary'}`}>{report.status}</span>
+                            <span className="flex items-center gap-1.5">
+                                {report.evaluation?.autoApproved && (
+                                    <span className="text-violet-600 font-bold text-[10px] bg-violet-50 px-2 py-0.5 rounded" title="Approved automatically — hours, tasks, and revenue matched system records">🤖 Auto-approved</span>
+                                )}
+                                <span className={`badge ${report.status === 'APPROVED' ? 'badge-success' : 'badge-secondary'}`}>{report.status}</span>
+                            </span>
                         </div>
                         {report.managerComment && (
                             <div className="mt-4 p-3 bg-secondary-50 rounded-lg text-xs border-l-2 border-warning-400">

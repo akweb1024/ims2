@@ -72,7 +72,17 @@ export default function WorkReportsTable({ reports }: { reports: any[] }) {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <StatusBadge status={report.status} />
+                                        <div className="flex items-center gap-1.5">
+                                            <StatusBadge status={report.status} />
+                                            {report.evaluation?.autoApproved && (
+                                                <span
+                                                    className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-violet-100 text-violet-800"
+                                                    title="Approved automatically — hours, tasks, and revenue matched system records"
+                                                >
+                                                    🤖 Auto
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
