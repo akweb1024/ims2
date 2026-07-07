@@ -592,8 +592,9 @@ export default function EmployeeForm({
 
                         <div>
                             <label className="label-premium">Additional Authorized Companies</label>
+                            <p className="text-[10px] text-secondary-400 -mt-1 mb-2 font-bold italic">Companies besides the primary one above — the primary company designation is set in the Designation field.</p>
                             <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto p-3 bg-secondary-50/50 rounded-2xl border border-secondary-100">
-                                {companies.map(c => (
+                                {companies.filter(c => c.id !== empForm.companyId).map(c => (
                                     <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white cursor-pointer border border-transparent hover:border-secondary-100 transition-all shadow-sm">
                                         <input
                                             type="checkbox"
@@ -612,12 +613,12 @@ export default function EmployeeForm({
                             </div>
                         </div>
 
-                        {/* Multi-Company Designations */}
-                        {empForm.companyIds.length > 0 && (
+                        {/* Multi-Company Designations — primary company excluded, its designation is the main Designation field above */}
+                        {empForm.companyIds.filter(id => id !== empForm.companyId).length > 0 && (
                             <div className="mt-6">
                                 <label className="label-premium mb-3">Company Designations</label>
                                 <div className="space-y-3">
-                                    {empForm.companyIds.map(companyId => {
+                                    {empForm.companyIds.filter(companyId => companyId !== empForm.companyId).map(companyId => {
                                         const company = companies.find(c => c.id === companyId);
                                         const designation = empForm.companyDesignations.find(d => d.companyId === companyId);
 
@@ -638,7 +639,7 @@ export default function EmployeeForm({
                                                                     companyId,
                                                                     designation: desName,
                                                                     designationId: selectedDes ? selectedDes.id : undefined,
-                                                                    isPrimary: companyId === empForm.companyId
+                                                                    isPrimary: false
                                                                 });
                                                             }
                                                             setEmpForm({ ...empForm, companyDesignations: newDesignations });
@@ -650,17 +651,12 @@ export default function EmployeeForm({
                                                         ))}
                                                     </select>
                                                 </div>
-                                                {companyId === empForm.companyId && (
-                                                    <span className="px-2 py-1 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full">
-                                                        Primary
-                                                    </span>
-                                                )}
                                             </div>
                                         );
                                     })}
                                 </div>
                                 <p className="text-[10px] text-secondary-400 mt-2 font-bold italic">
-                                    Specify different designations for each company this employee works with
+                                    Specify different designations for each additional company this employee works with
                                 </p>
                             </div>
                         )}

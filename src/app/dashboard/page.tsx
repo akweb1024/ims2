@@ -205,7 +205,7 @@ export default function DashboardPage() {
                     value: employee.id,
                     label: employee.user?.name || employee.name || employee.user?.email || employee.email || employee.employeeId || 'Employee',
                     hint: employee.employeeId
-                        ? `${employee.employeeId}${employee.designation?.title ? ` · ${employee.designation.title}` : ''}`
+                        ? `${employee.employeeId}${employee.designatRef?.name || employee.designation ? ` · ${employee.designatRef?.name || employee.designation}` : ''}`
                         : employee.user?.email || employee.email || 'Employee profile',
                 }))
             );
@@ -216,7 +216,7 @@ export default function DashboardPage() {
                     .map((employee: any) => ({
                         value: employee.user?.id || employee.id,
                         label: employee.user?.name || employee.name || employee.user?.email || 'Team Lead',
-                        hint: `${employee.user?.role || 'TEAM'}${employee.department?.name ? ` · ${employee.department.name}` : ''}`,
+                        hint: `${employee.user?.role || 'TEAM'}${employee.user?.department?.name ? ` · ${employee.user.department.name}` : ''}`,
                     }))
             );
         } catch (err) {

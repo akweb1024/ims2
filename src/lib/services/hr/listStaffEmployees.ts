@@ -126,7 +126,9 @@ export async function listStaffEmployees({ user, params }: ListStaffEmployeesInp
             title: profile.designatRef.name,
             ...profile.designatRef,
           }
-        : null,
+        : profile?.designation
+          ? { title: profile.designation }
+          : null,
       baseSalary: profile?.baseSalary || 0,
       skills: profile?.skills || [],
       performanceSnapshots: profile?.performanceSnapshots || [],
