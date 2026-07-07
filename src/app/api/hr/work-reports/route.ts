@@ -4,25 +4,10 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, NotFoundError, AuthorizationError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { getDownlineUserIds } from '@/lib/hierarchy';
-import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
+import { getISTDateString, getISTDateRange } from '@/lib/hr/work-agenda';
 import { recordContributions } from '@/lib/kra/contributions';
-
-const getISTDateString = (date = new Date()) =>
-    new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(date);
-
-const getISTDateRange = (dateStr?: string) => {
-    const base = dateStr || getISTDateString();
-    return {
-        base,
-        start: new Date(`${base}T00:00:00+05:30`),
-        end: new Date(`${base}T23:59:59.999+05:30`)
-    };
-};
+import { approveWorkReport } from '@/lib/hr/workReportApproval';
+import { evaluateWorkReportForAutoApproval } from '@/lib/hr/workReportAutoApproval';
 
 const SUBMISSION_COOLDOWN_MS = 10_000;
 const BLOCKED_SUBMISSION_COOLDOWN_MS = 30_000;
@@ -615,7 +600,47 @@ export const POST = authorizedRoute(
                 });
             }
 
-            return NextResponse.json(report);
+            // Auto-approval (Validate Work Report automation): mirrors the KRA auto-verify
+            // pattern — resolve the routine, objectively-checkable case automatically, and
+            // leave anything anomalous or unverifiable in the manager's Review Inbox queue.
+            // Defensive — a failure here must never block report submission.
+            let responseReport = report;
+            try {
+                const decision = await evaluateWorkReportForAutoApproval({
+                    id: report.id,
+                    employeeId: profile.id,
+                    companyId: user.companyId ?? null,
+                    date: report.date,
+                    hoursSpent: report.hoursSpent,
+                    revenueGenerated: report.revenueGenerated,
+                    pointsEarned: report.pointsEarned,
+                    kraMatchRatio: report.kraMatchRatio,
+                });
+                if (decision.approve) {
+                    const allTaskIds = ((report.tasksSnapshot as any[]) || []).map((t: any) => t.id);
+                    responseReport = await approveWorkReport({
+                        existing: report,
+                        status: 'APPROVED',
+                        managerComment: decision.managerComment,
+                        managerRating: decision.managerRating,
+                        approvedTaskIds: allTaskIds,
+                        rejectedTaskIds: [],
+                        evaluation: decision.evaluation,
+                        allowMandatoryOverride: false,
+                        companyId: user.companyId,
+                    });
+                    logger.info('Work report auto-approved', { reportId: report.id, employeeId: profile.id });
+                } else {
+                    logger.info('Work report left for manual review', { reportId: report.id, reason: decision.reason });
+                }
+            } catch (autoApproveErr) {
+                logger.error('Work report auto-approval check failed (left for manual review)', {
+                    reportId: report.id,
+                    error: autoApproveErr instanceof Error ? autoApproveErr.message : String(autoApproveErr),
+                });
+            }
+
+            return NextResponse.json(responseReport);
         } catch (error) {
             return handleApiError(error, req.nextUrl.pathname);
         }
@@ -728,85 +753,16 @@ export const PATCH = authorizedRoute(
                 }
             }
 
-            // Calculate approved points based on task-level approval
-            let finalPointsEarned = existing.pointsEarned || 0;
-            let updatedTasksSnapshot = existing.tasksSnapshot;
-
-            if (approvedTaskIds && Array.isArray(approvedTaskIds) && existing.tasksSnapshot) {
-                // Update task snapshot with approval status
-                updatedTasksSnapshot = (existing.tasksSnapshot as any[]).map((task: any) => ({
-                    ...task,
-                    isApproved: approvedTaskIds.includes(task.id),
-                    isRejected: rejectedTaskIds?.includes(task.id) || false
-                }));
-
-                // Recalculate points based on approved tasks only
-                finalPointsEarned = updatedTasksSnapshot
-                    .filter((task: any) => approvedTaskIds.includes(task.id))
-                    .reduce((sum: number, task: any) => sum + (task.points || 0), 0);
-            }
-
-            if (status === 'APPROVED' && existing.status !== 'APPROVED') {
-                // Award Points for approved tasks only
-                if (finalPointsEarned && finalPointsEarned > 0) {
-                    await prisma.employeePointLog.create({
-                        data: {
-                            employeeId: existing.employeeId,
-                            companyId: user.companyId!,
-                            type: 'WORK_REPORT',
-                            points: finalPointsEarned,
-                            date: new Date(),
-                            reason: `Work Report Approved: ${existing.title} (${approvedTaskIds?.length || 0} tasks approved)`
-                        }
-                    });
-                }
-            }
-
-            let reconciledManagerComment = managerComment;
-            if (status === 'APPROVED') {
-                const reportIstDate = getISTDateString(new Date(existing.date));
-                const { start: reportDayStart, end: reportDayEnd } = getISTDateRange(reportIstDate);
-                const dayAgenda = await prisma.workPlan.findMany({
-                    where: {
-                        employeeId: existing.employeeId,
-                        date: { gte: reportDayStart, lte: reportDayEnd }
-                    },
-                    select: { agenda: true, completionStatus: true, strategy: true }
-                });
-                const pendingMandatory = dayAgenda.filter((a) => {
-                    const meta = decodeAgendaMetadata(a.strategy);
-                    return Boolean(meta?.mandatory) && a.completionStatus !== 'COMPLETED';
-                });
-                if (pendingMandatory.length > 0) {
-                    const baseComment = String(managerComment || '').trim();
-                    if (!allowMandatoryOverride || baseComment.length < 12) {
-                        throw new ValidationError(
-                            `Approval blocked: mandatory agenda pending (${pendingMandatory.map((x) => x.agenda).join(', ')}). Provide manager comment with override reason and set allowMandatoryOverride=true.`
-                        );
-                    }
-                    const warning = `Mandatory agenda pending: ${pendingMandatory.map((x) => x.agenda).join(', ')}`;
-                    reconciledManagerComment = [managerComment, warning].filter(Boolean).join(' | ');
-                }
-            }
-
-            const updated = await prisma.workReport.update({
-                where: { id },
-                data: {
-                    status,
-                    managerComment: reconciledManagerComment,
-                    pointsEarned: finalPointsEarned,
-                    tasksSnapshot: updatedTasksSnapshot,
-                    ...(managerRating && { managerRating: parseInt(managerRating) }),
-                    evaluation: evaluation ? {
-                        ...evaluation,
-                        // Automate attendance score based on working hours (8.5h = 5/5)
-                        attendance: evaluation.workingHours ? 
-                            Math.min(5, Math.max(1, Math.round((parseFloat(evaluation.workingHours) / 8.5) * 5))) : 
-                            evaluation.attendance
-                    } : undefined,
-                    attendanceStatus: evaluation?.attendance ? (Number(evaluation.attendance) >= 3 ? 'PRESENT' : 'ABSENT') : undefined,
-                    disciplineStatus: evaluation?.discipline ? (Number(evaluation.discipline) >= 3 ? 'GOOD' : 'WARNING') : undefined
-                }
+            const updated = await approveWorkReport({
+                existing,
+                status,
+                managerComment,
+                managerRating,
+                approvedTaskIds,
+                rejectedTaskIds,
+                evaluation,
+                allowMandatoryOverride,
+                companyId: user.companyId,
             });
 
             logger.info('Work report reviewed', { reportId: updated.id, status, reviewedBy: user.id });

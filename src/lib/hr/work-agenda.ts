@@ -18,6 +18,25 @@ export interface AgendaMetadata {
   overrideBy?: string | null;
 }
 
+/** IST calendar-day string (YYYY-MM-DD) for a given instant — the canonical "which day is this" answer used across work-report submission/approval. */
+export const getISTDateString = (date = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+
+/** [00:00, 23:59:59.999] IST window for an IST calendar-day string (defaults to today). */
+export const getISTDateRange = (dateStr?: string) => {
+  const base = dateStr || getISTDateString();
+  return {
+    base,
+    start: new Date(`${base}T00:00:00+05:30`),
+    end: new Date(`${base}T23:59:59.999+05:30`),
+  };
+};
+
 export const getISTDayRange = (baseDate?: Date) => {
   const start = baseDate ? new Date(baseDate) : getISTToday();
   if (!baseDate) {
