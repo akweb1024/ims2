@@ -182,51 +182,6 @@ export default function EmployeeProfilePage() {
         } catch (err) { console.error(err); }
     };
 
-    const [showEmpModal, setShowEmpModal] = useState(false);
-    const [designations, setDesignations] = useState<any[]>([]);
-    const [empForm, setEmpForm] = useState({
-        email: '', password: '', role: 'EXECUTIVE', designation: '',
-        baseSalary: '', bankName: '', accountNumber: '', panNumber: '',
-        offerLetterUrl: '', contractUrl: '', jobDescription: '', kra: '',
-        totalExperienceYears: 0, totalExperienceMonths: 0,
-        relevantExperienceYears: 0, relevantExperienceMonths: 0,
-        qualification: '', grade: '', lastPromotionDate: '',
-        lastIncrementDate: '', nextReviewDate: '', lastIncrementPercentage: 0,
-        designationId: '',
-        phoneNumber: '',
-        officePhone: '',
-        personalEmail: '',
-        emergencyContact: '',
-        address: '',
-        permanentAddress: '',
-        bloodGroup: '',
-        aadharNumber: '',
-        uanNumber: '',
-        pfNumber: '',
-        esicNumber: '',
-        ifscCode: '',
-        profilePicture: '',
-        employeeId: '',
-        isActive: true,
-        dateOfJoining: '',
-        manualLeaveAdjustment: 0,
-        employeeType: 'FULL_TIME'
-    });
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        fetch('/api/hr/designations', {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        })
-            .then(async (res) => {
-                if (!res.ok) throw new Error(`Failed to load designations (${res.status})`);
-                return res.json();
-            })
-            .then(data => setDesignations(Array.isArray(data) ? data : []))
-            .catch(err => console.error('Error fetching designations:', err));
-    }, []);
-
-
     useEffect(() => {
         if (activeTab === 'goals') {
             // Fetch goals if necessary, currently fetched in combined Details API
@@ -293,82 +248,6 @@ export default function EmployeeProfilePage() {
             });
             if (res.ok) fetchEmployeeDetails();
         } catch (err) { console.error(err); }
-    };
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            const data = await res.json();
-            if (data.url) {
-                setEmpForm(prev => ({ ...prev, profilePicture: data.url }));
-            }
-        } catch (err) {
-            console.error('File Upload Error:', err);
-        }
-    };
-
-    const handleEmpSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Clean the data - convert empty strings to null for optional fields
-        const cleanData = Object.fromEntries(
-            Object.entries(empForm).map(([key, value]) => {
-                // Skip these fields
-                if (key === 'email' || key === 'password') return [key, value];
-
-                // Convert numbers
-                if (key === 'manualLeaveAdjustment') return [key, parseFloat(value as string) || 0];
-
-                // Convert empty strings to null
-                if (value === '' || value === 'null' || value === 'undefined') {
-                    return [key, null];
-                }
-
-                return [key, value];
-            })
-        );
-
-        // Remove password if empty (don't update password)
-        if (!cleanData.password) {
-            delete cleanData.password;
-        }
-
-        // Remove email (can't be updated)
-        delete cleanData.email;
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/employees', {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: employee.id, ...cleanData })
-            });
-
-            const responseData = await res.json();
-
-            if (res.ok) {
-                alert('Employee profile updated successfully!');
-                setShowEmpModal(false);
-                fetchEmployeeDetails(); // Refresh profile
-            } else {
-                console.error('❌ Update failed:', responseData);
-                alert(`Failed to update: ${responseData.error || 'Unknown error'}`);
-            }
-        } catch (err) {
-            console.error('❌ Network error:', err);
-            alert('Network error. Please check your connection and try again.');
-        }
     };
 
     if (loading) return <div className="p-8 text-center">Loading Profile...</div>;
@@ -1397,56 +1276,6 @@ export default function EmployeeProfilePage() {
                             </div>
                         )}
 
-                        {/* EDIT MODAL */}
-                        {showEmpModal && (
-                            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                                <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-200">
-                                    <div className="bg-secondary-50 p-6 border-b border-secondary-100 flex justify-between items-center">
-                                        <h3 className="text-xl font-bold text-secondary-900">Edit Profile</h3>
-                                        <button onClick={() => setShowEmpModal(false)} className="text-secondary-400 hover:text-secondary-600">✕</button>
-                                    </div>
-                                    <form onSubmit={handleEmpSubmit} className="p-8 grid grid-cols-2 gap-6 max-h-[85vh] overflow-y-auto">
-                                        <div className="col-span-2 grid grid-cols-[100px_1fr] gap-6 items-center bg-secondary-50 p-4 rounded-xl">
-                                            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-white border-2 border-secondary-200">
-                                                {empForm.profilePicture ? (
-                                                    <Image src={empForm.profilePicture} alt="Profile" fill className="object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-secondary-300">
-                                                        {(empForm.email || 'U')[0].toUpperCase()}
-                                                    </div>
-                                                )}
-                                                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                                                    <span className="text-white text-xs font-bold text-center">Change<br />Photo</span>
-                                                    <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-                                                </label>
-                                            </div>
-                                            <div className="space-y-4 w-full">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="label-premium">Staff Email (Read Only)</label>
-                                                        <input type="email" disabled title="Staff Email" className="input-premium bg-white opacity-60" value={empForm.email} />
-                                                    </div>
-                                                    <div>
-                                                        <label className="label-premium">Employee ID</label>
-                                                        <input type="text" className="input-premium bg-white" placeholder="STM-001" title="Employee ID" value={empForm.employeeId} onChange={e => setEmpForm({ ...empForm, employeeId: e.target.value })} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-1">
-                                            <label className="label-premium">System Role</label>
-                                            <select className="input-premium" title="System Role" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
-                                                <option value="EXECUTIVE">Executive</option>
-                                                <option value="MANAGER">Manager</option>
-                                                <option value="TEAM_LEADER">Team Leader</option>
-                                                <option value="ADMIN">Admin</option>
-                                            </select>
-                                        </div>
-                                        {/* ... other form fields ... */}
-                                    </form>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
