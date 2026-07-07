@@ -6,6 +6,7 @@ import { FileText, Plus, Trash2, Edit2, Save, X, Send, User, Eye, Code2, Type } 
 import { HR_PRESETS } from '@/lib/hr-presets';
 import { DOCUMENT_TYPES } from '@/lib/document-types';
 import RichTextEditor, { type RichTextEditorHandle } from '@/components/common/RichTextEditor';
+import HtmlCodeEditor from '@/components/common/HtmlCodeEditor';
 import { LETTER_SHORTCODES } from '@/lib/services/documents/letterVars';
 
 type LetterSettings = { topMarginMm: number; footerText: string; showPageNumbers: boolean };
@@ -268,7 +269,12 @@ export default function DocumentTemplateManager() {
                                     className="bg-white"
                                 />
                             ) : (
-                                <textarea ref={htmlAreaRef} value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} className="input w-full h-[400px] py-4 font-mono text-sm leading-relaxed bg-white border-secondary-200" placeholder="<h1>EMPLOYMENT CONTRACT</h1><p>This agreement is between...</p>" />
+                                <HtmlCodeEditor
+                                    ref={htmlAreaRef}
+                                    value={formData.content}
+                                    onChange={(v) => setFormData({ ...formData, content: v })}
+                                    placeholder="<h1>EMPLOYMENT CONTRACT</h1><p>This agreement is between...</p>"
+                                />
                             )}
                             <p className="text-[10px] text-secondary-400">Use <strong>HTML</strong> mode for tables and advanced layout. The salary annexure is best inserted via the <strong>Full salary annexure</strong> shortcode.</p>
                         </div>
