@@ -7,6 +7,7 @@ interface Task {
     id: string;
     title: string;
     description?: string;
+    startDate?: string;
     dueDate: string;
     priority: 'HIGH' | 'MEDIUM' | 'LOW';
     status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -26,6 +27,14 @@ interface Task {
     createdAt: string;
 }
 
+interface Assignee {
+    employeeId: string;
+    userId: string;
+    name: string;
+    departmentId: string | null;
+    departmentName: string | null;
+}
+
 interface WorkAssignmentManagerProps {
     userId?: string;
     view?: 'received' | 'assigned' | 'all';
@@ -40,24 +49,53 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
     const [selectedPriority, setSelectedPriority] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [creating, setCreating] = useState(false);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const teamMode = !userId && canAssign;
+    const [assignees, setAssignees] = useState<Assignee[]>([]);
     const [newTask, setNewTask] = useState({
+        userId: '',
         title: '',
         description: '',
+        startDate: '',
         dueDate: '',
         priority: 'MEDIUM' as 'HIGH' | 'MEDIUM' | 'LOW',
         estimatedEffort: ''
     });
 
+    useEffect(() => {
+        if (!teamMode) return;
+        (async () => {
+            try {
+                const res = await fetch('/api/kra/assignees');
+                if (res.ok) {
+                    const data = await res.json();
+                    setAssignees(data.assignees || []);
+                }
+            } catch (error) {
+                console.error('Error fetching team members:', error);
+            }
+        })();
+    }, [teamMode]);
+
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
+        const targetUserId = userId || newTask.userId;
+        if (!targetUserId) {
+            alert('Please choose who to assign this task to');
+            return;
+        }
+        if (newTask.startDate && newTask.dueDate && newTask.startDate > newTask.dueDate) {
+            alert('Start date must be on or before the due date');
+            return;
+        }
         setCreating(true);
         try {
             const res = await fetch('/api/work-assignments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId,
                     ...newTask,
+                    userId: targetUserId,
                     estimatedEffort: newTask.estimatedEffort ? parseFloat(newTask.estimatedEffort) : undefined
                 })
             });
@@ -66,8 +104,10 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                 alert('Task assigned successfully!');
                 setShowCreateModal(false);
                 setNewTask({
+                    userId: '',
                     title: '',
                     description: '',
+                    startDate: '',
                     dueDate: '',
                     priority: 'MEDIUM',
                     estimatedEffort: ''
@@ -82,6 +122,28 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
             alert('Network error while assigning task');
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handleStatusChange = async (taskId: string, status: Task['status']) => {
+        setUpdatingId(taskId);
+        try {
+            const res = await fetch(`/api/work-assignments/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            if (res.ok) {
+                fetchTasks();
+            } else {
+                const err = await res.json();
+                alert(`Failed to update status: ${err.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert('Network error while updating status');
+        } finally {
+            setUpdatingId(null);
         }
     };
 
@@ -304,6 +366,12 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                             <p className="text-sm text-secondary-600 mb-2">{task.description}</p>
                                         )}
                                         <div className="flex items-center gap-4 text-xs text-secondary-500">
+                                            {task.startDate && (
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar size={14} />
+                                                    Starts: {new Date(task.startDate).toLocaleDateString()}
+                                                </span>
+                                            )}
                                             <span className="flex items-center gap-1">
                                                 <Calendar size={14} />
                                                 Due: {new Date(task.dueDate).toLocaleDateString()}
@@ -326,6 +394,20 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                             )}
                                         </div>
                                     </div>
+                                    {task.status !== 'CANCELLED' && (
+                                        <select
+                                            title="Update status"
+                                            className="input-premium text-xs font-bold py-2"
+                                            value={task.status}
+                                            disabled={updatingId === task.id}
+                                            onChange={e => handleStatusChange(task.id, e.target.value as Task['status'])}
+                                        >
+                                            <option value="PENDING">Pending</option>
+                                            <option value="IN_PROGRESS">In Progress</option>
+                                            <option value="COMPLETED">Completed</option>
+                                            <option value="CANCELLED">Cancelled</option>
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -348,6 +430,26 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                         </div>
 
                         <form onSubmit={handleCreateTask} className="p-6 space-y-4">
+                            {teamMode && (
+                                <div>
+                                    <label className="label-premium">Assign To <span className="text-red-500">*</span></label>
+                                    <select
+                                        required
+                                        title="Assign to"
+                                        className="input-premium"
+                                        value={newTask.userId}
+                                        onChange={e => setNewTask({ ...newTask, userId: e.target.value })}
+                                    >
+                                        <option value="">Select a team member…</option>
+                                        {assignees.map(a => (
+                                            <option key={a.userId} value={a.userId}>
+                                                {a.name}{a.departmentName ? ` (${a.departmentName})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="label-premium">Task Title <span className="text-red-500">*</span></label>
                                 <input
@@ -372,28 +474,39 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="label-premium">Due Date <span className="text-red-500">*</span></label>
+                                    <label className="label-premium">Start Date</label>
+                                    <input
+                                        type="date"
+                                        className="input-premium"
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={newTask.startDate}
+                                        onChange={e => setNewTask({ ...newTask, startDate: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label-premium">Due Date (Deadline) <span className="text-red-500">*</span></label>
                                     <input
                                         type="date"
                                         required
                                         className="input-premium"
-                                        min={new Date().toISOString().split('T')[0]}
+                                        min={newTask.startDate || new Date().toISOString().split('T')[0]}
                                         value={newTask.dueDate}
                                         onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="label-premium">Priority</label>
-                                    <select
-                                        className="input-premium"
-                                        value={newTask.priority}
-                                        onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
-                                    >
-                                        <option value="LOW">Low</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="HIGH">High</option>
-                                    </select>
-                                </div>
+                            </div>
+
+                            <div>
+                                <label className="label-premium">Priority</label>
+                                <select
+                                    className="input-premium"
+                                    value={newTask.priority}
+                                    onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
+                                >
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HIGH">High</option>
+                                </select>
                             </div>
 
                             <div>

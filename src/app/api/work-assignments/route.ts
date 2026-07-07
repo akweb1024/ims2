@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { pushNotification } from '@/lib/notifications';
 
 // GET: List assignments (by assignee, assigner, status)
 export const GET = authorizedRoute(
@@ -93,6 +94,7 @@ export const POST = authorizedRoute(
                 userId,
                 title,
                 description,
+                startDate,
                 dueDate,
                 priority,
                 estimatedEffort,
@@ -103,6 +105,10 @@ export const POST = authorizedRoute(
             // Validation
             if (!userId || !title || !dueDate) {
                 return createErrorResponse('Missing required fields', 400);
+            }
+
+            if (startDate && new Date(startDate) > new Date(dueDate)) {
+                return createErrorResponse('Start date must be on or before the due date', 400);
             }
 
             // Check if user can assign to this employee
@@ -119,6 +125,7 @@ export const POST = authorizedRoute(
                     assignedById: user.id,
                     title,
                     description,
+                    startDate: startDate ? new Date(startDate) : null,
                     dueDate: new Date(dueDate),
                     priority: priority || 'MEDIUM',
                     status: 'PENDING',
@@ -142,6 +149,14 @@ export const POST = authorizedRoute(
                         }
                     }
                 }
+            });
+
+            await pushNotification({
+                userId,
+                title: 'New task assigned',
+                message: `${task.assignedBy?.name || 'Your manager'} assigned you: ${title}`,
+                type: 'INFO',
+                link: '/dashboard/staff-portal?tab=assignments'
             });
 
             return NextResponse.json(task);

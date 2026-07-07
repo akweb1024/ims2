@@ -69,6 +69,7 @@ export const PUT = authorizedRoute(
                 actualEffort,
                 title,
                 description,
+                startDate,
                 dueDate,
                 priority,
                 estimatedEffort
@@ -104,6 +105,7 @@ export const PUT = authorizedRoute(
                     ...(actualEffort !== undefined && { actualEffort: actualEffort ? parseFloat(actualEffort) : null }),
                     ...(title && { title }),
                     ...(description !== undefined && { description }),
+                    ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
                     ...(dueDate && { dueDate: new Date(dueDate) }),
                     ...(priority && { priority }),
                     ...(estimatedEffort !== undefined && { estimatedEffort: estimatedEffort ? parseFloat(estimatedEffort) : null })
