@@ -1383,6 +1383,7 @@ model Task {
   assignedById          String?
   title                 String
   description           String?
+  startDate             DateTime?
   dueDate               DateTime
   priority              Priority       @default(MEDIUM)
   status                TaskStatus     @default(PENDING)

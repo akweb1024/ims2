@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import FormattedDate from '@/components/common/FormattedDate';
 import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import EmployeeIDCard from '@/components/dashboard/EmployeeIDCard';
@@ -39,9 +39,12 @@ import TeamPointsRewardsView from '@/components/dashboard/manager/TeamPointsRewa
 import TeamWorkReportsView from '@/components/dashboard/manager/TeamWorkReportsView';
 import TeamDailyAgendaView from '@/components/dashboard/manager/TeamDailyAgendaView';
 import PrivateDailyNotesPanel from '@/components/dashboard/notes/PrivateDailyNotesPanel';
+import WorkAssignmentManager from '@/components/dashboard/assignments/WorkAssignmentManager';
+import { useSearchParams } from 'next/navigation';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
-export default function StaffPortalPage() {
+function StaffPortalPageContent() {
+    const searchParams = useSearchParams();
     const [user, setUser] = useState<any>(null);
     const [attendance, setAttendance] = useState<any[]>([]);
     const [workReports, setWorkReports] = useState<any[]>([]);
@@ -56,7 +59,7 @@ export default function StaffPortalPage() {
     const [compliance, setCompliance] = useState<any>({ isCompliant: true, pendingDocuments: [], pendingModules: [] });
     const [activeIncrement, setActiveIncrement] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
     const [checkingIn, setCheckingIn] = useState(false);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
     const [managerFilters, setManagerFilters] = useState({
@@ -285,6 +288,7 @@ export default function StaffPortalPage() {
         { id: 'attendance', name: 'Attendance', icon: '📅' },
         { id: 'work-reports', name: 'Work Reports', icon: '📝' },
         { id: 'work-agenda', name: 'Work Agenda', icon: '📔' },
+        { id: 'assignments', name: 'My Assignments', icon: '📋' },
         { id: 'tax-declarations', name: 'Tax Declarations', icon: '🛡️' },
         { id: 'leaves', name: 'Leave Requests', icon: '🏃' },
         { id: 'performance', name: 'Performance', icon: '📈' },
@@ -677,6 +681,12 @@ export default function StaffPortalPage() {
                         </div>
                     )}
 
+                    {activeTab === 'assignments' && user && (
+                        <div className="p-8">
+                            <WorkAssignmentManager userId={user.id} view="received" canAssign={false} />
+                        </div>
+                    )}
+
                     {activeTab === 'salary' && (
                         <StaffSalaryView fullProfile={fullProfile} salarySlips={salarySlips} />
                     )}
@@ -808,6 +818,7 @@ export default function StaffPortalPage() {
                                 <button onClick={() => setActiveSubTab('analytics')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'analytics' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Analytics</button>
                                 <button onClick={() => setActiveSubTab('goals')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'goals' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Goals (KRA)</button>
                                 <button onClick={() => setActiveSubTab('tasks')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'tasks' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Tasks</button>
+                                <button onClick={() => setActiveSubTab('assignments')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'assignments' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Assignments</button>
                                 <button onClick={() => setActiveSubTab('points')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'points' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Rewards</button>
                                 <button onClick={() => setActiveSubTab('reports')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'reports' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Reports</button>
                                 <button onClick={() => setActiveSubTab('daily-agenda')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'daily-agenda' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Daily Agenda</button>
@@ -822,6 +833,7 @@ export default function StaffPortalPage() {
                                 {activeSubTab === 'analytics' && <TeamAnalyticsView filters={managerFilters} />}
                                 {activeSubTab === 'goals' && <TeamGoalTrackingView />}
                                 {activeSubTab === 'tasks' && <TeamTaskMasterView />}
+                                {activeSubTab === 'assignments' && <WorkAssignmentManager view="assigned" canAssign={true} />}
                                 {activeSubTab === 'points' && <TeamPointsRewardsView />}
                                 {activeSubTab === 'reports' && <TeamWorkReportsView />}
                                 {activeSubTab === 'daily-agenda' && <TeamDailyAgendaView />}
@@ -831,6 +843,14 @@ export default function StaffPortalPage() {
                 </div>
         </div>
     </>
+    );
+}
+
+export default function StaffPortalPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-secondary-500">Loading...</div>}>
+            <StaffPortalPageContent />
+        </Suspense>
     );
 }
 
