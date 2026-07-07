@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import DprKraSection from '@/components/dashboard/kra/DprKraSection';
 import { toast } from 'react-hot-toast';
+import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
 
 const getISTDateString = (date = new Date()) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -787,6 +788,17 @@ export default function SubmitReportPage() {
                                         setCompletedAgendaIds(prev =>
                                             isChecked ? prev.filter(id => id !== plan.id) : [...prev, plan.id]
                                         );
+                                        // Task suggester: this agenda item was generated from an
+                                        // EmployeeTaskTemplate — completing it also suggests (auto-checks)
+                                        // that same task below, so it isn't picked twice by hand.
+                                        if (!isChecked) {
+                                            const templateId = decodeAgendaMetadata(plan.strategy)?.templateId;
+                                            const linkedTask = templateId ? availableTasks.find((t) => t.id === templateId) : null;
+                                            if (linkedTask && !completedTaskIds.includes(linkedTask.id)) {
+                                                setCompletedTaskIds(prev => [...prev, linkedTask.id]);
+                                                toast.success(`Also selected linked task: ${linkedTask.title}`, { icon: '💡' });
+                                            }
+                                        }
                                     }}
                                     className={`cursor-pointer p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 select-none ${
                                         isChecked

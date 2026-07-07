@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
-import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare, RefreshCw, Sparkles } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 
 interface WorkReportValidatorProps {
@@ -32,6 +32,29 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [allowMandatoryOverride, setAllowMandatoryOverride] = useState(false);
+
+    // On-demand AI-enhanced summary per report (the free rule-based `report.summary` from the
+    // API is shown by default; this swaps in a nicer one-liner via the company's Gemini key).
+    const [aiSummaries, setAiSummaries] = useState<Record<string, string>>({});
+    const [summarizing, setSummarizing] = useState<Record<string, boolean>>({});
+
+    const handleAISummary = async (reportId: string) => {
+        setSummarizing((prev) => ({ ...prev, [reportId]: true }));
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const res = await fetch(`/api/hr/work-reports/${reportId}/ai-summary`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || data.message || 'AI summary unavailable');
+            setAiSummaries((prev) => ({ ...prev, [reportId]: data.summary }));
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'AI summary unavailable');
+        } finally {
+            setSummarizing((prev) => ({ ...prev, [reportId]: false }));
+        }
+    };
 
     // Compute rating from evaluation metrics (read-only derived value)
     const calculatedRating = useMemo(() => {
@@ -245,7 +268,18 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                             </div>
 
                             <h4 className="font-bold text-secondary-900 mb-2">{report.title}</h4>
-                            <p className="text-sm text-secondary-600 line-clamp-3 mb-4">{report.content}</p>
+                            <p className="text-sm text-secondary-600 line-clamp-3 mb-1">
+                                {aiSummaries[report.id] || report.summary || report.content}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => handleAISummary(report.id)}
+                                disabled={summarizing[report.id]}
+                                className="text-[10px] font-black uppercase tracking-widest text-violet-600 hover:text-violet-700 flex items-center gap-1 mb-4 disabled:opacity-50"
+                            >
+                                <Sparkles size={11} />
+                                {summarizing[report.id] ? 'Summarizing…' : aiSummaries[report.id] ? 'Re-summarize with AI' : 'Summarize with AI'}
+                            </button>
 
                             {/* Metrics */}
                             <div className="flex flex-wrap gap-2 mb-4">
@@ -344,7 +378,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-bold text-secondary-900 text-sm">{report.title}</p>
-                                            <p className="text-xs text-secondary-500 line-clamp-1">{report.content}</p>
+                                            <p className="text-xs text-secondary-500 line-clamp-1">{aiSummaries[report.id] || report.summary || report.content}</p>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             <FormattedDate date={report.date} />
@@ -476,6 +510,18 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                                                 <span className="badge bg-indigo-100 text-indigo-700 text-[10px]">
                                                                                     {task.quantity} units
                                                                                 </span>
+                                                                                {task.unusualQuantity ? (
+                                                                                    <span
+                                                                                        className="badge bg-danger-100 text-danger-700 text-[10px] flex items-center gap-1"
+                                                                                        title={`Usual quantity for this employee is ~${task.historicalAvgQuantity}`}
+                                                                                    >
+                                                                                        <AlertCircle size={10} /> Unusual vs. history
+                                                                                    </span>
+                                                                                ) : task.historicalAvgQuantity != null && (
+                                                                                    <span className="badge bg-success-50 text-success-700 text-[10px]">
+                                                                                        ✓ Typical (~{task.historicalAvgQuantity})
+                                                                                    </span>
+                                                                                )}
                                                                                 <span className="text-xs font-black text-primary-600">
                                                                                     +{Math.floor(task.points)} pts
                                                                                 </span>
