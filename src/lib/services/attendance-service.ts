@@ -50,11 +50,16 @@ export async function upsertAttendanceRecord(
         companyId, isManual, remarks, skipSideEffects
     } = input;
 
-    // 1. Fetch Shift Roster for calculation
+    // 1. Fetch Shift Roster for calculation — a day-specific override, if one exists — else
+    // fall back to the employee's standing shift assignment (EmployeeProfile.shiftId).
     const roster = await tx.shiftRoster.findUnique({
         where: { employeeId_date: { employeeId, date } },
         include: { shift: true }
     });
+    const standingProfile = !roster?.shift
+        ? await tx.employeeProfile.findUnique({ where: { id: employeeId }, select: { shift: true } })
+        : null;
+    const effectiveShift = roster?.shift || standingProfile?.shift || null;
 
     const existing = await tx.attendance.findUnique({
         where: { employeeId_date: { employeeId, date } }
@@ -70,7 +75,7 @@ export async function upsertAttendanceRecord(
     let isLate = false;
     let isShort = false;
     let isGeofenced = isManual || workFrom === 'REMOTE';
-    const shiftId = roster?.shiftId || null;
+    const shiftId = effectiveShift?.id || null;
     const policy = await resolveEffectiveAttendancePolicy({ employeeId, companyId });
 
     // 2. Geofencing check (if not manual and not remote)
@@ -102,9 +107,9 @@ export async function upsertAttendanceRecord(
         }
     }
 
-    // 4. OT Calculation remains shift-based when a roster exists
-    if (effectiveCheckOut && roster?.shift) {
-        const shift = roster.shift;
+    // 4. OT Calculation remains shift-based when a roster or standing shift applies
+    if (effectiveCheckOut && effectiveShift) {
+        const shift = effectiveShift;
         const [eHrs, eMin] = shift.endTime.split(':').map(Number);
         const shiftEnd = new Date(date);
         shiftEnd.setHours(eHrs, eMin, 0, 0);

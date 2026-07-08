@@ -53,13 +53,27 @@ export const PATCH = authorizedRoute(
             const body = await req.json();
             const { id, ...data } = body;
 
-            const shift = await prisma.shift.update({
-                where: { id },
-                data: {
-                    ...data,
-                    gracePeriod: data.gracePeriod ? parseInt(data.gracePeriod) : undefined
-                }
-            });
+            const existing = await prisma.shift.findUnique({ where: { id }, select: { companyId: true } });
+            if (!existing) return createErrorResponse('Shift not found', 404);
+            if (user.role !== 'SUPER_ADMIN' && existing.companyId !== user.companyId) {
+                return createErrorResponse('Forbidden', 403);
+            }
+
+            const updateData = {
+                ...data,
+                gracePeriod: data.gracePeriod ? parseInt(data.gracePeriod) : undefined
+            };
+
+            // Only one default shift per company — marking one default clears any other.
+            const shift = data.isDefault === true
+                ? await prisma.$transaction(async (tx) => {
+                    await tx.shift.updateMany({
+                        where: { companyId: existing.companyId, id: { not: id } },
+                        data: { isDefault: false }
+                    });
+                    return tx.shift.update({ where: { id }, data: updateData });
+                })
+                : await prisma.shift.update({ where: { id }, data: updateData });
 
             return NextResponse.json(shift);
         } catch (error) {
@@ -75,6 +89,12 @@ export const DELETE = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const id = searchParams.get('id');
             if (!id) return createErrorResponse('ID required', 400);
+
+            const existing = await prisma.shift.findUnique({ where: { id }, select: { companyId: true } });
+            if (!existing) return createErrorResponse('Shift not found', 404);
+            if (user.role !== 'SUPER_ADMIN' && existing.companyId !== user.companyId) {
+                return createErrorResponse('Forbidden', 403);
+            }
 
             await prisma.shift.delete({ where: { id } });
             return NextResponse.json({ message: 'Shift deleted' });
