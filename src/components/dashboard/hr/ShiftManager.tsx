@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useShifts, useEmployees } from '@/hooks/useHR';
 import { toast } from 'react-hot-toast';
-import { Clock, Plus, Trash2, Edit2, Save, X, Moon, Sun, Star, Users } from 'lucide-react';
+import { Clock, Plus, Trash2, Edit2, Save, X, Moon, Sun, Star, Users, Search, CheckSquare, Square } from 'lucide-react';
 
 export default function ShiftManager() {
     const { data: shifts, create, update, remove } = useShifts();
@@ -13,6 +14,7 @@ export default function ShiftManager() {
     const [assigningShift, setAssigningShift] = useState<any>(null);
     const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
     const [assigning, setAssigning] = useState(false);
+    const [employeeSearch, setEmployeeSearch] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         startTime: '09:00',
@@ -67,7 +69,29 @@ export default function ShiftManager() {
 
     const openAssignModal = (shift: any) => {
         setAssigningShift(shift);
+        setEmployeeSearch('');
         setSelectedEmployeeIds((employees || []).filter((e: any) => e.shiftId === shift.id).map((e: any) => e.id));
+    };
+
+    const filteredEmployees = useMemo(() => {
+        const q = employeeSearch.trim().toLowerCase();
+        if (!q) return employees || [];
+        return (employees || []).filter((e: any) =>
+            (e.user?.name || '').toLowerCase().includes(q) ||
+            (e.user?.email || '').toLowerCase().includes(q) ||
+            (e.designation || '').toLowerCase().includes(q)
+        );
+    }, [employees, employeeSearch]);
+
+    const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every((e: any) => selectedEmployeeIds.includes(e.id));
+
+    const toggleSelectAllFiltered = () => {
+        const filteredIds = filteredEmployees.map((e: any) => e.id);
+        setSelectedEmployeeIds((prev) =>
+            allFilteredSelected
+                ? prev.filter((id) => !filteredIds.includes(id))
+                : Array.from(new Set([...prev, ...filteredIds]))
+        );
     };
 
     const handleApplyAssignment = async () => {
@@ -257,23 +281,61 @@ export default function ShiftManager() {
                 )}
             </div>
 
-            {/* Assign Employees Modal */}
-            {assigningShift && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-                        <div className="p-6 border-b border-secondary-100 flex justify-between items-start">
+            {/* Assign Employees Modal — portal to document.body so this fixed-position overlay
+                is positioned against the real viewport, not whichever ancestor (e.g. an
+                animate-in wrapper) happens to establish a transform containing block. */}
+            {assigningShift && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[90vh] my-auto flex flex-col overflow-hidden">
+                        <div className="p-6 border-b border-secondary-100 flex justify-between items-start shrink-0">
                             <div>
                                 <h4 className="font-black text-secondary-900 text-lg">Assign to &quot;{assigningShift.name}&quot;</h4>
                                 <p className="text-secondary-500 text-xs font-medium mt-1">
                                     A standing assignment — stays in effect until changed, and drives lateness automatically ({assigningShift.startTime}–{assigningShift.endTime}, {assigningShift.gracePeriod}m grace).
                                 </p>
                             </div>
-                            <button onClick={() => setAssigningShift(null)} className="text-secondary-400 hover:text-secondary-600">
+                            <button onClick={() => setAssigningShift(null)} className="text-secondary-400 hover:text-secondary-600 shrink-0 ml-4">
                                 <X size={20} />
                             </button>
                         </div>
+
+                        <div className="p-4 border-b border-secondary-100 shrink-0 space-y-3">
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary-400" />
+                                <input
+                                    type="text"
+                                    value={employeeSearch}
+                                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                                    placeholder="Search by name, email, or designation…"
+                                    className="input w-full bg-secondary-50 border-secondary-200 focus:ring-primary-500 pl-10 text-sm"
+                                    autoFocus
+                                />
+                                {employeeSearch && (
+                                    <button
+                                        onClick={() => setEmployeeSearch('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <button
+                                    onClick={toggleSelectAllFiltered}
+                                    disabled={filteredEmployees.length === 0}
+                                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600 hover:text-primary-700 disabled:opacity-40"
+                                >
+                                    {allFilteredSelected ? <CheckSquare size={13} /> : <Square size={13} />}
+                                    {allFilteredSelected ? 'Clear' : 'Select all'} {employeeSearch ? `(${filteredEmployees.length} shown)` : `(${filteredEmployees.length})`}
+                                </button>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                                    {selectedEmployeeIds.length} selected
+                                </span>
+                            </div>
+                        </div>
+
                         <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                            {(employees || []).map((emp: any) => {
+                            {filteredEmployees.map((emp: any) => {
                                 const checked = selectedEmployeeIds.includes(emp.id);
                                 const currentShiftName = shifts?.find((s: any) => s.id === emp.shiftId)?.name;
                                 return (
@@ -281,24 +343,27 @@ export default function ShiftManager() {
                                         key={emp.id}
                                         className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${checked ? 'bg-primary-50 border border-primary-200' : 'hover:bg-secondary-50 border border-transparent'}`}
                                     >
-                                        <input type="checkbox" checked={checked} onChange={() => toggleEmployee(emp.id)} className="w-4 h-4 accent-primary-600" />
-                                        <div className="flex-1">
-                                            <p className="font-bold text-sm text-secondary-900">{emp.user?.name || emp.user?.email}</p>
-                                            <p className="text-[10px] text-secondary-400">{emp.designation || 'No designation'}</p>
+                                        <input type="checkbox" checked={checked} onChange={() => toggleEmployee(emp.id)} className="w-4 h-4 accent-primary-600 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-sm text-secondary-900 truncate">{emp.user?.name || emp.user?.email}</p>
+                                            <p className="text-[10px] text-secondary-400 truncate">{emp.designation || 'No designation'}</p>
                                         </div>
                                         {currentShiftName && currentShiftName !== assigningShift.name && (
-                                            <span className="text-[9px] font-black uppercase text-secondary-400 bg-secondary-50 px-2 py-0.5 rounded">
+                                            <span className="text-[9px] font-black uppercase text-secondary-400 bg-secondary-50 px-2 py-0.5 rounded shrink-0">
                                                 Currently: {currentShiftName}
                                             </span>
                                         )}
                                     </label>
                                 );
                             })}
-                            {(!employees || employees.length === 0) && (
+                            {employeeSearch && filteredEmployees.length === 0 && (
+                                <p className="text-center text-secondary-400 text-sm py-8">No employees match &quot;{employeeSearch}&quot;.</p>
+                            )}
+                            {!employeeSearch && (!employees || employees.length === 0) && (
                                 <p className="text-center text-secondary-400 text-sm py-8">No employees found.</p>
                             )}
                         </div>
-                        <div className="p-4 border-t border-secondary-100 flex justify-end gap-3">
+                        <div className="p-4 border-t border-secondary-100 flex justify-end gap-3 shrink-0">
                             <button onClick={() => setAssigningShift(null)} className="btn bg-secondary-100 text-secondary-600 px-6 rounded-xl font-bold uppercase text-[10px] tracking-widest">
                                 Cancel
                             </button>
@@ -311,7 +376,8 @@ export default function ShiftManager() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
