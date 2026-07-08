@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
-import { SUPPORTED_INTEGRATION_PROVIDER_IDS } from '@/lib/integrations';
+import { SUPPORTED_INTEGRATION_PROVIDER_IDS, resolveTargetCompanyId } from '@/lib/integrations';
 
 export async function GET(req: NextRequest) {
     try {
@@ -11,8 +11,13 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const companyId = user.companyId;
-        if (!companyId) return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        const requestedCompanyId = new URL(req.url).searchParams.get('companyId');
+        const companyId = resolveTargetCompanyId(user, requestedCompanyId);
+        if (!companyId) {
+            return requestedCompanyId
+                ? NextResponse.json({ error: 'Forbidden: cannot manage integrations for that company' }, { status: 403 })
+                : NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
 
         const integrations = await prisma.companyIntegration.findMany({
             where: { companyId },
@@ -77,11 +82,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const companyId = user.companyId;
-        if (!companyId) return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-
         const body = await req.json();
-        const { provider, key, value, isActive } = body;
+        const { provider, key, value, isActive, companyId: requestedCompanyId } = body;
+
+        const companyId = resolveTargetCompanyId(user, requestedCompanyId);
+        if (!companyId) {
+            return requestedCompanyId
+                ? NextResponse.json({ error: 'Forbidden: cannot manage integrations for that company' }, { status: 403 })
+                : NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
 
         if (!provider) {
              return NextResponse.json({ error: 'Provider is required' }, { status: 400 });

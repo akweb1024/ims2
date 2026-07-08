@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session';
 import { SESv2Client, GetAccountCommand } from '@aws-sdk/client-sesv2';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getWhatsAppReportRecipients, sendWhatsApp } from '@/lib/whatsapp';
+import { resolveTargetCompanyId } from '@/lib/integrations';
 import Razorpay from 'razorpay';
 
 function createUnauthorized() {
@@ -270,15 +271,17 @@ export async function POST(req: NextRequest) {
             return createUnauthorized();
         }
 
-        const companyId = user.companyId;
-        if (!companyId) {
-            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-        }
-
         const body = await req.json();
         const provider = String(body?.provider || '').toUpperCase();
         const action = String(body?.action || 'test_connection').toLowerCase();
         const recipient = typeof body?.recipient === 'string' ? body.recipient : undefined;
+
+        const companyId = resolveTargetCompanyId(user, body?.companyId);
+        if (!companyId) {
+            return body?.companyId
+                ? NextResponse.json({ error: 'Forbidden: cannot manage integrations for that company' }, { status: 403 })
+                : NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
 
         if (!provider) {
             return NextResponse.json({ error: 'Provider is required' }, { status: 400 });

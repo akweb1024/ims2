@@ -102,6 +102,27 @@ export async function getRazorpayInstance(companyId: string): Promise<Razorpay> 
     });
 }
 
+/**
+ * Resolves which secret to verify an incoming Razorpay webhook against: the target company's
+ * own configured secret (CompanyIntegration RAZORPAY value.webhookSecret) if set, else the
+ * platform-wide RAZORPAY_WEBHOOK_SECRET env var — preserving today's behavior for companies
+ * that haven't configured their own. companyId is a routing hint derived from the (as yet
+ * unverified) webhook payload; using it to pick a secret is safe because the actual
+ * authenticity check is the signature comparison against that secret, not this lookup.
+ */
+export async function getRazorpayWebhookSecret(companyId: string | null): Promise<string | null> {
+    if (companyId) {
+        const integration = await prisma.companyIntegration.findUnique({
+            where: { companyId_provider: { companyId, provider: 'RAZORPAY' } },
+        });
+        if (integration?.isActive) {
+            const config = parseRazorpayIntegrationValue(integration.value);
+            if (config.webhookSecret) return config.webhookSecret;
+        }
+    }
+    return process.env.RAZORPAY_WEBHOOK_SECRET || null;
+}
+
 export async function getRazorpaySyncAccounts() {
     const accountsToSync: Array<{
         key_id: string;
