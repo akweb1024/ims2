@@ -2,19 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
+import { InvoiceProductCategory } from "@prisma/client";
 
 const db = prisma;
 
-const CATEGORIES = [
-  "JOURNAL_SUBSCRIPTION",
-  "COURSE",
-  "WORKSHOP",
-  "DOI_SERVICE",
-  "APC",
-  "CERTIFICATE",
-  "DIGITAL_SERVICE",
-  "MISC",
-];
+// Sourced from the Prisma enum (not hand-copied) so this can never drift from the backend's own validators.
+const CATEGORIES: string[] = Object.values(InvoiceProductCategory);
 
 const parseNumber = (val: string) => {
   const num = parseFloat(val);

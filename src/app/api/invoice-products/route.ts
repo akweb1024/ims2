@@ -4,21 +4,15 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
 import { resolveCompanyScope } from "@/lib/access-policy";
+import { InvoiceProductCategory } from "@prisma/client";
 import { z } from "zod";
 
 const db = prisma;
 
 // ─── Validation ────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  "JOURNAL_SUBSCRIPTION",
-  "COURSE",
-  "WORKSHOP",
-  "DOI_SERVICE",
-  "APC",
-  "CERTIFICATE",
-  "DIGITAL_SERVICE",
-  "MISC",
-] as const;
+// Sourced from the Prisma enum (not hand-copied) so this can never drift from
+// the database's actual allowed values.
+const CATEGORIES = Object.values(InvoiceProductCategory);
 
 const PRODUCT_TYPES = ["SIMPLE", "VARIABLE"] as const;
 
@@ -47,7 +41,7 @@ const variantCreateSchema = z.object({
 const productCreateSchema = z.object({
   name: z.string().min(1, "Product name is required").max(300),
   type: z.enum(PRODUCT_TYPES).optional().default("SIMPLE"),
-  category: z.enum(CATEGORIES).optional().default("MISC"),
+  category: z.nativeEnum(InvoiceProductCategory).optional().default("MISC"),
   pricingModel: z.enum(PRICING_MODELS).optional().default("FIXED"),
   description: z.string().max(2000).optional().nullable(),
   shortDesc: z.string().max(300).optional().nullable(),

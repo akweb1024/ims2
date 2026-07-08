@@ -18,6 +18,7 @@ import {
   Globe,
   Sparkles,
 } from "lucide-react";
+import { INVOICE_PRODUCT_CATEGORIES } from "@/lib/invoice-product-categories";
 import GuidelineHelp from "../GuidelineHelp";
 import { showError, showSuccess } from "@/lib/toast";
 
@@ -91,17 +92,7 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   trackInventory: false,
 };
 
-const DEFAULT_CATEGORIES = [
-  { value: "JOURNAL_SUBSCRIPTION", label: "Journal Subscription", icon: "📰" },
-  { value: "COURSE", label: "Course", icon: "🎓" },
-  { value: "WORKSHOP", label: "Workshop", icon: "🛠️" },
-  { value: "DOI_SERVICE", label: "DOI Service", icon: "🔗" },
-  { value: "APC", label: "APC", icon: "📝" },
-  { value: "CERTIFICATE", label: "Certificate", icon: "🏅" },
-  { value: "DIGITAL_SERVICE", label: "Digital Service", icon: "💻" },
-  { value: "REINSTE", label: "Reinste", icon: "🧾" },
-  { value: "MISC", label: "Miscellaneous", icon: "📦" },
-];
+const DEFAULT_CATEGORIES = INVOICE_PRODUCT_CATEGORIES;
 
 export const PREDEFINED_DOMAINS: string[] = [
   "Agriculture",
