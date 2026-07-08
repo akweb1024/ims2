@@ -81,6 +81,7 @@ export default function EditEmployeePage() {
                         departmentId: data.user.departmentId || '',
                         allowedModules: data.user.allowedModules || ['CORE'],
                         targets: data.metrics?.targets || { revenue: '', publication: '', development: '' },
+                        dateOfBirth: data.dateOfBirth?.split('T')[0] || '',
                         dateOfJoining: data.dateOfJoining?.split('T')[0] || '',
                         lastPromotionDate: data.lastPromotionDate?.split('T')[0] || '',
                         lastIncrementDate: data.lastIncrementDate?.split('T')[0] || '',
