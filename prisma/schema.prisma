@@ -1801,6 +1801,8 @@ model EmployeeProfile {
   currentLeaveBalance      Float                             @default(0)
   metrics                  Json?
   employeeType             EmployeeType                      @default(FULL_TIME)
+  shiftId                  String?
+  shift                    Shift?                            @relation("EmployeeStandingShift", fields: [shiftId], references: [id])
   attendancePolicyOverride EmployeeAttendancePolicyOverride?
   attendance               Attendance[]
   dailyTaskCompletions     DailyTaskCompletion[]
@@ -2396,20 +2398,22 @@ model DeclarationProof {
 }
 
 model Shift {
-  id           String        @id @default(uuid())
+  id           String            @id @default(uuid())
   name         String
   startTime    String
   endTime      String
-  gracePeriod  Int           @default(15)
-  isNightShift Boolean       @default(false)
+  gracePeriod  Int               @default(15)
+  isNightShift Boolean           @default(false)
+  isDefault    Boolean           @default(false)
   companyId    String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   evaluation   Json?
   metrics      Json?
   attendances  Attendance[]
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   rosters      ShiftRoster[]
+  employees    EmployeeProfile[] @relation("EmployeeStandingShift")
 
   @@index([companyId])
 }

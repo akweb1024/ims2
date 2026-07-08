@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useShifts } from '@/hooks/useHR';
-import { Clock, Plus, Trash2, Edit2, Save, X, Moon, Sun } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useShifts, useEmployees } from '@/hooks/useHR';
+import { toast } from 'react-hot-toast';
+import { Clock, Plus, Trash2, Edit2, Save, X, Moon, Sun, Star, Users } from 'lucide-react';
 
 export default function ShiftManager() {
     const { data: shifts, create, update, remove } = useShifts();
+    const { data: employees } = useEmployees(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [assigningShift, setAssigningShift] = useState<any>(null);
+    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+    const [assigning, setAssigning] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         startTime: '09:00',
@@ -15,6 +20,14 @@ export default function ShiftManager() {
         gracePeriod: 15,
         isNightShift: false
     });
+
+    const employeeCountByShift = useMemo(() => {
+        const counts: Record<string, number> = {};
+        (employees || []).forEach((e: any) => {
+            if (e.shiftId) counts[e.shiftId] = (counts[e.shiftId] || 0) + 1;
+        });
+        return counts;
+    }, [employees]);
 
     const handleSave = async () => {
         try {
@@ -41,6 +54,45 @@ export default function ShiftManager() {
             isNightShift: shift.isNightShift
         });
         setIsAdding(true);
+    };
+
+    const handleSetDefault = async (shift: any) => {
+        try {
+            await update.mutateAsync({ id: shift.id, isDefault: true });
+            toast.success(`"${shift.name}" is now the default shift for employees with no assignment.`);
+        } catch {
+            toast.error('Failed to set default shift');
+        }
+    };
+
+    const openAssignModal = (shift: any) => {
+        setAssigningShift(shift);
+        setSelectedEmployeeIds((employees || []).filter((e: any) => e.shiftId === shift.id).map((e: any) => e.id));
+    };
+
+    const handleApplyAssignment = async () => {
+        if (!assigningShift) return;
+        setAssigning(true);
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const res = await fetch('/api/hr/shifts/assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ shiftId: assigningShift.id, employeeIds: selectedEmployeeIds }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Failed to assign shift');
+            toast.success(`${data.updated} employee(s) now on "${assigningShift.name}".`);
+            setAssigningShift(null);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Failed to assign shift');
+        } finally {
+            setAssigning(false);
+        }
+    };
+
+    const toggleEmployee = (id: string) => {
+        setSelectedEmployeeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
     };
 
     return (
@@ -135,14 +187,21 @@ export default function ShiftManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {shifts?.map((shift: any) => (
-                    <div key={shift.id} className="card-premium group hover:border-primary-300 transition-all p-6 relative overflow-hidden">
+                    <div key={shift.id} className={`card-premium group hover:border-primary-300 transition-all p-6 relative overflow-hidden ${shift.isDefault ? 'ring-2 ring-amber-300' : ''}`}>
                         <div className={`absolute top-0 right-0 p-4 opacity-[0.05] group-hover:opacity-10 transition-opacity ${shift.isNightShift ? 'text-indigo-600' : 'text-orange-500'}`}>
                             {shift.isNightShift ? <Moon size={80} /> : <Sun size={80} />}
                         </div>
 
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h4 className="text-lg font-black text-secondary-900 tracking-tight">{shift.name}</h4>
+                                <h4 className="text-lg font-black text-secondary-900 tracking-tight flex items-center gap-2">
+                                    {shift.name}
+                                    {shift.isDefault && (
+                                        <span className="flex items-center gap-1 text-[9px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                                            <Star size={10} fill="currentColor" /> Default
+                                        </span>
+                                    )}
+                                </h4>
                                 <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase mt-1 ${shift.isNightShift ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
                                     {shift.isNightShift ? 'Overnight' : 'Regular Day'}
                                 </span>
@@ -167,6 +226,24 @@ export default function ShiftManager() {
                                 <p className="text-xl font-black text-primary-600">{shift.gracePeriod}m</p>
                             </div>
                         </div>
+
+                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-secondary-50">
+                            <button
+                                onClick={() => openAssignModal(shift)}
+                                className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-secondary-600 bg-secondary-50 hover:bg-secondary-100 px-3 py-2 rounded-xl transition-all"
+                            >
+                                <Users size={12} /> {employeeCountByShift[shift.id] || 0} Assigned
+                            </button>
+                            {!shift.isDefault && (
+                                <button
+                                    onClick={() => handleSetDefault(shift)}
+                                    title="Make this the default for employees with no shift assigned"
+                                    className="flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-xl transition-all"
+                                >
+                                    <Star size={12} /> Set Default
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ))}
 
@@ -179,6 +256,63 @@ export default function ShiftManager() {
                     </div>
                 )}
             </div>
+
+            {/* Assign Employees Modal */}
+            {assigningShift && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
+                        <div className="p-6 border-b border-secondary-100 flex justify-between items-start">
+                            <div>
+                                <h4 className="font-black text-secondary-900 text-lg">Assign to &quot;{assigningShift.name}&quot;</h4>
+                                <p className="text-secondary-500 text-xs font-medium mt-1">
+                                    A standing assignment — stays in effect until changed, and drives lateness automatically ({assigningShift.startTime}–{assigningShift.endTime}, {assigningShift.gracePeriod}m grace).
+                                </p>
+                            </div>
+                            <button onClick={() => setAssigningShift(null)} className="text-secondary-400 hover:text-secondary-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                            {(employees || []).map((emp: any) => {
+                                const checked = selectedEmployeeIds.includes(emp.id);
+                                const currentShiftName = shifts?.find((s: any) => s.id === emp.shiftId)?.name;
+                                return (
+                                    <label
+                                        key={emp.id}
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${checked ? 'bg-primary-50 border border-primary-200' : 'hover:bg-secondary-50 border border-transparent'}`}
+                                    >
+                                        <input type="checkbox" checked={checked} onChange={() => toggleEmployee(emp.id)} className="w-4 h-4 accent-primary-600" />
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm text-secondary-900">{emp.user?.name || emp.user?.email}</p>
+                                            <p className="text-[10px] text-secondary-400">{emp.designation || 'No designation'}</p>
+                                        </div>
+                                        {currentShiftName && currentShiftName !== assigningShift.name && (
+                                            <span className="text-[9px] font-black uppercase text-secondary-400 bg-secondary-50 px-2 py-0.5 rounded">
+                                                Currently: {currentShiftName}
+                                            </span>
+                                        )}
+                                    </label>
+                                );
+                            })}
+                            {(!employees || employees.length === 0) && (
+                                <p className="text-center text-secondary-400 text-sm py-8">No employees found.</p>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-secondary-100 flex justify-end gap-3">
+                            <button onClick={() => setAssigningShift(null)} className="btn bg-secondary-100 text-secondary-600 px-6 rounded-xl font-bold uppercase text-[10px] tracking-widest">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleApplyAssignment}
+                                disabled={assigning}
+                                className="btn bg-primary-600 text-white px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary-100 disabled:opacity-50"
+                            >
+                                {assigning ? 'Applying…' : `Apply to ${selectedEmployeeIds.length} Employee(s)`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
