@@ -7,20 +7,10 @@ import {
   NotFoundError,
 } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
+import { InvoiceProductCategory } from "@prisma/client";
 import { z } from "zod";
 
 const db = prisma;
-
-const CATEGORIES = [
-  "JOURNAL_SUBSCRIPTION",
-  "COURSE",
-  "WORKSHOP",
-  "DOI_SERVICE",
-  "APC",
-  "CERTIFICATE",
-  "DIGITAL_SERVICE",
-  "MISC",
-] as const;
 const PRODUCT_TYPES = ["SIMPLE", "VARIABLE"] as const;
 const PRICING_MODELS = ["FIXED", "TIERED", "VOLUME", "CUSTOM"] as const;
 const BILLING_CYCLES = ["MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"] as const;
@@ -48,7 +38,7 @@ const variantUpdateSchema = z.object({
 const updateSchema = z.object({
   name: z.string().min(1).max(300).optional(),
   type: z.enum(PRODUCT_TYPES).optional(),
-  category: z.enum(CATEGORIES).optional(),
+  category: z.nativeEnum(InvoiceProductCategory).optional(),
   pricingModel: z.enum(PRICING_MODELS).optional(),
   description: z.string().max(2000).optional().nullable(),
   shortDesc: z.string().max(300).optional().nullable(),

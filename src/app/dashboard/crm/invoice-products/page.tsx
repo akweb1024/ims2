@@ -47,64 +47,26 @@ import ProductCatalogueForm, {
   SUBSCRIPTION_PUBLISHER_OPTIONS,
   type ProductCatalogueFormData,
 } from "@/components/dashboard/crm/ProductCatalogueForm";
+import { INVOICE_PRODUCT_CATEGORIES } from "@/lib/invoice-product-categories";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  {
-    value: "JOURNAL_SUBSCRIPTION",
-    label: "Journal Subscription",
-    icon: "📰",
-    color: "bg-blue-50 text-blue-700 border-blue-200",
-  },
-  {
-    value: "COURSE",
-    label: "Course",
-    icon: "🎓",
-    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  },
-  {
-    value: "WORKSHOP",
-    label: "Workshop",
-    icon: "🛠️",
-    color: "bg-orange-50 text-orange-700 border-orange-200",
-  },
-  {
-    value: "DOI_SERVICE",
-    label: "DOI Service",
-    icon: "🔗",
-    color: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  },
-  {
-    value: "APC",
-    label: "APC",
-    icon: "📝",
-    color: "bg-rose-50 text-rose-700 border-rose-200",
-  },
-  {
-    value: "CERTIFICATE",
-    label: "Certificate",
-    icon: "🏅",
-    color: "bg-amber-50 text-amber-700 border-amber-200",
-  },
-  {
-    value: "DIGITAL_SERVICE",
-    label: "Digital Service",
-    icon: "💻",
-    color: "bg-teal-50 text-teal-700 border-teal-200",
-  },
-  {
-    value: "REINSTE",
-    label: "Reinste",
-    icon: "🧾",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  },
-  {
-    value: "MISC",
-    label: "Miscellaneous",
-    icon: "📦",
-    color: "bg-gray-50 text-gray-700 border-gray-200",
-  },
-] as const;
+// Badge color per category, keyed by the shared category list's value — kept local since
+// color is a display concern specific to this page, not the category list itself.
+const CATEGORY_COLORS: Record<string, string> = {
+  JOURNAL_SUBSCRIPTION: "bg-blue-50 text-blue-700 border-blue-200",
+  COURSE: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  WORKSHOP: "bg-orange-50 text-orange-700 border-orange-200",
+  DOI_SERVICE: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  APC: "bg-rose-50 text-rose-700 border-rose-200",
+  CERTIFICATE: "bg-amber-50 text-amber-700 border-amber-200",
+  DIGITAL_SERVICE: "bg-teal-50 text-teal-700 border-teal-200",
+  REINSTE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  MISC: "bg-gray-50 text-gray-700 border-gray-200",
+};
+const CATEGORIES = INVOICE_PRODUCT_CATEGORIES.map((c) => ({
+  ...c,
+  color: CATEGORY_COLORS[c.value] || CATEGORY_COLORS.MISC,
+}));
 
 const PRICING_MODELS = [
   {
@@ -1771,11 +1733,7 @@ export default function InvoiceProductsPage() {
             onSubmit={(data) => handleSave(data)}
             onCancel={() => setShowModal(false)}
             saving={saving}
-            categories={CATEGORIES.map((c) => ({
-              value: c.value,
-              label: c.label,
-              icon: c.icon,
-            }))}
+            categories={INVOICE_PRODUCT_CATEGORIES}
           />
         </CRMModal>
 

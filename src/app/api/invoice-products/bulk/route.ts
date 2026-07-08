@@ -3,19 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
+import { InvoiceProductCategory } from '@prisma/client';
 import { z } from 'zod';
 
 const db = prisma;
-const CATEGORIES = [
-    'JOURNAL_SUBSCRIPTION',
-    'COURSE',
-    'WORKSHOP',
-    'DOI_SERVICE',
-    'APC',
-    'CERTIFICATE',
-    'DIGITAL_SERVICE',
-    'MISC',
-] as const;
 const PRICING_MODELS = ['FIXED', 'TIERED', 'VOLUME', 'CUSTOM'] as const;
 const BILLING_CYCLES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME'] as const;
 
@@ -25,7 +16,7 @@ const BILLING_CYCLES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME'] as const;
  */
 
 const bulkEditChangesSchema = z.object({
-    category: z.enum(CATEGORIES).optional(),
+    category: z.nativeEnum(InvoiceProductCategory).optional(),
     pricingModel: z.enum(PRICING_MODELS).optional(),
     taxRate: z.number().min(0).max(100).optional(),
     billingCycle: z.enum(BILLING_CYCLES).nullable().optional(),
