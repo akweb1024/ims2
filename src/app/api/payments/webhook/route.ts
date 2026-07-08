@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateWebhookSignature } from '@/lib/razorpay';
+import { validateWebhookSignature, getRazorpayWebhookSecret } from '@/lib/razorpay';
 import { logger } from '@/lib/logger';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 
@@ -8,36 +8,61 @@ export async function POST(req: NextRequest) {
     try {
         const rawBody = await req.text();
         const signature = req.headers.get('x-razorpay-signature');
-        const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-        if (!signature || !secret) {
-            logger.error('Webhook missing signature or secret');
+        if (!signature) {
+            logger.error('Webhook missing signature');
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        let event: any;
+        try {
+            event = JSON.parse(rawBody);
+        } catch {
+            logger.error('Webhook body is not valid JSON');
+            return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+        }
+
+        const payload = event.payload || {};
+        // Razorpay sends different entity shapes per event. The `order` entity's
+        // own id is `id` (it has no `order_id`/`payment_id`), while the `payment`
+        // entity's own id is `id` and its parent order is `order_id`. Mixing these
+        // with `||` fallbacks stores the wrong id and breaks idempotency, so map
+        // each entity type explicitly.
+        const orderEntity = payload.order?.entity;
+        const paymentEntity = payload.payment?.entity;
+
+        // Notes are set on the order at creation time; fall back to the payment.
+        const notes = orderEntity?.notes || paymentEntity?.notes || {};
+
+        // Resolve which company this payment belongs to (via the course it's paying for) so
+        // real-time webhook payments get attributed correctly instead of landing unscoped, and
+        // so a company with its own Razorpay account/webhook secret verifies against its own
+        // secret rather than the platform default. This companyId is only a routing hint at
+        // this point (the body isn't verified yet) — a forged notes.courseId just picks the
+        // wrong secret to check the signature against and fails verification below, it can't
+        // bypass it.
+        let companyId: string | null = null;
+        if (notes.courseId) {
+            const course = await prisma.course.findUnique({ where: { id: notes.courseId }, select: { companyId: true } });
+            companyId = course?.companyId ?? null;
+        }
+
+        const secret = await getRazorpayWebhookSecret(companyId);
+        if (!secret) {
+            logger.error('No webhook secret configured for this payment (company or platform default)', { companyId });
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const isValid = validateWebhookSignature(rawBody, signature, secret);
 
         if (!isValid) {
-            logger.error('Invalid webhook signature');
+            logger.error('Invalid webhook signature', { companyId });
             return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
         }
-
-        const event = JSON.parse(rawBody);
-        const payload = event.payload;
 
         // Process based on event type
         // Supported: order.paid or payment.captured
         if (event.event === 'order.paid' || event.event === 'payment.captured') {
-            // Razorpay sends different entity shapes per event. The `order` entity's
-            // own id is `id` (it has no `order_id`/`payment_id`), while the `payment`
-            // entity's own id is `id` and its parent order is `order_id`. Mixing these
-            // with `||` fallbacks stores the wrong id and breaks idempotency, so map
-            // each entity type explicitly.
-            const orderEntity = payload.order?.entity;
-            const paymentEntity = payload.payment?.entity;
-
-            // Notes are set on the order at creation time; fall back to the payment.
-            const notes = orderEntity?.notes || paymentEntity?.notes || {};
 
             // The payment id (idempotency key) only exists on a payment entity.
             const razorpayPaymentId: string | undefined = paymentEntity?.id;
@@ -80,6 +105,7 @@ export async function POST(req: NextRequest) {
                                 razorpayPaymentId,
                                 status: 'captured',
                                 paymentMethod: method,
+                                companyId,
                                 notes: `Webhook: Course Enrollment (UserID: ${userId})`,
                                 metadata: JSON.stringify(orderEntity || paymentEntity)
                             }

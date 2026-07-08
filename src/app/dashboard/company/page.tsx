@@ -7,6 +7,7 @@ import CompanyClientLayout from "../companies/CompanyClientLayout";
 import AutomationConfigBuilder from "@/components/dashboard/company/AutomationConfigBuilder";
 import CompanyAnalyticsOverview from "@/components/dashboard/company/CompanyAnalyticsOverview";
 import WorkforceAnalytics from "@/components/dashboard/company/WorkforceAnalytics";
+import CompanyRazorpaySettings from "@/components/dashboard/company/CompanyRazorpaySettings";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import RichTextEditor from "@/components/common/RichTextEditor";
 import {
@@ -23,7 +24,7 @@ export default function CompanyPage() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("CUSTOMER");
   const [activeTab, setActiveTab] = useState<
-    "OVERVIEW" | "WORKFORCE" | "DETAILS" | "BRANDS"
+    "OVERVIEW" | "WORKFORCE" | "DETAILS" | "BRANDS" | "PAYMENTS"
   >("OVERVIEW");
 
   // Original Modals State
@@ -674,6 +675,14 @@ export default function CompanyPage() {
           >
             Brand Portfolios
           </button>
+          {["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+            <button
+              onClick={() => setActiveTab("PAYMENTS")}
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "PAYMENTS" ? "bg-white text-primary-600 shadow-sm" : "text-secondary-500 hover:text-secondary-700"}`}
+            >
+              Payments
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -1774,6 +1783,18 @@ export default function CompanyPage() {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === "PAYMENTS" && ["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+            <div className="space-y-6 animate-fadeIn">
+              <div>
+                <h2 className="text-2xl font-bold font-primary">Payments</h2>
+                <p className="text-secondary-600">
+                  This company&apos;s own payment gateway credentials, separate from any other company on the platform.
+                </p>
+              </div>
+              <CompanyRazorpaySettings companyId={company.id} />
             </div>
           )}
         </div>

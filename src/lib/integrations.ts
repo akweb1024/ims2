@@ -56,3 +56,18 @@ export const getSupportedIntegrationProvider = (providerId: string) =>
   SUPPORTED_INTEGRATION_PROVIDERS.find(
     (provider) => provider.id === providerId.toUpperCase(),
   );
+
+/**
+ * Resolves which company's integrations a request may act on. Defaults to the caller's own
+ * company; a SUPER_ADMIN may target any other company by id (e.g. configuring Razorpay for a
+ * specific company from its Companies-page settings tab, the same way Brands already work).
+ * Returns null if the caller isn't allowed to touch the requested company.
+ */
+export function resolveTargetCompanyId(
+  user: { role: string; companyId?: string | null },
+  requestedCompanyId?: string | null,
+): string | null {
+  if (!requestedCompanyId) return user.companyId ?? null;
+  if (user.role === 'SUPER_ADMIN') return requestedCompanyId;
+  return requestedCompanyId === user.companyId ? user.companyId! : null;
+}
