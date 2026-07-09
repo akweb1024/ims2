@@ -200,6 +200,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Reconciliation', href: '/dashboard/finance/reconciliation', icon: Zap, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                     { name: 'Payments', href: '/dashboard/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                     { name: 'Razorpay Rev', href: '/dashboard/analytics/razorpay', icon: CreditCard, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                    { name: 'Company Transactions', href: '/dashboard/payments/by-company', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'] },
                     { name: 'Cashflow AI', href: '/dashboard/finance/forecasting', icon: Sparkles, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                 ]
             },
