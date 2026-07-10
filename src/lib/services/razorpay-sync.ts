@@ -65,6 +65,94 @@ async function shouldSkipSync(force = false) {
     return Date.now() - lastSuccess.lastSyncAt.getTime() < SYNC_INTERVAL_MS;
 }
 
+/**
+ * Attribute a Razorpay payment to a company, in priority order:
+ * explicit notes (company_id/companyId) → the paying user's company (by email) →
+ * the account owner (fallbackCompanyId). An unknown company id falls back too.
+ * Shared by the batch sync and the real-time webhook so both attribute identically.
+ */
+export async function resolvePaymentCompanyId(
+    rpPayment: any,
+    fallbackCompanyId: string | null,
+): Promise<string | null> {
+    let companyId: string | null = fallbackCompanyId;
+
+    if (rpPayment.notes?.company_id || rpPayment.notes?.companyId) {
+        companyId = rpPayment.notes.company_id || rpPayment.notes.companyId;
+    }
+
+    if (!companyId && rpPayment.email) {
+        const userMatch = await prisma.user.findUnique({
+            where: { email: rpPayment.email },
+            select: { companyId: true },
+        });
+        if (userMatch?.companyId) companyId = userMatch.companyId;
+    }
+
+    if (companyId) {
+        const companyMatch = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { id: true },
+        });
+        if (!companyMatch) companyId = fallbackCompanyId;
+    }
+
+    return companyId || null;
+}
+
+/** Build the Prisma `Payment` row for a Razorpay payment entity (amount is in paise). */
+export function buildRazorpayPaymentData(rpPayment: any, companyId: string | null) {
+    return {
+        amount: rpPayment.amount / 100,
+        currency: rpPayment.currency || 'INR',
+        paymentMethod: rpPayment.method,
+        paymentDate: new Date(rpPayment.created_at * 1000),
+        razorpayPaymentId: rpPayment.id,
+        razorpayOrderId: rpPayment.order_id,
+        status: rpPayment.status,
+        notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
+        metadata: JSON.stringify(rpPayment),
+        companyId: companyId || null,
+    };
+}
+
+/**
+ * Idempotently record a single Razorpay payment (attribution + row + journal). Used by the
+ * real-time webhook; returns 'exists' if the payment was already recorded (by sync, verify,
+ * or a prior webhook delivery) so callers can safely ack duplicate deliveries.
+ */
+export async function recordRazorpayPayment(
+    rpPayment: any,
+    fallbackCompanyId: string | null,
+): Promise<'created' | 'exists'> {
+    if (!rpPayment?.id) throw new Error('recordRazorpayPayment: missing payment id');
+
+    const existing = await prisma.payment.findUnique({
+        where: { razorpayPaymentId: rpPayment.id },
+        select: { id: true },
+    });
+    if (existing) return 'exists';
+
+    const companyId = await resolvePaymentCompanyId(rpPayment, fallbackCompanyId);
+
+    const savedPayment = await prisma.payment.create({
+        data: buildRazorpayPaymentData(rpPayment, companyId),
+    });
+
+    if (savedPayment.companyId) {
+        try {
+            await FinanceService.postPaymentJournal(savedPayment.companyId, savedPayment.id);
+        } catch (financeError) {
+            logger.error('Failed to post payment journal for recorded Razorpay payment', financeError, {
+                paymentId: savedPayment.id,
+                companyId: savedPayment.companyId,
+            });
+        }
+    }
+
+    return 'created';
+}
+
 export async function performRazorpaySync(
     options: PerformRazorpaySyncOptions = {},
 ): Promise<RazorpaySyncResult> {
@@ -158,40 +246,10 @@ export async function performRazorpaySync(
                             continue;
                         }
 
-                        let companyId = account.companyId;
-
-                        if (rpPayment.notes?.company_id || rpPayment.notes?.companyId) {
-                            companyId = rpPayment.notes.company_id || rpPayment.notes.companyId;
-                        }
-
-                        if (!companyId && rpPayment.email) {
-                            const userMatch = await prisma.user.findUnique({
-                                where: { email: rpPayment.email },
-                                select: { companyId: true },
-                            });
-                            if (userMatch?.companyId) companyId = userMatch.companyId;
-                        }
-
-                        if (companyId) {
-                            const companyMatch = await prisma.company.findUnique({
-                                where: { id: companyId },
-                            });
-                            if (!companyMatch) companyId = account.companyId;
-                        }
+                        const companyId = await resolvePaymentCompanyId(rpPayment, account.companyId);
 
                         const savedPayment = await prisma.payment.create({
-                            data: {
-                                amount: rpPayment.amount / 100,
-                                currency: rpPayment.currency || 'INR',
-                                paymentMethod: rpPayment.method,
-                                paymentDate: new Date(rpPayment.created_at * 1000),
-                                razorpayPaymentId: rpPayment.id,
-                                razorpayOrderId: rpPayment.order_id,
-                                status: rpPayment.status,
-                                notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
-                                metadata: JSON.stringify(rpPayment),
-                                companyId: companyId || null,
-                            },
+                            data: buildRazorpayPaymentData(rpPayment, companyId),
                         });
 
                         syncedCount++;

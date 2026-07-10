@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateWebhookSignature, getRazorpayWebhookSecret } from '@/lib/razorpay';
+import { recordRazorpayPayment } from '@/lib/services/razorpay-sync';
 import { logger } from '@/lib/logger';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 
@@ -130,6 +131,19 @@ export async function POST(req: NextRequest) {
                 }
 
                 logger.info(`Webhook processed successfully for course ${courseId}, user ${userId}`);
+            } else if (razorpayPaymentId && paymentEntity) {
+                // Any other captured payment: record it in real time so it appears in the
+                // payments / company-transactions views without waiting for the periodic sync.
+                // Idempotent — a duplicate delivery, or one the sync/verify already saved, no-ops.
+                // companyId here is the secret-resolved company (usually null → the recorder
+                // attributes via notes/email). Failures are logged but still acked so Razorpay
+                // stops retrying; the periodic sync is the safety net.
+                try {
+                    const outcome = await recordRazorpayPayment(paymentEntity, companyId);
+                    logger.info('Webhook recorded Razorpay payment', { razorpayPaymentId, outcome });
+                } catch (recordErr) {
+                    logger.error('Webhook failed to record Razorpay payment', recordErr, { razorpayPaymentId });
+                }
             }
         }
 
