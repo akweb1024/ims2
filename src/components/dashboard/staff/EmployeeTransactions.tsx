@@ -203,6 +203,27 @@ export default function EmployeeTransactions() {
                                 </div>
                             </div>
 
+                            {/* Company tabs */}
+                            {(companyData?.availableCompanies?.length || 0) > 1 && (
+                                <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl w-fit max-w-full overflow-x-auto">
+                                    <button
+                                        onClick={() => { setSelectedCompanyId('ALL'); fetchCompany('ALL'); }}
+                                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${selectedCompanyId === 'ALL' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        All Companies
+                                    </button>
+                                    {companyData.availableCompanies.map((company: any) => (
+                                        <button
+                                            key={company.id}
+                                            onClick={() => { setSelectedCompanyId(company.id); fetchCompany(company.id); }}
+                                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${selectedCompanyId === company.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            {company.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Ledger Table */}
                             <div className="bg-white rounded-[1.75rem] border border-gray-100 shadow-sm overflow-hidden">
                                 {/* Table Header / Filters */}
@@ -214,25 +235,6 @@ export default function EmployeeTransactions() {
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                                        {(companyData?.availableCompanies?.length || 0) > 1 && (
-                                            <div className="relative">
-                                                <Building2 size={13} className="absolute left-3.5 top-3.5 text-gray-400" />
-                                                <select
-                                                    className="pl-9 pr-8 py-3 text-[10px] font-black uppercase tracking-widest border border-gray-200 rounded-xl bg-gray-50 appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                                                    value={selectedCompanyId}
-                                                    onChange={(e) => {
-                                                        const nextCompanyId = e.target.value;
-                                                        setSelectedCompanyId(nextCompanyId);
-                                                        fetchCompany(nextCompanyId);
-                                                    }}
-                                                >
-                                                    <option value="ALL">All Companies</option>
-                                                    {companyData.availableCompanies.map((company: any) => (
-                                                        <option key={company.id} value={company.id}>{company.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
                                         <div className="relative flex-1 lg:min-w-[280px]">
                                             <Search size={14} className="absolute left-4 top-3.5 text-gray-400" />
                                             <input
