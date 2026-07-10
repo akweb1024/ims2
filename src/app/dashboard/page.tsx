@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import SearchableFilterSelect, { SearchableFilterOption } from '@/components/dashboard/SearchableFilterSelect';
+import CompanyTransactionsPanel from '@/components/dashboard/CompanyTransactionsPanel';
 import { formatToISTDate } from '@/lib/date-utils';
 import { DashboardScope, DashboardWidgetKey, DASHBOARD_WIDGETS } from '@/lib/dashboard/widgets';
 import {
@@ -862,6 +863,14 @@ export default function DashboardPage() {
                         </div>
                     </section>
                 )}
+
+                <section>
+                    <CompanyTransactionsPanel
+                        heading="Company Transactions"
+                        subheading="Razorpay payments, one company at a time."
+                        lazy
+                    />
+                </section>
             </div>
 
             {showCustomizer && layout && (
