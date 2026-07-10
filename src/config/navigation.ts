@@ -466,8 +466,12 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
     const defaultModulesByRole: Record<string, string[]> = {
         'SUPER_ADMIN': ['*'],
         'ADMIN': ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY'],
-        'MANAGER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'PUBLICATION', 'IT', 'QUALITY'],
+        'MANAGER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'FINANCE', 'PUBLICATION', 'IT', 'QUALITY'],
         'TEAM_LEADER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'IT', 'QUALITY'],
+        // FINANCE is granted only so the company-scoped "Company Transactions" item
+        // surfaces; every other Finance item stays role-gated to admins, so employees
+        // see a Finance module containing just that one link.
+        'EMPLOYEE': ['CORE', 'FINANCE'],
         'FINANCE_ADMIN': ['CORE', 'FINANCE', 'QUALITY', 'HR'],
         'HR_MANAGER': ['CORE', 'HR', 'LMS', 'QUALITY'],
         'HR': ['CORE', 'HR', 'QUALITY'],
