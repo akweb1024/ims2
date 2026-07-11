@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { assertCompanyAccess, canAccessAllCompanies, getAvailableCompaniesForUser } from '@/lib/access-policy';
+import { performRazorpaySync } from '@/lib/services/razorpay-sync';
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,6 +11,15 @@ export async function GET(req: NextRequest) {
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        // Opportunistic auto-sync: kick off a background pull from Razorpay so the data keeps
+        // itself fresh without a manual "Sync" click or an external cron. performRazorpaySync
+        // self-throttles (RAZORPAY_SYNC_INTERVAL_MS, default 1h) and is advisory-locked, so
+        // most calls no-op cheaply while the first call after deploy backfills. Fire-and-forget:
+        // it never blocks or fails this read. Relies on a persistent Node server (this app uses one).
+        void performRazorpaySync({ trigger: 'scheduler' }).catch((err) => {
+            console.error('Background Razorpay sync (on view) failed:', err?.message || err);
+        });
 
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '100');
