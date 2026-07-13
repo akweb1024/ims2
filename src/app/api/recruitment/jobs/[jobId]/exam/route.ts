@@ -4,7 +4,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { authorizedRoute } from '@/lib/middleware-auth';
 
 // GET: Fetch exam for a specific job
-export const GET = authorizedRoute(['HR', 'HR_MANAGER', 'ADMIN'], async (req: NextRequest, user: any, context: any) => {
+export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'], async (req: NextRequest, user: any, context: any) => {
     try {
         const { jobId } = context.params;
 
@@ -19,7 +19,7 @@ export const GET = authorizedRoute(['HR', 'HR_MANAGER', 'ADMIN'], async (req: Ne
 });
 
 // POST: Create or Update exam for a job
-export const POST = authorizedRoute(['HR', 'HR_MANAGER', 'ADMIN'], async (req: NextRequest, user: any, context: any) => {
+export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'], async (req: NextRequest, user: any, context: any) => {
     try {
         const { jobId } = context.params;
         const body = await req.json();
@@ -61,7 +61,7 @@ export const POST = authorizedRoute(['HR', 'HR_MANAGER', 'ADMIN'], async (req: N
 });
 
 // DELETE: Remove exam from a job
-export const DELETE = authorizedRoute(['HR', 'HR_MANAGER', 'ADMIN'], async (req: NextRequest, user: any, context: any) => {
+export const DELETE = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'], async (req: NextRequest, user: any, context: any) => {
     try {
         const { jobId } = context.params;
 
