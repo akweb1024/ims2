@@ -60,10 +60,12 @@ export const GET = authorizedRoute(
             const includeInterviews = searchParams.get('includeInterviews') === 'true';
 
             const where: any = {};
-            // Simplified check based on updated schema where JobApplication has companyId directly?
-            // Checking schema above... yes added companyId to JobApplication.
+            // Company-scoped users see applicants for their own company's jobs
+            // AND global/org-wide jobs (companyId null). The Jobs list already
+            // shows global postings to every recruiter, so excluding their
+            // applicants here made them silently invisible in the pipeline.
             if (user.companyId) {
-                where.jobPosting = { companyId: user.companyId };
+                where.jobPosting = { OR: [{ companyId: user.companyId }, { companyId: null }] };
             }
 
             if (jobId) where.jobPostingId = jobId;
