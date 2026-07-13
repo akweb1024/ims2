@@ -189,7 +189,11 @@ export default function ApplicantPipeline() {
                         const stageApps = applications?.filter(a => {
                             const s = (a.status || 'APPLIED').toUpperCase();
                             if (stage === 'SCREENING') {
-                                return s === 'SCREENING' || s === 'EXAM_PENDING' || s === 'EXAM_COMPLETED';
+                                // Everyone who has entered or completed the exam lives in
+                                // SCREENING (incl. EXAM_PASSED/EXAM_FAILED) so HR can review
+                                // the score and decide whether to advance to INTERVIEW.
+                                return s === 'SCREENING' || s === 'EXAM_PENDING' || s === 'EXAM_COMPLETED'
+                                    || s === 'EXAM_PASSED' || s === 'EXAM_FAILED';
                             }
                             return s === stage;
                         }) || [];
@@ -252,6 +256,16 @@ export default function ApplicantPipeline() {
                                                 </h5>
                                             </div>
                                             <p className="text-xs text-secondary-500 mb-3 line-clamp-1 font-medium">{app.jobPosting?.title || 'Unknown Role'}</p>
+
+                                            {/* Exam Score */}
+                                            {app.examAttempt && (
+                                                <div className="mb-3">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${app.examAttempt.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {app.examAttempt.isPassed ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                                                        Exam {Math.round(app.examAttempt.score)}% · {app.examAttempt.isPassed ? 'PASS' : 'FAIL'}
+                                                    </span>
+                                                </div>
+                                            )}
 
                                             {/* Skills Tags */}
                                             <div className="flex flex-wrap gap-1 mb-4">

@@ -72,6 +72,7 @@ export const GET = authorizedRoute(
                 where,
                 include: {
                     jobPosting: { select: { title: true, companyId: true } },
+                    examAttempt: { select: { score: true, isPassed: true, completedAt: true } },
                     ...(includeInterviews
                         ? {
                             interviews: {
