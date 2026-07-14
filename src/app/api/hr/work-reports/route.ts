@@ -318,7 +318,18 @@ export const POST = authorizedRoute(
                 let allowed = false;
                 let rejectReason = '';
 
-                if (isCurrentWeekend) {
+                const reportIsPast = reportDateStr < getISTDateString();
+                const reportIsFuture = reportDateStr > getISTDateString();
+
+                if (reportIsFuture) {
+                    // Never allow reporting a day that hasn't happened yet.
+                    rejectReason = 'Cannot submit a report for a future date.';
+                } else if (reportIsPast) {
+                    // Backdated entry for a past (missed) day: the day is already over,
+                    // so the same-day 5:30 PM / checkout timing gate no longer applies.
+                    // createdAt records the real filing time, keeping late entries visible.
+                    allowed = true;
+                } else if (isCurrentWeekend) {
                     if (!hasCheckedOut) {
                         rejectReason = 'Submissions on weekends/holidays are only allowed if you have checked out for the reported day.';
                     } else {

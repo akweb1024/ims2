@@ -28,7 +28,9 @@ function SubmitReportInner() {
     const isValidTargetDate = !!dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= todayStr;
     const targetDate = isValidTargetDate ? (dateParam as string) : todayStr;
     const isHistoricalEdit = targetDate !== todayStr;
-    const [historicalNotFound, setHistoricalNotFound] = useState(false);
+    // Past target date with no existing report → we let the employee file a
+    // backdated entry for that missed day (createdAt captures the real filing time).
+    const [historicalCreate, setHistoricalCreate] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [savedReport, setSavedReport] = useState(false);
@@ -290,9 +292,9 @@ function SubmitReportInner() {
                             setCompletedTaskIds(report.completedTaskIds);
                         }
                     } else if (isHistoricalEdit) {
-                        // No report exists for that past date — nothing to edit (we don't
-                        // allow backdated creation), so flag it and block submission.
-                        setHistoricalNotFound(true);
+                        // No report exists for that past date — allow filing a backdated
+                        // entry for the missed day (create mode, date locked to targetDate).
+                        setHistoricalCreate(true);
                     }
                 })
                 .catch(err => console.error("Error checking existing report", err))
@@ -746,15 +748,15 @@ function SubmitReportInner() {
                     </div>
                 )}
 
-                {/* Past date with no report to edit — block backdated creation */}
-                {historicalNotFound && (
-                    <div className="p-4 rounded-xl border-l-4 bg-secondary-50 border-secondary-400 text-secondary-700">
+                {/* Past date with no report yet — filing a backdated entry for a missed day */}
+                {historicalCreate && (
+                    <div className="p-4 rounded-xl border-l-4 bg-violet-50 border-violet-500 text-violet-900">
                         <div className="flex items-center gap-3">
                             <Briefcase size={24} />
                             <div>
-                                <h4 className="font-bold">No report found for this date</h4>
+                                <h4 className="font-bold">📅 Filing a report for a missed day</h4>
                                 <p className="text-sm opacity-90">
-                                    You didn&apos;t submit a report for {new Date(targetDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'long' })}, so there&apos;s nothing to edit. Reports can only be submitted for the current day.
+                                    No report exists for {new Date(targetDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'long' })}. You can submit one now — it will be recorded with today&apos;s date as the entry date, so your manager can see it was filed late.
                                 </p>
                             </div>
                         </div>
@@ -1110,12 +1112,12 @@ function SubmitReportInner() {
                                             type="date"
                                             title="Report Date"
                                             required
-                                            className={`input ${isEditMode ? 'bg-secondary-50 cursor-not-allowed' : ''}`}
+                                            className={`input ${(isEditMode || isHistoricalEdit) ? 'bg-secondary-50 cursor-not-allowed' : ''}`}
                                             value={commonData.date}
-                                            readOnly={isEditMode}
-                                            onChange={e => !isEditMode && setCommonData({ ...commonData, date: e.target.value })}
+                                            readOnly={isEditMode || isHistoricalEdit}
+                                            onChange={e => !(isEditMode || isHistoricalEdit) && setCommonData({ ...commonData, date: e.target.value })}
                                         />
-                                        {isEditMode && <p className="text-[10px] text-secondary-400 mt-1">Date cannot be changed once submitted</p>}
+                                        {(isEditMode || isHistoricalEdit) && <p className="text-[10px] text-secondary-400 mt-1">{isHistoricalEdit ? 'Filing for a past date' : 'Date cannot be changed once submitted'}</p>}
                                     </div>
                                     {user && ['SUPER_ADMIN', 'ADMIN'].includes(user.role) && (
                                         <div className="col-span-2 flex items-center gap-2 mt-2">
@@ -1457,8 +1459,8 @@ function SubmitReportInner() {
 
                         <button
                             type="submit"
-                            disabled={loading || historicalNotFound || (isEditMode && existingReport?.status !== 'SUBMITTED')}
-                            className={`btn w-full py-4 text-lg font-black shadow-xl transition-all ${historicalNotFound || (isEditMode && existingReport?.status !== 'SUBMITTED')
+                            disabled={loading || (isEditMode && existingReport?.status !== 'SUBMITTED')}
+                            className={`btn w-full py-4 text-lg font-black shadow-xl transition-all ${isEditMode && existingReport?.status !== 'SUBMITTED'
                                 ? 'bg-secondary-200 text-secondary-400 cursor-not-allowed shadow-none'
                                 : 'btn-primary hover:shadow-primary-200'
                                 }`}
