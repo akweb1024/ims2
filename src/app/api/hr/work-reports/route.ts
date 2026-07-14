@@ -683,16 +683,12 @@ export const PUT = authorizedRoute(
             if (!isManager && !isOwner) throw new AuthorizationError('You are not authorized to edit this report');
 
             if (isOwner && !isManager) {
+                // Employees may keep editing their own report until a manager
+                // reviews it. Once the status leaves SUBMITTED (reviewed/approved/
+                // flagged) it locks. The report can be from any day — the review
+                // gate, not the calendar day, is what freezes it.
                 if (existing.status !== 'SUBMITTED') {
                     throw new ValidationError('Cannot modify a report after it has been reviewed or approved');
-                }
-
-                // Check if editing on the same day as the report date
-                const todayStr = getISTDateString();
-                const reportDateStr = getISTDateString(new Date(existing.date));
-
-                if (todayStr !== reportDateStr) {
-                    throw new ValidationError('Work reports can only be edited on the same day they were submitted');
                 }
             }
 

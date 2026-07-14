@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle, FileText, RefreshCw } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import DprKraSection from '@/components/dashboard/kra/DprKraSection';
 import { toast } from 'react-hot-toast';
@@ -17,8 +17,18 @@ const getISTDateString = (date = new Date()) =>
         day: '2-digit'
     }).format(date);
 
-export default function SubmitReportPage() {
+function SubmitReportInner() {
     const router = useRouter();
+    // Optional ?date=YYYY-MM-DD deep-link lets an employee edit a PAST day's
+    // report (from the Monthly Achievement view) as long as it's still awaiting
+    // review. Absent/invalid/future → defaults to today (the normal daily flow).
+    const searchParams = useSearchParams();
+    const dateParam = searchParams.get('date');
+    const todayStr = getISTDateString();
+    const isValidTargetDate = !!dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= todayStr;
+    const targetDate = isValidTargetDate ? (dateParam as string) : todayStr;
+    const isHistoricalEdit = targetDate !== todayStr;
+    const [historicalNotFound, setHistoricalNotFound] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [savedReport, setSavedReport] = useState(false);
@@ -102,7 +112,7 @@ export default function SubmitReportPage() {
         title: '',
         content: '',
         hoursSpent: 0,
-        date: getISTDateString(),
+        date: targetDate,
         selfRating: 5,
         meetingsText: ''
     });
@@ -147,20 +157,23 @@ export default function SubmitReportPage() {
             setUser(u);
 
             // Fetch My Recent Transactions (Created by self, today, pending claim)
-            // We'll fetch slightly broader (last 24h or createdBy=self and unclaimed)
-            setLoadingRecentRevenue(true);
-            const today = getISTDateString();
-            fetch(`/api/revenue/transactions?createdBy=self&excludeClaimed=true&startDate=${today}&endDate=${today}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        setMyRecentTransactions(data);
-                    }
+            // We'll fetch slightly broader (last 24h or createdBy=self and unclaimed).
+            // Skipped when editing a past day — today's transactions don't belong there.
+            if (!isHistoricalEdit) {
+                setLoadingRecentRevenue(true);
+                const today = getISTDateString();
+                fetch(`/api/revenue/transactions?createdBy=self&excludeClaimed=true&startDate=${today}&endDate=${today}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 })
-                .catch(err => console.error("Error fetching my revenue", err))
-                .finally(() => setLoadingRecentRevenue(false));
+                    .then(res => res.json())
+                    .then(data => {
+                        if (Array.isArray(data)) {
+                            setMyRecentTransactions(data);
+                        }
+                    })
+                    .catch(err => console.error("Error fetching my revenue", err))
+                    .finally(() => setLoadingRecentRevenue(false));
+            }
 
             // Fetch Profile & Tasks
             fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -183,62 +196,67 @@ export default function SubmitReportPage() {
                     }
                 });
 
-            // Fetch today's attendance to calculate hours from check-in
-            fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(res => res.json())
-                .then(data => {
-                    const today = getISTDateString();
-                    const record = data.find((a: any) => a.date.startsWith(today));
-                    if (record && record.checkIn) {
-                        const checkIn = new Date(record.checkIn);
-                        setCheckInTime(checkIn);
-                        // Initial calculation
-                        const now = new Date();
-                        const diffMs = now.getTime() - checkIn.getTime();
-                        const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2;
-                        setCommonData(prev => ({ ...prev, hoursSpent: Math.max(0, hours) }));
-                    }
-                })
-                .catch(err => console.error("Error fetching attendance", err));
-
-            // Fetch production activity
-            fetch('/api/production/my-activity', { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.totalActions > 0) setProdActivity(data);
-                })
-                .catch(err => console.error("Error fetching activity", err));
-
-            // Fetch today's completed tasks from Daily Task Tracker
-            fetch('/api/hr/tasks/today-progress', { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.completedTasks && Array.isArray(data.completedTasks)) {
-                        // Pre-fill completed task IDs
-                        const completedIds = data.completedTasks.map((ct: any) => ct.taskId);
-                        setCompletedTaskIds(completedIds);
-
-                        // Pre-fill quantities for scaled tasks
-                        const quantities: Record<string, number> = {};
-                        data.completedTasks.forEach((ct: any) => {
-                            if (ct.quantity) {
-                                quantities[ct.taskId] = ct.quantity;
-                            }
-                        });
-                        setScaledTaskValues(quantities);
-
-                        // Set current points
-                        if (data.totalPoints) {
-                            setCurrentPoints(data.totalPoints);
+            // Today-only auto-population (live working hours, publication activity,
+            // Daily Task Tracker sync). All of this is "today" data, so it's skipped
+            // when editing a past day — that report's own snapshot is loaded instead.
+            if (!isHistoricalEdit) {
+                // Fetch today's attendance to calculate hours from check-in
+                fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(res => res.json())
+                    .then(data => {
+                        const today = getISTDateString();
+                        const record = data.find((a: any) => a.date.startsWith(today));
+                        if (record && record.checkIn) {
+                            const checkIn = new Date(record.checkIn);
+                            setCheckInTime(checkIn);
+                            // Initial calculation
+                            const now = new Date();
+                            const diffMs = now.getTime() - checkIn.getTime();
+                            const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2;
+                            setCommonData(prev => ({ ...prev, hoursSpent: Math.max(0, hours) }));
                         }
+                    })
+                    .catch(err => console.error("Error fetching attendance", err));
 
-                    }
-                })
-                .catch(err => console.error("Error syncing with Daily Task Tracker", err));
+                // Fetch production activity
+                fetch('/api/production/my-activity', { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.totalActions > 0) setProdActivity(data);
+                    })
+                    .catch(err => console.error("Error fetching activity", err));
 
-            // Check if a report already exists for today
-            const todayStr = getISTDateString();
-            fetch(`/api/hr/work-reports?employeeId=self&startDate=${todayStr}&endDate=${todayStr}`, {
+                // Fetch today's completed tasks from Daily Task Tracker
+                fetch('/api/hr/tasks/today-progress', { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.completedTasks && Array.isArray(data.completedTasks)) {
+                            // Pre-fill completed task IDs
+                            const completedIds = data.completedTasks.map((ct: any) => ct.taskId);
+                            setCompletedTaskIds(completedIds);
+
+                            // Pre-fill quantities for scaled tasks
+                            const quantities: Record<string, number> = {};
+                            data.completedTasks.forEach((ct: any) => {
+                                if (ct.quantity) {
+                                    quantities[ct.taskId] = ct.quantity;
+                                }
+                            });
+                            setScaledTaskValues(quantities);
+
+                            // Set current points
+                            if (data.totalPoints) {
+                                setCurrentPoints(data.totalPoints);
+                            }
+
+                        }
+                    })
+                    .catch(err => console.error("Error syncing with Daily Task Tracker", err));
+            }
+
+            // Check if a report already exists for the target date (today, or a past
+            // day when editing via ?date=). Loads it into edit mode.
+            fetch(`/api/hr/work-reports?employeeId=self&startDate=${targetDate}&endDate=${targetDate}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
                 .then(res => res.json())
@@ -253,17 +271,28 @@ export default function SubmitReportPage() {
                             title: report.title || '',
                             content: report.content || '',
                             hoursSpent: report.hoursSpent || 0,
-                            date: report.date ? getISTDateString(new Date(report.date)) : todayStr,
+                            date: report.date ? getISTDateString(new Date(report.date)) : targetDate,
                             selfRating: report.selfRating || 5,
                             meetingsText: report.metrics?.meetingsText || ''
                         });
 
-                        // Note: Task IDs are already pre-filled from Daily Task Tracker 
-                        // but if they were different in the report, we might want to sync them.
-                        // However, the rule is to sync from Task Tracker for the daily flow.
-                        if (report.completedTaskIds && report.completedTaskIds.length > 0) {
+                        // When editing a past day, the Task Tracker sync above is skipped,
+                        // so rebuild the checklist from the report's own tasksSnapshot —
+                        // this keeps points/metrics intact instead of zeroing them on save.
+                        if (isHistoricalEdit && Array.isArray(report.tasksSnapshot) && report.tasksSnapshot.length > 0) {
+                            setCompletedTaskIds(report.tasksSnapshot.map((t: any) => t.id));
+                            const q: Record<string, number> = {};
+                            report.tasksSnapshot.forEach((t: any) => {
+                                if (t.calculationType === 'SCALED' && typeof t.quantity === 'number') q[t.id] = t.quantity;
+                            });
+                            setScaledTaskValues(q);
+                        } else if (report.completedTaskIds && report.completedTaskIds.length > 0) {
                             setCompletedTaskIds(report.completedTaskIds);
                         }
+                    } else if (isHistoricalEdit) {
+                        // No report exists for that past date — nothing to edit (we don't
+                        // allow backdated creation), so flag it and block submission.
+                        setHistoricalNotFound(true);
                     }
                 })
                 .catch(err => console.error("Error checking existing report", err))
@@ -583,7 +612,8 @@ export default function SubmitReportPage() {
 
             if (res.ok) {
                 // Create tomorrow's work plan (next-day agenda) if the employee filled it in.
-                if (tomorrowPlan.agenda.trim()) {
+                // Only in the normal same-day flow — a past-day edit has no "tomorrow".
+                if (!isHistoricalEdit && tomorrowPlan.agenda.trim()) {
                     try {
                         const tomorrowStr = getISTDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
                         await fetch('/api/work-agenda', {
@@ -654,7 +684,9 @@ export default function SubmitReportPage() {
                             {isEditMode ? 'Update Work Report' : 'Submit Work Report'}
                         </h1>
                         <p className="text-secondary-500">
-                            {isEditMode ? 'Modifying your submission for today' : 'Track your daily impact through task completion'}
+                            {isHistoricalEdit
+                                ? `Editing your report for ${new Date(targetDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`
+                                : isEditMode ? 'Modifying your submission for today' : 'Track your daily impact through task completion'}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -686,8 +718,9 @@ export default function SubmitReportPage() {
                     </div>
                 </div>
 
-                {/* KRA daily progress (Phase 5) — employee updates their assigned targets here */}
-                <DprKraSection />
+                {/* KRA daily progress (Phase 5) — employee updates their assigned targets here.
+                    Today-scoped, so it's hidden when correcting a past day's report. */}
+                {!isHistoricalEdit && <DprKraSection />}
 
                 {/* Edit Restriction Notice */}
                 {isEditMode && existingReport && (
@@ -701,12 +734,27 @@ export default function SubmitReportPage() {
                                 <h4 className="font-bold">
                                     {existingReport.status !== 'SUBMITTED'
                                         ? '📝 Report Under Review / Approved'
-                                        : '📝 Editing Today\'s Report'}
+                                        : isHistoricalEdit ? '📝 Editing a Past Report' : '📝 Editing Today\'s Report'}
                                 </h4>
                                 <p className="text-sm opacity-90">
                                     {existingReport.status !== 'SUBMITTED'
                                         ? 'This report has already been reviewed or approved and cannot be modified.'
-                                        : 'You have already submitted a report for today. You can update your submission until it is reviewed by a manager.'}
+                                        : 'You can update this report any time until a manager reviews it. Once reviewed, it locks.'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Past date with no report to edit — block backdated creation */}
+                {historicalNotFound && (
+                    <div className="p-4 rounded-xl border-l-4 bg-secondary-50 border-secondary-400 text-secondary-700">
+                        <div className="flex items-center gap-3">
+                            <Briefcase size={24} />
+                            <div>
+                                <h4 className="font-bold">No report found for this date</h4>
+                                <p className="text-sm opacity-90">
+                                    You didn&apos;t submit a report for {new Date(targetDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'long' })}, so there&apos;s nothing to edit. Reports can only be submitted for the current day.
                                 </p>
                             </div>
                         </div>
@@ -846,6 +894,7 @@ export default function SubmitReportPage() {
                 )}
 
                 {/* Plan for Tomorrow — creates next-day WorkPlan on submit (manager can adjust before execution) */}
+                {!isHistoricalEdit && (
                 <div className="card-premium p-6 border-t-4 border-indigo-500 bg-gradient-to-br from-white to-indigo-50/30">
                     <div className="flex items-center gap-2 mb-4">
                         <TrendingUp className="text-indigo-600" size={24} />
@@ -880,6 +929,7 @@ export default function SubmitReportPage() {
                         />
                     </div>
                 </div>
+                )}
 
                 {/* Gamified Task Checklist */}
                 {availableTasks.length > 0 && (
@@ -1407,8 +1457,8 @@ export default function SubmitReportPage() {
 
                         <button
                             type="submit"
-                            disabled={loading || (isEditMode && existingReport?.status !== 'SUBMITTED')}
-                            className={`btn w-full py-4 text-lg font-black shadow-xl transition-all ${isEditMode && existingReport?.status !== 'SUBMITTED'
+                            disabled={loading || historicalNotFound || (isEditMode && existingReport?.status !== 'SUBMITTED')}
+                            className={`btn w-full py-4 text-lg font-black shadow-xl transition-all ${historicalNotFound || (isEditMode && existingReport?.status !== 'SUBMITTED')
                                 ? 'bg-secondary-200 text-secondary-400 cursor-not-allowed shadow-none'
                                 : 'btn-primary hover:shadow-primary-200'
                                 }`}
@@ -1710,5 +1760,13 @@ export default function SubmitReportPage() {
                 )}
             </div>
         </>
+    );
+}
+
+export default function SubmitReportPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-secondary-400">Loading report…</div>}>
+            <SubmitReportInner />
+        </Suspense>
     );
 }

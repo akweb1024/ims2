@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 import AchievementSection from '@/components/dashboard/AchievementSection';
+import MonthlyAchievementSummary from '@/components/dashboard/staff-portal/MonthlyAchievementSummary';
 
 interface StaffWorkReportsProps {
     workReports: any[];
@@ -64,6 +65,10 @@ export default function StaffWorkReports({ workReports, todayAttendance, user, o
     };
 
     return (
+        <div className="space-y-8">
+        {/* Current-month date-wise achievement — "kis date ko kitna achieve hua" */}
+        <MonthlyAchievementSummary workReports={workReports} />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
                 {/* Todays Realtime Achievement Preview */}
@@ -189,6 +194,7 @@ export default function StaffWorkReports({ workReports, todayAttendance, user, o
                     </div>
                 ))}
             </div>
+        </div>
         </div>
     );
 }
