@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { generateTodayAgendaForEmployees } from '@/lib/hr/work-agenda-generator';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 const MANAGERIAL_ROLES = new Set([
     'SUPER_ADMIN',
@@ -42,7 +43,7 @@ export const GET = authorizedRoute(
 
             const userWhere: Prisma.UserWhereInput = {
                 isActive: true,
-                ...(user.role !== 'SUPER_ADMIN' && user.companyId ? { companyId: user.companyId } : {}),
+                ...companyScopeWhere(user),
             };
 
             let employeeUserIds: string[] = [];

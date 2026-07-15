@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { createAuditLog } from '@/lib/notifications';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function GET(req: NextRequest) {
     try {
@@ -15,9 +16,7 @@ export async function GET(req: NextRequest) {
         const status = searchParams.get('status');
 
         const where: any = {};
-        if (user.companyId) {
-            where.companyId = user.companyId;
-        }
+        Object.assign(where, companyScopeWhere(user));
         
         if (status && status !== 'ALL') {
              where.status = status;

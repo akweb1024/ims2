@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { performanceReviewSchema } from '@/lib/validators/hr';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     [],
@@ -19,8 +20,9 @@ export const GET = authorizedRoute(
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     where.employee = { userId: { in: [...subIds, user.id] } };
-                } else if (user.companyId) {
-                    where.employee = { user: { companyId: user.companyId } };
+                } else {
+                    // Skipping this when companyId was null left no company filter at all.
+                    where.employee = { user: { ...companyScopeWhere(user) } };
                 }
             } else if (employeeId) {
                 // Managers checking specific employee

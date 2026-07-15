@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
         const monitors = await prisma.websiteMonitor.findMany({
             where: { 
                 isPaused: false,
-                ...(user.companyId ? { companyId: user.companyId } : {})
+                ...companyScopeWhere(user)
             }
         });
 

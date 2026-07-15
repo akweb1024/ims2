@@ -10,6 +10,7 @@ import {
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { loadProformaAutomationPayload, triggerDocumentAutomation } from '@/lib/document-automation';
 import { CRM_PROFORMA_ROLES } from '@/lib/crm-access';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 const db = prisma;
 
@@ -85,7 +86,7 @@ export const GET = authorizedRoute(
             }
 
             const where: any = { deletedAt: null };
-            if (user.companyId) where.companyId = user.companyId;
+            Object.assign(where, companyScopeWhere(user));
             if (customerId) where.customerProfileId = customerId;
             if (status) where.status = status;
 

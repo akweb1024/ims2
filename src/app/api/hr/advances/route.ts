@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
@@ -11,9 +12,14 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
 
-            const where: any = {
-                companyId: user.companyId || undefined
-            };
+            // Prisma drops an undefined key rather than matching null, so
+            // `companyId: user.companyId || undefined` returned every company's rows
+            // to a null-company user (User.companyId is nullable).
+            const where: any = {};
+            if (!canAccessAllCompanies(user)) {
+                if (!user.companyId) return NextResponse.json([]);
+                where.companyId = user.companyId;
+            }
 
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);

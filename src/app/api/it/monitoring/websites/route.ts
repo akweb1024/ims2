@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     [], // Allow all authenticated first, filter by module inside or here
@@ -13,7 +14,7 @@ export const GET = authorizedRoute(
             }
 
             const monitors = await prisma.websiteMonitor.findMany({
-                where: user.companyId ? { companyId: user.companyId } : {},
+                where: companyScopeWhere(user),
                 orderBy: { createdAt: 'desc' },
                 include: {
                     logs: {

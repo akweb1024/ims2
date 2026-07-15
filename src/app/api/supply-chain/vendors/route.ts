@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { createAuditLog } from '@/lib/notifications';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function GET(req: NextRequest) {
     try {
@@ -14,9 +15,7 @@ export async function GET(req: NextRequest) {
         const search = searchParams.get('search');
 
         const where: any = {};
-        if (user.companyId) {
-            where.companyId = user.companyId;
-        }
+        Object.assign(where, companyScopeWhere(user));
 
         if (search) {
             where.OR = [

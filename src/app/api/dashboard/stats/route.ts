@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 import { convertToINR, getLiveRates } from '@/lib/exchange-rates';
 
 export const GET = authorizedRoute(
@@ -17,11 +18,9 @@ export const GET = authorizedRoute(
 
             // Determine filter based on role and company context
             let customerProfileId: string | undefined;
-            let whereClause: any = {};
-
-            if (userCompanyId) {
-                whereClause.companyId = userCompanyId;
-            }
+            // `if (userCompanyId) { whereClause.companyId = ... }` left the clause empty —
+            // i.e. no company filter, every company's counts — when companyId was null.
+            let whereClause: any = { ...companyScopeWhere(user) };
 
             if (role === 'CUSTOMER') {
                 const profile = await prisma.customerProfile.findUnique({ where: { userId } });
@@ -57,10 +56,7 @@ export const GET = authorizedRoute(
 
 
             // Revenue calculation needs to match the hierarchy
-            const revenueWhere: any = {};
-            if (userCompanyId) {
-                revenueWhere.companyId = userCompanyId;
-            }
+            const revenueWhere: any = { ...companyScopeWhere(user) };
 
             if (customerProfileId) {
                 revenueWhere.invoice = { subscription: { customerProfileId } };
@@ -94,7 +90,7 @@ export const GET = authorizedRoute(
                         ? { id: whereClause.agencyId || 'none' }
                         : whereClause.salesExecutiveId
                             ? { subscriptions: { some: { salesExecutiveId: whereClause.salesExecutiveId } } }
-                            : { companyId: userCompanyId || undefined }
+                            : { ...companyScopeWhere(user) }
                 })
             ]);
 
@@ -117,7 +113,7 @@ export const GET = authorizedRoute(
 
             const openTicketsCount = await prisma.supportTicket.count({
                 where: {
-                    companyId: userCompanyId,
+                    ...companyScopeWhere(user),
                     status: 'OPEN',
                     ...(customerProfileId ? { customerProfileId } : {})
                 }
@@ -125,8 +121,7 @@ export const GET = authorizedRoute(
 
             // G. Dispatches
 
-            const dispatchWhere: any = { status: 'PENDING' };
-            if (userCompanyId) dispatchWhere.companyId = userCompanyId;
+            const dispatchWhere: any = { status: 'PENDING', ...companyScopeWhere(user) };
 
             if (customerProfileId) {
                 const subIds = await prisma.subscription.findMany({
@@ -153,14 +148,14 @@ export const GET = authorizedRoute(
                 activeCourses = await prisma.courseEnrollment.count({ where: { userId } });
             } else {
                 activeCourses = await prisma.course.count({
-                    where: { isPublished: true, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
+                    where: { isPublished: true, ...companyScopeWhere(user) }
                 });
             }
 
             const [articlesInReview, upcomingEvents] = await Promise.all([
                 prisma.article.count({ where: { status: 'UNDER_REVIEW' } }),
                 prisma.conference.count({
-                    where: { startDate: { gte: new Date() }, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
+                    where: { startDate: { gte: new Date() }, ...companyScopeWhere(user) }
                 })
             ]);
 

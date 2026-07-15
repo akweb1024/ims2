@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { getCompanyActivity, getUserActivity } from '@/lib/services/activity-service';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 const MANAGER_ROLES = new Set([
   'SUPER_ADMIN',
@@ -91,7 +92,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
     } else if (scope === 'company' && canSeeTeam) {
       const where: Prisma.UserWhereInput = {
         isActive: true,
-        ...(user.role === 'SUPER_ADMIN' ? {} : user.companyId ? { companyId: user.companyId } : {}),
+        ...companyScopeWhere(user),
       };
       const users = await prisma.user.findMany({ where, select: { id: true } });
       targetUserIds = users.map((u) => u.id);
@@ -102,7 +103,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
       } else {
         const where: Prisma.UserWhereInput = {
           isActive: true,
-          ...(user.companyId ? { companyId: user.companyId } : {}),
+          ...companyScopeWhere(user),
         };
         const users = await prisma.user.findMany({ where, select: { id: true } });
         targetUserIds = users.map((u) => u.id);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     ['AGENCY', 'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'],
@@ -45,9 +46,7 @@ export const GET = authorizedRoute(
             leadStatus: null,
         };
 
-        if (user.companyId) {
-            customerWhere.companyId = user.companyId;
-        }
+        Object.assign(customerWhere, companyScopeWhere(user));
 
         if (search) {
             customerWhere.OR = [

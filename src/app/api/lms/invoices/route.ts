@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError } from '@/lib/error-handler';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
   ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'],
@@ -16,9 +17,7 @@ export const GET = authorizedRoute(
         lmsParticipantId: { not: null },
       };
 
-      if (user.companyId) {
-        where.companyId = user.companyId;
-      }
+      Object.assign(where, companyScopeWhere(user));
 
       const [invoices, total] = await Promise.all([
         prisma.invoice.findMany({

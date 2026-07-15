@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { assertCompanyAccess } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId') || user.companyId;
+            const requestedCompanyId = searchParams.get('companyId');
+
+            // ?companyId= was used as the filter verbatim, so an HR/ADMIN user of one
+            // company could read another company's employees and salary data by passing
+            // its id. Unlike the null-company cases elsewhere, this needed no misconfigured
+            // account — any caller could do it.
+            if (requestedCompanyId) {
+                await assertCompanyAccess(user, requestedCompanyId, 'view increment planning for this company');
+            }
+
+            const companyId = requestedCompanyId || user.companyId;
 
             if (!companyId && user.role !== 'SUPER_ADMIN') {
                 return createErrorResponse('Company ID required', 400);

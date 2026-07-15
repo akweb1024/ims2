@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { decodeAgendaMetadata, getISTDayRange, isManagerialRole } from '@/lib/hr/work-agenda';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 async function resolveEmployeeScope(user: any, employeeIdParam: string | null, scope: string) {
   if (employeeIdParam && employeeIdParam !== 'self') {
@@ -41,7 +42,7 @@ async function resolveEmployeeScope(user: any, employeeIdParam: string | null, s
     where: {
       user: {
         isActive: true,
-        ...(user.role === 'SUPER_ADMIN' ? {} : user.companyId ? { companyId: user.companyId } : {})
+        ...companyScopeWhere(user)
       }
     },
     select: { id: true }
@@ -65,7 +66,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
       where: {
         employeeId: { in: employeeIds },
         date: { gte: start, lte: end },
-        companyId: user.companyId || undefined,
+        ...companyScopeWhere(user),
       },
       include: {
         employee: {

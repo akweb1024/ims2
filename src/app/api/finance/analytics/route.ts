@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 
 const PERIOD_MONTHS = {
     '3m': 3,
@@ -9,15 +10,29 @@ const PERIOD_MONTHS = {
     '12m': 12,
 } as const;
 
+/** Same shape the handler builds, with nothing in it. */
+const emptyAnalytics = (period: string) => ({
+    period,
+    stats: { totalVerifiedRevenue: 0, totalPendingRevenue: 0, totalExpenses: 0, netCashFlow: 0, burnRate: 0 },
+    charts: { cashFlow: [], forecast: [], revenueComposition: [], expenseComposition: [] },
+});
+
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         try {
-            const companyId = user.companyId;
             const now = new Date();
             const requestedPeriod = (req.nextUrl.searchParams.get('period') || '12m') as keyof typeof PERIOD_MONTHS;
             const period = requestedPeriod in PERIOD_MONTHS ? requestedPeriod : '12m';
             const monthsToInclude = PERIOD_MONTHS[period];
+
+            // `companyId: companyId || undefined` looked like scoping but Prisma drops an
+            // undefined key rather than matching null, so a null-company user got every
+            // company's finances. Matching `null` instead is not equivalent either —
+            // FinancialRecord.companyId is itself nullable — hence the explicit guard.
+            const seesAllCompanies = canAccessAllCompanies(user);
+            if (!seesAllCompanies && !user.companyId) return NextResponse.json(emptyAnalytics(period));
+            const companyScope = seesAllCompanies ? {} : { companyId: user.companyId! };
             const rangeStart = new Date();
             rangeStart.setMonth(now.getMonth() - (monthsToInclude - 1));
             rangeStart.setDate(1);
@@ -25,7 +40,7 @@ export const GET = authorizedRoute(
             // 1. Fetch Expenses (FinancialRecord where type is EXPENSE)
             const expenses = await prisma.financialRecord.findMany({
                 where: {
-                    companyId: companyId || undefined,
+                    ...companyScope,
                     type: 'EXPENSE',
                     date: { gte: rangeStart },
                     status: 'COMPLETED'
@@ -37,7 +52,7 @@ export const GET = authorizedRoute(
             // We want both Verified (Actual Revenue) and Pending (Forecast/Pipeline)
             const revenues = await prisma.revenueTransaction.findMany({
                 where: {
-                    companyId: companyId || undefined,
+                    ...companyScope,
                     paymentDate: { gte: rangeStart }
                 },
                 orderBy: { paymentDate: 'asc' }
@@ -147,7 +162,7 @@ export const GET = authorizedRoute(
             const expenseCategories = await prisma.financialRecord.groupBy({
                 by: ['category'],
                 where: {
-                    companyId: companyId || undefined,
+                    ...companyScope,
                     type: 'EXPENSE',
                     status: 'COMPLETED'
                 },

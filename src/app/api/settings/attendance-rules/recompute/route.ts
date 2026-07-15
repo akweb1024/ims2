@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { assertCompanyAccess } from '@/lib/access-policy';
+import { companyScopeWhere } from '@/lib/company-scope';
 import { prisma } from '@/lib/prisma';
 import { dashboardRecomputeSchema } from '@/lib/validation/schemas';
 import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
@@ -21,9 +23,17 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR']
       return createErrorResponse('Invalid date range', 400);
     }
 
+    // companyId came straight from the request body, so a caller could recompute another
+    // company's attendance by naming it; and when both it and user.companyId were null the
+    // clause collapsed to {}, recomputing EVERY company. This is a write path, so the
+    // caller-supplied value is authorized rather than trusted.
+    if (data.companyId) {
+      await assertCompanyAccess(user, data.companyId, 'recompute attendance for this company');
+    }
+
     const where: any = {
       date: { gte: startDate, lte: endDate },
-      ...(data.companyId ? { companyId: data.companyId } : user.companyId ? { companyId: user.companyId } : {}),
+      ...(data.companyId ? { companyId: data.companyId } : companyScopeWhere(user)),
     };
 
     if (data.employeeId) {

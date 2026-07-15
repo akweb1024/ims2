@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { generateSalarySlips } from '@/lib/services/payroll/generateSalarySlips';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     [],
@@ -39,9 +40,8 @@ export const GET = authorizedRoute(
                 }
 
                 where.employeeId = employeeId;
-                if (user.companyId) {
-                    where.employee = { user: { companyId: user.companyId } };
-                }
+                // Skipping this when companyId was null left no company filter at all.
+                where.employee = { user: { ...companyScopeWhere(user) } };
             } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
 
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
