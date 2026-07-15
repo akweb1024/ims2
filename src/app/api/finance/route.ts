@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { logger } from '@/lib/logger';
 import { processRevenueShares } from '@/lib/revenue-share';
 
@@ -18,9 +19,14 @@ export const GET = authorizedRoute(
 
             const search = searchParams.get('search');
 
-            const where: any = {
-                companyId: user.companyId || undefined
-            };
+            // Prisma drops an undefined key rather than matching null, so
+            // `companyId: user.companyId || undefined` returned every company's
+            // financial records to a null-company user.
+            const where: any = {};
+            if (!canAccessAllCompanies(user)) {
+                if (!user.companyId) return NextResponse.json([]);
+                where.companyId = user.companyId;
+            }
 
             if (type) where.type = type;
             if (category) where.category = category;

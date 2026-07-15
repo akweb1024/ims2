@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const PATCH = authorizedRoute(
     [],
@@ -28,7 +29,7 @@ export const PATCH = authorizedRoute(
             const monitor = await prisma.websiteMonitor.update({
                 where: { 
                     id,
-                    ...(user.companyId ? { companyId: user.companyId } : {})
+                    ...companyScopeWhere(user)
                 },
                 data: {
                     name,
@@ -62,7 +63,7 @@ export const DELETE = authorizedRoute(
             await prisma.websiteMonitor.delete({
                 where: { 
                     id,
-                    ...(user.companyId ? { companyId: user.companyId } : {})
+                    ...companyScopeWhere(user)
                 }
             });
 

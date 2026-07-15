@@ -5,6 +5,7 @@ import { handleApiError, AuthorizationError, NotFoundError } from '@/lib/error-h
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { logger } from '@/lib/logger';
 import { workPlanSchema } from '@/lib/validation/schemas';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 // GET: Get work plans (by date, employee)
 export const GET = authorizedRoute(
@@ -20,7 +21,7 @@ export const GET = authorizedRoute(
 
             // Build where clause
             const where: any = {
-                companyId: user.companyId || undefined,
+                ...companyScopeWhere(user),
             };
 
             // Role-based filtering logic
@@ -168,7 +169,7 @@ export const POST = authorizedRoute(
                     itTaskId: validatedData.itTaskId === 'null' ? null : validatedData.itTaskId,
                     visibility: validatedData.visibility,
                     status: 'SHARED',
-                    companyId: user.companyId || undefined
+                    ...companyScopeWhere(user)
                 } as any,
                 include: {
                     employee: { select: { user: { select: { name: true, email: true } } } },

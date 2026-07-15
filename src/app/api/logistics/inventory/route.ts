@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { createAuditLog } from '@/lib/notifications';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function GET(req: NextRequest) {
     try {
@@ -15,9 +16,7 @@ export async function GET(req: NextRequest) {
         const source = searchParams.get('source');
         
         const where: any = {};
-        if (user.companyId) {
-            where.companyId = user.companyId;
-        }
+        Object.assign(where, companyScopeWhere(user));
 
         if (search) {
             where.OR = [
@@ -126,7 +125,7 @@ export async function GET(req: NextRequest) {
                 });
 
             const warehouses = await prisma.warehouse.findMany({
-                where: { ...(user.companyId ? { companyId: user.companyId } : {}) },
+                where: { ...companyScopeWhere(user) },
                 select: { id: true, name: true, location: true },
             });
 
@@ -142,7 +141,7 @@ export async function GET(req: NextRequest) {
         });
 
         const warehouses = await prisma.warehouse.findMany({
-            where: { ...(user.companyId ? { companyId: user.companyId } : {}) },
+            where: { ...companyScopeWhere(user) },
             select: { id: true, name: true, location: true }
         });
 

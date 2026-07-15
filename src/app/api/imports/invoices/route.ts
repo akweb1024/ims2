@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function POST(req: NextRequest) {
     try {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
                 const customer = await prisma.customerProfile.findFirst({
                     where: {
                         primaryEmail: email,
-                        ...(decoded.companyId ? { companyId: decoded.companyId } : {}),
+                        ...companyScopeWhere(decoded),
                     },
                     include: {
                         subscriptions: {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
             const scopedSubscription = await prisma.subscription.findFirst({
                 where: {
                     id: subscriptionId,
-                    ...(decoded.companyId ? { companyId: decoded.companyId } : {}),
+                    ...companyScopeWhere(decoded),
                 },
                 select: { id: true }
             });

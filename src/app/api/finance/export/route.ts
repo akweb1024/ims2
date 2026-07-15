@@ -2,21 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies } from '@/lib/access-policy';
+
+const CSV_HEADERS = ['ID', 'Type', 'Category', 'Amount', 'Currency', 'Date', 'Description', 'Status', 'Method', 'CreatedBy'];
+
+function csvResponse(rows: (string | number)[][]) {
+    const csvContent = [CSV_HEADERS.join(','), ...rows.map(row => row.join(','))].join('\n');
+    return new NextResponse(csvContent, {
+        headers: {
+            'Content-Type': 'text/csv',
+            'Content-Disposition': `attachment; filename="financial_records_${Date.now()}.csv"`
+        }
+    });
+}
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         try {
+            // Prisma drops an undefined key rather than matching null, so
+            // `companyId: user.companyId || undefined` exported every company's ledger
+            // for a null-company user. Such a user now exports headers only.
+            const where: any = {};
+            if (!canAccessAllCompanies(user)) {
+                if (!user.companyId) return csvResponse([]);
+                where.companyId = user.companyId;
+            }
+
             const records = await prisma.financialRecord.findMany({
-                where: { companyId: user.companyId || undefined },
+                where,
                 orderBy: { date: 'desc' },
                 include: {
                     createdByUser: { select: { name: true } }
                 }
             });
 
-            // Convert to CSV
-            const headers = ['ID', 'Type', 'Category', 'Amount', 'Currency', 'Date', 'Description', 'Status', 'Method', 'CreatedBy'];
             const rows = records.map(r => [
                 r.id,
                 r.type,
@@ -30,14 +50,7 @@ export const GET = authorizedRoute(
                 r.createdByUser?.name || 'System'
             ]);
 
-            const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-
-            return new NextResponse(csvContent, {
-                headers: {
-                    'Content-Type': 'text/csv',
-                    'Content-Disposition': `attachment; filename="financial_records_${Date.now()}.csv"`
-                }
-            });
+            return csvResponse(rows);
 
         } catch (error) {
             return createErrorResponse(error);

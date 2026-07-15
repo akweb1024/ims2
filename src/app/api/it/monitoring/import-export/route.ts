@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 import { parse } from 'csv-parse/sync';
 
 export const GET = authorizedRoute(
@@ -14,7 +15,7 @@ export const GET = authorizedRoute(
             }
 
             const monitors = await prisma.websiteMonitor.findMany({
-                where: user.companyId ? { companyId: user.companyId } : {},
+                where: companyScopeWhere(user),
                 select: {
                     name: true,
                     url: true,

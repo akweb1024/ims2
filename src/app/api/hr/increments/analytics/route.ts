@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/company-scope';
+import { ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 
 export const GET = authorizedRoute(
@@ -34,9 +36,17 @@ export const GET = authorizedRoute(
 
             // 2. Scope Filter Construction
             const where: any = {};
-            const targetCompanyId = (user.role === 'SUPER_ADMIN')
-                ? (filterCompanyId || undefined)
-                : user.companyId;
+            // targetCompanyId feeds four `x ? {...} : undefined` / `x || undefined` uses
+            // below, each of which means "no company filter" — i.e. every company — when it
+            // is null. That was reachable by any non-admin whose companyId is null, so make
+            // it unreachable here instead of at four separate call sites.
+            const seesAllCompanies = canAccessAllCompanies(user);
+            if (!seesAllCompanies && !user.companyId) {
+                throw new ValidationError('User is not associated with a company');
+            }
+            const targetCompanyId = seesAllCompanies
+                ? (filterCompanyId || undefined)   // undefined here is deliberate: whole group
+                : user.companyId!;
 
             if (scope === 'INDIVIDUAL') {
                 if (employeeId) {

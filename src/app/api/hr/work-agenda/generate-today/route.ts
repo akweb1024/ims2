@@ -5,6 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { isManagerialRole } from '@/lib/hr/work-agenda';
 import { generateTodayAgendaForEmployees } from '@/lib/hr/work-agenda-generator';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 async function resolveTargetEmployeeIds(user: any, requestedEmployeeId: string | null, scope: string) {
   if (requestedEmployeeId && requestedEmployeeId !== 'self') {
@@ -39,7 +40,7 @@ async function resolveTargetEmployeeIds(user: any, requestedEmployeeId: string |
     where: {
       user: {
         isActive: true,
-        ...(user.role === 'SUPER_ADMIN' ? {} : user.companyId ? { companyId: user.companyId } : {})
+        ...companyScopeWhere(user)
       }
     },
     select: { id: true }

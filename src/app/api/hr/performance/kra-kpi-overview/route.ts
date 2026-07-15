@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 type PeriodKey = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
@@ -151,7 +152,7 @@ export const GET = authorizedRoute(
                 } else {
                     const userWhere: Prisma.UserWhereInput = {
                         isActive: true,
-                        ...(user.role !== 'SUPER_ADMIN' && user.companyId ? { companyId: user.companyId } : {}),
+                        ...companyScopeWhere(user),
                     };
                     const users = await prisma.user.findMany({
                         where: userWhere,

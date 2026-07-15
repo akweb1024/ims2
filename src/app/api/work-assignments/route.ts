@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { pushNotification } from '@/lib/notifications';
@@ -17,9 +18,14 @@ export const GET = authorizedRoute(
             const priority = searchParams.get('priority');
             const view = searchParams.get('view'); // 'received' or 'assigned'
 
-            const where: any = {
-                companyId: user.companyId || undefined,
-            };
+            // Prisma drops an undefined key rather than matching null, so
+            // `companyId: user.companyId || undefined` returned every company's rows
+            // to a null-company user (User.companyId is nullable).
+            const where: any = {};
+            if (!canAccessAllCompanies(user)) {
+                if (!user.companyId) return NextResponse.json([]);
+                where.companyId = user.companyId;
+            }
 
             // Role-based filtering
             if (['EXECUTIVE'].includes(user.role)) {

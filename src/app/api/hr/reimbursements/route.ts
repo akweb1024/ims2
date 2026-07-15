@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 const PRIVILEGED_REIMBURSEMENT_ROLES = new Set([
     'SUPER_ADMIN',
@@ -29,7 +30,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
 
         if (isPrivileged) {
             where.user = {
-                ...(user?.role !== 'SUPER_ADMIN' && user?.companyId ? { companyId: user.companyId } : {}),
+                ...companyScopeWhere(user),
                 ...(name ? { name: { contains: name, mode: 'insensitive' } } : {}),
                 employeeProfile: employeeId
                     ? { employeeId: { contains: employeeId, mode: 'insensitive' } }

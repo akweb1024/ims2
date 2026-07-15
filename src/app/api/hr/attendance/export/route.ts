@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
@@ -22,9 +23,7 @@ export const GET = authorizedRoute(
                 }
             };
 
-            if (user.companyId) {
-                where.companyId = user.companyId;
-            }
+            Object.assign(where, companyScopeWhere(user));
 
             const attendanceRecords = await prisma.attendance.findMany({
                 where,

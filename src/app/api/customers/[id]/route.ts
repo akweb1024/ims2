@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
 import { buildTrackingMetadata } from '@/lib/dispatch';
 import { deriveStateCodeFromState } from '@/lib/india-state-code';
-import { userHasCompanyAccess } from '@/lib/access-policy';
+import { userHasCompanyAccess, canAccessAllCompanies } from '@/lib/access-policy';
 import { CRM_CUSTOMER_EDITOR_ROLES } from '@/lib/crm-access';
 
 const toNullableString = (value: unknown) => {
@@ -246,17 +246,21 @@ export async function PATCH(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // A null-company user produced `OR: [{ companyId: undefined }]`, i.e. an empty
+        // condition that matches ANY customer — the opposite of scoping. Such a user now
+        // matches nothing.
+        const ownershipOr = decoded.companyId
+            ? [
+                { companyId: decoded.companyId },
+                { sharedCompanyIds: { has: decoded.companyId } },
+            ]
+            : [];
+
         const existingCustomer = await prisma.customerProfile.findFirst({
             where:
-                decoded.role === 'SUPER_ADMIN'
+                canAccessAllCompanies(decoded)
                     ? { id }
-                    : {
-                        id,
-                        OR: [
-                            { companyId: decoded.companyId || undefined },
-                            decoded.companyId ? { sharedCompanyIds: { has: decoded.companyId } } : undefined
-                        ].filter(Boolean) as any
-                    },
+                    : { id, OR: ownershipOr.length ? ownershipOr : [{ id: '__none__' }] },
             select: {
                 id: true,
                 assignedToUserId: true,

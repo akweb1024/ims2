@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 async function resolveAgencyProfile(userId: string) {
     return prisma.customerProfile.findUnique({
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
         const payouts = await prisma.commissionPayout.findMany({
             where: {
                 ...(agencyProfileId ? { agencyProfileId } : {}),
-                ...(user.companyId ? { companyId: user.companyId } : {}),
+                ...companyScopeWhere(user),
                 ...(status ? { status: status as any } : {}),
             },
             include: {

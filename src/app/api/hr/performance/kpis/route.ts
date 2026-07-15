@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 // GET: Fetch KPIs for the company or a specific employee
 export const GET = authorizedRoute(
@@ -15,7 +16,7 @@ export const GET = authorizedRoute(
             const allowedPeriods = new Set(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']);
 
             const where: any = {};
-            if (user.companyId) where.companyId = user.companyId;
+            Object.assign(where, companyScopeWhere(user));
             if (allowedPeriods.has(periodParam)) where.period = periodParam;
 
             const selfProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });

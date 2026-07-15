@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
@@ -15,15 +16,14 @@ export const GET = authorizedRoute(
             const startDate = new Date(year, month - 1, 1);
             const endDate = new Date(year, month, 0);
 
+            // Skipping the assignment when companyId was null left no company filter at
+            // all — i.e. every company's leave records — rather than none.
             const where: any = {
                 user: {
-                    isActive: true
+                    isActive: true,
+                    ...companyScopeWhere(user),
                 }
             };
-
-            if (user.companyId) {
-                where.user.companyId = user.companyId;
-            }
 
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);

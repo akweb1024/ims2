@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth-legacy";
 import { getDownlineUserIds } from "@/lib/hierarchy";
+import { companyScopeWhere } from '@/lib/company-scope';
 
 interface WorkReportAgg {
   hours: number;
@@ -124,7 +125,7 @@ export async function GET(req: NextRequest) {
       const activeSubscribers = await prisma.subscription.count({
         where: {
           status: "ACTIVE",
-          ...(user.role !== "SUPER_ADMIN" ? { companyId: user.companyId } : {}),
+          ...companyScopeWhere(user),
         },
       });
 
@@ -190,7 +191,7 @@ export async function GET(req: NextRequest) {
           prisma.payment.aggregate({
             where: {
               paymentDate: { gte: m.start, lte: m.end },
-              ...(user.role !== 'SUPER_ADMIN' ? { companyId: user.companyId } : {})
+              ...companyScopeWhere(user)
             },
             _sum: { amount: true }
           }),

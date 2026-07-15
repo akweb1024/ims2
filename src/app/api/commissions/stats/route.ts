@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function GET(req: NextRequest) {
     try {
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
         const totalEarned = totalValue * (commissionRate / 100);
 
         const payoutWhere: any = {};
-        if (decoded.companyId) payoutWhere.companyId = decoded.companyId;
+        Object.assign(payoutWhere, companyScopeWhere(decoded));
         if (decoded.role === 'AGENCY') {
             const agencyProfile = await prisma.customerProfile.findUnique({
                 where: { userId: decoded.id }

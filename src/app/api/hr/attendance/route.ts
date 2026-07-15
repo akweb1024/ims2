@@ -8,6 +8,7 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { getISTToday } from '@/lib/date-utils';
 import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 import { reconcileAttendanceLedgerForMonth } from '@/lib/utils/leave-ledger-processor';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     [],
@@ -55,9 +56,7 @@ export const GET = authorizedRoute(
             const targetUserId = searchParams.get('targetUserId');
 
             if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'].includes(user.role)) {
-                if (user.companyId) {
-                    where.companyId = user.companyId;
-                }
+                Object.assign(where, companyScopeWhere(user));
 
                 // Admin/Managers can request data for specific user or their hierarchy
                 if (targetUserId) {

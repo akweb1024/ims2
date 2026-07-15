@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export async function GET(req: NextRequest) {
     try {
@@ -17,13 +18,14 @@ export async function GET(req: NextRequest) {
 
         if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
             where = {};
-            if (user.companyId) {
-                where.companyId = user.companyId;
-            }
+            Object.assign(where, companyScopeWhere(user));
         } else {
+            // `companyId: user?.companyId || undefined` dropped the filter for a
+            // null-company user, exposing every company's published courses. Such a
+            // user now sees only the courses they instruct.
             where = {
                 OR: [
-                    { isPublished: true, companyId: user?.companyId || undefined },
+                    ...(user.companyId ? [{ isPublished: true, companyId: user.companyId }] : []),
                     { instructorId: user.id }
                 ]
             }

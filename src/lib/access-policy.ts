@@ -3,14 +3,10 @@ import { prisma } from '@/lib/prisma';
 import type { TokenPayload } from '@/lib/auth-core';
 import { AuthorizationError, ValidationError } from '@/lib/error-handler';
 
-export const ACCESS_POLICY_MODULES = {
-  ALL_COMPANIES: 'ALL_COMPANIES',
-} as const;
-
-export function canAccessAllCompanies(user: Pick<TokenPayload, 'role' | 'allowedModules'> | null | undefined): boolean {
-  if (!user) return false;
-  return user.role === 'SUPER_ADMIN' || (user.allowedModules || []).includes(ACCESS_POLICY_MODULES.ALL_COMPANIES);
-}
+// Pure predicates live in lib/company-scope (no prisma import, so they stay
+// unit-testable); re-exported here so existing callers keep working.
+export { ACCESS_POLICY_MODULES, canAccessAllCompanies, companyScopeFilter } from '@/lib/company-scope';
+import { ACCESS_POLICY_MODULES, canAccessAllCompanies } from '@/lib/company-scope';
 
 export function normalizeAllowedModulesForWrite(
   actor: Pick<TokenPayload, 'role'>,

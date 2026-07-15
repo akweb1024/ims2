@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { companyScopeWhere } from '@/lib/company-scope';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'],
@@ -15,9 +16,8 @@ export const GET = authorizedRoute(
 
             // To filter by company, we need to join the application -> job -> company
             // Or use the interviewer's company if they are internal
-            if (user.companyId) {
-                where.application = { jobPosting: { companyId: user.companyId } };
-            }
+            // Skipping this when companyId was null left no company filter at all.
+            where.application = { jobPosting: { ...companyScopeWhere(user) } };
 
             const interviews = await prisma.recruitmentInterview.findMany({
                 where,
