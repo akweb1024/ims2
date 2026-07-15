@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCompanyIntegration } from '@/lib/integration-secrets';
 import crypto from 'crypto';
 
 /**
@@ -27,14 +28,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Authenticate Request via configured active keys
-        const integration = await prisma.companyIntegration.findUnique({
-            where: {
-                companyId_provider: {
-                    companyId,
-                    provider: 'PLAGIARISM_SCANNER'
-                }
-            }
-        });
+        const integration = await getCompanyIntegration(companyId, 'PLAGIARISM_SCANNER');
 
         if (!integration || !integration.isActive) {
              console.warn(`[Webhook] Unconfigured Plagiarism Scanner accessed for company ${companyId}`);

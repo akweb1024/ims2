@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import prisma from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { decryptConfigValueSafe } from '@/lib/config-crypto';
+import { getCompanyIntegration, getActiveIntegrationsByProvider } from '@/lib/integration-secrets';
 import { PrismaClient } from '@prisma/client';
 
 type RazorpayIntegrationConfig = {
@@ -30,14 +31,7 @@ export async function getRazorpayCredentials(companyId: string) {
     try {
         const prismaTyped = prisma as PrismaClient;
         // Preferred source: CompanyIntegration provider="RAZORPAY"
-        const razorpayIntegration = await prisma.companyIntegration.findUnique({
-            where: {
-                companyId_provider: {
-                    companyId,
-                    provider: 'RAZORPAY',
-                },
-            },
-        });
+        const razorpayIntegration = await getCompanyIntegration(companyId, 'RAZORPAY');
 
         if (razorpayIntegration?.isActive && razorpayIntegration?.key) {
             const integrationConfig = parseRazorpayIntegrationValue(razorpayIntegration.value);
@@ -122,9 +116,7 @@ export async function getRazorpayInstance(companyId: string): Promise<Razorpay> 
  */
 export async function getRazorpayWebhookSecret(companyId: string | null): Promise<string | null> {
     if (companyId) {
-        const integration = await prisma.companyIntegration.findUnique({
-            where: { companyId_provider: { companyId, provider: 'RAZORPAY' } },
-        });
+        const integration = await getCompanyIntegration(companyId, 'RAZORPAY');
         if (integration?.isActive) {
             const config = parseRazorpayIntegrationValue(integration.value);
             if (config.webhookSecret) return config.webhookSecret;
@@ -142,12 +134,7 @@ export async function getRazorpaySyncAccounts() {
         source: 'integration' | 'appConfiguration' | 'env';
     }> = [];
 
-    const integrations = await prisma.companyIntegration.findMany({
-        where: {
-            provider: 'RAZORPAY',
-            isActive: true,
-        },
-    });
+    const integrations = await getActiveIntegrationsByProvider('RAZORPAY');
 
     for (const integration of integrations) {
         const parsedValue = parseRazorpayIntegrationValue(integration.value);
