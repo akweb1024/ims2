@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import TargetAchievementTable from './TargetAchievementTable';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +13,16 @@ async function getTargetData() {
     // Construct filter for strict type safety
     const whereClause: any = {
         endDate: { gte: new Date(new Date().getFullYear(), 0, 1) }, // Current year goals
-        companyId: user.companyId || undefined,
     };
+
+    // `companyId: user.companyId || undefined` dropped the filter entirely for a
+    // null-company user — Prisma ignores an undefined key rather than matching null —
+    // and HR skips the downline restriction below, so such a user read every
+    // company's employee goals.
+    if (!canAccessAllCompanies(user)) {
+        if (!user.companyId) return [];
+        whereClause.companyId = user.companyId;
+    }
 
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'HR') {
         whereClause.OR = [

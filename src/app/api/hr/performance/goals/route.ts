@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
 // READ-ONLY. Goal/KRA creation & edits are consolidated onto the single canonical
@@ -17,9 +18,16 @@ export const GET = authorizedRoute(
             const type = searchParams.get('type');
             const status = searchParams.get('status');
 
-            const where: any = {
-                companyId: user.companyId || undefined,
-            };
+            const where: any = {};
+
+            // This company filter is the only thing stopping HR/ADMIN — who may pass any
+            // ?employeeId= without a downline check below — from reading another company's
+            // goals. `companyId: user.companyId || undefined` removed it entirely for a
+            // null-company user, since Prisma drops an undefined key rather than matching null.
+            if (!canAccessAllCompanies(user)) {
+                if (!user.companyId) return NextResponse.json([]);
+                where.companyId = user.companyId;
+            }
 
             const selfProfile = await prisma.employeeProfile.findUnique({
                 where: { userId: user.id },

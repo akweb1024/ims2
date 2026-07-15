@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 
 // GET: Fetch insights for the company or a specific employee
 export const GET = authorizedRoute(
@@ -19,9 +20,17 @@ export const GET = authorizedRoute(
             }
 
             if (!employeeId) {
-                // Fetch general insights for the company
+                // Fetch general insights for the company. `companyId: user.companyId ||
+                // undefined` dropped the filter for a null-company user — Prisma ignores an
+                // undefined key rather than matching null — returning every company's insights.
+                const where: any = {};
+                if (!canAccessAllCompanies(user)) {
+                    if (!user.companyId) return NextResponse.json([]);
+                    where.companyId = user.companyId;
+                }
+
                 const insights = await prisma.performanceInsight.findMany({
-                    where: { companyId: user.companyId || undefined },
+                    where,
                     orderBy: { date: 'desc' },
                     take: 20
                 });

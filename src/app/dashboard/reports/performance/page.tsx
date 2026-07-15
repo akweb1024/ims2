@@ -1,25 +1,38 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import PerformanceReportTable from './PerformanceReportTable';
 
 export const dynamic = 'force-dynamic';
 
+// This page had no role check of any kind, so any authenticated account —
+// including CUSTOMER, AGENCY and REVIEWER — could read staff performance scores.
+// Matches the audiences of the sibling reports in this directory.
+const REPORT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'];
+
 async function getPerformanceData() {
     const user = await getAuthenticatedUser();
-    if (!user) return [];
+    if (!user || !REPORT_ROLES.includes(user.role)) redirect('/dashboard');
 
     // Fetch latest monthly snapshots
     const date = new Date();
     const currentMonth = date.getMonth(); // 0-indexed
     const currentYear = date.getFullYear();
 
+    const where: any = { month: currentMonth, year: currentYear };
+
+    // `companyId: user.companyId || undefined` dropped the filter entirely for a
+    // null-company user — Prisma ignores an undefined key rather than matching null —
+    // returning every company's snapshots.
+    if (!canAccessAllCompanies(user)) {
+        if (!user.companyId) return [];
+        where.companyId = user.companyId;
+    }
+
     const snapshots = await prisma.monthlyPerformanceSnapshot.findMany({
-        where: {
-            month: currentMonth,
-            year: currentYear,
-            companyId: user.companyId || undefined
-        },
+        where,
         include: {
             employee: {
                 select: {
