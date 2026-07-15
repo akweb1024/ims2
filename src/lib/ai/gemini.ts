@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getCompanyIntegration } from '@/lib/integration-secrets';
 
 /**
  * Resolves the Gemini key to use for a company: its own CompanyIntegration (configured and
@@ -8,9 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  */
 async function getCompanyGeminiKey(companyId: string | null | undefined): Promise<string | null> {
     if (companyId) {
-        const integration = await prisma.companyIntegration.findUnique({
-            where: { companyId_provider: { companyId, provider: 'GEMINI' } },
-        });
+        const integration = await getCompanyIntegration(companyId, 'GEMINI');
         if (integration?.isActive && integration.key) return integration.key;
     }
     return process.env.GEMINI_API_KEY || null;

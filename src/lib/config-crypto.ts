@@ -63,3 +63,20 @@ export function decryptConfigValueSafe(value: string | null | undefined): string
         return null;
     }
 }
+
+/**
+ * Returns a copy of a row with its secret-bearing `key` column decrypted.
+ *
+ * Lives here rather than beside the database accessor in lib/integration-secrets so
+ * it stays free of the prisma import (which validates env on load) and therefore
+ * unit-testable.
+ *
+ * An undecryptable key collapses to '' rather than staying ciphertext: every reader
+ * already guards with `!integration.key`, so '' means "not configured" and they fall
+ * through to env credentials — the correct outcome. Handing back ciphertext is what
+ * turns a config problem into a provider auth error.
+ */
+export function withDecryptedKey<T extends { key: string }>(row: T | null): T | null {
+    if (!row) return null;
+    return { ...row, key: decryptConfigValueSafe(row.key) ?? '' };
+}
