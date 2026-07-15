@@ -202,13 +202,13 @@ export default function AssignKraPage() {
     };
 
     const removeGoal = async (g: Goal) => {
-        if (typeof window !== 'undefined' && !window.confirm(`"${g.title}" ko hata dein? Employee ke dashboard se ye goal remove ho jaayega.`)) return;
+        if (typeof window !== 'undefined' && !window.confirm(`Remove "${g.title}"? This goal will disappear from the employee's dashboard.`)) return;
         setRowBusy(g.id); setError(null); setSuccess(null);
         try {
             const res = await fetch(`/api/kra/goal?goalId=${encodeURIComponent(g.id)}`, { method: 'DELETE', headers: authHeaders() });
             const body = await res.json();
             if (!res.ok) throw new Error(body.error || 'Delete failed');
-            setSuccess('Goal hata diya gaya.');
+            setSuccess('Goal removed.');
             if (editingId === g.id) cancelEdit();
             loadGoals();
         } catch (e: any) { setError(e.message); }
