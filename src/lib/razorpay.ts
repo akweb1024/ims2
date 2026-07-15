@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import prisma from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { decryptConfigValueSafe } from '@/lib/config-crypto';
 import { PrismaClient } from '@prisma/client';
 
 type RazorpayIntegrationConfig = {
@@ -62,8 +63,11 @@ export async function getRazorpayCredentials(companyId: string) {
             }
         });
 
-        const keyId = configs.find(c => c.key === 'RAZORPAY_KEY_ID')?.value;
-        const keySecret = configs.find(c => c.key === 'RAZORPAY_KEY_SECRET')?.value;
+        // These are written encrypted by /api/settings/configurations, so they must
+        // be decrypted here. Reading .value raw handed the ciphertext to the SDK,
+        // which surfaced as an opaque Razorpay auth error rather than a config problem.
+        const keyId = decryptConfigValueSafe(configs.find(c => c.key === 'RAZORPAY_KEY_ID')?.value);
+        const keySecret = decryptConfigValueSafe(configs.find(c => c.key === 'RAZORPAY_KEY_SECRET')?.value);
 
         // If company-specific credentials exist, use them
         if (keyId && keySecret) {
@@ -72,6 +76,12 @@ export async function getRazorpayCredentials(companyId: string) {
                 key_secret: keySecret,
                 source: 'database' as const
             };
+        }
+
+        // Configured but undecryptable (e.g. rotated CONFIG_ENCRYPTION_KEY) — say so
+        // rather than silently falling through to another company's env credentials.
+        if (configs.length > 0 && (!keyId || !keySecret)) {
+            logger.warn('Razorpay AppConfiguration present but could not be decrypted; falling back', { companyId });
         }
 
         // Fallback to environment variables
