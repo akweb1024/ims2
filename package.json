@@ -23,6 +23,8 @@
     "test:e2e": "playwright test",
     "db:sync:live:dry-run": "tsx scripts/sync-live-readonly-to-staging.ts --dry-run",
     "db:sync:live:apply": "tsx scripts/sync-live-readonly-to-staging.ts --apply",
+    "integrations:encrypt:dry-run": "tsx scripts/backfill-integration-secrets.ts",
+    "integrations:encrypt:apply": "tsx scripts/backfill-integration-secrets.ts --apply",
     "docker:build": "docker build -t stm-customer:latest .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
