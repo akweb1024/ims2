@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getCompanyIntegration } from '@/lib/integration-secrets';
 import { getSessionUser } from '@/lib/session';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildAIPrompt, BASE_APP_PROMPT } from '@/lib/ai/basePrompt';
@@ -25,14 +25,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Fetch the Gemini API Key strictly securely via integration Gateway
-        const aiIntegration = await prisma.companyIntegration.findUnique({
-            where: {
-                companyId_provider: {
-                    companyId: companyId,
-                    provider: 'GEMINI'
-                }
-            }
-        });
+        const aiIntegration = await getCompanyIntegration(companyId, 'GEMINI');
 
         if (!aiIntegration || !aiIntegration.isActive || !aiIntegration.key) {
             return NextResponse.json(

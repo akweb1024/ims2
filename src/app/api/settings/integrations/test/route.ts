@@ -5,22 +5,15 @@ import { SESv2Client, GetAccountCommand } from '@aws-sdk/client-sesv2';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getWhatsAppReportRecipients, sendWhatsApp } from '@/lib/whatsapp';
 import { resolveTargetCompanyId } from '@/lib/integrations';
+import { getCompanyIntegration } from '@/lib/integration-secrets';
 import Razorpay from 'razorpay';
 
 function createUnauthorized() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
-async function getCompanyIntegration(companyId: string, provider: string) {
-    return prisma.companyIntegration.findUnique({
-        where: {
-            companyId_provider: {
-                companyId,
-                provider: provider.toUpperCase()
-            }
-        }
-    });
-}
+// getCompanyIntegration now comes from lib/integration-secrets, which decrypts the
+// provider secret in `key`. The local copy read it raw.
 
 async function testTwilioConnection(companyId: string) {
     const integration = await getCompanyIntegration(companyId, 'WHATSAPP_TWILIO');
