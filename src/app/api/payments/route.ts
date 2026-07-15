@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { assertCompanyAccess } from '@/lib/access-policy';
+import { handleApiError } from '@/lib/error-handler';
 
 export async function GET(req: Request) {
     try {
@@ -9,10 +11,17 @@ export async function GET(req: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { searchParams } = new URL(req.url);
-        const companyId = searchParams.get('companyId');
+        const requestedCompanyId = searchParams.get('companyId');
+
+        // A caller-supplied company must be authorized before it reaches the filter.
+        // Note the role check below only runs when no company resolves, so it is
+        // not a backstop for this path.
+        if (requestedCompanyId) {
+            await assertCompanyAccess(user, requestedCompanyId, 'view payments for this company');
+        }
 
         const filter: any = {};
-        const targetCompanyId = companyId || user.companyId;
+        const targetCompanyId = requestedCompanyId || user.companyId;
         if (targetCompanyId) {
             filter.companyId = targetCompanyId;
         } else if (!['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(user.role)) {
@@ -46,9 +55,8 @@ export async function GET(req: Request) {
             payments,
             history
         });
-    } catch (error: any) {
-        console.error('Payments API Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return handleApiError(error, '/api/payments');
     }
 }
 
