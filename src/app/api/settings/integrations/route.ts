@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { logger } from '@/lib/logger';
+import { encryptConfigValue } from '@/lib/config-crypto';
 import { SUPPORTED_INTEGRATION_PROVIDER_IDS, resolveTargetCompanyId } from '@/lib/integrations';
 
 export async function GET(req: NextRequest) {
@@ -101,7 +103,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unsupported provider' }, { status: 400 });
         }
 
-        // Upsert the integration key securely
+        // Encrypt the provider secret at rest — this is what the "Save & Encrypt"
+        // button has always claimed. Readers decrypt via lib/integration-secrets.
+        // Empty stays empty: '' means "no secret", and encrypting it would produce
+        // ciphertext that readers would decrypt back to '' anyway, only slower.
+        let encryptedKey: string | undefined;
+        if (key) {
+            try {
+                encryptedKey = encryptConfigValue(String(key));
+            } catch (error) {
+                // encryptConfigValue throws when CONFIG_ENCRYPTION_KEY is unset. Refuse
+                // the write rather than silently storing the secret in plaintext.
+                logger.error('Cannot encrypt integration secret', error as Error, { provider: normalizedProvider });
+                return NextResponse.json(
+                    { error: 'Server is not configured to store secrets securely. Set CONFIG_ENCRYPTION_KEY.' },
+                    { status: 500 }
+                );
+            }
+        }
+
         const integration = await prisma.companyIntegration.upsert({
             where: {
                 companyId_provider: {
@@ -110,14 +130,14 @@ export async function POST(req: NextRequest) {
                 }
             },
             update: {
-                ...(key ? { key } : {}), // only update key if strictly provided 
+                ...(encryptedKey ? { key: encryptedKey } : {}), // only update key if strictly provided
                 value,
                 isActive: isActive ?? true
             },
             create: {
                 companyId,
                 provider: normalizedProvider,
-                key: key || '',
+                key: encryptedKey || '',
                 value,
                 isActive: isActive ?? true
             }
