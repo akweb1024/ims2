@@ -1,21 +1,33 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { Download } from 'lucide-react';
 import RevenueReportTable from './RevenueReportTable';
 
 export const dynamic = 'force-dynamic';
 
+// Mirrors the "Revenue Analysis" nav entry in src/config/navigation.ts, which
+// was until now the only thing keeping non-finance roles off this page.
+const REPORT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'];
+
 async function getRevenueData() {
     const user = await getAuthenticatedUser();
-    if (!user) return { monthly: [], yearly: [] };
+    if (!user || !REPORT_ROLES.includes(user.role)) redirect('/dashboard');
 
-    // Fetch all confirmed financial records
+    // Prisma drops an `undefined` filter key rather than matching null, so the
+    // previous `companyId: user.companyId || undefined` returned every company's
+    // records to any user whose companyId was null. Only users cleared for all
+    // companies may see the group-wide roll-up.
+    const where: any = { status: 'COMPLETED' };
+    if (!canAccessAllCompanies(user)) {
+        if (!user.companyId) return { monthly: [], yearly: [] };
+        where.companyId = user.companyId;
+    }
+
     const records = await prisma.financialRecord.findMany({
-        where: {
-            status: 'COMPLETED',
-            companyId: user.companyId || undefined
-        },
+        where,
         select: {
             amount: true,
             date: true,
