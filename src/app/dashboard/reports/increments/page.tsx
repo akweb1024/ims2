@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { canAccessAllCompanies } from '@/lib/access-policy';
 import { Download, Search, TrendingUp } from 'lucide-react';
 import IncrementReportTable from './IncrementReportTable';
 
@@ -14,6 +15,14 @@ async function getIncrementData() {
     const whereClause: any = {
         isActive: true,
     };
+
+    // There was no company filter at all, and HR skips the downline restriction
+    // below — so an HR user read every company's employees and salary structures.
+    // Only users cleared for all companies see across the group.
+    if (!canAccessAllCompanies(user)) {
+        if (!user.companyId) return [];
+        whereClause.companyId = user.companyId;
+    }
 
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'HR') {
         whereClause.OR = [
