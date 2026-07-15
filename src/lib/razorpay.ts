@@ -182,14 +182,29 @@ export async function getRazorpaySyncAccounts() {
         });
         if (!secretConfig) continue;
 
+        // Stored encrypted by /api/settings/configurations — decrypt before use,
+        // same as getRazorpayCredentials above.
+        const configKeyId = decryptConfigValueSafe(config.value);
+        const configKeySecret = decryptConfigValueSafe(secretConfig.value);
+        if (!configKeyId || !configKeySecret) {
+            logger.warn('Skipping Razorpay AppConfiguration account: value could not be decrypted', {
+                companyId: config.companyId,
+                key: config.key,
+            });
+            continue;
+        }
+
+        // Compare decrypted ids: integration key_ids above are plaintext, so
+        // matching them against the raw stored value never deduplicated and a
+        // company configured both ways was synced twice.
         const alreadyExists = accountsToSync.some(
-            (account) => account.companyId === config.companyId && account.key_id === config.value,
+            (account) => account.companyId === config.companyId && account.key_id === configKeyId,
         );
         if (alreadyExists) continue;
 
         accountsToSync.push({
-            key_id: config.value,
-            key_secret: secretConfig.value,
+            key_id: configKeyId,
+            key_secret: configKeySecret,
             companyId: config.companyId,
             alias: config.key,
             source: 'appConfiguration',
@@ -248,7 +263,8 @@ export async function getCompanyConfig(companyId: string, category: string, key:
             }
         });
 
-        return config?.value || null;
+        // AppConfiguration values are encrypted at rest by /api/settings/configurations.
+        return decryptConfigValueSafe(config?.value);
     } catch (error) {
         logger.error(`Error fetching config ${category}:${key}`, error as Error);
         return null;
@@ -269,8 +285,11 @@ export async function getCompanyConfigs(companyId: string, category: string, key
             }
         });
 
+        // AppConfiguration values are encrypted at rest by /api/settings/configurations.
+        // Undecryptable entries are omitted rather than returned as ciphertext.
         return configs.reduce((acc, config) => {
-            acc[config.key] = config.value;
+            const value = decryptConfigValueSafe(config.value);
+            if (value !== null) acc[config.key] = value;
             return acc;
         }, {} as Record<string, string>);
     } catch (error) {
