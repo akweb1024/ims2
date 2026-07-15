@@ -1,5 +1,7 @@
-import { prisma } from './prisma';
 import { logger } from './logger';
+// Reads CompanyIntegration with the provider secret in `key` decrypted; the local
+// helper this replaced read it raw.
+import { getCompanyIntegration } from '@/lib/integration-secrets';
 interface WhatsAppMessage {
     to: string;
     message: string;
@@ -49,17 +51,6 @@ function parseRecipientList(input: unknown): string[] {
 
 function dedupeRecipients(recipients: string[]) {
     return Array.from(new Set(recipients.map((item) => item.trim()).filter(Boolean)));
-}
-
-async function getCompanyIntegration(companyId: string, provider: string) {
-    return prisma.companyIntegration.findUnique({
-        where: {
-            companyId_provider: {
-                companyId,
-                provider
-            }
-        }
-    }).catch(() => null);
 }
 
 async function resolveWhatsAppProviderConfig(companyId?: string | null): Promise<WhatsAppProviderConfig> {
