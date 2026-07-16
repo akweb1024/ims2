@@ -3,8 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
+// Authoring roles only: the listing includes correctAnswer on every question.
+// Learners take quizzes via /api/quizzes/[qid], which strips answers.
 export const GET = authorizedRoute(
-    [],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
             const { lid } = await params;
