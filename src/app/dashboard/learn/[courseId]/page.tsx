@@ -19,8 +19,6 @@ export default function CoursePlayerPage() {
     const [userRole, setUserRole] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [videoProgress, setVideoProgress] = useState(0);
-    const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
-    const [quizResult, setQuizResult] = useState<any>(null);
 
     const fetchCourseData = useCallback(async () => {
         try {
@@ -140,28 +138,6 @@ export default function CoursePlayerPage() {
             });
         } catch (error) {
             console.error(error);
-        }
-    };
-
-    const handleQuizSubmit = () => {
-        if (!currentLesson?.quizzes?.[0]?.questions) return;
-
-        const questions = currentLesson.quizzes[0].questions;
-        let correct = 0;
-
-        questions.forEach((q: any) => {
-            if (quizAnswers[q.id] === q.correctAnswer) {
-                correct++;
-            }
-        });
-
-        const score = Math.round((correct / questions.length) * 100);
-        const passed = score >= (currentLesson.quizzes[0].passingScore || 70);
-
-        setQuizResult({ passed, score });
-
-        if (passed) {
-            markLessonComplete();
         }
     };
 
@@ -357,56 +333,25 @@ export default function CoursePlayerPage() {
                                     </div>
                                 )}
 
-                                {/* Quiz Interface */}
+                                {/* Quiz lessons run in the dedicated player, which grades
+                                    server-side and records the attempt. */}
                                 {currentLesson.type === 'QUIZ' && currentLesson.quizzes && currentLesson.quizzes.length > 0 && (
-                                    <div className="mb-6 space-y-6">
-                                        {currentLesson.quizzes[0].questions?.map((q: any, idx: number) => {
-                                            const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-                                            return (
-                                                <div key={q.id} className="card-premium p-6 border border-secondary-200">
-                                                    <p className="font-bold text-lg mb-4 text-secondary-900">{idx + 1}. {q.question}</p>
-                                                    <div className="space-y-2">
-                                                        {Array.isArray(options) && options.map((opt: string, optIdx: number) => (
-                                                            <label key={optIdx} className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary-50 cursor-pointer border border-transparent hover:border-secondary-200">
-                                                                <input
-                                                                    type="radio"
-                                                                    name={q.id}
-                                                                    value={opt}
-                                                                    checked={quizAnswers[q.id] === opt}
-                                                                    onChange={(e) => {
-                                                                        const newAnswers = { ...quizAnswers, [q.id]: e.target.value };
-                                                                        setQuizAnswers(newAnswers);
-                                                                    }}
-                                                                    className="w-5 h-5 accent-primary-600"
-                                                                    disabled={!!quizResult}
-                                                                />
-                                                                <span className="text-secondary-700">{opt}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {!quizResult && (
-                                            <button
-                                                onClick={handleQuizSubmit}
-                                                className="btn btn-primary w-full py-3 text-lg"
-                                                disabled={!currentLesson.quizzes[0].questions?.every((q: any) => quizAnswers[q.id])}
-                                            >
-                                                Submit Answers
-                                            </button>
-                                        )}
-                                        {quizResult && (
-                                            <div className={`p-4 rounded-xl text-center font-bold text-lg border ${quizResult.passed ? 'bg-success-50 text-success-700 border-success-200' : 'bg-red-50 text-red-700 border-red-200'
-                                                }`}>
-                                                Non-Graded Quiz (Practice) - {quizResult.score}%
-                                                {quizResult.passed ? ' 🎉 Passed!' : ' ❌ Study more and try again.'}
-                                                {!quizResult.passed && (
-                                                    <button onClick={() => setQuizResult(null)} className="btn btn-sm btn-outline-danger mt-2 block mx-auto">Try Again</button>
-                                                )}
-                                            </div>
-                                        )}
+                                    <div className="mb-6 card-premium p-8 border border-secondary-200 text-center">
+                                        <Award size={48} className="mx-auto text-primary-600 mb-4" />
+                                        <h3 className="text-xl font-bold text-secondary-900 mb-1">
+                                            {currentLesson.quizzes[0].title || 'Lesson Quiz'}
+                                        </h3>
+                                        <p className="text-sm text-secondary-500 mb-6">
+                                            {currentLesson.quizzes[0]._count?.questions ?? ''} questions
+                                            {currentLesson.quizzes[0].passingScore ? ` • ${currentLesson.quizzes[0].passingScore}% to pass` : ''}
+                                            {' '}• passing marks this lesson complete
+                                        </p>
+                                        <button
+                                            onClick={() => router.push(`/dashboard/quizzes/${currentLesson.quizzes[0].id}`)}
+                                            className="btn btn-primary px-8 py-3 text-lg"
+                                        >
+                                            Take Quiz
+                                        </button>
                                     </div>
                                 )}
 

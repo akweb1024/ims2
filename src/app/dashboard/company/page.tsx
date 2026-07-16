@@ -260,6 +260,12 @@ export default function CompanyPage() {
       setActiveTab("DETAILS");
     } else if (tabParam === "brands") {
       setActiveTab("BRANDS");
+    } else if (tabParam === "payments") {
+      setActiveTab("PAYMENTS");
+    } else {
+      // Bare /dashboard/company (or an unknown tab) must not keep showing a
+      // previously selected tab.
+      setActiveTab("OVERVIEW");
     }
 
     fetchData();

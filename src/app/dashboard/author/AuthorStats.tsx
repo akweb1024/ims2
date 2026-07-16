@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 import { getAuthorManuscripts } from './actions';
@@ -89,9 +90,10 @@ export default async function AuthorStats() {
                 ) : (
                     <div className="divide-y divide-secondary-100">
                         {manuscripts.map((manuscript: any) => (
-                            <div
+                            <Link
                                 key={manuscript.id}
-                                className="p-6 hover:bg-secondary-50/50 transition-colors"
+                                href={`/dashboard/author/manuscripts/${manuscript.id}`}
+                                className="block p-6 hover:bg-secondary-50/50 transition-colors"
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1">
@@ -136,7 +138,7 @@ export default async function AuthorStats() {
                                         )}
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 )}

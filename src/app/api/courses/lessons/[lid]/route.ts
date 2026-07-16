@@ -20,9 +20,15 @@ export const GET = authorizedRoute(
                     progress: {
                         where: { userId: user.id }
                     },
+                    // Questions (and their correctAnswer) must never reach the
+                    // learner here — the quiz player fetches them from
+                    // /api/quizzes/[qid], which strips answers and grades server-side.
                     quizzes: {
-                        include: {
-                            questions: true,
+                        select: {
+                            id: true,
+                            title: true,
+                            passingScore: true,
+                            maxAttempts: true,
                             _count: {
                                 select: { questions: true }
                             }
