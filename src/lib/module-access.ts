@@ -1,12 +1,17 @@
 import { TokenPayload } from '@/lib/auth-core';
 
+// This table gates APIs (via middleware-auth) and is authoritative for that
+// purpose. src/config/navigation.ts gates sidebar rendering and derives module
+// visibility from per-item roles. The two are NOT expected to match: API
+// authorization stays explicit and deny-by-default, never derived from what
+// the sidebar happens to show.
 const DEFAULT_MODULES_BY_ROLE: Record<string, string[]> = {
     SUPER_ADMIN: ['*'],
-    ADMIN: ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY', 'STAFF_MANAGEMENT'],
+    ADMIN: ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY'],
     MANAGER: ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'PUBLICATION', 'IT', 'QUALITY'],
     TEAM_LEADER: ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'IT', 'QUALITY'],
     FINANCE_ADMIN: ['CORE', 'FINANCE', 'QUALITY', 'HR'],
-    HR_MANAGER: ['CORE', 'HR', 'STAFF_MANAGEMENT', 'LMS', 'QUALITY'],
+    HR_MANAGER: ['CORE', 'HR', 'LMS', 'QUALITY'],
     EXECUTIVE: ['CORE', 'CRM', 'PUBLICATION', 'QUALITY', 'LOGISTIC'],
     EMPLOYEE: ['CORE', 'IT'],
     IT_MANAGER: ['CORE', 'IT', 'QUALITY'],
