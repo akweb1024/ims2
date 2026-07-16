@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { PROJECT_VIEWER_ROLES, PROJECT_EDITOR_ROLES } from '@/lib/projects-access';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'],
+    PROJECT_VIEWER_ROLES,
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
@@ -12,16 +13,19 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const status = searchParams.get('status');
             const priority = searchParams.get('priority');
+            const mine = searchParams.get('mine') === 'true';
 
             const where: any = { companyId: user.companyId };
             if (status) where.status = status;
             if (priority) where.priority = priority;
 
-            // Access Control: Regular users only see projects they are members of
-            if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
-                where.members = {
-                    some: { userId: user.id }
-                };
+            // Company Projects is a read-open board: every employee can see what their
+            // company is working on. It previously narrowed non-admins to projects they
+            // were a member of, which — combined with the create form never sending
+            // memberIds — meant a UI-created project was visible to nobody but its
+            // creator's role. Writes stay restricted (see PROJECT_EDITOR_ROLES below).
+            if (mine) {
+                where.members = { some: { userId: user.id } };
             }
 
             const projects = await prisma.project.findMany({
@@ -49,7 +53,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    PROJECT_EDITOR_ROLES,
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
