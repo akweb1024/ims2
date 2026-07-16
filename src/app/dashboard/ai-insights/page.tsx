@@ -41,10 +41,19 @@ export default function AIPredictionPage() {
     const tabs = [
         { id: 'sales', name: 'Sales Pipeline', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
         { id: 'hr', name: 'Workforce Pulse', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_ADMIN'] },
-        { id: 'executive', name: 'Executive Summary', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+        { id: 'executive', name: 'Executive Summary', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'EXECUTIVE'] },
     ];
 
     const allowedTabs = tabs.filter(t => t.roles.includes(userRole));
+
+    // Roles whose only tab isn't the default (e.g. FINANCE_ADMIN → executive)
+    // must land on a tab they're actually allowed to see.
+    useEffect(() => {
+        if (allowedTabs.length > 0 && !allowedTabs.some(t => t.id === selectedTab)) {
+            setSelectedTab(allowedTabs[0].id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userRole]);
 
     if (loading && !data) {
         return (
@@ -142,9 +151,45 @@ export default function AIPredictionPage() {
                                         <p className="text-4xl font-black text-indigo-600">{data?.metrics?.market?.activeClients}</p>
                                         <span className="text-xs font-bold text-secondary-500">Active subscriptions</span>
                                     </div>
+                                    <div className="card-premium">
+                                        <h3 className="text-xs font-black text-secondary-400 uppercase tracking-widest mb-2">LMS Performance</h3>
+                                        <p className="text-4xl font-black text-secondary-900">{data?.metrics?.lms?.avgProgress}%</p>
+                                        <span className="text-xs font-bold text-secondary-500">Avg. course progress</span>
+                                    </div>
                                 </>
                             )}
                         </div>
+
+                        {/* Revenue trend (executive only) */}
+                        {selectedTab === 'executive' && data?.growthTrend?.length > 0 && (
+                            <div className="card-premium">
+                                <h3 className="text-sm font-black text-secondary-400 uppercase tracking-widest mb-6">Revenue Growth</h3>
+                                <div className="h-64 flex items-end justify-between px-4 pb-4 border-b border-secondary-200 mb-10 gap-2">
+                                    {data.growthTrend.map((point: any, i: number) => {
+                                        const maxRevenue = Math.max(...data.growthTrend.map((t: any) => t.revenue), 100);
+                                        const height = (point.revenue / maxRevenue) * 100;
+                                        return (
+                                            <div key={i} className="w-full bg-secondary-100 hover:bg-primary-500 transition-all duration-500 rounded-t-lg relative group" style={{ height: `${Math.max(height, 5)}%` }}>
+                                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-secondary-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                                    ₹{point.revenue.toLocaleString()}
+                                                </div>
+                                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-secondary-400 uppercase">
+                                                    {point.month}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="p-4 bg-primary-50 rounded-xl">
+                                    <p className="text-primary-900 font-bold text-sm mb-1">AI Insight</p>
+                                    <p className="text-primary-700 text-xs leading-relaxed">
+                                        {Number(data?.metrics?.revenue?.growth) >= 0
+                                            ? `Revenue is trending up by ${data?.metrics?.revenue?.growth}% this month. Scaling operations recommended.`
+                                            : `Revenue has dipped by ${Math.abs(Number(data?.metrics?.revenue?.growth))}%. Review client retention strategies.`}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Top Performers (HR only) */}
                         {selectedTab === 'hr' && data?.topPerformers && (

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const user = await getAuthenticatedUser();
     if (
       !user ||
-      !["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "HR_ADMIN"].includes(
+      !["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "FINANCE_ADMIN", "HR_ADMIN"].includes(
         user.role,
       )
     ) {
@@ -647,7 +647,7 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser();
     if (
       !user ||
-      !["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "HR_ADMIN"].includes(
+      !["SUPER_ADMIN", "ADMIN", "MANAGER", "EXECUTIVE", "FINANCE_ADMIN", "HR_ADMIN"].includes(
         user.role,
       )
     ) {
