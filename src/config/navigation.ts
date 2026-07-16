@@ -103,6 +103,11 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My HR Portal', href: '/dashboard/staff-portal', icon: Building2, roles: ['*'] },
                     { name: 'Think Tank', href: '/dashboard/think-tank', icon: Lightbulb, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN'] },
                     { name: 'Problems', href: '/dashboard/problems', icon: AlertTriangle, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'EDITOR', 'EDITOR_IN_CHIEF', 'JOURNAL_MANAGER'] },
+                    // Every internal role, so any employee can find the company's projects.
+                    // Excludes external accounts (CUSTOMER/AGENCY/REVIEWER), who must not see
+                    // internal work. Lives in CORE because that is the only module EMPLOYEE
+                    // is granted (see defaultModulesByRole).
+                    { name: 'Company Projects', href: '/dashboard/projects', icon: Folder, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'EDITOR', 'EDITOR_IN_CHIEF', 'JOURNAL_MANAGER'] },
                     { name: 'Direct Chat', href: '/dashboard/chat', icon: MessageSquare, roles: ['*'] },
                     { name: 'File Manager', href: '/dashboard/files', icon: Folders, roles: ['*'] },
                     { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: BookOpen, roles: ['*'] },

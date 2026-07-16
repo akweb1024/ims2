@@ -17,6 +17,20 @@ const fetchJson = async (url: string, method: string = 'GET', body?: any) => {
     return res.json();
 };
 
+/**
+ * People who can be added to a project. Reuses the KRA assignee endpoint rather than a
+ * new one — it already returns company-scoped { userId, name, departmentName }, and every
+ * role allowed to create a project is inside its MANAGERIAL_ROLES gate.
+ */
+export const useProjectAssignees = (enabled: boolean) =>
+    useQuery({
+        queryKey: ['project-assignees'],
+        queryFn: () => fetchJson('/api/kra/assignees'),
+        enabled,
+        staleTime: 5 * 60 * 1000,
+        select: (data: any) => (data?.assignees ?? []) as Array<{ userId: string; name: string; departmentName: string | null }>,
+    });
+
 export const useProjects = (filters?: any) => {
     const params = new URLSearchParams(filters).toString();
     return useQuery<any[]>({

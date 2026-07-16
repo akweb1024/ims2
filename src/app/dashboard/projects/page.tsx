@@ -1,26 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { useProjects, useProjectMutations } from '@/hooks/useProjects';
+import { useProjects, useProjectMutations, useProjectAssignees } from '@/hooks/useProjects';
 import { Plus, Folder, Calendar, Users, AlertCircle, ArrowRight, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+
+const EMPTY_PROJECT = { title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED', memberIds: [] as string[] };
 
 export default function ProjectsPage() {
     const { data: projects = [], isLoading } = useProjects();
     const { createProject } = useProjectMutations();
     const [isCreating, setIsCreating] = useState(false);
-    const [newProject, setNewProject] = useState({ title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED' });
+    const [newProject, setNewProject] = useState(EMPTY_PROJECT);
+    // Only fetched once the form is open — no reason to load the directory otherwise.
+    const { data: assignees = [] } = useProjectAssignees(isCreating);
+
+    const toggleMember = (userId: string) =>
+        setNewProject((p) => ({
+            ...p,
+            memberIds: p.memberIds.includes(userId) ? p.memberIds.filter((m) => m !== userId) : [...p.memberIds, userId],
+        }));
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await createProject.mutateAsync(newProject);
             setIsCreating(false);
-            setNewProject({ title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED' });
+            setNewProject(EMPTY_PROJECT);
             toast.success('Project created successfully');
-        } catch (error) {
-            toast.error('Failed to create project');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to create project');
         }
     };
 
@@ -195,6 +205,35 @@ export default function ProjectsPage() {
                                         </select>
                                     </div>
                                 </div>
+                                {/* POST /api/projects has always accepted memberIds; the form
+                                    never sent them, so every project created here started with
+                                    an empty team. */}
+                                <div>
+                                    <label className="block text-xs font-bold text-secondary-600 uppercase mb-1">
+                                        Team Members {newProject.memberIds.length > 0 && `(${newProject.memberIds.length} selected)`}
+                                    </label>
+                                    {assignees.length === 0 ? (
+                                        <p className="text-xs text-secondary-400 italic py-2">Loading people…</p>
+                                    ) : (
+                                        <div className="max-h-40 overflow-y-auto rounded-lg border border-secondary-200 divide-y divide-secondary-100">
+                                            {assignees.map((a) => (
+                                                <label key={a.userId} className="flex items-center gap-3 px-3 py-2 hover:bg-secondary-50 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={newProject.memberIds.includes(a.userId)}
+                                                        onChange={() => toggleMember(a.userId)}
+                                                        className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                                                    />
+                                                    <span className="text-sm font-medium text-secondary-800">{a.name}</span>
+                                                    {a.departmentName && (
+                                                        <span className="text-[10px] text-secondary-400 uppercase font-bold ml-auto">{a.departmentName}</span>
+                                                    )}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="pt-4 flex gap-3">
                                     <button
                                         type="button"
