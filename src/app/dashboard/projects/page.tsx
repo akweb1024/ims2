@@ -1,20 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useProjects, useProjectMutations, useProjectAssignees } from '@/hooks/useProjects';
-import { Plus, Folder, Calendar, Users, AlertCircle, ArrowRight, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Folder, Calendar, Users, AlertCircle, ArrowRight, CheckCircle, Clock, Search, Building2, X } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
 const EMPTY_PROJECT = { title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED', memberIds: [] as string[] };
 
+const STATUS_OPTIONS = ['PLANNED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'];
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
 export default function ProjectsPage() {
-    const { data: projects = [], isLoading } = useProjects();
+    const [filters, setFilters] = useState({ q: '', status: '', priority: '', companyId: '', mine: false });
+
+    // The API takes every one of these; until now the page called useProjects() with no
+    // arguments, so none of them were reachable from the UI.
+    const query = useMemo(() => {
+        const q: Record<string, string> = {};
+        if (filters.q.trim()) q.q = filters.q.trim();
+        if (filters.status) q.status = filters.status;
+        if (filters.priority) q.priority = filters.priority;
+        if (filters.companyId) q.companyId = filters.companyId;
+        if (filters.mine) q.mine = 'true';
+        return q;
+    }, [filters]);
+
+    const { data: projects = [], isLoading } = useProjects(query);
     const { createProject } = useProjectMutations();
     const [isCreating, setIsCreating] = useState(false);
     const [newProject, setNewProject] = useState(EMPTY_PROJECT);
     // Only fetched once the form is open — no reason to load the directory otherwise.
     const { data: assignees = [] } = useProjectAssignees(isCreating);
+
+    // Company options come from the board itself — every internal user can see the
+    // projects but not necessarily list companies, so there is no directory to call.
+    const companyOptions = useMemo(() => {
+        const seen = new Map<string, string>();
+        for (const p of projects as any[]) if (p.company?.id) seen.set(p.company.id, p.company.name);
+        return [...seen.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    }, [projects]);
+
+    const activeFilterCount = Object.keys(query).length;
 
     const toggleMember = (userId: string) =>
         setNewProject((p) => ({
@@ -60,6 +87,68 @@ export default function ProjectsPage() {
                 </button>
             </div>
 
+            <div className="card-premium p-4 flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+                    <input
+                        value={filters.q}
+                        onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                        placeholder="Search title or description…"
+                        aria-label="Search projects"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-sm"
+                    />
+                </div>
+
+                <select aria-label="Filter by status" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="px-3 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-sm font-medium">
+                    <option value="">All statuses</option>
+                    {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                </select>
+
+                <select aria-label="Filter by priority" value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })} className="px-3 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-sm font-medium">
+                    <option value="">All priorities</option>
+                    {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+
+                {companyOptions.length > 1 && (
+                    <select aria-label="Filter by company" value={filters.companyId} onChange={(e) => setFilters({ ...filters, companyId: e.target.value })} className="px-3 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-sm font-medium">
+                        <option value="">All companies</option>
+                        {companyOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => setFilters({ ...filters, mine: !filters.mine })}
+                    aria-pressed={filters.mine}
+                    className={`px-3 py-2 rounded-lg border text-sm font-bold transition-all ${filters.mine ? 'bg-primary-600 text-white border-primary-600' : 'border-secondary-200 text-secondary-600 hover:bg-secondary-50'}`}
+                >
+                    Only mine
+                </button>
+
+                {activeFilterCount > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => setFilters({ q: '', status: '', priority: '', companyId: '', mine: false })}
+                        className="px-3 py-2 rounded-lg text-sm font-bold text-secondary-500 hover:text-secondary-800 flex items-center gap-1"
+                    >
+                        <X size={14} /> Clear
+                    </button>
+                )}
+
+                <span className="text-xs font-bold text-secondary-400 ml-auto">
+                    {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+                </span>
+            </div>
+
+            {projects.length === 0 && (
+                <div className="card-premium p-12 text-center text-secondary-400">
+                    <Folder size={40} className="mx-auto mb-3 opacity-40" />
+                    <p className="font-bold text-secondary-600">
+                        {activeFilterCount > 0 ? 'No projects match these filters.' : 'No projects yet.'}
+                    </p>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map((project: any) => (
                     <Link href={`/dashboard/projects/${project.id}`} key={project.id} className="group">
@@ -98,14 +187,30 @@ export default function ProjectsPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Users size={14} className="text-secondary-400" />
-                                    <div>
+                                    <div className="min-w-0">
                                         <p className="text-[10px] font-bold text-secondary-400 uppercase">Team</p>
-                                        <p className="text-xs font-bold text-secondary-700">
-                                            {project.members?.length || 0} Members
+                                        {/* Names, not just a count — you could not tell who was on a
+                                            project without opening it. User.name is nullable, so fall
+                                            back to email. */}
+                                        <p className="text-xs font-bold text-secondary-700 truncate">
+                                            {project.members?.length
+                                                ? project.members
+                                                    .slice(0, 2)
+                                                    .map((m: any) => m.user?.name || m.user?.email || 'Unknown')
+                                                    .join(', ') + (project.members.length > 2 ? ` +${project.members.length - 2}` : '')
+                                                : 'No members yet'}
                                         </p>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* The board spans every company now, so say which one owns this. */}
+                            {project.company?.name && (
+                                <div className="pl-3 mb-4 flex items-center gap-1.5 text-[10px] font-black text-secondary-400 uppercase tracking-wider">
+                                    <Building2 size={12} />
+                                    {project.company.name}
+                                </div>
+                            )}
 
                             <div className="pl-3 pt-4 border-t border-secondary-50 flex justify-between items-center">
                                 <div className="flex -space-x-2">

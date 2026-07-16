@@ -31,6 +31,33 @@ export const useProjectAssignees = (enabled: boolean) =>
         select: (data: any) => (data?.assignees ?? []) as Array<{ userId: string; name: string; departmentName: string | null }>,
     });
 
+/** Review thread on a project, newest first, replies nested. */
+export const useProjectComments = (projectId: string) =>
+    useQuery({
+        queryKey: ['project-comments', projectId],
+        queryFn: () => fetchJson(`/api/projects/${projectId}/comments`),
+        enabled: !!projectId,
+    });
+
+export const useProjectCommentMutations = (projectId: string) => {
+    const qc = useQueryClient();
+    const invalidate = () => qc.invalidateQueries({ queryKey: ['project-comments', projectId] });
+
+    const addComment = useMutation({
+        mutationFn: (data: { content: string; parentId?: string }) =>
+            fetchJson(`/api/projects/${projectId}/comments`, 'POST', data),
+        onSuccess: invalidate,
+    });
+
+    const setCommentStatus = useMutation({
+        mutationFn: (data: { commentId: string; status: 'OPEN' | 'RESOLVED'; resolutionNote?: string }) =>
+            fetchJson(`/api/projects/${projectId}/comments`, 'PATCH', data),
+        onSuccess: invalidate,
+    });
+
+    return { addComment, setCommentStatus };
+};
+
 export const useProjects = (filters?: any) => {
     const params = new URLSearchParams(filters).toString();
     return useQuery<any[]>({
