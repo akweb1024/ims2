@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import FormattedDate from '@/components/common/FormattedDate';
+import CRMClientLayout from '../CRMClientLayout';
 import {
     CRMPageShell,
     CRMSearchInput,
@@ -182,7 +183,7 @@ export default function InvoicesPage() {
     };
 
     return (
-        <>
+        <CRMClientLayout>
             <CRMPageShell
                 title="Billing & Invoices"
                 subtitle="High-level financial overview and transaction lifecycle management."
@@ -384,6 +385,6 @@ export default function InvoicesPage() {
                 </div>
             </CRMPageShell>
 
-        </>
+        </CRMClientLayout>
     );
 }
