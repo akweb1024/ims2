@@ -5,8 +5,20 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { PROJECT_VIEWER_ROLES, PROJECT_EDITOR_ROLES } from '@/lib/projects-access';
 import { canAccessAllCompanies } from '@/lib/company-scope';
 
+type Actor = { role: string; companyId?: string | null; allowedModules?: string[] };
+
 /**
- * Confirms the project exists and belongs to the caller's company.
+ * Reading a project is group-wide; changing one is not. A project belongs to the company
+ * that owns it, so only that company's editors (or a group-wide admin) may change it.
+ */
+function mayEditProject(project: { companyId: string }, user: Actor) {
+    if (!PROJECT_EDITOR_ROLES.includes(user.role)) return false;
+    if (canAccessAllCompanies(user as any)) return true;
+    return !!user.companyId && project.companyId === user.companyId;
+}
+
+/**
+ * Confirms the project exists and the caller may change it.
  *
  * PUT and DELETE previously had none of this — PUT carried a "validation logic omitted
  * for brevity, ensure user has rights" note and DELETE a "Check existence and
@@ -15,13 +27,10 @@ import { canAccessAllCompanies } from '@/lib/company-scope';
  *
  * Returns an error response to hand straight back, or null when the caller may proceed.
  */
-async function assertOwnsProject(id: string, user: { role: string; companyId?: string | null; allowedModules?: string[] }) {
+async function assertOwnsProject(id: string, user: Actor) {
     const project = await prisma.project.findUnique({ where: { id }, select: { companyId: true } });
     if (!project) return createErrorResponse('Project not found', 404);
-    if (canAccessAllCompanies(user as any)) return null;
-    if (!user.companyId || project.companyId !== user.companyId) {
-        return createErrorResponse('Unauthorized', 403);
-    }
+    if (!mayEditProject(project, user)) return createErrorResponse('Unauthorized', 403);
     return null;
 }
 
@@ -33,6 +42,7 @@ export const GET = authorizedRoute(
             const project = await prisma.project.findUnique({
                 where: { id },
                 include: {
+                    company: { select: { id: true, name: true } },
                     manager: { select: { name: true, email: true, id: true } },
                     lead: { select: { name: true, email: true, id: true } },
                     members: {
@@ -65,13 +75,11 @@ export const GET = authorizedRoute(
             });
 
             if (!project) return createErrorResponse('Project not found', 404);
-            // SUPER_ADMIN / ALL_COMPANIES see across the group; everyone else is confined
-            // to their own company.
-            if (!canAccessAllCompanies(user) && project.companyId !== user.companyId) {
-                return createErrorResponse('Unauthorized', 403);
-            }
 
-            return NextResponse.json(project);
+            // Group-wide read, matching the list route — any internal user may open any
+            // company's project. Editing stays with the owning company, so tell the client
+            // which it is rather than letting it offer buttons the API will refuse.
+            return NextResponse.json({ ...project, canEdit: mayEditProject(project, user) });
         } catch (error) {
             return createErrorResponse(error);
         }

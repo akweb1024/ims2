@@ -1,11 +1,15 @@
 'use client';
 
-import { useProject, useProjectMutations } from '@/hooks/useProjects'; // Need to ensure hooks export specific mutations
+import { useProject, useProjectMutations, useProjectComments, useProjectCommentMutations } from '@/hooks/useProjects';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useState, use } from 'react';
-import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit } from 'lucide-react';
+import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit, MessageSquare, Building2, CornerDownRight } from 'lucide-react';
 import Link from 'next/link';
+
+/** User.name is nullable throughout this schema — never render a bare name. */
+const personLabel = (u?: { name?: string | null; email?: string | null } | null) =>
+    u?.name || u?.email || 'Unknown';
 
 const STATUSES = ['PLANNED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -18,8 +22,13 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     const { data: project, isLoading } = useProject(id);
     const router = useRouter();
     const { updateProject, deleteProject } = useProjectMutations();
+    const { data: comments = [] } = useProjectComments(id);
+    const { addComment, setCommentStatus } = useProjectCommentMutations(id);
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState<any>(null);
+    const [newComment, setNewComment] = useState('');
+    const [replyTo, setReplyTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Project Details...</div>;
     if (!project) return <div className="p-10 text-center text-red-500">Project not found</div>;
@@ -47,6 +56,44 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         }
     };
 
+    const submitComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+        try {
+            await addComment.mutateAsync({ content: newComment });
+            setNewComment('');
+            toast.success('Review posted — the project team has been notified');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to post review');
+        }
+    };
+
+    const submitReply = async (parentId: string) => {
+        if (!replyText.trim()) return;
+        try {
+            await addComment.mutateAsync({ content: replyText, parentId });
+            setReplyText('');
+            setReplyTo(null);
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to reply');
+        }
+    };
+
+    const toggleResolved = async (comment: any) => {
+        const resolving = comment.status !== 'RESOLVED';
+        let note: string | undefined;
+        if (resolving && typeof window !== 'undefined') {
+            // Optional: what was actually done about it.
+            note = window.prompt('How was this resolved? (optional)') ?? undefined;
+        }
+        try {
+            await setCommentStatus.mutateAsync({ commentId: comment.id, status: resolving ? 'RESOLVED' : 'OPEN', resolutionNote: note });
+            toast.success(resolving ? 'Marked resolved' : 'Reopened');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update status');
+        }
+    };
+
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this project?')) return;
         try {
@@ -67,17 +114,27 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                         <Link href="/dashboard/projects" className="text-secondary-400 hover:text-primary-600 transition-colors">Projects</Link>
                         <span className="text-secondary-300">/</span>
                         <span className="text-secondary-600 font-bold">{project.id.substring(0, 8)}...</span>
+                        {project.company?.name && (
+                            <span className="flex items-center gap-1 text-[10px] font-black text-secondary-400 uppercase tracking-wider ml-2">
+                                <Building2 size={12} /> {project.company.name}
+                            </span>
+                        )}
                     </div>
                     <h1 className="text-4xl font-black text-secondary-900 tracking-tight">{project.title}</h1>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={handleDelete} className="btn bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                        <Trash2 size={18} /> Delete Project
-                    </button>
-                    <button onClick={openEdit} className="btn btn-primary px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                        <Edit size={18} /> Edit Details
-                    </button>
-                </div>
+                {/* The board is group-wide but editing belongs to the owning company, so the
+                    server tells us whether to offer these at all rather than letting the
+                    buttons 403. */}
+                {project.canEdit && (
+                    <div className="flex gap-3">
+                        <button onClick={handleDelete} className="btn bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                            <Trash2 size={18} /> Delete Project
+                        </button>
+                        <button onClick={openEdit} className="btn btn-primary px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                            <Edit size={18} /> Edit Details
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Overview Cards */}
@@ -240,6 +297,113 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                             </div>
                         ) : (
                             <div className="text-center py-10 text-secondary-400 italic">No issues reported yet.</div>
+                        )}
+                    </div>
+
+                    {/* Reviews. Anyone who can see the project can raise one; only the team
+                        doing the work can close it out — see PATCH in the comments route. */}
+                    <div className="card-premium p-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
+                                <MessageSquare size={20} className="text-secondary-400" /> Reviews & Feedback
+                            </h3>
+                            {comments.length > 0 && (
+                                <span className="text-xs font-bold text-secondary-400 uppercase">
+                                    {comments.filter((c: any) => c.status === 'OPEN').length} open · {comments.filter((c: any) => c.status === 'RESOLVED').length} resolved
+                                </span>
+                            )}
+                        </div>
+
+                        <form onSubmit={submitComment} className="mb-6">
+                            <label htmlFor="new-review" className="sr-only">Leave a review</label>
+                            <textarea
+                                id="new-review"
+                                rows={3}
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Share feedback on this project…"
+                                className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:border-primary-500 outline-none text-sm"
+                            />
+                            <div className="flex justify-end mt-2">
+                                <button
+                                    type="submit"
+                                    disabled={!newComment.trim() || addComment.isPending}
+                                    className="px-5 py-2 rounded-lg bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 disabled:opacity-50 transition-all"
+                                >
+                                    {addComment.isPending ? 'Posting…' : 'Post Review'}
+                                </button>
+                            </div>
+                        </form>
+
+                        {comments.length === 0 ? (
+                            <div className="text-center py-8 text-secondary-400 italic">No reviews yet. Be the first to give feedback.</div>
+                        ) : (
+                            <div className="space-y-4">
+                                {comments.map((c: any) => (
+                                    <div key={c.id} className={`p-4 rounded-xl border transition-all ${c.status === 'RESOLVED' ? 'border-success-200 bg-success-50/40' : 'border-secondary-100'}`}>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-bold text-secondary-900 text-sm">{personLabel(c.user)}</span>
+                                                    <span className="text-[10px] text-secondary-400">{new Date(c.createdAt).toLocaleString()}</span>
+                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ${c.status === 'RESOLVED' ? 'bg-success-100 text-success-700 border-success-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                                        {c.status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-secondary-700 mt-2 whitespace-pre-wrap">{c.content}</p>
+                                                {c.status === 'RESOLVED' && (
+                                                    <p className="text-xs text-success-700 mt-2">
+                                                        Resolved by {personLabel(c.resolvedBy)}
+                                                        {c.resolvedAt && ` on ${new Date(c.resolvedAt).toLocaleDateString()}`}
+                                                        {c.resolutionNote && ` — "${c.resolutionNote}"`}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleResolved(c)}
+                                                disabled={setCommentStatus.isPending}
+                                                className={`shrink-0 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${c.status === 'RESOLVED' ? 'border-secondary-200 text-secondary-500 hover:bg-secondary-50' : 'border-success-300 text-success-700 hover:bg-success-50'}`}
+                                            >
+                                                {c.status === 'RESOLVED' ? 'Reopen' : 'Resolve'}
+                                            </button>
+                                        </div>
+
+                                        {(c.replies || []).map((r: any) => (
+                                            <div key={r.id} className="mt-3 ml-4 pl-4 border-l-2 border-secondary-100 flex gap-2">
+                                                <CornerDownRight size={14} className="text-secondary-300 mt-1 shrink-0" />
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-secondary-800 text-xs">{personLabel(r.user)}</span>
+                                                        <span className="text-[10px] text-secondary-400">{new Date(r.createdAt).toLocaleString()}</span>
+                                                    </div>
+                                                    <p className="text-xs text-secondary-600 mt-1 whitespace-pre-wrap">{r.content}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {replyTo === c.id ? (
+                                            <div className="mt-3 ml-8 flex gap-2">
+                                                <input
+                                                    autoFocus
+                                                    value={replyText}
+                                                    onChange={(e) => setReplyText(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') submitReply(c.id); if (e.key === 'Escape') setReplyTo(null); }}
+                                                    placeholder="Write a reply…"
+                                                    aria-label="Reply"
+                                                    className="flex-1 px-3 py-1.5 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-xs"
+                                                />
+                                                <button type="button" onClick={() => submitReply(c.id)} disabled={!replyText.trim()} className="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-bold text-xs disabled:opacity-50">Reply</button>
+                                                <button type="button" onClick={() => setReplyTo(null)} className="px-2 text-xs text-secondary-400 font-bold">Cancel</button>
+                                            </div>
+                                        ) : (
+                                            <button type="button" onClick={() => { setReplyTo(c.id); setReplyText(''); }} className="mt-2 ml-8 text-[10px] font-black uppercase text-secondary-400 hover:text-primary-600">
+                                                Reply
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>

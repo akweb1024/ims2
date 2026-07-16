@@ -8,29 +8,35 @@ export const GET = authorizedRoute(
     PROJECT_VIEWER_ROLES,
     async (req: NextRequest, user) => {
         try {
-            if (!user.companyId) return createErrorResponse('Company association required', 403);
-
             const { searchParams } = new URL(req.url);
             const status = searchParams.get('status');
             const priority = searchParams.get('priority');
+            const companyId = searchParams.get('companyId');
+            const q = (searchParams.get('q') || '').trim();
             const mine = searchParams.get('mine') === 'true';
 
-            const where: any = { companyId: user.companyId };
+            // Company Projects is a GROUP-WIDE board by explicit product decision: every
+            // internal user sees every company's projects, so work is visible across the
+            // group rather than siloed per company. This is deliberately unlike the rest of
+            // the app (see lib/company-scope) — projects are internal initiatives, not
+            // financial or HR records. Writes remain owned by the project's own company;
+            // see assertOwnsProject in ./[id]/route.ts.
+            const where: any = {};
             if (status) where.status = status;
             if (priority) where.priority = priority;
-
-            // Company Projects is a read-open board: every employee can see what their
-            // company is working on. It previously narrowed non-admins to projects they
-            // were a member of, which — combined with the create form never sending
-            // memberIds — meant a UI-created project was visible to nobody but its
-            // creator's role. Writes stay restricted (see PROJECT_EDITOR_ROLES below).
-            if (mine) {
-                where.members = { some: { userId: user.id } };
+            if (companyId) where.companyId = companyId;   // opt-in filter, not a security gate
+            if (mine) where.members = { some: { userId: user.id } };
+            if (q) {
+                where.OR = [
+                    { title: { contains: q, mode: 'insensitive' } },
+                    { description: { contains: q, mode: 'insensitive' } },
+                ];
             }
 
             const projects = await prisma.project.findMany({
                 where,
                 include: {
+                    company: { select: { id: true, name: true } },
                     manager: { select: { name: true, email: true } },
                     lead: { select: { name: true, email: true } },
                     members: {
