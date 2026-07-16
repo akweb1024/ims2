@@ -368,6 +368,8 @@ model User {
   businessLedProjects            Project[]                        @relation("BusinessTeamLead")
   businessProjects               Project[]                        @relation("BusinessProjectManager")
   projectMemberships             ProjectMember[]
+  projectComments                ProjectComment[]                 @relation("ProjectComments")
+  projectCommentsResolved        ProjectComment[]                 @relation("ProjectCommentsResolved")
   pushSubscriptions              PushSubscription[]
   qualityReports                 QualityReport[]                  @relation("QualityChecker")
   quizAttempts                   QuizAttempt[]
@@ -5082,11 +5084,40 @@ model Project {
   lead        User?           @relation("BusinessTeamLead", fields: [leadId], references: [id])
   manager     User?           @relation("BusinessProjectManager", fields: [managerId], references: [id])
   members     ProjectMember[]
+  comments    ProjectComment[]
   tasks       Task[]
   workPlans   WorkPlan[]
 
   @@index([companyId])
   @@index([managerId])
+}
+
+/// Review / feedback thread on a business Project. Mirrors ITProjectComment (threaded via
+/// parentId) and adds a resolution state, so a remark is a piece of work the project team
+/// closes out rather than a note that scrolls away.
+model ProjectComment {
+  id           String           @id @default(uuid())
+  projectId    String
+  userId       String
+  content      String
+  /// OPEN once raised; RESOLVED when the project team has acted on it.
+  status       String           @default("OPEN")
+  resolvedById String?
+  resolvedAt   DateTime?
+  resolutionNote String?
+  parentId     String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  parent       ProjectComment?  @relation("ProjectCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      ProjectComment[] @relation("ProjectCommentReplies")
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user         User             @relation("ProjectComments", fields: [userId], references: [id])
+  resolvedBy   User?            @relation("ProjectCommentsResolved", fields: [resolvedById], references: [id])
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([status])
 }
 
 model ProjectMember {
