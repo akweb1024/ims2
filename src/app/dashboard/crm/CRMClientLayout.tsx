@@ -24,10 +24,10 @@ const tabs = [
     },
     {
         label: 'Billing',
-        href: '/dashboard/crm/billing',
+        href: '/dashboard/crm/invoices',
         icon: <FileText size={14} />,
         color: 'text-amber-500',
-        matchPaths: ['/dashboard/crm/billing', '/dashboard/crm/invoices', '/dashboard/crm/subscriptions'],
+        matchPaths: ['/dashboard/crm/invoices', '/dashboard/crm/subscriptions'],
     },
     {
         label: 'Follow-ups',

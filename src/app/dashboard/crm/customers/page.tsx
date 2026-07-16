@@ -396,7 +396,7 @@ export default function CRMCustomersPage() {
                                                     <Eye size={16} />
                                                 </CRMRowAction>
                                                 <CRMRowAction
-                                                    href={`/dashboard/crm/billing?customer=${customer.id}`}
+                                                    href={`/dashboard/crm/invoices/new?customerId=${customer.id}`}
                                                     variant="secondary"
                                                     title="Create invoice"
                                                 >
