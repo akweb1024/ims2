@@ -13,12 +13,17 @@ type TaskItem = {
   linkedKpiId?: string | null;
   mandatory?: boolean;
   blockerReason?: string | null;
+  blockerOwner?: string | null;
 };
 
 export default function TodayAgendaCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [employee, setEmployee] = useState<any>(null);
+  const [blockingTask, setBlockingTask] = useState<TaskItem | null>(null);
+  const [blockReason, setBlockReason] = useState('');
+  const [blockOwner, setBlockOwner] = useState('');
+  const [blockSubmitting, setBlockSubmitting] = useState(false);
 
   const fetchTodayAgenda = async () => {
     setLoading(true);
@@ -101,14 +106,27 @@ export default function TodayAgendaCard() {
     }
   };
 
-  const onBlock = async (taskId: string) => {
-    const reason = prompt('Why is this task blocked?');
-    if (!reason) return;
+  const openBlockModal = (task: TaskItem) => {
+    setBlockReason(task.blockerReason || '');
+    setBlockOwner(task.blockerOwner || '');
+    setBlockingTask(task);
+  };
+
+  const submitBlock = async () => {
+    if (!blockingTask || !blockReason.trim()) return;
+    setBlockSubmitting(true);
     try {
-      await updateTask(taskId, { completionStatus: 'BLOCKED', blockerReason: reason });
+      await updateTask(blockingTask.id, {
+        completionStatus: 'BLOCKED',
+        blockerReason: blockReason.trim(),
+        blockerOwner: blockOwner.trim() || null,
+      });
+      setBlockingTask(null);
       await fetchTodayAgenda();
     } catch (e: any) {
       alert(e?.message || 'Failed to mark blocked');
+    } finally {
+      setBlockSubmitting(false);
     }
   };
 
@@ -151,7 +169,10 @@ export default function TodayAgendaCard() {
                         {t.priority} | {t.estimatedHours || 0}h {t.linkedGoalTitle ? `| Goal: ${t.linkedGoalTitle}` : ''} {t.linkedKpiId ? '| KPI linked' : ''}
                       </p>
                       {t.blockerReason ? (
-                        <p className="text-xs text-danger-600 mt-1">Blocker: {t.blockerReason}</p>
+                        <p className="text-xs text-danger-600 mt-1">
+                          Blocker: {t.blockerReason}
+                          {t.blockerOwner ? <span className="text-secondary-500"> — can be unblocked by {t.blockerOwner}</span> : null}
+                        </p>
                       ) : null}
                     </div>
                     <span className="text-[10px] px-2 py-1 rounded-full bg-secondary-100 font-black">{t.completionStatus}</span>
@@ -163,7 +184,7 @@ export default function TodayAgendaCard() {
                     <button className="btn btn-primary text-xs py-1.5 px-3" onClick={() => onComplete(t.id)}>
                       <CheckCircle2 size={14} /> Complete
                     </button>
-                    <button className="btn bg-danger-50 text-danger-700 border border-danger-200 text-xs py-1.5 px-3" onClick={() => onBlock(t.id)}>
+                    <button className="btn bg-danger-50 text-danger-700 border border-danger-200 text-xs py-1.5 px-3" onClick={() => openBlockModal(t)}>
                       <AlertTriangle size={14} /> Block
                     </button>
                   </div>
@@ -172,6 +193,49 @@ export default function TodayAgendaCard() {
             </div>
           )}
         </>
+      )}
+
+      {blockingTask && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h4 className="text-lg font-black text-secondary-900 mb-1">Block task</h4>
+            <p className="text-xs text-secondary-500 mb-4 truncate" title={blockingTask.agenda}>{blockingTask.agenda}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider font-black text-secondary-500 block mb-1">Why is this task blocked?</label>
+                <textarea
+                  className="input h-24 w-full"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  placeholder="e.g. Calling system is down, waiting on client asset..."
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider font-black text-secondary-500 block mb-1">Who can unblock you? (optional)</label>
+                <input
+                  className="input w-full"
+                  value={blockOwner}
+                  onChange={(e) => setBlockOwner(e.target.value)}
+                  placeholder="e.g. IT support, Priya (design)"
+                />
+              </div>
+              <p className="text-[11px] text-secondary-500">Your manager will be notified with this reason.</p>
+              <div className="flex gap-2 pt-1">
+                <button
+                  className="btn btn-primary text-xs flex-1"
+                  disabled={!blockReason.trim() || blockSubmitting}
+                  onClick={submitBlock}
+                >
+                  {blockSubmitting ? 'Blocking...' : 'Mark Blocked'}
+                </button>
+                <button className="btn btn-secondary text-xs" onClick={() => setBlockingTask(null)} disabled={blockSubmitting}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -123,6 +123,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         sequence: metadata?.sequence || 999,
         conflictFlag: Boolean(metadata?.conflictFlag),
         blockerReason: metadata?.blockerReason || null,
+        blockerOwner: metadata?.blockerOwner || null,
       };
 
       const holder = byEmployee.get(p.employeeId);

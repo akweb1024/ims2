@@ -13,6 +13,7 @@ export interface AgendaMetadata {
   sequence?: number;
   conflictFlag?: boolean;
   blockerReason?: string | null;
+  blockerOwner?: string | null;
   generatedAt?: string;
   generatedBy?: string | null;
   overrideBy?: string | null;
