@@ -5,6 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { decodeAgendaMetadata, encodeAgendaMetadata } from '@/lib/hr/work-agenda';
 import { createAuditLog } from '@/lib/notifications';
+import { notifyBlockerTransition } from '@/lib/hr/blocker-notifications';
 
 const VALID_STATUSES = new Set(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCELLED']);
 
@@ -44,6 +45,15 @@ export const PATCH = authorizedRoute(
 
       if (body.blockerReason !== undefined) {
         metadata.blockerReason = body.blockerReason ? String(body.blockerReason) : null;
+      }
+      if (body.blockerOwner !== undefined) {
+        metadata.blockerOwner = body.blockerOwner ? String(body.blockerOwner) : null;
+      }
+      // Leaving BLOCKED clears the blocker fields unless the caller sent new ones —
+      // a stale blockerReason keeps counting as an unresolved blocker in guardRails.
+      if (completionStatus && completionStatus !== 'BLOCKED' && plan.completionStatus === 'BLOCKED') {
+        if (body.blockerReason === undefined) metadata.blockerReason = null;
+        if (body.blockerOwner === undefined) metadata.blockerOwner = null;
       }
       if (body.mandatory !== undefined) {
         metadata.mandatory = Boolean(body.mandatory);
@@ -90,10 +100,24 @@ export const PATCH = authorizedRoute(
         where: { id },
         data: updateData,
         include: {
-          employee: { include: { user: { select: { name: true, email: true } } } },
+          employee: { include: { user: { select: { id: true, name: true, email: true } } } },
           linkedGoal: { select: { id: true, title: true } }
         }
       });
+
+      try {
+        await notifyBlockerTransition({
+          previousStatus: plan.completionStatus,
+          nextStatus: updated.completionStatus,
+          employeeUserId: (updated.employee as any)?.user?.id || plan.employee.userId,
+          actorUserId: user.id,
+          agenda: updated.agenda,
+          blockerReason: metadata.blockerReason,
+          blockerOwner: metadata.blockerOwner,
+        });
+      } catch (notifyErr) {
+        console.error('Blocker notification failed (non-fatal):', notifyErr);
+      }
 
       if (isManagerial) {
         await createAuditLog({

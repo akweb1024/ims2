@@ -6,6 +6,8 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { getISTToday } from '@/lib/date-utils';
 import { createAuditLog } from '@/lib/notifications';
 import { createNotification } from '@/lib/system-notifications';
+import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
+import { notifyBlockerTransition } from '@/lib/hr/blocker-notifications';
 
 const normalizeWorkPlanVisibility = (value: unknown) => {
     if (typeof value !== 'string') return undefined;
@@ -244,6 +246,28 @@ export const PUT = authorizedRoute(
                     }
                 } as any
             });
+
+            // BLOCKED transitions notify the employee's manager (non-fatal).
+            try {
+                const planOwner = await prisma.employeeProfile.findUnique({
+                    where: { id: existingPlan.employeeId },
+                    select: { userId: true },
+                });
+                if (planOwner?.userId) {
+                    const metadata = decodeAgendaMetadata(updatedPlan.strategy);
+                    await notifyBlockerTransition({
+                        previousStatus: existingPlan.completionStatus,
+                        nextStatus: updatedPlan.completionStatus,
+                        employeeUserId: planOwner.userId,
+                        actorUserId: user.id,
+                        agenda: updatedPlan.agenda,
+                        blockerReason: metadata?.blockerReason,
+                        blockerOwner: metadata?.blockerOwner,
+                    });
+                }
+            } catch (notifyErr) {
+                console.error('Blocker notification failed (non-fatal):', notifyErr);
+            }
 
             // Manager (cross-user) edit → audit trail + notify + a visible comment for the employee.
             if (!isOwnerEdit) {
