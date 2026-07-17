@@ -155,8 +155,6 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Review',
                 items: [
                     { name: 'Review Inbox', href: '/dashboard/review-inbox', icon: Inbox, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
-                    // Retires with C9 once /dashboard/review-inbox?tab=goals fully replaces it.
-                    { name: 'Goal Verification', href: '/dashboard/performance/verify', icon: Shield, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
                 ]
             },
             {
