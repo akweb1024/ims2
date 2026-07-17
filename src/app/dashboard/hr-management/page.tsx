@@ -28,7 +28,6 @@ import PerformanceAnalytics from '@/components/dashboard/hr/PerformanceAnalytics
 import BudgetManager from '@/components/dashboard/hr/BudgetManager';
 import FinalSettlementManager from '@/components/dashboard/hr/FinalSettlementManager';
 import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
-import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard';
 import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
 import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
@@ -229,10 +228,15 @@ const HRManagementContent = () => {
 
     useEffect(() => {
         const tab = searchParams.get('tab');
+        // The recruitment tab moved to its own page; keep old deep links working.
+        if (tab === 'recruitment') {
+            router.replace('/dashboard/recruitment');
+            return;
+        }
         if (tab) {
             setActiveTab(tab);
         }
-    }, [searchParams]);
+    }, [searchParams, router]);
 
     const [selectedDocEmp, setSelectedDocEmp] = useState<any>(null);
     // State management
@@ -804,10 +808,6 @@ const HRManagementContent = () => {
 
                 {activeTab === 'final-settlement' && (
                     <FinalSettlementManager />
-                )}
-
-                {activeTab === 'recruitment' && (
-                    <RecruitmentDashboard />
                 )}
 
                 {activeTab === 'reports' && (

@@ -6,12 +6,15 @@ import {
     ChevronDown, HelpCircle, LayoutGrid
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface NavTab {
     id: string;
     label: string;
     /** Optional group header rendered above this tab inside the dropdown. */
     section?: string;
+    /** When set, the entry navigates to this route instead of switching tabs. */
+    href?: string;
 }
 
 interface NavCategory {
@@ -77,7 +80,9 @@ const CATEGORIES: NavCategory[] = [
         title: 'Recruitment',
         icon: <UserPlus size={18} />,
         tabs: [
-            { id: 'recruitment', label: 'Job Board & ATS' },
+            // The Recruitment Hub is its own page — the in-page tab rendered a
+            // second copy of the same dashboard and is retired.
+            { id: 'recruitment', label: 'Job Board & ATS', href: '/dashboard/recruitment' },
         ]
     },
     {
@@ -99,8 +104,18 @@ const CATEGORIES: NavCategory[] = [
 ];
 
 export default function HRNavigation({ activeTab, onTabChange, onHelpClick }: { activeTab: string, onTabChange: (t: string) => void, onHelpClick: () => void }) {
+    const router = useRouter();
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const activateTab = (tab: NavTab) => {
+        if (tab.href) {
+            router.push(tab.href);
+        } else {
+            onTabChange(tab.id);
+        }
+        setOpenDropdown(null);
+    };
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -164,10 +179,7 @@ export default function HRNavigation({ activeTab, onTabChange, onHelpClick }: { 
                                                     </div>
                                                 )}
                                                 <button
-                                                    onClick={() => {
-                                                        onTabChange(tab.id);
-                                                        setOpenDropdown(null);
-                                                    }}
+                                                    onClick={() => activateTab(tab)}
                                                     className={`
                                                         w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all
                                                         flex items-center justify-between group/item
@@ -239,10 +251,7 @@ export default function HRNavigation({ activeTab, onTabChange, onHelpClick }: { 
                                             </div>
                                         )}
                                         <button
-                                            onClick={() => {
-                                                onTabChange(tab.id);
-                                                setOpenDropdown(null);
-                                            }}
+                                            onClick={() => activateTab(tab)}
                                             className={`
                                                 w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all
                                                 ${activeTab === tab.id ? 'bg-primary-50 text-primary-900' : 'text-secondary-600 hover:bg-secondary-50'}
