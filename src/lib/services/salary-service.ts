@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { calculateSalaryBreakdown } from '@/lib/utils/salary-calculator';
+import { normalizeKpis, upsertEmployeeKpis } from '@/lib/hr/employee-kpis';
 
 export async function applyApprovedIncrement(
     increment: any,
@@ -134,35 +135,19 @@ export async function applyApprovedIncrement(
         }
     });
 
-    // 3. Sync EmployeeKPI records if newKPI is provided
+    // 3. Sync EmployeeKPI records if newKPI is provided. Merge by title —
+    // never wipe: KPIs the increment doesn't mention survive, and matched
+    // KPIs keep their current progress (the unified service only writes
+    // `current` when explicitly provided).
     if (increment.newKPI && Array.isArray(increment.newKPI) && increment.newKPI.length > 0) {
-        const empWithUser = await tx.employeeProfile.findUnique({
-            where: { id: profileId },
-            include: { user: { select: { companyId: true } } }
-        });
-
-        const companyId = empWithUser?.user?.companyId;
-
-        if (companyId) {
-            await tx.employeeKPI.deleteMany({
-                where: { employeeId: profileId }
+        try {
+            await upsertEmployeeKpis(tx, {
+                employeeId: profileId,
+                kpis: normalizeKpis(increment.newKPI as any[]),
             });
-
-            for (const kpi of increment.newKPI as any[]) {
-                if (kpi.title && kpi.target !== undefined) {
-                    await tx.employeeKPI.create({
-                        data: {
-                            employeeId: profileId,
-                            companyId: companyId,
-                            title: kpi.title,
-                            target: parseFloat(kpi.target) || 0,
-                            unit: kpi.unit || 'units',
-                            period: kpi.period || 'MONTHLY',
-                            category: kpi.category || 'GENERAL'
-                        }
-                    });
-                }
-            }
+        } catch (kpiErr) {
+            // A KPI sync problem must not roll back an approved salary change.
+            console.error('Increment KPI sync failed (non-fatal):', kpiErr);
         }
     }
 

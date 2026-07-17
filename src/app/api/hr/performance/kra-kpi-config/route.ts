@@ -6,6 +6,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { generateTodayAgendaForEmployees } from '@/lib/hr/work-agenda-generator';
 import { companyScopeWhere } from '@/lib/company-scope';
+import { normalizeKpis, upsertEmployeeKpis } from '@/lib/hr/employee-kpis';
 
 const MANAGERIAL_ROLES = new Set([
     'SUPER_ADMIN',
@@ -132,27 +133,9 @@ export const PUT = authorizedRoute(
             const allowed = await canAccessEmployee(user, targetProfile.userId);
             if (!allowed) return createErrorResponse('Forbidden: Employee is outside your access', 403);
 
-            const existing = await prisma.employeeKPI.findMany({
-                where: { employeeId: targetProfile.id },
-                select: { id: true },
-            });
-            const existingIds = new Set(existing.map((e) => e.id));
-
-            const normalizedKpis = kpis
-                .filter((k: any) => k && typeof k.title === 'string' && k.title.trim().length > 0)
-                .map((k: any) => {
-                    const period = String(k.period || 'MONTHLY').toUpperCase();
-                    return {
-                        id: k.id ? String(k.id) : undefined,
-                        title: k.title.trim(),
-                        target: Number(k.target || 0),
-                        current: Number(k.current || 0),
-                        unit: String(k.unit || 'COUNT'),
-                        period: ALLOWED_KPI_PERIODS.has(period) ? period : 'MONTHLY',
-                        category: String(k.category || 'GENERAL'),
-                    };
-                })
-                .filter((k: any) => Number.isFinite(k.target) && k.target > 0);
+            // Unified KPI write path (id-or-title matching, employee's companyId,
+            // shared normalization). replaceExisting maps onto replaceMissing.
+            const normalizedKpis = normalizeKpis(kpis);
 
             const result = await prisma.$transaction(async (tx) => {
                 if (kra !== undefined) {
@@ -162,51 +145,11 @@ export const PUT = authorizedRoute(
                     });
                 }
 
-                for (const item of normalizedKpis) {
-                    if (item.id && existingIds.has(item.id)) {
-                        await tx.employeeKPI.update({
-                            where: { id: item.id },
-                            data: {
-                                title: item.title,
-                                target: item.target,
-                                current: item.current,
-                                unit: item.unit,
-                                period: item.period,
-                                category: item.category,
-                                updatedAt: new Date(),
-                            },
-                        });
-                    } else {
-                        const targetUser = await tx.user.findUnique({
-                            where: { id: targetProfile.userId },
-                            select: { companyId: true },
-                        });
-                        await tx.employeeKPI.create({
-                            data: {
-                                employeeId: targetProfile.id,
-                                companyId: targetUser?.companyId || user.companyId || '',
-                                title: item.title,
-                                target: item.target,
-                                current: item.current,
-                                unit: item.unit,
-                                period: item.period,
-                                category: item.category,
-                            },
-                        });
-                    }
-                }
-
-                if (replaceExisting) {
-                    const incomingIds = new Set(normalizedKpis.map((k: any) => k.id).filter(Boolean));
-                    const toDelete = existing
-                        .filter((row) => !incomingIds.has(row.id))
-                        .map((row) => row.id);
-                    if (toDelete.length > 0) {
-                        await tx.employeeKPI.deleteMany({
-                            where: { id: { in: toDelete } },
-                        });
-                    }
-                }
+                await upsertEmployeeKpis(tx, {
+                    employeeId: targetProfile.id,
+                    kpis: normalizedKpis,
+                    replaceMissing: Boolean(replaceExisting),
+                });
 
                 const updatedProfile = await tx.employeeProfile.findUnique({
                     where: { id: targetProfile.id },
