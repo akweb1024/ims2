@@ -5,6 +5,12 @@ set -euo pipefail
 export HOSTNAME="${APP_HOSTNAME:-0.0.0.0}"
 export AUTH_TRUST_HOST="${AUTH_TRUST_HOST:-true}"
 
+# Slim Docker image layout: the standalone bundle is copied to the app root
+# (server.js next to .next/static and public), so it can be started directly.
+if [ -f "server.js" ]; then
+    exec node server.js
+fi
+
 if [ -f ".next/standalone/server.js" ]; then
     mkdir -p .next/standalone/.next
 
