@@ -4,8 +4,10 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 // GET /api/journals/[id]/reviewers - List all reviewers for a journal
+// EDITOR included: the editorial workflow shows editors the assign-reviewer
+// button, which needs this listing.
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'],
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id: journalId } = await params;
