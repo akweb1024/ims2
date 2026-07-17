@@ -38,12 +38,18 @@ for var in "${REQUIRED_VARS[@]}"; do
 done
 print_status "All required environment variables are set"
 
-# Wait for database to be ready
+# Wait for database to be ready. Probe with the pg driver rather than the
+# prisma CLI: the slim production image ships only the generated client + pg,
+# not the CLI (and npx would try to download it on every boot).
 echo "🔍 Waiting for database to be ready..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
-until npx prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1 || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+db_probe() {
+    node -e 'const{Client}=require("pg");const c=new Client({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query("SELECT 1")).then(()=>process.exit(0)).catch(()=>process.exit(1));' > /dev/null 2>&1
+}
+
+until db_probe || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
     RETRY_COUNT=$((RETRY_COUNT + 1))
     print_warning "Database not ready yet (attempt $RETRY_COUNT/$MAX_RETRIES)..."
     sleep 2
@@ -72,9 +78,13 @@ else
     print_warning "Skipping automatic migrations (RUN_MIGRATIONS_ON_START is not 'true'). Run them manually: bash scripts/database-migrate.sh"
 fi
 
-# Generate Prisma Client (in case it's not already generated)
-echo "🔧 Generating Prisma Client..."
-if npx prisma generate; then
+# Ensure the Prisma Client exists. Both the Nixpacks build and the slim Docker
+# image generate it at build time; only regenerate as a fallback (the slim
+# image has no prisma CLI, so npx would download it).
+echo "🔧 Checking Prisma Client..."
+if [ -d node_modules/.prisma/client ]; then
+    print_status "Prisma Client already generated at build time"
+elif npx prisma generate; then
     print_status "Prisma Client generated"
 else
     print_warning "Prisma Client generation had warnings (continuing anyway)"
