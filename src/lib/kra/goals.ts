@@ -20,6 +20,7 @@ import {
   resolveSelfProfile,
 } from '@/lib/kra/scope';
 import { notify, userIdForProfile } from '@/lib/kra/notify';
+import { upsertGoal } from '@/lib/kra/create-goals';
 
 const VERIFIED_STATUSES = new Set(['AUTO_VERIFIED', 'MANAGER_APPROVED']);
 const EDITABLE_STATUSES = new Set(['PENDING', 'IN_PROGRESS', 'REJECTED']);
@@ -272,41 +273,39 @@ export async function assignGoal(actor: Actor, input: AssignGoalArgs) {
   const companyId = profile.user?.companyId;
   if (!companyId) throw new KraScopeError('Employee has no company', 400);
 
-  const goal = await prisma.employeeGoal.create({
-    data: {
-      employeeId: input.employeeId,
-      companyId,
-      title: input.title.trim(),
-      unit: input.metric,
-      targetValue: input.target,
-      dailyTarget: input.dailyTarget ?? null,
-      type: input.period,
-      startDate: win.startDate,
-      endDate: win.endDate,
-      dueDate: win.endDate,
-      status: 'PENDING',
-      currentValue: 0,
-      achievementPercentage: 0,
-      assignedById: actor.id,
-      metricId: input.metricId ?? null,
-      ratePerUnit: input.ratePerUnit ?? null,
-      dimension: (input.dimension as never) ?? null,
-      reviewerId: input.reviewerId ?? null,
-      visibility: 'MANAGER',
-    },
+  // Unified goal service: dedupes on (employee, metric-or-title, period, window)
+  // — re-submitting the same goal updates it instead of duplicating — and
+  // computes carry-forward when the goal is metric-linked.
+  const res = await upsertGoal(prisma, {
+    employeeId: input.employeeId,
+    companyId,
+    origin: 'MANUAL',
+    title: input.title.trim(),
+    unit: input.metric,
+    targetValue: input.target,
+    type: input.period,
+    startDate: win.startDate,
+    endDate: win.endDate,
+    isKra: false,
+    dailyTarget: input.dailyTarget ?? null,
+    metricId: input.metricId ?? null,
+    ratePerUnit: input.ratePerUnit ?? null,
+    dimension: input.dimension ?? null,
+    reviewerId: input.reviewerId ?? null,
+    assignedById: actor.id,
   });
 
   const employeeUserId = await userIdForProfile(input.employeeId);
   if (employeeUserId) {
     await notify({
       userId: employeeUserId,
-      title: 'New goal assigned',
-      message: `New ${input.period} goal assigned: "${input.title}"`,
+      title: res.created ? 'New goal assigned' : 'Goal updated',
+      message: `${res.created ? 'New' : 'Updated'} ${input.period} goal: "${input.title.trim()}"`,
       type: 'KRA_GOAL',
       link: '/dashboard/my-performance',
     });
   }
-  return { goalId: goal.id, period: win.label };
+  return { goalId: res.id, period: win.label };
 }
 
 export interface UpdateGoalArgs {

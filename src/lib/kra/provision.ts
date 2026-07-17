@@ -11,6 +11,7 @@
 import { prisma } from '@/lib/prisma';
 import { computePeriodWindow } from '@/lib/kra/period';
 import { KraScopeError } from '@/lib/kra/scope';
+import { upsertGoal, notifyGoalsAssigned } from '@/lib/kra/create-goals';
 
 const DEFAULT_KRAS: Array<{ dimension: 'OUTPUT' | 'QUALITY' | 'TAT' | 'COLLABORATION' | 'IMPROVEMENT' | 'BEHAVIOR'; weight: number; title: string }> = [
   { dimension: 'OUTPUT', weight: 30, title: 'Achieve role deliverables target' },
@@ -61,32 +62,30 @@ export async function provisionEmployee(userId: string, assignerId: string) {
       if (dept?.name && OUTPUT_TITLE_BY_DEPT[dept.name]) outputTitle = OUTPUT_TITLE_BY_DEPT[dept.name];
     }
 
-    await prisma.employeeGoal.createMany({
-      data: DEFAULT_KRAS.map((k) => ({
+    for (const k of DEFAULT_KRAS) {
+      const res = await upsertGoal(prisma, {
         employeeId: profile.id,
         companyId,
+        origin: 'PROVISION',
         title: k.dimension === 'OUTPUT' ? outputTitle : k.title,
         unit: '%',
         targetValue: 100,
-        currentValue: 0,
-        achievementPercentage: 0,
-        type: 'YEARLY' as const,
+        type: 'YEARLY',
         startDate: win.startDate,
         endDate: win.endDate,
-        dueDate: win.endDate,
-        status: 'PENDING',
         isKra: true,
         weight: k.weight,
         dimension: k.dimension,
         assignedById: assignerId,
-        visibility: 'MANAGER',
-      })),
-    });
-    result.krasCreated = DEFAULT_KRAS.length;
+      });
+      if (res.created) result.krasCreated++;
+    }
   }
 
   // --- 2) Department template goals ---
-  const existingGoals = await prisma.employeeGoal.count({ where: { employeeId: profile.id, isKra: false } });
+  // "Already has template goals?" is a provenance question — check templateId,
+  // not isKra (which now only means "counts toward the KRA score").
+  const existingGoals = await prisma.employeeGoal.count({ where: { employeeId: profile.id, templateId: { not: null } } });
   if (existingGoals === 0 && departmentId) {
     const template = await prisma.kraTemplate.findFirst({
       where: { companyId, departmentId, isActive: true },
@@ -95,41 +94,39 @@ export async function provisionEmployee(userId: string, assignerId: string) {
     if (template && template.items.length > 0) {
       for (const item of template.items) {
         const win = computePeriodWindow(item.periodType as never, new Date());
-        const dup = await prisma.employeeGoal.findFirst({
-          where: { employeeId: profile.id, metricId: item.metricId, type: item.periodType, startDate: win.startDate },
-          select: { id: true },
+        const res = await upsertGoal(prisma, {
+          employeeId: profile.id,
+          companyId,
+          origin: 'PROVISION',
+          title: item.metric.name,
+          kra: item.metric.name,
+          unit: item.metric.unit,
+          targetValue: item.defaultTarget,
+          type: item.periodType,
+          startDate: win.startDate,
+          endDate: win.endDate,
+          // Same kind of goal the assign screen creates — it counts toward the
+          // KRA score regardless of whether a manager or provisioning made it.
+          isKra: true,
+          weight: item.weight,
+          dimension: item.dimension,
+          metricId: item.metricId,
+          templateId: template.id,
+          dataSource: item.metric.dataSource ?? 'MANUAL',
+          dailyTarget: item.dailyTarget ?? null,
+          ratePerUnit: item.ratePerUnit ?? null,
+          assignedById: assignerId,
         });
-        if (dup) continue;
-        await prisma.employeeGoal.create({
-          data: {
-            employeeId: profile.id,
-            companyId,
-            title: item.metric.name,
-            kra: item.metric.name,
-            unit: item.metric.unit,
-            targetValue: item.defaultTarget,
-            currentValue: 0,
-            achievementPercentage: 0,
-            type: item.periodType,
-            startDate: win.startDate,
-            endDate: win.endDate,
-            dueDate: win.endDate,
-            status: 'PENDING',
-            isKra: false,
-            metricId: item.metricId,
-            templateId: template.id,
-            dataSource: item.metric.dataSource ?? 'MANUAL',
-            weight: item.weight,
-            dimension: item.dimension,
-            ratePerUnit: item.ratePerUnit ?? null,
-            assignedById: assignerId,
-            visibility: 'MANAGER',
-          },
-        });
-        result.goalsCreated++;
+        if (res.created) result.goalsCreated++;
       }
     }
   }
+
+  await notifyGoalsAssigned({
+    employeeId: profile.id,
+    origin: 'PROVISION',
+    count: result.krasCreated + result.goalsCreated,
+  });
 
   return result;
 }

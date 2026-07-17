@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateCronRequest } from '@/lib/cron-auth';
 import { computePeriodWindow } from '@/lib/kra/period';
-import { computeCarryForward } from '@/lib/kra/carry-forward';
+import { upsertGoal, notifyGoalsAssigned } from '@/lib/kra/create-goals';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,66 +52,46 @@ export async function GET(req: NextRequest) {
     let rolledUpdated = 0;
     let skipped = 0;
 
+    const createdByEmployee = new Map<string, number>();
+
     for (const g of priorGoals) {
       if (g.templateId && inactiveTemplateIds.has(g.templateId)) { skipped++; continue; }
 
-      // Recurring base stays constant; only the carried shortfall changes month to month.
+      // Recurring base stays constant; the service recomputes the carried
+      // shortfall from the prior period on every run (idempotent).
       const base = g.baseTargetValue ?? g.targetValue;
-      const carry = await computeCarryForward(prisma, {
+      const res = await upsertGoal(prisma, {
         employeeId: g.employeeId,
-        metricId: g.metricId,
-        periodType: 'MONTHLY',
-        windowStart: currentWin.startDate,
-        base,
+        companyId: g.companyId,
+        origin: 'ROLLOVER',
+        title: g.title,
+        kra: g.kra,
+        unit: g.unit,
+        targetValue: base,
+        type: 'MONTHLY',
+        startDate: currentWin.startDate,
+        endDate: currentWin.endDate,
+        isKra: true,
+        weight: g.weight ?? 1,
         dimension: g.dimension,
+        metricId: g.metricId,
+        templateId: g.templateId,
+        dataSource: g.dataSource,
+        dailyTarget: g.dailyTarget,
+        ratePerUnit: g.ratePerUnit,
+        reviewerId: g.reviewerId,
+        visibility: g.visibility,
       });
-
-      const existing = await prisma.employeeGoal.findFirst({
-        where: { employeeId: g.employeeId, metricId: g.metricId, type: 'MONTHLY', startDate: currentWin.startDate },
-        select: { id: true },
-      });
-
-      const targetFields = {
-        targetValue: carry.targetValue,
-        baseTargetValue: carry.baseTargetValue,
-        carriedInValue: carry.carriedInValue,
-        sourceGoalId: carry.sourceGoalId,
-      };
-
-      if (existing) {
-        // Only refresh the target math — never touch this month's logged progress.
-        await prisma.employeeGoal.update({ where: { id: existing.id }, data: targetFields });
-        rolledUpdated++;
-      } else {
-        await prisma.employeeGoal.create({
-          data: {
-            ...targetFields,
-            employeeId: g.employeeId,
-            companyId: g.companyId,
-            title: g.title,
-            kra: g.kra,
-            unit: g.unit,
-            type: 'MONTHLY',
-            startDate: currentWin.startDate,
-            endDate: currentWin.endDate,
-            isKra: true,
-            metricId: g.metricId,
-            templateId: g.templateId,
-            dataSource: g.dataSource,
-            weight: g.weight,
-            dailyTarget: g.dailyTarget,
-            ratePerUnit: g.ratePerUnit,
-            dimension: g.dimension,
-            reviewerId: g.reviewerId,
-            visibility: g.visibility,
-            currentValue: 0,
-            verifiedValue: 0,
-            achievementPercentage: 0,
-            status: 'IN_PROGRESS',
-          },
-        });
+      if (res.created) {
         rolledCreated++;
+        createdByEmployee.set(g.employeeId, (createdByEmployee.get(g.employeeId) || 0) + 1);
+      } else {
+        rolledUpdated++;
       }
+    }
+
+    for (const [employeeId, count] of createdByEmployee) {
+      await notifyGoalsAssigned({ employeeId, origin: 'ROLLOVER', count });
     }
 
     return NextResponse.json({
