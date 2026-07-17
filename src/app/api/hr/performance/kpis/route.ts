@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { normalizeKpis, upsertEmployeeKpis } from '@/lib/hr/employee-kpis';
 import { companyScopeWhere } from '@/lib/company-scope';
 
 // GET: Fetch KPIs for the company or a specific employee
@@ -128,26 +129,19 @@ export const POST = authorizedRoute(
                 if (existingKpi.employeeId !== targetProfile.id) {
                     return createErrorResponse('Forbidden: KPI does not belong to target employee', 403);
                 }
-                const updated = await prisma.employeeKPI.update({
-                    where: { id: String(id) },
-                    data: { title, target: parseFloat(target), current: parseFloat(current || 0), unit, period, category }
-                });
-                return NextResponse.json(updated);
-            } else {
-                const created = await prisma.employeeKPI.create({
-                    data: {
-                        companyId: user.companyId,
-                        employeeId: targetProfile.id,
-                        title,
-                        target: parseFloat(target),
-                        current: parseFloat(current || 0),
-                        unit,
-                        period,
-                        category: category || 'GENERAL'
-                    }
-                });
-                return NextResponse.json(created);
             }
+
+            // Unified KPI write path: validates period/unit/target, matches by
+            // id-or-title (no duplicates), uses the EMPLOYEE's companyId.
+            const normalized = normalizeKpis([{ id: id ? String(id) : undefined, title, target, current, unit, period, category }]);
+            if (normalized.length === 0) {
+                return createErrorResponse('Invalid KPI: title and a positive target are required', 400);
+            }
+            await upsertEmployeeKpis(prisma, { employeeId: targetProfile.id, kpis: normalized });
+            const saved = await prisma.employeeKPI.findFirst({
+                where: { employeeId: targetProfile.id, title: normalized[0].title },
+            });
+            return NextResponse.json(saved);
         } catch (error) {
             return createErrorResponse(error);
         }
