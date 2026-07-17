@@ -60,46 +60,8 @@ export const GET = authorizedRoute(
     }
 );
 
-export const POST = authorizedRoute(
-    [],
-    async (req: NextRequest, user) => {
-        try {
-            const body = await req.json();
-            const { date, agenda, strategy, employeeId } = body;
-
-            if (!date || !agenda) {
-                return createErrorResponse('Missing required fields', 400);
-            }
-
-            let targetEmployeeId = employeeId;
-            if (!targetEmployeeId) {
-                const profile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
-                if (!profile) return createErrorResponse('Employee profile not found', 404);
-                targetEmployeeId = profile.id;
-            }
-
-            const plan = await prisma.workPlan.upsert({
-                where: {
-                    id: body.id || 'new-id'
-                },
-                update: {
-                    agenda,
-                    strategy,
-                    status: body.status || 'SHARED'
-                },
-                create: {
-                    employeeId: targetEmployeeId,
-                    date: new Date(date),
-                    agenda,
-                    strategy,
-                    status: body.status || 'SHARED',
-                    companyId: user.companyId
-                }
-            });
-
-            return NextResponse.json(plan);
-        } catch (error) {
-            return createErrorResponse(error);
-        }
-    }
-);
+// The POST handler that lived here accepted an arbitrary employeeId with no
+// ownership or role check and upserted on a caller-supplied id — any
+// authenticated user could create or overwrite any employee's plan. Its only
+// UI consumer (WorkPlanSection) is dead code. Work plans are written through
+// /api/work-agenda (scoped + validated); this route stays read-only.

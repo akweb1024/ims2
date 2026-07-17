@@ -101,6 +101,10 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
             startDate: win.startDate,
             endDate: win.endDate,
             isKra: true,
+            // Persisted so the kra-rollover cron's matcher (isKra + dimension +
+            // period) can find these goals — it was only used for carry math
+            // before, leaving dimension NULL and rollover matching nothing.
+            dimension: item.dimension ?? null,
             metricId: item.metricId,
             templateId: template.id,
             dataSource: item.metric.dataSource ?? 'MANUAL',
