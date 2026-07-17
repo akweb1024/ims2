@@ -72,20 +72,33 @@ export const POST = authorizedRoute(
       const parsed = performanceMetricDefinitionSchema.safeParse(body);
       if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message || 'Invalid payload');
 
-      const metric = await prisma.performanceMetricDefinition.create({
-        data: {
+      // Upsert on the table's unique key — a plain create returned a raw P2002
+      // 500 when the same key was submitted twice.
+      const metricData = {
+        name: parsed.data.name,
+        description: parsed.data.description,
+        unit: parsed.data.unit,
+        direction: parsed.data.direction,
+        warningThreshold: parsed.data.warningThreshold,
+        criticalThreshold: parsed.data.criticalThreshold,
+        sourceModule: parsed.data.sourceModule,
+        isActive: parsed.data.isActive ?? true,
+        metadata: parsed.data.metadata as Prisma.InputJsonValue | undefined,
+      };
+      const metric = await prisma.performanceMetricDefinition.upsert({
+        where: {
+          companyId_scope_key: {
+            companyId,
+            scope: parsed.data.scope,
+            key: parsed.data.key,
+          },
+        },
+        update: metricData,
+        create: {
           companyId,
           scope: parsed.data.scope,
           key: parsed.data.key,
-          name: parsed.data.name,
-          description: parsed.data.description,
-          unit: parsed.data.unit,
-          direction: parsed.data.direction,
-          warningThreshold: parsed.data.warningThreshold,
-          criticalThreshold: parsed.data.criticalThreshold,
-          sourceModule: parsed.data.sourceModule,
-          isActive: parsed.data.isActive ?? true,
-          metadata: parsed.data.metadata as Prisma.InputJsonValue | undefined,
+          ...metricData,
         },
       });
 
