@@ -35,7 +35,6 @@ function PerformanceWorkspaceClient() {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [goalDraft, setGoalDraft] = useState<any>(null);
   const [kpiDraft, setKpiDraft] = useState<any>(null);
   const [taskDraft, setTaskDraft] = useState<any>(null);
   const [goalFilters, setGoalFilters] = useState({ employeeId: 'ALL', period: 'ALL', status: 'ALL' });
@@ -194,33 +193,6 @@ function PerformanceWorkspaceClient() {
     loadAll();
   }, [loadAll]);
 
-  const openNewGoal = () => setGoalDraft({
-    employeeId: employees[0]?.id || '',
-    title: '',
-    description: '',
-    targetValue: 0,
-    currentValue: 0,
-    unit: 'units',
-    type: 'MONTHLY',
-    startDate: new Date().toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
-    status: 'IN_PROGRESS',
-  });
-
-  const openEditGoal = (goal: any) => setGoalDraft({
-    id: goal.id,
-    employeeId: goal.employeeId,
-    title: goal.title || '',
-    description: goal.description || '',
-    targetValue: goal.targetValue ?? 0,
-    currentValue: goal.currentValue ?? 0,
-    unit: goal.unit || 'units',
-    type: goal.type || 'MONTHLY',
-    startDate: new Date(goal.startDate).toISOString().slice(0, 10),
-    endDate: new Date(goal.endDate).toISOString().slice(0, 10),
-    status: goal.status || 'IN_PROGRESS',
-  });
-
   const openNewKpi = () => setKpiDraft({
     employeeId: employees[0]?.id || '',
     title: '',
@@ -265,50 +237,9 @@ function PerformanceWorkspaceClient() {
     employeeId: task.employeeId || '',
   });
 
-  const saveGoal = async () => {
-    if (!goalDraft) return;
-    if (!goalDraft.employeeId || !goalDraft.title || !goalDraft.unit || !goalDraft.type || !goalDraft.startDate || !goalDraft.endDate) {
-      setFormError('Please fill all required goal fields.');
-      return;
-    }
-    if (Number(goalDraft.targetValue) < 0 || Number(goalDraft.currentValue) < 0) {
-      setFormError('Target and current values must be zero or greater.');
-      return;
-    }
-    setFormError(null);
-    setSaving(true);
-    try {
-      const method = goalDraft.id ? 'PATCH' : 'POST';
-      const payload = {
-        ...(goalDraft.id ? { id: goalDraft.id } : {}),
-        employeeId: goalDraft.employeeId,
-        title: goalDraft.title,
-        description: goalDraft.description,
-        targetValue: Number(goalDraft.targetValue),
-        currentValue: Number(goalDraft.currentValue),
-        unit: goalDraft.unit,
-        type: goalDraft.type,
-        startDate: goalDraft.startDate,
-        endDate: goalDraft.endDate,
-        status: goalDraft.status,
-      };
-      const res = await fetch('/api/hr/performance/goals', {
-        method,
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Failed to save goal');
-      setGoalDraft(null);
-      await loadGoals();
-      setNotice({ type: 'success', message: 'Goal saved successfully.' });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to save goal');
-      setNotice({ type: 'error', message: e?.message || 'Failed to save goal.' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // Goal creation/editing was removed here: it POSTed to the retired
+  // /api/hr/performance/goals write endpoint (405 forever) and was unreachable
+  // from the UI. Goals are assigned from /dashboard/performance/assign.
   const saveKpi = async () => {
     if (!kpiDraft) return;
     if (!kpiDraft.employeeId || !kpiDraft.title || !kpiDraft.unit || !kpiDraft.period) {
@@ -701,35 +632,6 @@ function PerformanceWorkspaceClient() {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {goalDraft && (
-          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-2xl rounded-lg p-5 space-y-4">
-              <h3 className="text-lg font-black text-secondary-900">{goalDraft.id ? 'Edit Goal' : 'Create Goal'}</h3>
-              {formError && <div className="text-sm font-bold text-danger-700 bg-danger-50 border border-danger-200 rounded p-2">{formError}</div>}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <select className="input" value={goalDraft.employeeId} onChange={(e) => setGoalDraft({ ...goalDraft, employeeId: e.target.value })}>
-                  <option value="">Select Employee</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>{e.user?.name || e.user?.email}</option>)}
-                </select>
-                <input className="input" placeholder="Title" value={goalDraft.title} onChange={(e) => setGoalDraft({ ...goalDraft, title: e.target.value })} />
-                <input className="input" placeholder="Unit" value={goalDraft.unit} onChange={(e) => setGoalDraft({ ...goalDraft, unit: e.target.value })} />
-                <select className="input" value={goalDraft.type} onChange={(e) => setGoalDraft({ ...goalDraft, type: e.target.value })}>
-                  {['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'].map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-                <input className="input" type="number" placeholder="Target" value={goalDraft.targetValue} onChange={(e) => setGoalDraft({ ...goalDraft, targetValue: e.target.value })} />
-                <input className="input" type="number" placeholder="Current" value={goalDraft.currentValue} onChange={(e) => setGoalDraft({ ...goalDraft, currentValue: e.target.value })} />
-                <input className="input" type="date" value={goalDraft.startDate} onChange={(e) => setGoalDraft({ ...goalDraft, startDate: e.target.value })} />
-                <input className="input" type="date" value={goalDraft.endDate} onChange={(e) => setGoalDraft({ ...goalDraft, endDate: e.target.value })} />
-              </div>
-              <textarea className="input min-h-[90px]" placeholder="Description" value={goalDraft.description} onChange={(e) => setGoalDraft({ ...goalDraft, description: e.target.value })} />
-              <div className="flex justify-end gap-2">
-                <button className="btn btn-secondary" onClick={() => { setGoalDraft(null); setFormError(null); }}>Cancel</button>
-                <button className="btn btn-primary" onClick={saveGoal} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-              </div>
-            </div>
           </div>
         )}
 

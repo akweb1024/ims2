@@ -189,67 +189,9 @@ export default function EmployeeProfilePage() {
         }
     }, [activeTab]);
 
-    const [showGoalForm, setShowGoalForm] = useState(false);
-    const [goalForm, setGoalForm] = useState({
-        title: '',
-        description: '',
-        targetValue: '',
-        currentValue: '0',
-        unit: 'Units',
-        type: 'MONTHLY',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
-        kpiId: ''
-    });
-
-    const handleCreateGoal = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/performance/goals', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...goalForm,
-                    employeeId: employee.id,
-                    targetValue: parseFloat(goalForm.targetValue),
-                    currentValue: parseFloat(goalForm.currentValue),
-                    kpiId: goalForm.kpiId || null
-                })
-            });
-
-            if (res.ok) {
-                alert('Goal created successfully!');
-                setShowGoalForm(false);
-                fetchEmployeeDetails();
-                setGoalForm({
-                    title: '', description: '', targetValue: '', currentValue: '0',
-                    unit: 'Units', type: 'MONTHLY',
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
-                    kpiId: ''
-                });
-            } else {
-                const err = await res.json();
-                alert(`Failed: ${err.error}`);
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const handleUpdateGoalProgress = async (id: string, current: number) => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/performance/goals', {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, currentValue: current })
-            });
-            if (res.ok) fetchEmployeeDetails();
-        } catch (err) { console.error(err); }
-    };
-
+    // The goal create/progress forms that lived here targeted the retired
+    // /api/hr/performance/goals write endpoint (405) and were unreachable from
+    // the rendered UI. Goals are assigned from /dashboard/performance/assign.
     if (loading) return <div className="p-8 text-center">Loading Profile...</div>;
     if (!employee) return <div className="p-8 text-center">Employee not found</div>;
 
