@@ -44,7 +44,7 @@ export const useProjectCommentMutations = (projectId: string) => {
     const invalidate = () => qc.invalidateQueries({ queryKey: ['project-comments', projectId] });
 
     const addComment = useMutation({
-        mutationFn: (data: { content: string; parentId?: string }) =>
+        mutationFn: (data: { content: string; parentId?: string; visibility?: 'PUBLIC' | 'PRIVATE' }) =>
             fetchJson(`/api/projects/${projectId}/comments`, 'POST', data),
         onSuccess: invalidate,
     });

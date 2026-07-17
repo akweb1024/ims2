@@ -27,6 +27,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState<any>(null);
     const [newComment, setNewComment] = useState('');
+    const [newCommentPrivate, setNewCommentPrivate] = useState(false);
     const [replyTo, setReplyTo] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');
 
@@ -60,8 +61,9 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            await addComment.mutateAsync({ content: newComment });
+            await addComment.mutateAsync({ content: newComment, visibility: newCommentPrivate ? 'PRIVATE' : 'PUBLIC' });
             setNewComment('');
+            setNewCommentPrivate(false);
             toast.success('Review posted — the project team has been notified');
         } catch (error: any) {
             toast.error(error?.message || 'Failed to post review');
@@ -309,7 +311,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                             </h3>
                             {comments.length > 0 && (
                                 <span className="text-xs font-bold text-secondary-400 uppercase">
-                                    {comments.filter((c: any) => c.status === 'OPEN').length} open · {comments.filter((c: any) => c.status === 'RESOLVED').length} resolved
+                                    {comments.filter((c: any) => c.visibility !== 'PRIVATE' && c.status === 'OPEN').length} open · {comments.filter((c: any) => c.status === 'RESOLVED').length} resolved
                                 </span>
                             )}
                         </div>
@@ -324,13 +326,22 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                                 placeholder="Share feedback on this project…"
                                 className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:border-primary-500 outline-none text-sm"
                             />
-                            <div className="flex justify-end mt-2">
+                            <div className="flex justify-between items-center mt-2 gap-3">
+                                <label className="flex items-center gap-2 text-xs text-secondary-500 font-semibold cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newCommentPrivate}
+                                        onChange={(e) => setNewCommentPrivate(e.target.checked)}
+                                        className="rounded border-secondary-300"
+                                    />
+                                    Private note — visible only to you (and super admins)
+                                </label>
                                 <button
                                     type="submit"
                                     disabled={!newComment.trim() || addComment.isPending}
                                     className="px-5 py-2 rounded-lg bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 disabled:opacity-50 transition-all"
                                 >
-                                    {addComment.isPending ? 'Posting…' : 'Post Review'}
+                                    {addComment.isPending ? 'Posting…' : newCommentPrivate ? 'Save Note' : 'Post Review'}
                                 </button>
                             </div>
                         </form>
@@ -340,15 +351,21 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                         ) : (
                             <div className="space-y-4">
                                 {comments.map((c: any) => (
-                                    <div key={c.id} className={`p-4 rounded-xl border transition-all ${c.status === 'RESOLVED' ? 'border-success-200 bg-success-50/40' : 'border-secondary-100'}`}>
+                                    <div key={c.id} className={`p-4 rounded-xl border transition-all ${c.visibility === 'PRIVATE' ? 'border-secondary-200 bg-secondary-50/60 border-dashed' : c.status === 'RESOLVED' ? 'border-success-200 bg-success-50/40' : 'border-secondary-100'}`}>
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-bold text-secondary-900 text-sm">{personLabel(c.user)}</span>
                                                     <span className="text-[10px] text-secondary-400">{new Date(c.createdAt).toLocaleString()}</span>
-                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ${c.status === 'RESOLVED' ? 'bg-success-100 text-success-700 border-success-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                                        {c.status}
-                                                    </span>
+                                                    {c.visibility === 'PRIVATE' ? (
+                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded border uppercase bg-secondary-100 text-secondary-600 border-secondary-200">
+                                                            Note · only you
+                                                        </span>
+                                                    ) : (
+                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ${c.status === 'RESOLVED' ? 'bg-success-100 text-success-700 border-success-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                                            {c.status}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-secondary-700 mt-2 whitespace-pre-wrap">{c.content}</p>
                                                 {c.status === 'RESOLVED' && (
@@ -359,14 +376,16 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                                                     </p>
                                                 )}
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleResolved(c)}
-                                                disabled={setCommentStatus.isPending}
-                                                className={`shrink-0 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${c.status === 'RESOLVED' ? 'border-secondary-200 text-secondary-500 hover:bg-secondary-50' : 'border-success-300 text-success-700 hover:bg-success-50'}`}
-                                            >
-                                                {c.status === 'RESOLVED' ? 'Reopen' : 'Resolve'}
-                                            </button>
+                                            {c.visibility !== 'PRIVATE' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleResolved(c)}
+                                                    disabled={setCommentStatus.isPending}
+                                                    className={`shrink-0 text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${c.status === 'RESOLVED' ? 'border-secondary-200 text-secondary-500 hover:bg-secondary-50' : 'border-success-300 text-success-700 hover:bg-success-50'}`}
+                                                >
+                                                    {c.status === 'RESOLVED' ? 'Reopen' : 'Resolve'}
+                                                </button>
+                                            )}
                                         </div>
 
                                         {(c.replies || []).map((r: any) => (
