@@ -59,8 +59,9 @@ export const GET = authorizedRoute(
 );
 
 // POST /api/articles/[id]/assignments - Assign reviewer to article
+// EDITOR included: editors run the editorial workflow's assign flow.
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'],
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id: articleId } = await params;

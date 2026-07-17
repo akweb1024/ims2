@@ -39,7 +39,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             title: 'New Review Assignment',
             message: `You have been assigned to review the manuscript: "${review.article.title}"`,
             type: 'INFO',
-            link: `/dashboard/editorial/reviews/${review.id}`
+            // The reviewer's own queue. There is no per-review detail route —
+            // the old /dashboard/editorial/reviews/[id] link 404'd.
+            link: '/dashboard/editorial/reviews'
         });
 
         return NextResponse.json({ success: true, review });
