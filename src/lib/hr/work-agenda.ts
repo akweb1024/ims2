@@ -14,6 +14,9 @@ export interface AgendaMetadata {
   conflictFlag?: boolean;
   blockerReason?: string | null;
   blockerOwner?: string | null;
+  /** Daily carry (S3): the yesterday-plan this row was rolled from, and how many times it has rolled. */
+  carriedFromId?: string | null;
+  carryCount?: number;
   generatedAt?: string;
   generatedBy?: string | null;
   overrideBy?: string | null;

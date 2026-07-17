@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { AgendaSourceType, decodeAgendaMetadata, encodeAgendaMetadata, getISTDayRange } from '@/lib/hr/work-agenda';
+import { rollUnfinishedPlans } from '@/lib/hr/daily-carry';
 
 type TemplateCandidate = {
   id: string;
@@ -44,6 +45,15 @@ export async function generateTodayAgendaForEmployees(args: {
   const { companyId, employeeIds, generatedBy = null, forceRegenerate = false } = args;
   const { start, end } = getISTDayRange();
 
+  // S3 daily carry: roll yesterday's unfinished plans (with auto-penalty and
+  // clean-day reward) before generating, so carried rows suppress duplicate
+  // generation of the same task titles. Non-fatal — generation must proceed.
+  try {
+    await rollUnfinishedPlans({ employeeIds, companyId });
+  } catch (carryErr) {
+    console.error('Daily carry failed (non-fatal):', carryErr);
+  }
+
   let totalGenerated = 0;
   let totalSkipped = 0;
   const details: Array<{ employeeId: string; generated: number; skipped: number }> = [];
@@ -66,6 +76,7 @@ export async function generateTodayAgendaForEmployees(args: {
 
     const isRegeneratableGenerated = (strategy?: string | null) => {
       const meta = decodeAgendaMetadata(strategy);
+      if (meta?.carriedFromId) return false; // carried work survives regeneration
       return Boolean(meta && ['EMPLOYEE_TEMPLATE', 'ROLE_TEMPLATE', 'GENERIC_TEMPLATE'].includes(meta.sourceType));
     };
 

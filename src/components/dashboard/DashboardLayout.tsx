@@ -44,11 +44,37 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Alert sound for WARNING/DANGER notifications (task blocked, tasks carried,
+    // missed-task penalties). Synthesized — no audio asset. Browsers only allow
+    // audio after the user's first interaction with the page; failures are
+    // silent and the badge/push remain the fallback.
+    const playAlertSound = useCallback(() => {
+        try {
+            const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+            if (!Ctx) return;
+            const ctx = new Ctx();
+            [0, 0.18].forEach((delay, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = i === 0 ? 880 : 660;
+                gain.gain.setValueAtTime(0.08, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.15);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.16);
+            });
+            setTimeout(() => ctx.close().catch(() => undefined), 600);
+        } catch {
+            // Autoplay blocked or no audio device — the badge still shows.
+        }
+    }, []);
+
     const fetchNotifications = useCallback(() => {
         // We set up SSE event source for real-time notifications
         try {
             const eventSource = new EventSource('/api/notifications/stream');
-            
+
             eventSource.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
@@ -56,6 +82,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     setNotifications(prev => {
                         // Merge logic: Add new, update existing, don't overwrite if read in frontend
                         const merged = [...prev];
+                        let hasNewAlert = false;
                         data.forEach((newNotif: any) => {
                             const existsIndex = merged.findIndex(n => n.id === newNotif.id);
                             if (existsIndex >= 0) {
@@ -64,8 +91,12 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                                 }
                             } else {
                                 merged.push(newNotif);
+                                if (!newNotif.isRead && ['WARNING', 'DANGER'].includes(newNotif.type)) {
+                                    hasNewAlert = true;
+                                }
                             }
                         });
+                        if (hasNewAlert) playAlertSound();
                         return merged.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                     });
                 } catch (e) {
@@ -86,7 +117,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             console.error('SSE initialization error:', err);
             fetchNotificationsFallback();
         }
-    }, []);
+    }, [playAlertSound]);
 
     const fetchNotificationsFallback = async () => {
         try {
