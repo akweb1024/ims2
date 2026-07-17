@@ -7,10 +7,8 @@ import Link from 'next/link';
 export default function EditorialPage() {
     const [articles, setArticles] = useState<any[]>([]);
     const [journals, setJournals] = useState<any[]>([]);
-    const [reviewers, setReviewers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isAssigning, setIsAssigning] = useState<string | null>(null);
     const [viewingArticle, setViewingArticle] = useState<any | null>(null);
     const [articleReviews, setArticleReviews] = useState<any[]>([]);
     const [articleVersions, setArticleVersions] = useState<any[]>([]);
@@ -24,7 +22,6 @@ export default function EditorialPage() {
         if (user) setUserRole(JSON.parse(user).role);
         fetchArticles();
         fetchJournals();
-        fetchReviewers();
     }, []);
 
     const fetchArticles = async () => {
@@ -46,21 +43,13 @@ export default function EditorialPage() {
         } catch (error) { console.error(error); } finally { setLoading(false); }
     };
 
-    const fetchReviewers = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/editorial/reviewers', { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) setReviewers(await res.json());
-        } catch (error) { console.error(error); }
-    };
-
     const fetchArticleDetails = async (article: any) => {
         setViewingArticle(article);
         setLoadingReviews(true);
         try {
             const token = localStorage.getItem('token');
-            // Fetch Reviews
-            const resReviews = await fetch(`/api/editorial/articles/${article.id}/reviews`, { headers: { 'Authorization': `Bearer ${token}` } });
+            // Fetch Review Assignments (+ reports)
+            const resReviews = await fetch(`/api/articles/${article.id}/assignments`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resReviews.ok) setArticleReviews(await resReviews.json());
 
             // Fetch Versions
@@ -120,27 +109,6 @@ export default function EditorialPage() {
                 fetchArticleDetails(viewingArticle); // Refresh details
                 fetchArticles(); // Refresh list status
             } else alert('Failed to upload revision');
-        } catch (error) { console.error(error); }
-    };
-
-    const handleAssign = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isAssigning) return;
-        const form = e.target as HTMLFormElement;
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`/api/editorial/articles/${isAssigning}/assign`, { // This is reviewer assignment
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            if (res.ok) {
-                setIsAssigning(null);
-                fetchArticles();
-            } else alert('Failed to assign reviewer');
         } catch (error) { console.error(error); }
     };
 
@@ -240,7 +208,7 @@ export default function EditorialPage() {
                                     </td>
                                     <td className="p-4 flex gap-2">
                                         {isEditor && article.status === 'SUBMITTED' && (
-                                            <button onClick={() => setIsAssigning(article.id)} className="text-primary-600 font-bold text-xs hover:underline bg-primary-50 px-2 py-1 rounded">Assign</button>
+                                            <Link href={`/dashboard/articles/${article.id}/assign`} className="text-primary-600 font-bold text-xs hover:underline bg-primary-50 px-2 py-1 rounded">Assign</Link>
                                         )}
                                         <button onClick={() => fetchArticleDetails(article)} className="text-secondary-900 font-bold text-xs hover:underline bg-secondary-100 px-2 py-1 rounded">View</button>
                                     </td>
@@ -278,26 +246,6 @@ export default function EditorialPage() {
                                 <div><label className="label">New Manuscript URL</label><input name="fileUrl" className="input" required placeholder="https://..." /></div>
                                 <div><label className="label">Changelog / Notes</label><textarea name="changelog" className="input h-32" placeholder="Briefly describe changes..." /></div>
                                 <div className="flex gap-2 pt-4"><button className="btn btn-primary flex-1">Upload Revision</button><button type="button" onClick={() => setIsUploadingVersion(false)} className="btn btn-secondary">Cancel</button></div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-                {/* Assign Reviewer Modal */}
-                {isAssigning && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
-                            <h3 className="text-xl font-bold mb-4">Assign Reviewer</h3>
-                            <form onSubmit={handleAssign} className="space-y-4">
-                                <div>
-                                    <label className="label">Reviewer</label>
-                                    <select name="reviewerId" className="input" required>
-                                        <option value="">Select Staff...</option>
-                                        {reviewers.map(r => <option key={r.id} value={r.id}>{r.email} ({r.role})</option>)}
-                                    </select>
-                                </div>
-                                <div><label className="label">Due Date</label><input name="dueDate" type="date" className="input" required /></div>
-                                <div className="flex gap-2 pt-4"><button className="btn btn-primary flex-1">Assign</button><button type="button" onClick={() => setIsAssigning(null)} className="btn btn-secondary">Cancel</button></div>
                             </form>
                         </div>
                     </div>
@@ -350,21 +298,25 @@ export default function EditorialPage() {
                                     <section>
                                         <h4 className="flex items-center gap-2 text-xs font-black text-secondary-400 uppercase tracking-widest mb-3"><UserCheck size={14} /> Peer Reviews</h4>
                                         <div className="space-y-3">
-                                            {articleReviews.map(review => (
-                                                <div key={review.id} className="p-4 rounded-xl border border-secondary-200 bg-white">
+                                            {articleReviews.map(assignment => (
+                                                <div key={assignment.id} className="p-4 rounded-xl border border-secondary-200 bg-white">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-secondary-200 flex items-center justify-center text-[10px] font-bold">{review.reviewer.email[0]}</div>
-                                                            <div className="text-xs font-bold">{review.reviewer.email}</div>
+                                                            <div className="w-6 h-6 rounded-full bg-secondary-200 flex items-center justify-center text-[10px] font-bold">{(assignment.reviewer?.user?.name || assignment.reviewer?.user?.email || '?')[0]}</div>
+                                                            <div>
+                                                                <div className="text-xs font-bold">{assignment.reviewer?.user?.name || assignment.reviewer?.user?.email}</div>
+                                                                <div className="text-[10px] text-secondary-400">Round {assignment.round} • Due {new Date(assignment.dueDate).toLocaleDateString()}</div>
+                                                            </div>
                                                         </div>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${review.recommendation === 'ACCEPT' ? 'bg-success-100 text-success-700' :
-                                                            review.recommendation === 'REJECT' ? 'bg-danger-100 text-danger-700' : 'bg-warning-100 text-warning-700'
-                                                            }`}>{review.recommendation || 'Pending'}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${(assignment.report?.recommendation || assignment.status) === 'ACCEPT' ? 'bg-success-100 text-success-700' :
+                                                            ['REJECT', 'REJECT_RESUBMIT'].includes(assignment.report?.recommendation || assignment.status) ? 'bg-danger-100 text-danger-700' : 'bg-warning-100 text-warning-700'
+                                                            }`}>{(assignment.report?.recommendation || assignment.status || 'PENDING').replace(/_/g, ' ')}</span>
                                                     </div>
-                                                    <p className="text-xs text-secondary-600 italic">&quot;{review.commentsToAuthor}&quot;</p>
+                                                    {assignment.report?.commentsToAuthor && <p className="text-xs text-secondary-600 italic">&quot;{assignment.report.commentsToAuthor}&quot;</p>}
+                                                    {assignment.report && <p className="text-[10px] text-secondary-400 mt-1 font-bold">Overall rating: {assignment.report.overallRating}/5</p>}
                                                 </div>
                                             ))}
-                                            {articleReviews.length === 0 && <p className="text-xs text-secondary-400 italic">No reviews yet.</p>}
+                                            {articleReviews.length === 0 && <p className="text-xs text-secondary-400 italic">No reviewers assigned yet.</p>}
                                         </div>
                                     </section>
                                 </div>

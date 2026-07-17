@@ -5,8 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 
 // GET /api/articles/[id]/assignments - List assignments for an article
+// EDITOR included: the editorial workflow's article detail shows editors the
+// peer-review panel, which reads this listing.
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'],
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id: articleId } = await params;
