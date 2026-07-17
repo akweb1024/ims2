@@ -9,6 +9,39 @@ export default function TeamDailyAgendaView() {
   const [scheduler, setScheduler] = useState<any>(null);
   const [reassignTargetTaskId, setReassignTargetTaskId] = useState<string | null>(null);
   const [reassignSearch, setReassignSearch] = useState('');
+  const [preemptTarget, setPreemptTarget] = useState<{ employeeId: string; name: string } | null>(null);
+  const [preemptForm, setPreemptForm] = useState({ title: '', reason: '', estimatedHours: '' });
+  const [preempting, setPreempting] = useState(false);
+
+  const submitPreempt = async () => {
+    if (!preemptTarget || !preemptForm.title.trim() || !preemptForm.reason.trim()) return;
+    setPreempting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/hr/work-agenda/preempt', {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeId: preemptTarget.employeeId,
+          title: preemptForm.title.trim(),
+          reason: preemptForm.reason.trim(),
+          estimatedHours: preemptForm.estimatedHours || null,
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || payload?.message || 'Preemption failed');
+      setPreemptTarget(null);
+      setPreemptForm({ title: '', reason: '', estimatedHours: '' });
+      await load();
+    } catch (e: any) {
+      alert(e?.message || 'Preemption failed');
+    } finally {
+      setPreempting(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -188,8 +221,17 @@ export default function TeamDailyAgendaView() {
                   )}
                 </div>
               </div>
-              <div className="text-xs font-bold text-secondary-600">
-                Hours: {Number(emp.guardRails.plannedHours || 0).toFixed(1)} {emp.guardRails.overload ? '(Overload)' : ''}
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-bold text-secondary-600">
+                  Hours: {Number(emp.guardRails.plannedHours || 0).toFixed(1)} {emp.guardRails.overload ? '(Overload)' : ''}
+                </div>
+                <button
+                  className="btn bg-danger-50 text-danger-700 border border-danger-200 text-[10px] py-1 px-2 font-black uppercase"
+                  title="Insert a critical task and move the rest of this employee's day to tomorrow"
+                  onClick={() => setPreemptTarget({ employeeId: emp.employeeId, name: emp.name })}
+                >
+                  Critical Task
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -266,6 +308,61 @@ export default function TeamDailyAgendaView() {
           </div>
         ))}
       </div>
+
+      {preemptTarget && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h4 className="text-lg font-black text-secondary-900 mb-1">Critical task for {preemptTarget.name}</h4>
+            <p className="text-xs text-secondary-500 mb-4">
+              This task goes to the top of their day. Their other unfinished tasks move to tomorrow — nothing is deleted — and everyone affected (including managers whose tasks get deferred) is notified.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider font-black text-secondary-500 block mb-1">Task</label>
+                <input
+                  className="input w-full"
+                  value={preemptForm.title}
+                  onChange={(e) => setPreemptForm({ ...preemptForm, title: e.target.value })}
+                  placeholder="e.g. Fix the production payment outage"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider font-black text-secondary-500 block mb-1">Why is this critical? (recorded in the audit log)</label>
+                <textarea
+                  className="input h-20 w-full"
+                  value={preemptForm.reason}
+                  onChange={(e) => setPreemptForm({ ...preemptForm, reason: e.target.value })}
+                  placeholder="e.g. Client escalation, payments failing since 11:00"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider font-black text-secondary-500 block mb-1">Estimated hours (optional)</label>
+                <input
+                  className="input w-full"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={preemptForm.estimatedHours}
+                  onChange={(e) => setPreemptForm({ ...preemptForm, estimatedHours: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  className="btn bg-danger-600 text-white text-xs flex-1 font-black uppercase"
+                  disabled={!preemptForm.title.trim() || !preemptForm.reason.trim() || preempting}
+                  onClick={submitPreempt}
+                >
+                  {preempting ? 'Preempting...' : 'Preempt Day'}
+                </button>
+                <button className="btn btn-secondary text-xs" onClick={() => setPreemptTarget(null)} disabled={preempting}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

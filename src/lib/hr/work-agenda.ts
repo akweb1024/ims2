@@ -17,6 +17,9 @@ export interface AgendaMetadata {
   /** Daily carry (S3): the yesterday-plan this row was rolled from, and how many times it has rolled. */
   carriedFromId?: string | null;
   carryCount?: number;
+  /** Critical preemption (S6): the critical plan that pushed this row to the next day, and the day it was pushed from. */
+  preemptedBy?: string | null;
+  deferredFrom?: string | null;
   generatedAt?: string;
   generatedBy?: string | null;
   overrideBy?: string | null;
