@@ -1,57 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
-import { createNotification } from '@/lib/system-notifications';
-
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const user = await getAuthenticatedUser();
-        const { id } = await params;
-
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'].includes(user.role)) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
-
-        const { reviewerId, dueDate } = await req.json();
-
-        // 1. Create the review record
-        const review = await prisma.review.create({
-            data: {
-                articleId: id,
-                reviewerId,
-                dueDate: dueDate ? new Date(dueDate) : null,
-                status: 'PENDING'
-            },
-            include: {
-                article: { select: { title: true } }
-            }
-        });
-
-        // 2. Update article status
-        await prisma.article.update({
-            where: { id },
-            data: { status: 'UNDER_REVIEW' }
-        });
-
-        // 3. Notify the reviewer
-        await createNotification({
-            userId: reviewerId,
-            title: 'New Review Assignment',
-            message: `You have been assigned to review the manuscript: "${review.article.title}"`,
-            type: 'INFO',
-            // The reviewer's own queue. There is no per-review detail route —
-            // the old /dashboard/editorial/reviews/[id] link 404'd.
-            link: '/dashboard/editorial/reviews'
-        });
-
-        return NextResponse.json({ success: true, review });
-
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-}
-
 import { StorageService } from '@/lib/storage';
+
+// Reviewer assignment (the old POST here) now lives at
+// POST /api/articles/[id]/assignments — this route only assigns issues.
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -121,4 +74,3 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-
