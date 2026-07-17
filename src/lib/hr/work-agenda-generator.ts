@@ -12,6 +12,7 @@ type TemplateCandidate = {
   employeeIds: any;
   departmentIds: any;
   designationIds: any;
+  metricId?: string | null;
 };
 
 const inJsonList = (list: any, value?: string | null) => {
@@ -92,16 +93,18 @@ export async function generateTodayAgendaForEmployees(args: {
           employeeIds: true,
           departmentIds: true,
           designationIds: true,
+          metricId: true,
         }
       }),
       prisma.employeeGoal.findMany({
         where: {
           employeeId: employeeProfileId,
-          status: { in: ['IN_PROGRESS', 'PENDING', 'ACTIVE'] },
+          // PENDING/IN_PROGRESS are the only pre-completion statuses writers produce.
+          status: { in: ['IN_PROGRESS', 'PENDING'] },
           startDate: { lte: end },
           endDate: { gte: start }
         },
-        select: { id: true, title: true }
+        select: { id: true, title: true, metricId: true }
       }),
       prisma.employeeKPI.findMany({
         where: { employeeId: employeeProfileId },
@@ -146,6 +149,7 @@ export async function generateTodayAgendaForEmployees(args: {
     const retainedAgendaKeys = new Set(retainedExisting.map((row) => normalizeTitle(row.agenda)));
     const exactGoalByTitle = new Map(goals.map((g) => [normalizeTitle(g.title), g]));
     const exactKpiByTitle = new Map(kpis.map((k) => [normalizeTitle(k.title), k]));
+    const goalByMetricId = new Map(goals.filter((g) => g.metricId).map((g) => [g.metricId as string, g]));
 
     let generatedForEmployee = 0;
     for (let idx = 0; idx < chosen.length; idx++) {
@@ -154,7 +158,10 @@ export async function generateTodayAgendaForEmployees(args: {
       const alreadyExists = retainedAgendaKeys.has(agendaKey);
       if (alreadyExists) continue;
 
-      const linkedGoal = exactGoalByTitle.get(agendaKey) || null;
+      // Stable reference first: a template that names a metric links to the
+      // employee's current goal for that metric regardless of titles. Title
+      // matching remains only for legacy templates without a metric.
+      const linkedGoal = (t.metricId && goalByMetricId.get(t.metricId)) || exactGoalByTitle.get(agendaKey) || null;
       const linkedKpi = exactKpiByTitle.get(agendaKey) || null;
       const sourceType = getSourceType(t, employeeProfileId);
       const isConflict = retainedAgendaKeys.has(agendaKey);
@@ -182,6 +189,7 @@ export async function generateTodayAgendaForEmployees(args: {
           estimatedHours: t.targetValue ? Number(t.targetValue) : 1,
           completionStatus: 'PLANNED',
           linkedGoalId: linkedGoal?.id || null,
+          linkedKpiId: linkedKpi?.id || null,
           visibility: 'MANAGER',
           status: 'AUTO_GENERATED',
           companyId: companyId || null,

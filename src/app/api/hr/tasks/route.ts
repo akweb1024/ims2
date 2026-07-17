@@ -101,8 +101,19 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
         departmentIds, designationIds,
         employeeId,
         employeeIds,
-        calculationType, minThreshold, maxThreshold, pointsPerUnit
+        calculationType, minThreshold, maxThreshold, pointsPerUnit,
+        metricId
     } = body;
+
+    // A metric reference must be a real KRA metric of this company — it's the
+    // stable link the agenda generator resolves per-employee.
+    if (metricId) {
+        const metric = await prisma.performanceMetricDefinition.findFirst({
+            where: { id: String(metricId), companyId: user.companyId, scope: 'KRA' },
+            select: { id: true },
+        });
+        if (!metric) return NextResponse.json({ error: 'metricId is not a KRA metric of this company' }, { status: 400 });
+    }
 
     const task = await prisma.employeeTaskTemplate.create({
         data: {
@@ -124,7 +135,8 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,
-            pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null
+            pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null,
+            metricId: metricId ? String(metricId) : null
         } as any
     });
 
@@ -140,8 +152,17 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
         departmentIds, designationIds,
         employeeId,
         employeeIds,
-        calculationType, minThreshold, maxThreshold, pointsPerUnit
+        calculationType, minThreshold, maxThreshold, pointsPerUnit,
+        metricId
     } = body;
+
+    if (metricId) {
+        const metric = await prisma.performanceMetricDefinition.findFirst({
+            where: { id: String(metricId), companyId: user.companyId, scope: 'KRA' },
+            select: { id: true },
+        });
+        if (!metric) return NextResponse.json({ error: 'metricId is not a KRA metric of this company' }, { status: 400 });
+    }
 
     const task = await prisma.employeeTaskTemplate.update({
         where: { id },
@@ -164,7 +185,8 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,
-            pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null
+            pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null,
+            metricId: metricId ? String(metricId) : null
         } as any
     });
 
