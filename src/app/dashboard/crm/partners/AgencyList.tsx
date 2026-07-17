@@ -278,8 +278,10 @@ export default function AgencyList({ userRole }: { userRole: string }) {
                             <div className="bg-secondary-50/50 px-7 py-5 border-t border-secondary-100/60 flex items-center justify-between group-hover:bg-white transition-colors duration-500">
                                 <div className="flex items-center gap-2">
                                     <CRMRowAction
-                                        href={`/dashboard/crm/agencies/${agency.id}`}
-                                        title="System Configuration"
+                                        href={agency.isInstitution
+                                            ? `/dashboard/institutions/${agency.id}/edit`
+                                            : `/dashboard/crm/agencies/${agency.id}/edit`}
+                                        title="Edit Agency"
                                         className="bg-white"
                                     >
                                         <Edit size={16} />
@@ -294,7 +296,9 @@ export default function AgencyList({ userRole }: { userRole: string }) {
                                     </CRMRowAction>
                                 </div>
                                 <Link
-                                    href={`/dashboard/crm/agencies/${agency.id}`}
+                                    href={agency.isInstitution
+                                        ? `/dashboard/institutions/${agency.id}`
+                                        : `/dashboard/customers/${agency.id}`}
                                     className="flex items-center gap-2.5 bg-secondary-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-secondary-100 hover:bg-black transition-all hover:gap-3 group/btn shrink-0"
                                 >
                                     Full Intel Profiling

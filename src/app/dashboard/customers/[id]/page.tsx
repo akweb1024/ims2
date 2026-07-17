@@ -184,7 +184,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '📋' },
-        ...(customer.organizationType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
+        ...(customer.organizationType === 'AGENCY' ? [
+            { id: 'performance', name: 'Performance', icon: '📈' },
+            { id: 'institutions', name: 'Assigned Institutions', icon: '🏫' },
+        ] : []),
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
         { id: 'communication', name: 'Follow-up', icon: '💬' },
         { id: 'billing', name: 'Billing', icon: '💰' },
@@ -622,6 +625,22 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 </div>
                                             </div>
                                         )}
+                                        {organizationType === 'AGENCY' && (
+                                            <div className="pt-4 border-t border-indigo-100 flex flex-wrap items-center justify-between gap-2 text-sm">
+                                                <div>
+                                                    <span className="font-bold text-gray-700">Commission Terms:</span>{' '}
+                                                    <span className="text-secondary-700">{customer.agencyDetails?.commissionTerms || 'Standard'}</span>
+                                                    {customer.agencyDetails?.territory && (
+                                                        <span className="text-secondary-500"> · Territory: {customer.agencyDetails.territory}</span>
+                                                    )}
+                                                </div>
+                                                {/* agencyDetails (discountRate/commissionTerms/territory) is only
+                                                    writable via the dedicated agency edit page. */}
+                                                <Link href={`/dashboard/crm/agencies/${customer.id}/edit`} className="text-primary-600 font-bold text-xs hover:underline">
+                                                    Edit agency terms →
+                                                </Link>
+                                            </div>
+                                        )}
                                         {organizationType === 'AGENCY' && customer?.discountUpdatedAt && (
                                             <div className="pt-4 border-t border-indigo-100 text-xs text-secondary-600">
                                                 Discount updated by {(customer as any)?.discountUpdatedBy?.name || (customer as any)?.discountUpdatedBy?.email || 'Unknown'} on{' '}
@@ -1007,6 +1026,37 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             </div>
                         )}
 
+                        {activeTab === 'institutions' && customer.organizationType === 'AGENCY' && (
+                            <div className="space-y-4">
+                                {(customer.agencyInstitutions || []).length === 0 ? (
+                                    <div className="card-premium text-center py-12">
+                                        <p className="text-secondary-500">No institutions assigned to this agency yet.</p>
+                                    </div>
+                                ) : (
+                                    (customer.agencyInstitutions || []).map((inst: any) => (
+                                        <div key={inst.id} className="card-premium flex justify-between items-center hover:shadow-md transition-shadow">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-secondary-900">{inst.name}</h4>
+                                                    {!inst.isActive && <span className="badge badge-warning text-[10px]">Inactive</span>}
+                                                </div>
+                                                <p className="text-sm text-secondary-500">{inst.city}, {inst.state}</p>
+                                                <span className="text-[10px] font-mono bg-secondary-100 px-1.5 py-0.5 rounded text-secondary-600 mt-1 inline-block">
+                                                    {inst.code} • {inst.type}
+                                                </span>
+                                            </div>
+                                            <Link
+                                                href={`/dashboard/crm/partners?tab=institutions`}
+                                                className="text-primary-600 font-bold text-sm hover:underline"
+                                            >
+                                                View in List →
+                                            </Link>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
                         {activeTab === 'performance' && customer.organizationType === 'AGENCY' && customer.agencyDetails && (
                             <AgencyPerformanceDashboard details={customer.agencyDetails} />
                         )}
@@ -1026,7 +1076,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
                                     <div className="mt-4 sm:mt-0">
                                         <Link
-                                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}`}
+                                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}${customer.organizationType === 'AGENCY' ? '&context=agency' : ''}`}
                                             className="btn btn-primary shadow-lg shadow-primary-500/30"
                                         >
                                             Create New Invoice →
