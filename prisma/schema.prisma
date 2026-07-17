@@ -2559,6 +2559,9 @@ model WorkPlan {
   actualHours      Float?
   completionStatus String            @default("PLANNED")
   linkedGoalId     String?
+  /// Real column (was buried in the JSON strategy metadata); the agenda
+  /// generator writes both during the transition, readers prefer the column.
+  linkedKpiId      String?
   visibility       String            @default("MANAGER")
   status           String            @default("SHARED")
   createdAt        DateTime          @default(now())
@@ -2872,6 +2875,11 @@ model EmployeeTaskTemplate {
   startDate        DateTime?
   targetUnit       TaskTargetUnit        @default(COUNT)
   targetValue      Float?                @default(1)
+  /// Stable link: the KRA metric this task tracks. The agenda generator uses it
+  /// to find each employee's current goal for the metric — renaming a goal no
+  /// longer silently unlinks the task (title matching remains only as legacy
+  /// fallback for templates without a metric).
+  metricId         String?
   employeeIds      Json?
   dailyCompletions DailyTaskCompletion[]
   company          Company               @relation(fields: [companyId], references: [id])

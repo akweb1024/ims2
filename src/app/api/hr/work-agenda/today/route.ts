@@ -120,7 +120,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         estimatedHours: p.estimatedHours || 0,
         linkedGoalId: p.linkedGoalId,
         linkedGoalTitle: p.linkedGoal?.title || null,
-        linkedKpiId: metadata?.linkedKpiId || null,
+        linkedKpiId: (p as any).linkedKpiId || metadata?.linkedKpiId || null,
         sourceType: metadata?.sourceType || 'MANUAL',
         mandatory: Boolean(metadata?.mandatory),
         sequence: metadata?.sequence || 999,
