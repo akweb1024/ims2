@@ -5102,6 +5102,9 @@ model ProjectComment {
   content      String
   /// OPEN once raised; RESOLVED when the project team has acted on it.
   status       String           @default("OPEN")
+  /// PUBLIC = a review anyone on the project sees; PRIVATE = a personal note,
+  /// visible only to its author and SUPER_ADMIN (filtered in the query, never in React).
+  visibility   String           @default("PUBLIC")
   resolvedById String?
   resolvedAt   DateTime?
   resolutionNote String?
