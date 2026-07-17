@@ -2,7 +2,7 @@ import { getISTToday } from '@/lib/date-utils';
 
 export const AGENDA_META_PREFIX = 'AGENDA_META::';
 
-export type AgendaSourceType = 'EMPLOYEE_TEMPLATE' | 'ROLE_TEMPLATE' | 'GENERIC_TEMPLATE' | 'MANAGER_OVERRIDE' | 'MANUAL';
+export type AgendaSourceType = 'EMPLOYEE_TEMPLATE' | 'ROLE_TEMPLATE' | 'GENERIC_TEMPLATE' | 'MANAGER_OVERRIDE' | 'MANUAL' | 'ASSIGNMENT';
 
 export interface AgendaMetadata {
   version: 1;
