@@ -28,6 +28,9 @@ const SCENARIOS: Record<string, string[]> = {
 // A role that had the old href must now have the replacement.
 const REPOINTED: Record<string, string> = {
     '/dashboard/performance/workspace?tab=review': '/dashboard/performance/workspace',
+    // C9: goal verification merged into the Review Inbox's Goals tab; the old
+    // route is a redirect stub to /dashboard/review-inbox?tab=goals.
+    '/dashboard/performance/verify': '/dashboard/review-inbox',
 };
 
 // Deliberate removals. Key: `${role}:${scenario}:${href}`.

@@ -185,7 +185,7 @@ export async function submitGoal(actorUserId: string, goalId: string, proofUrl?:
       title: 'Goal submitted for verification',
       message: `A goal "${goal.title}" is awaiting your TL verification.`,
       type: 'KRA_VERIFY',
-      link: '/dashboard/performance/verify',
+      link: '/dashboard/review-inbox?tab=goals',
     });
   }
   return { ok: true as const };

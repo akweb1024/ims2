@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { Inbox, FileText, Flag, ShieldCheck, RefreshCw, Check, X, ExternalLink } from 'lucide-react';
 import { useWorkReports, useWorkReportMutations } from '@/hooks/useHR';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
-import { kraFetch } from '@/lib/kra/client';
+import { kraFetch, type KraProof, type KraGoalVerification } from '@/lib/kra/client';
+import { DimensionBadge, StatusBadge, VerificationTimeline } from '@/components/dashboard/kra/badges';
 import FormattedDate from '@/components/common/FormattedDate';
 
 /**
@@ -29,18 +31,26 @@ interface Contribution {
 interface VerifyGoal {
     id: string;
     title: string;
+    dimension: string | null;
     status: string;
     targetValue: number;
     currentValue: number;
+    achievementPercentage: number;
     unit: string;
     dueDate?: string | null;
-    proofs?: { proofUrl?: string | null; note?: string | null }[];
+    proofs?: KraProof[];
+    verifications?: KraGoalVerification[];
     employee?: { user?: { name: string | null } };
 }
 
 type TabId = 'reports' | 'numbers' | 'goals';
 
-export default function ReviewInboxPage() {
+const isTabId = (v: string | null): v is TabId => v === 'reports' || v === 'numbers' || v === 'goals';
+
+const fmtDate = (iso?: string | null) =>
+    iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+function ReviewInboxContent() {
     const { data: reports = [], isLoading: reportsLoading, refetch: refetchReports } = useWorkReports({ status: 'SUBMITTED' });
     const { updateStatus, addComment } = useWorkReportMutations();
 
@@ -68,14 +78,19 @@ export default function ReviewInboxPage() {
 
     useEffect(() => { loadQueues(); }, [loadQueues]);
 
-    // Land on the first queue that actually has work.
+    const searchParams = useSearchParams();
+
+    // An explicit ?tab= (e.g. verification notifications deep-link to
+    // ?tab=goals) wins; otherwise land on the first queue that has work.
     useEffect(() => {
         if (tab !== null || loading || reportsLoading) return;
-        if (reports.length > 0) setTab('reports');
+        const requested = searchParams?.get('tab') ?? null;
+        if (isTabId(requested)) setTab(requested);
+        else if (reports.length > 0) setTab('reports');
         else if (contributions.length > 0) setTab('numbers');
         else if (goals.length > 0) setTab('goals');
         else setTab('reports');
-    }, [tab, loading, reportsLoading, reports.length, contributions.length, goals.length]);
+    }, [tab, loading, reportsLoading, reports.length, contributions.length, goals.length, searchParams]);
 
     const handleApproveReport = async (
         id: string, approvedTaskIds: string[], rejectedTaskIds: string[],
@@ -270,13 +285,16 @@ export default function ReviewInboxPage() {
                             : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {goals.map((g) => {
-                                        const latestProof = g.proofs?.[0];
                                         const level = g.status === 'SUBMITTED' ? 'TL' : 'MANAGER';
                                         return (
                                             <div key={g.id} className="card-premium p-5 border border-secondary-100 space-y-3">
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <div>
-                                                        <p className="font-black text-secondary-900">{g.title}</p>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <DimensionBadge dimension={g.dimension} />
+                                                            <StatusBadge status={g.status} />
+                                                        </div>
+                                                        <p className="font-black text-secondary-900 mt-1">{g.title}</p>
                                                         <p className="text-xs text-secondary-500 font-bold mt-0.5">{g.employee?.user?.name || '—'}</p>
                                                     </div>
                                                     <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-50 text-indigo-600 whitespace-nowrap">
@@ -285,14 +303,25 @@ export default function ReviewInboxPage() {
                                                 </div>
                                                 <p className="text-sm text-secondary-600">
                                                     <span className="font-black text-secondary-900">{g.currentValue}</span> / {g.targetValue} {g.unit}
+                                                    {' '}({Math.round(g.achievementPercentage || 0)}%) · due {fmtDate(g.dueDate)}
                                                 </p>
-                                                {latestProof?.proofUrl && (
-                                                    <a href={latestProof.proofUrl} target="_blank" rel="noreferrer"
-                                                        className="inline-flex items-center gap-1 text-xs font-bold text-primary-600 hover:text-primary-800">
-                                                        View proof <ExternalLink size={12} />
-                                                    </a>
+                                                {(g.proofs?.length ?? 0) > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {g.proofs!.map((p) => (
+                                                            <span key={p.id} className="inline-flex items-center gap-1 rounded-lg bg-secondary-50 ring-1 ring-inset ring-secondary-200 px-2 py-1 text-xs text-secondary-600">
+                                                                {p.url ? (
+                                                                    <a href={p.url} target="_blank" rel="noreferrer"
+                                                                        className="inline-flex items-center gap-1 font-bold text-primary-600 hover:text-primary-800">
+                                                                        <ExternalLink size={11} /> Proof link
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="italic">{p.note || 'Note proof'}</span>
+                                                                )}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 )}
-                                                {latestProof?.note && <p className="text-xs text-secondary-500 italic">“{latestProof.note}”</p>}
+                                                <VerificationTimeline verifications={g.verifications || []} />
                                                 <div className="flex gap-2 pt-1">
                                                     <button
                                                         onClick={() => verifyGoal(g, 'APPROVE')}
@@ -322,5 +351,14 @@ function QueueClear({ label }: { label: string }) {
         <div className="card-premium p-12 text-center border border-secondary-100 text-secondary-400 font-bold">
             {label}
         </div>
+    );
+}
+
+// useSearchParams requires a Suspense boundary for prerendering.
+export default function ReviewInboxPage() {
+    return (
+        <Suspense fallback={<div className="p-20 text-center text-secondary-400 font-bold animate-pulse">Loading your review queues…</div>}>
+            <ReviewInboxContent />
+        </Suspense>
     );
 }
