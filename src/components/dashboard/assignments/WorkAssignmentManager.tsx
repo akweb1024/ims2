@@ -35,6 +35,14 @@ interface Assignee {
     departmentName: string | null;
 }
 
+interface Capacity {
+    employeeId: string;
+    shiftHours: number;
+    plannedHours: number;
+    remainingHours: number;
+    overload: boolean;
+}
+
 interface WorkAssignmentManagerProps {
     userId?: string;
     view?: 'received' | 'assigned' | 'all';
@@ -52,6 +60,7 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const teamMode = !userId && canAssign;
     const [assignees, setAssignees] = useState<Assignee[]>([]);
+    const [capacities, setCapacities] = useState<Record<string, Capacity>>({});
     const [newTask, setNewTask] = useState({
         userId: '',
         title: '',
@@ -76,6 +85,27 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
             }
         })();
     }, [teamMode]);
+
+    // Remaining capacity per member for the task's start day (today when unset) —
+    // shown next to the assignee picker so overloading is a choice, not an accident.
+    useEffect(() => {
+        if (!teamMode || !assignees.length) return;
+        (async () => {
+            try {
+                const ids = assignees.map(a => a.employeeId).join(',');
+                const dateParam = newTask.startDate ? `&date=${newTask.startDate}` : '';
+                const res = await fetch(`/api/hr/capacity?employeeIds=${ids}${dateParam}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const map: Record<string, Capacity> = {};
+                    (data.capacities || []).forEach((c: Capacity) => { map[c.employeeId] = c; });
+                    setCapacities(map);
+                }
+            } catch {
+                // Capacity is advisory — assignment still works without it.
+            }
+        })();
+    }, [teamMode, assignees, newTask.startDate]);
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -441,12 +471,33 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                         onChange={e => setNewTask({ ...newTask, userId: e.target.value })}
                                     >
                                         <option value="">Select a team member…</option>
-                                        {assignees.map(a => (
-                                            <option key={a.userId} value={a.userId}>
-                                                {a.name}{a.departmentName ? ` (${a.departmentName})` : ''}
-                                            </option>
-                                        ))}
+                                        {assignees.map(a => {
+                                            const cap = capacities[a.employeeId];
+                                            const capLabel = cap
+                                                ? cap.overload
+                                                    ? ` — overloaded by ${Math.abs(cap.remainingHours).toFixed(1)}h`
+                                                    : ` — ${cap.remainingHours.toFixed(1)}h free`
+                                                : '';
+                                            return (
+                                                <option key={a.userId} value={a.userId}>
+                                                    {a.name}{a.departmentName ? ` (${a.departmentName})` : ''}{capLabel}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
+                                    {(() => {
+                                        const selected = assignees.find(a => a.userId === newTask.userId);
+                                        const cap = selected ? capacities[selected.employeeId] : null;
+                                        if (!cap) return null;
+                                        const day = newTask.startDate || 'today';
+                                        return (
+                                            <p className={`text-xs mt-1 font-semibold ${cap.overload ? 'text-danger-600' : 'text-secondary-500'}`}>
+                                                {cap.overload
+                                                    ? `${selected!.name} is already overloaded by ${Math.abs(cap.remainingHours).toFixed(1)}h (${cap.plannedHours}h planned of a ${cap.shiftHours}h shift, ${day}).`
+                                                    : `${selected!.name} has ${cap.remainingHours.toFixed(1)}h free (${cap.plannedHours}h planned of a ${cap.shiftHours}h shift, ${day}).`}
+                                            </p>
+                                        );
+                                    })()}
                                 </div>
                             )}
 
@@ -520,6 +571,17 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                     value={newTask.estimatedEffort}
                                     onChange={e => setNewTask({ ...newTask, estimatedEffort: e.target.value })}
                                 />
+                                {(() => {
+                                    const selected = assignees.find(a => a.userId === newTask.userId);
+                                    const cap = selected ? capacities[selected.employeeId] : null;
+                                    const effort = parseFloat(newTask.estimatedEffort);
+                                    if (!cap || !Number.isFinite(effort) || effort <= 0 || effort <= cap.remainingHours) return null;
+                                    return (
+                                        <p className="text-xs mt-1 font-semibold text-warning-600">
+                                            This exceeds {selected!.name}&apos;s remaining capacity ({Math.max(0, cap.remainingHours).toFixed(1)}h free). You can still assign it — they will be over their shift.
+                                        </p>
+                                    );
+                                })()}
                             </div>
 
                             <div className="pt-4 flex justify-end gap-3">

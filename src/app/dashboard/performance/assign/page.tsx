@@ -7,6 +7,7 @@ const PERIODS = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'WEEKLY', 'DAI
 const DIMENSIONS = ['OUTPUT', 'QUALITY', 'TAT', 'COLLABORATION', 'IMPROVEMENT', 'BEHAVIOR'] as const;
 
 interface Assignee { employeeId: string; userId: string; name: string; departmentName: string | null }
+interface Capacity { employeeId: string; shiftHours: number; plannedHours: number; remainingHours: number; overload: boolean }
 interface TemplateItem { id: string; metricId: string; defaultTarget: number; metric?: { name: string; unit: string | null } }
 interface Template { id: string; name: string; items?: TemplateItem[] }
 interface Goal { id: string; title: string; targetValue: number; currentValue: number; achievementPercentage: number; unit: string; status: string; dimension?: string | null }
@@ -15,6 +16,7 @@ const emptyCustom = { title: '', metric: '', target: '', dimension: 'OUTPUT', da
 
 export default function AssignKraPage() {
     const [assignees, setAssignees] = useState<Assignee[]>([]);
+    const [capacities, setCapacities] = useState<Record<string, Capacity>>({});
     const [templates, setTemplates] = useState<Template[]>([]);
     const [employeeIds, setEmployeeIds] = useState<string[]>([]);
     const [deptFilter, setDeptFilter] = useState('');
@@ -90,6 +92,24 @@ export default function AssignKraPage() {
             } catch (e: any) { setError(e.message); }
         })();
     }, [authHeaders]);
+
+    // Today's remaining capacity per member — the "two managers assigning to
+    // one person" guard. Refreshed whenever the assignee list changes.
+    useEffect(() => {
+        if (!assignees.length) return;
+        (async () => {
+            try {
+                const ids = assignees.map((a) => a.employeeId).join(',');
+                const res = await fetch(`/api/hr/capacity?employeeIds=${ids}`, { headers: authHeaders() });
+                if (res.ok) {
+                    const d = await res.json();
+                    const map: Record<string, Capacity> = {};
+                    (d.capacities || []).forEach((c: Capacity) => { map[c.employeeId] = c; });
+                    setCapacities(map);
+                }
+            } catch { /* capacity is a hint — the picker still works without it */ }
+        })();
+    }, [assignees, authHeaders]);
 
     // Current-goals preview only makes sense for a single selection.
     const soleEmployeeId = employeeIds.length === 1 ? employeeIds[0] : '';
@@ -272,6 +292,16 @@ export default function AssignKraPage() {
                                     <label key={a.employeeId} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" checked={selected.has(a.employeeId)} onChange={() => toggle(a.employeeId)} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                                         <span className="text-sm text-gray-800">{a.name}</span>
+                                        {capacities[a.employeeId] && (
+                                            <span
+                                                className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${capacities[a.employeeId].overload ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}
+                                                title={`Planned ${capacities[a.employeeId].plannedHours}h of a ${capacities[a.employeeId].shiftHours}h shift today`}
+                                            >
+                                                {capacities[a.employeeId].overload
+                                                    ? `Overloaded by ${Math.abs(capacities[a.employeeId].remainingHours).toFixed(1)}h`
+                                                    : `${capacities[a.employeeId].remainingHours.toFixed(1)}h free today`}
+                                            </span>
+                                        )}
                                         {a.departmentName && <span className="text-xs text-gray-400 ml-auto">{a.departmentName}</span>}
                                     </label>
                                 ))}

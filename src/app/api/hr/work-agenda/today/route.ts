@@ -5,6 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { decodeAgendaMetadata, getISTDayRange, isManagerialRole } from '@/lib/hr/work-agenda';
 import { companyScopeWhere } from '@/lib/company-scope';
+import { computeCapacityMap } from '@/lib/hr/capacity';
 
 async function resolveEmployeeScope(user: any, employeeIdParam: string | null, scope: string) {
   if (employeeIdParam && employeeIdParam !== 'self') {
@@ -89,6 +90,8 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
       if (row._max.updatedAt) latestKpiByEmployee.set(row.employeeId, row._max.updatedAt);
     }
 
+    const capacityMap = await computeCapacityMap(employeeIds, start, end, companyScopeWhere(user));
+
     const byEmployee = new Map<string, any>();
     for (const p of plans) {
       if (!byEmployee.has(p.employeeId)) {
@@ -134,7 +137,12 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
 
     const employees = Array.from(byEmployee.values()).map((entry) => {
       const sortedTasks = entry.tasks.sort((a: any, b: any) => a.sequence - b.sequence || new Date(a.date).getTime() - new Date(b.date).getTime());
-      const shiftHours = 8.5;
+      // Real per-employee shift ceiling (roster override → standing shift →
+      // company default → fallback) — was a hardcoded 8.5 for everyone.
+      const capacity = capacityMap.get(entry.employeeId);
+      const shiftHours = capacity?.shiftHours ?? 8.5;
+      entry.guardRails.shiftHours = shiftHours;
+      entry.guardRails.remainingHours = Math.round((shiftHours - entry.guardRails.plannedHours) * 100) / 100;
       entry.guardRails.overload = entry.guardRails.plannedHours > shiftHours;
       const completed = sortedTasks.filter((t: any) => t.completionStatus === 'COMPLETED').length;
       const blocked = sortedTasks.filter((t: any) => t.completionStatus === 'BLOCKED').length;
