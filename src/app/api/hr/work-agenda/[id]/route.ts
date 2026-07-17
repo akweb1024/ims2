@@ -6,6 +6,7 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { decodeAgendaMetadata, encodeAgendaMetadata } from '@/lib/hr/work-agenda';
 import { createAuditLog } from '@/lib/notifications';
 import { notifyBlockerTransition } from '@/lib/hr/blocker-notifications';
+import { isPriorityChange, recordPriorityChange, PRIORITY_COMMENT_REQUIRED } from '@/lib/hr/priority-audit';
 
 const VALID_STATUSES = new Set(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCELLED']);
 
@@ -36,6 +37,12 @@ export const PATCH = authorizedRoute(
       const completionStatus = body.completionStatus ? String(body.completionStatus) : undefined;
       if (completionStatus && !VALID_STATUSES.has(completionStatus)) {
         return createErrorResponse('Invalid completionStatus', 400);
+      }
+
+      const priorityChanging = isPriorityChange(plan.priority, body.priority);
+      const priorityChangeComment = typeof body.priorityChangeComment === 'string' ? body.priorityChangeComment.trim() : '';
+      if (priorityChanging && !priorityChangeComment) {
+        return createErrorResponse(PRIORITY_COMMENT_REQUIRED, 400);
       }
 
       const metadata = decodeAgendaMetadata(plan.strategy) || {
@@ -117,6 +124,21 @@ export const PATCH = authorizedRoute(
         });
       } catch (notifyErr) {
         console.error('Blocker notification failed (non-fatal):', notifyErr);
+      }
+
+      if (priorityChanging) {
+        try {
+          await recordPriorityChange({
+            entity: 'work_plan',
+            entityId: plan.id,
+            userId: user.id,
+            from: plan.priority,
+            to: updated.priority,
+            comment: priorityChangeComment,
+          });
+        } catch (auditErr) {
+          console.error('Priority-change audit failed (non-fatal):', auditErr);
+        }
       }
 
       if (isManagerial) {

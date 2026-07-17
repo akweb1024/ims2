@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { isPriorityChange, recordPriorityChange, PRIORITY_COMMENT_REQUIRED } from '@/lib/hr/priority-audit';
 
 // GET: Get assignment details
 export const GET = authorizedRoute(
@@ -98,6 +99,12 @@ export const PUT = authorizedRoute(
                 return createErrorResponse('Forbidden', 403);
             }
 
+            const priorityChanging = isPriorityChange(existingTask.priority, priority);
+            const priorityChangeComment = typeof body.priorityChangeComment === 'string' ? body.priorityChangeComment.trim() : '';
+            if (priorityChanging && !priorityChangeComment) {
+                return createErrorResponse(PRIORITY_COMMENT_REQUIRED, 400);
+            }
+
             const updatedTask = await prisma.task.update({
                 where: { id },
                 data: {
@@ -125,6 +132,21 @@ export const PUT = authorizedRoute(
                     }
                 }
             });
+
+            if (priorityChanging) {
+                try {
+                    await recordPriorityChange({
+                        entity: 'task',
+                        entityId: id,
+                        userId: user.id,
+                        from: existingTask.priority,
+                        to: updatedTask.priority,
+                        comment: priorityChangeComment,
+                    });
+                } catch (auditErr) {
+                    console.error('Priority-change audit failed (non-fatal):', auditErr);
+                }
+            }
 
             return NextResponse.json(updatedTask);
         } catch (error: any) {
