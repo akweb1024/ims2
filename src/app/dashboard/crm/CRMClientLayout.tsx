@@ -10,7 +10,7 @@ import { Users, TrendingUp, FileText, Phone, BarChart3, Tags } from 'lucide-reac
 const tabs = [
     {
         label: 'Customers',
-        href: '/dashboard/crm/customers',
+        href: '/dashboard/customers',
         icon: <Users size={14} />,
         color: 'text-emerald-500',
         matchPaths: ['/dashboard/crm/customers', '/dashboard/crm', '/dashboard/customers'],

@@ -18,13 +18,23 @@ import {
     CRMRowAction, 
     CRMModal 
 } from '@/components/crm/CRMPageShell';
-import { 
-    Users, Plus, Search, Filter, Globe, MapPin, 
+import {
+    Users, User, Plus, Search, Filter, Globe, MapPin,
     Building2, UserCheck, MessageSquare, Eye,
     MoreHorizontal, Target, CheckSquare, X,
-    Mail, Briefcase, ChevronRight
+    Mail, Briefcase, ChevronRight, Trash2, AlertTriangle
 } from 'lucide-react';
+import { cn } from '@/lib/classnames';
+import CRMClientLayout from '../crm/CRMClientLayout';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
+
+// ─── Customer type tabs ────────────────────────────────────────────────────────
+const TYPE_TABS = [
+    { value: '', label: 'All Customers', icon: <Users size={13} />, color: 'text-secondary-600' },
+    { value: 'INDIVIDUAL', label: 'Individuals', icon: <User size={13} />, color: 'text-primary-600' },
+    { value: 'INSTITUTION', label: 'Institutions', icon: <Building2 size={13} />, color: 'text-emerald-600' },
+    { value: 'AGENCY', label: 'Agencies', icon: <Briefcase size={13} />, color: 'text-amber-600' },
+] as const;
 
 export default function CustomersPage() {
     const router = useRouter();
@@ -48,6 +58,9 @@ export default function CustomersPage() {
     const [assignTargetId, setAssignTargetId] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -111,6 +124,50 @@ export default function CustomersPage() {
         }, 300);
         return () => clearTimeout(timer);
     }, [fetchCustomers]);
+
+    // Counts per type for the tab badges (unfiltered, fetched once)
+    const fetchCounts = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/customers?limit=1&includeTypeCounts=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            setTypeCounts({
+                '': data.typeCounts?.all ?? 0,
+                'INDIVIDUAL': data.typeCounts?.individual ?? 0,
+                'INSTITUTION': data.typeCounts?.institution ?? 0,
+                'AGENCY': data.typeCounts?.agency ?? 0,
+            });
+        } catch { /* counts are decorative — stay silent */ }
+    }, []);
+
+    useEffect(() => { fetchCounts(); }, [fetchCounts]);
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleteLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/customers/${deleteTarget.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setDeleteTarget(null);
+                fetchCustomers();
+                fetchCounts();
+            } else {
+                const d = await res.json();
+                alert(d.error || 'Failed to delete customer');
+            }
+        } catch {
+            alert('A network error occurred');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
@@ -204,8 +261,10 @@ export default function CustomersPage() {
         }
     };
 
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+
     return (
-        <>
+        <CRMClientLayout>
             <CRMPageShell
                 title="Customers"
                 subtitle="View existing customers, who owns each account, and recent activity."
@@ -218,6 +277,68 @@ export default function CustomersPage() {
                     </Link>
                 }
             >
+                {/* Type tabs with live counts */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {TYPE_TABS.map(tab => (
+                        <button
+                            key={tab.value}
+                            onClick={() => {
+                                setTypeFilter(tab.value);
+                                setPagination(p => ({ ...p, page: 1 }));
+                            }}
+                            className={cn(
+                                'flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all',
+                                typeFilter === tab.value
+                                    ? 'bg-secondary-950 text-white border-secondary-950 shadow-lg'
+                                    : 'bg-white text-secondary-500 border-secondary-200 hover:border-secondary-400'
+                            )}
+                        >
+                            <span className={typeFilter === tab.value ? 'text-white' : tab.color}>{tab.icon}</span>
+                            {tab.label}
+                            {typeCounts[tab.value] !== undefined && (
+                                <span className={cn(
+                                    'ml-1 px-2 py-0.5 rounded-full text-[8px] font-black',
+                                    typeFilter === tab.value
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-secondary-100 text-secondary-500'
+                                )}>
+                                    {typeCounts[tab.value]}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Context banner for the current tab */}
+                {typeFilter === 'INSTITUTION' && (
+                    <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <Building2 size={18} className="text-emerald-600" />
+                            <div>
+                                <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">Institution customers</p>
+                                <p className="text-xs text-emerald-700 mt-0.5">Includes universities, colleges, and affiliated institutions.</p>
+                            </div>
+                        </div>
+                        <Link href="/dashboard/crm/partners?tab=institutions" className="text-[10px] font-black uppercase tracking-wider text-emerald-700 hover:text-emerald-900 border border-emerald-200 rounded-xl px-4 py-2 hover:bg-emerald-100 transition-all whitespace-nowrap">
+                            View All Institutions
+                        </Link>
+                    </div>
+                )}
+                {typeFilter === 'AGENCY' && (
+                    <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <Briefcase size={18} className="text-amber-600" />
+                            <div>
+                                <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Agency partners</p>
+                                <p className="text-xs text-amber-700 mt-0.5">Agencies sell our products to institutions, universities, and individuals on our behalf.</p>
+                            </div>
+                        </div>
+                        <Link href="/dashboard/crm/partners?tab=agencies" className="text-[10px] font-black uppercase tracking-wider text-amber-700 hover:text-amber-900 border border-amber-200 rounded-xl px-4 py-2 hover:bg-amber-100 transition-all whitespace-nowrap">
+                            View All Agencies
+                        </Link>
+                    </div>
+                )}
+
                 {/* Bulk Actions */}
                 {selectedIds.size > 0 && ['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
                     <div className="bg-primary-900 text-white p-4 rounded-3xl flex items-center justify-between mb-8 animate-in slide-in-from-top-4 duration-500 shadow-2xl shadow-primary-200 ring-4 ring-primary-50">
@@ -275,22 +396,6 @@ export default function CustomersPage() {
                                 onChange={(e) => setStateFilter(e.target.value)}
                              />
                         </div>
-                        <div className="flex items-center gap-3 bg-white p-1 rounded-2xl border border-secondary-200/60 shadow-sm">
-                             <div className="pl-3 text-secondary-400 border-r border-secondary-100 pr-2">
-                                  <Filter size={14} />
-                             </div>
-                             <select
-                                className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer pr-8 py-1"
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                             >
-                                <option value="">All account types</option>
-                                <option value="INDIVIDUAL">Individual</option>
-                                <option value="INSTITUTION">Institution</option>
-                                <option value="AGENCY">Agency</option>
-                             </select>
-                        </div>
-                        
                         {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && selectedIds.size === 0 && (
                             <button
                                 onClick={() => setShowBulkModal(true)}
@@ -445,6 +550,22 @@ export default function CustomersPage() {
                                                 >
                                                     <Eye size={16} />
                                                 </CRMRowAction>
+                                                <CRMRowAction
+                                                    href={`/dashboard/crm/invoices/new?customerId=${customer.id}`}
+                                                    variant="secondary"
+                                                    title="Create invoice"
+                                                >
+                                                    <ChevronRight size={16} />
+                                                </CRMRowAction>
+                                                {isAdmin && (
+                                                    <button
+                                                        onClick={() => setDeleteTarget({ id: customer.id, name: customer.name })}
+                                                        title="Delete customer"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-400 transition-all active:scale-95"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -462,6 +583,40 @@ export default function CustomersPage() {
                         entityName="customers"
                     />
                 </div>
+
+                {/* Delete Confirm Modal */}
+                <CRMModal
+                    open={!!deleteTarget}
+                    onClose={() => setDeleteTarget(null)}
+                    title="Delete Customer"
+                    subtitle="This action is permanent and cannot be undone."
+                >
+                    <div className="space-y-6">
+                        <div className="flex items-start gap-4 p-4 bg-red-50 rounded-2xl border border-red-100">
+                            <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="text-sm font-bold text-red-800">You are about to delete:</p>
+                                <p className="text-sm text-red-700 mt-0.5 font-semibold">{deleteTarget?.name}</p>
+                                <p className="text-xs text-red-600 mt-2">All related subscriptions, invoices, communications, and assignments will also be permanently removed.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                className="flex-1 px-4 py-3 rounded-xl border border-secondary-200 text-[10px] font-black uppercase tracking-wider text-secondary-500 hover:bg-secondary-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleteLoading}
+                                className="flex-1 bg-red-600 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-red-700 disabled:opacity-50 transition-all"
+                            >
+                                {deleteLoading ? 'Deleting...' : 'Yes, Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </CRMModal>
 
                 {/* Bulk Assign Modal */}
                 <CRMModal
@@ -529,6 +684,6 @@ export default function CustomersPage() {
                     </div>
                 </CRMModal>
             </CRMPageShell>
-        </>
+        </CRMClientLayout>
     );
 }
