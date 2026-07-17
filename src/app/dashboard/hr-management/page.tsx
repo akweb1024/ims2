@@ -17,7 +17,7 @@ import HolidayManager from '@/components/dashboard/hr/HolidayManager';
 import PerformanceReviewModal from '@/components/dashboard/hr/PerformanceReviewModal';
 import AttendanceModal from '@/components/dashboard/hr/AttendanceModal';
 import AttendanceManager from '@/components/dashboard/hr/AttendanceManager';
-import DepartmentManager from '@/components/dashboard/hr/DepartmentManager';
+import DepartmentsBoard from '@/components/dashboard/hr/DepartmentsBoard';
 import StatutorySettings from '@/components/dashboard/hr/StatutorySettings';
 import SalaryStructureManager from '@/components/dashboard/hr/SalaryStructureManager';
 import ShiftManager from '@/components/dashboard/hr/ShiftManager';
@@ -746,7 +746,7 @@ const HRManagementContent = () => {
                 )} { /* End of documents tab */}
 
                 {activeTab === 'departments' && (
-                    <DepartmentManager userRole={userRole} />
+                    <DepartmentsBoard userRole={userRole} variant="tab" />
                 )}
 
                 {activeTab === 'statutory' && (
