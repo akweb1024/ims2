@@ -77,7 +77,7 @@ export async function generateTodayAgendaForEmployees(args: {
     const isRegeneratableGenerated = (strategy?: string | null) => {
       const meta = decodeAgendaMetadata(strategy);
       if (meta?.carriedFromId) return false; // carried work survives regeneration
-      return Boolean(meta && ['EMPLOYEE_TEMPLATE', 'ROLE_TEMPLATE', 'GENERIC_TEMPLATE'].includes(meta.sourceType));
+      return Boolean(meta && ['EMPLOYEE_TEMPLATE', 'ROLE_TEMPLATE', 'GENERIC_TEMPLATE', 'ASSIGNMENT'].includes(meta.sourceType));
     };
 
     const hasGeneratedItems = existingToday.some((row) => isRegeneratableGenerated(row.strategy));
@@ -204,6 +204,80 @@ export async function generateTodayAgendaForEmployees(args: {
           visibility: 'MANAGER',
           status: 'AUTO_GENERATED',
           companyId: companyId || null,
+        } as any
+      });
+      retainedAgendaKeys.add(agendaKey);
+      generatedForEmployee += 1;
+    }
+
+    // Assignment-derived items: an IT task or ad-hoc assignment that is active
+    // for this employee lands on today's agenda automatically — IN_PROGRESS,
+    // or started and due today / overdue. Linked by id (itTaskId / taskId),
+    // deduped by title against templates and carried rows, and refreshed from
+    // live assignment state on regeneration.
+    const activeWindow = {
+      status: { in: ['PENDING', 'IN_PROGRESS'] as never },
+      AND: [
+        { OR: [{ status: 'IN_PROGRESS' as never }, { dueDate: { lte: end } }] },
+        { OR: [{ startDate: null }, { startDate: { lte: end } }] },
+      ],
+    };
+    const [itTasks, adhocTasks] = await Promise.all([
+      prisma.iTTask.findMany({
+        where: { assignedToId: profile.userId, ...(companyId ? { companyId } : {}), ...activeWindow },
+        select: { id: true, title: true, priority: true, estimatedHours: true, projectId: true },
+        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+        take: 20,
+      }),
+      prisma.task.findMany({
+        where: { userId: profile.userId, ...(companyId ? { companyId } : {}), ...activeWindow },
+        select: { id: true, title: true, priority: true, estimatedEffort: true, projectId: true },
+        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+        take: 20,
+      }),
+    ]);
+
+    const assignmentItems = [
+      ...itTasks.map((task) => ({
+        title: task.title,
+        priority: task.priority === 'URGENT' ? 'HIGH' : String(task.priority),
+        estimatedHours: task.estimatedHours ?? 1,
+        link: { itTaskId: task.id, itProjectId: task.projectId ?? null },
+      })),
+      ...adhocTasks.map((task) => ({
+        title: task.title,
+        priority: task.priority === 'URGENT' ? 'HIGH' : String(task.priority),
+        estimatedHours: task.estimatedEffort ?? 1,
+        link: { taskId: task.id, projectId: task.projectId ?? null },
+      })),
+    ];
+
+    for (let aIdx = 0; aIdx < assignmentItems.length; aIdx++) {
+      const item = assignmentItems[aIdx];
+      const agendaKey = normalizeTitle(item.title);
+      if (retainedAgendaKeys.has(agendaKey)) continue;
+
+      const seq = chosen.length + aIdx + 1;
+      const meta = encodeAgendaMetadata({
+        version: 1,
+        sourceType: 'ASSIGNMENT',
+        sequence: seq,
+        generatedAt: new Date().toISOString(),
+        generatedBy,
+      });
+      await prisma.workPlan.create({
+        data: {
+          employeeId: employeeProfileId,
+          date: new Date(start.getTime() + ((chosen.length + aIdx) * 60 * 1000)),
+          agenda: item.title,
+          strategy: meta,
+          priority: item.priority,
+          estimatedHours: item.estimatedHours,
+          completionStatus: 'PLANNED',
+          visibility: 'MANAGER',
+          status: 'AUTO_GENERATED',
+          companyId: companyId || null,
+          ...item.link,
         } as any
       });
       retainedAgendaKeys.add(agendaKey);
