@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Clock, Flag, Eye, Save, Trash2, CheckCircle2, Briefcase, CheckSquare } from 'lucide-react';
+import { X, Calendar, Clock, Flag, Eye, Save, Trash2, CheckCircle2, Briefcase, CheckSquare, History } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const normalizeVisibility = (value?: string | null) => {
@@ -54,6 +54,23 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
 
     const [projects, setProjects] = useState<any[]>([]);
     const [tasks, setTasks] = useState<any[]>([]);
+    const [priorityChangeComment, setPriorityChangeComment] = useState('');
+    const [priorityHistory, setPriorityHistory] = useState<any[]>([]);
+    const priorityChanged = formData.priority !== plan.priority;
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch(`/api/work-agenda/${plan.id}/history`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setPriorityHistory((data.history || []).filter((h: any) => h.action === 'priority_change'));
+                }
+            } catch {
+                // History is informational — the edit form works without it.
+            }
+        })();
+    }, [plan.id]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -80,6 +97,10 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (priorityChanged && !priorityChangeComment.trim()) {
+            toast.error('Please add a comment explaining the priority change');
+            return;
+        }
         try {
             setLoading(true);
 
@@ -87,6 +108,7 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                 id: plan.id,
                 ...formData,
                 estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours.toString()) : null,
+                ...(priorityChanged ? { priorityChangeComment: priorityChangeComment.trim() } : {}),
             };
 
             const res = await fetch(`/api/work-agenda/${plan.id}`, {
@@ -231,6 +253,38 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                             </div>
                         </div>
                     </div>
+
+                    {priorityChanged && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">
+                                Reason for priority change ({plan.priority} → {formData.priority}) <span className="text-danger-600">*</span>
+                            </label>
+                            <textarea
+                                required
+                                className="w-full p-4 rounded-xl border border-warning-300 bg-warning-50/40 focus:ring-2 focus:ring-warning-400 outline-none transition-all font-medium text-secondary-900 min-h-[70px] resize-none"
+                                placeholder="Why is the priority changing? This is recorded in the plan's history."
+                                value={priorityChangeComment}
+                                onChange={(e) => setPriorityChangeComment(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    {priorityHistory.length > 0 && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <History size={14} /> Priority history
+                            </label>
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto rounded-xl border border-secondary-100 p-3 bg-secondary-50/50">
+                                {priorityHistory.map((h) => (
+                                    <div key={h.id} className="text-xs text-secondary-700">
+                                        <span className="font-bold">{h.changes?.from} → {h.changes?.to}</span>
+                                        {h.changes?.comment ? <span className="italic"> — &quot;{h.changes.comment}&quot;</span> : null}
+                                        <span className="text-secondary-400"> · {h.by} · {new Date(h.createdAt).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">Visibility</label>
