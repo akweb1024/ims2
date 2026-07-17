@@ -3763,6 +3763,10 @@ model EmployeeGoal {
   title                 String
   description           String?
   kra                   String?
+  /// Which creation path produced this goal: TEMPLATE | MANUAL | PROVISION | ROLLOVER.
+  /// Null on rows created before the unified goal service. Provenance lives here;
+  /// isKra means exactly "counts toward the weighted KRA score".
+  origin                String?
   targetValue           Float
   currentValue          Float                        @default(0)
   achievementPercentage Float                        @default(0)

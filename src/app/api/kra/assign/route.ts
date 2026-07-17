@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { kraAssignSchema } from '@/lib/validators/kra';
 import { computePeriodWindow, KraPeriodType } from '@/lib/kra/period';
-import { computeCarryForward } from '@/lib/kra/carry-forward';
+import { upsertGoal, notifyGoalsAssigned } from '@/lib/kra/create-goals';
 
 const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
@@ -61,6 +61,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
     // 5) Upsert one EmployeeGoal per (employee, metric) for this window.
     let created = 0;
     let updated = 0;
+    const touchedByEmployee = new Map<string, number>();
 
     await prisma.$transaction(async (tx) => {
       for (const profile of profiles) {
@@ -69,71 +70,36 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
           const base = ov?.target ?? item.defaultTarget;
           const ratePerUnit = ov?.ratePerUnit ?? item.ratePerUnit ?? null;
 
-          // Roll any unmet target from the prior period into this one (OUTPUT/monthly only).
-          const carry = await computeCarryForward(tx, {
+          const res = await upsertGoal(tx, {
             employeeId: profile.id,
-            metricId: item.metricId,
-            periodType,
-            windowStart: win.startDate,
-            base,
-            dimension: item.dimension,
-          });
-
-          const existing = await tx.employeeGoal.findFirst({
-            where: {
-              employeeId: profile.id,
-              metricId: item.metricId,
-              type: periodType,
-              startDate: win.startDate,
-            },
-            select: { id: true },
-          });
-
-          const data = {
+            companyId: user.companyId!,
+            origin: 'TEMPLATE',
             title: item.metric.name,
             kra: item.metric.name,
             unit: item.metric.unit,
-            targetValue: carry.targetValue,
-            baseTargetValue: carry.baseTargetValue,
-            carriedInValue: carry.carriedInValue,
-            sourceGoalId: carry.sourceGoalId,
+            targetValue: base,
             type: periodType,
             startDate: win.startDate,
             endDate: win.endDate,
             isKra: true,
-            // Persisted so the kra-rollover cron's matcher (isKra + dimension +
-            // period) can find these goals — it was only used for carry math
-            // before, leaving dimension NULL and rollover matching nothing.
-            dimension: item.dimension ?? null,
+            weight: item.weight,
+            dimension: item.dimension,
             metricId: item.metricId,
             templateId: template.id,
             dataSource: item.metric.dataSource ?? 'MANUAL',
-            weight: item.weight,
             dailyTarget: item.dailyTarget ?? null,
             ratePerUnit,
-            visibility: 'MANAGER',
-            ...(input.reviewerId ? { reviewerId: input.reviewerId } : {}),
-          };
-
-          if (existing) {
-            await tx.employeeGoal.update({ where: { id: existing.id }, data });
-            updated++;
-          } else {
-            await tx.employeeGoal.create({
-              data: {
-                ...data,
-                employeeId: profile.id,
-                companyId: user.companyId!,
-                currentValue: 0,
-                achievementPercentage: 0,
-                status: 'IN_PROGRESS',
-              },
-            });
-            created++;
-          }
+            reviewerId: input.reviewerId,
+          });
+          if (res.created) created++; else updated++;
+          touchedByEmployee.set(profile.id, (touchedByEmployee.get(profile.id) || 0) + 1);
         }
       }
     });
+
+    for (const [employeeId, count] of touchedByEmployee) {
+      await notifyGoalsAssigned({ employeeId, origin: 'TEMPLATE', count, periodLabel: win.label });
+    }
 
     return NextResponse.json({
       success: true,
