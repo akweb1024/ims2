@@ -182,12 +182,28 @@ export default function EmployeeProfilePage() {
         } catch (err) { console.error(err); }
     };
 
+    // Live unified data for the Performance tab (replaces the legacy
+    // increment-JSON displays): current-month KRA goals + real EmployeeKPI rows.
+    const [liveGoals, setLiveGoals] = useState<any[]>([]);
+    const [liveKpis, setLiveKpis] = useState<any[]>([]);
     useEffect(() => {
-        if (activeTab === 'goals') {
-            // Fetch goals if necessary, currently fetched in combined Details API
-            // if separated, fetch here.
-        }
-    }, [activeTab]);
+        if (!employee?.id || activeTab !== 'performance') return;
+        (async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+                const [gRes, kRes] = await Promise.all([
+                    fetch(`/api/kra/my?employeeId=${employee.id}&periodType=MONTHLY`, { headers }),
+                    fetch(`/api/hr/performance/kpis?employeeId=${employee.id}`, { headers }),
+                ]);
+                if (gRes.ok) setLiveGoals((await gRes.json()).goals || []);
+                if (kRes.ok) {
+                    const d = await kRes.json();
+                    setLiveKpis(Array.isArray(d) ? d : d.kpis || []);
+                }
+            } catch { /* both cards degrade to their empty states */ }
+        })();
+    }, [employee?.id, activeTab]);
 
     // The goal create/progress forms that lived here targeted the retired
     // /api/hr/performance/goals write endpoint (405) and were unreachable from
@@ -768,7 +784,11 @@ export default function EmployeeProfilePage() {
                                             const currentYear = new Date().getFullYear();
 
                                             const latestMonthReview = monthlyReviews[0];
-                                            const monthlyTarget = activeIncrement.newMonthlyTarget || 0;
+                                            // Profile targets are the operative values (the snapshot
+                                            // calculator and the Revenue Targets card use them);
+                                            // increment values are only a fallback, so the two cards
+                                            // on this tab can no longer disagree.
+                                            const monthlyTarget = employee.monthlyTarget || activeIncrement.newMonthlyTarget || 0;
                                             const monthlyAchieved = latestMonthReview?.revenueAchievement || 0;
 
                                             const currentQ = Math.floor((currentMonth - 1) / 3) + 1;
@@ -788,7 +808,7 @@ export default function EmployeeProfilePage() {
                                             }
 
                                             const yearlyAchieved = monthlyReviews.filter((r: any) => r.year === currentYear).reduce((sum: number, r: any) => sum + (r.revenueAchievement || 0), 0);
-                                            const yearlyTarget = activeIncrement.newYearlyTarget || (monthlyTarget * 12);
+                                            const yearlyTarget = employee.yearlyTarget || activeIncrement.newYearlyTarget || (monthlyTarget * 12);
 
                                             return (
                                                 <div className="space-y-10">
@@ -819,11 +839,35 @@ export default function EmployeeProfilePage() {
                                                         <div className="space-y-8">
                                                             <div className="p-6 bg-white rounded-[2rem] border border-secondary-100 shadow-sm">
                                                                 <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                                    <Shield size={16} className="text-primary-500" /> Current KRA (Increment Specific)
+                                                                    <Shield size={16} className="text-primary-500" /> Active KRA Goals (This Month)
                                                                 </h4>
-                                                                <div className="prose prose-sm max-w-none text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 max-h-[300px] overflow-y-auto">
-                                                                    <SafeHTML html={activeIncrement.newKRA || '<p class="text-secondary-400 italic">No specific KRA defined in this increment cycle.</p>'} />
+                                                                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                                                    {liveGoals.slice(0, 6).map((g: any) => (
+                                                                        <div key={g.id} className="p-3 bg-secondary-50/50 rounded-xl border border-secondary-100">
+                                                                            <div className="flex justify-between items-center gap-2">
+                                                                                <span className="text-xs font-bold text-secondary-900 truncate">{g.title}</span>
+                                                                                <span className="text-xs font-black text-primary-700 shrink-0">{Number(g.achievementPercentage || 0).toFixed(0)}%</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2 mt-1">
+                                                                                {g.dimension && <span className="text-[9px] font-black uppercase text-secondary-400">{g.dimension}</span>}
+                                                                                <div className="flex-1 bg-secondary-100 rounded-full h-1.5 overflow-hidden">
+                                                                                    <div className="h-full bg-primary-500 rounded-full" style={{ width: `${Math.min(100, Number(g.achievementPercentage || 0))}%` }} />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                    {liveGoals.length === 0 && (
+                                                                        <p className="text-xs text-secondary-400 italic py-4 text-center">No goals for the current month. Assign from Team &amp; Performance → Assign KRA.</p>
+                                                                    )}
                                                                 </div>
+                                                                {activeIncrement.newKRA && (
+                                                                    <details className="mt-3">
+                                                                        <summary className="text-[10px] font-bold text-secondary-400 uppercase cursor-pointer">Increment notes (legacy)</summary>
+                                                                        <div className="prose prose-sm max-w-none text-secondary-600 mt-2 bg-secondary-50/50 p-3 rounded-xl border border-secondary-100 max-h-[200px] overflow-y-auto">
+                                                                            <SafeHTML html={activeIncrement.newKRA} />
+                                                                        </div>
+                                                                    </details>
+                                                                )}
                                                             </div>
 
                                                             <div className="bg-white rounded-[2rem] border border-secondary-100 overflow-hidden shadow-sm">
@@ -872,32 +916,27 @@ export default function EmployeeProfilePage() {
                                                                 <Activity size={16} className="text-warning-500" /> Latest KPI Checkpoints
                                                             </h4>
                                                             <div className="grid grid-cols-1 gap-3">
-                                                                {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
-                                                                    Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
-                                                                        <div key={k} className="flex flex-col gap-2 p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
-                                                                            <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                                                            <div className="text-sm font-black text-primary-700">
-                                                                                {Array.isArray(v) ? (
-                                                                                    <div className="flex flex-wrap gap-1">
-                                                                                        {v.map((item: any, idx: number) => (
-                                                                                            <span key={idx} className="bg-primary-50 px-2 py-0.5 rounded border border-primary-100 text-[10px]">
-                                                                                                {typeof item === 'object' ? (item.title || item.name || item.agenda || JSON.stringify(item)) : String(item)}
-                                                                                            </span>
-                                                                                        ))}
+                                                                {liveKpis.length > 0 ? (
+                                                                    liveKpis.map((kpi: any) => {
+                                                                        const perc = kpi.target > 0 ? Math.min(100, (kpi.current / kpi.target) * 100) : 0;
+                                                                        return (
+                                                                            <div key={kpi.id} className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
+                                                                                <div className="flex justify-between items-center gap-2">
+                                                                                    <span className="text-xs font-black text-secondary-900">{kpi.title}</span>
+                                                                                    <span className="text-[10px] font-bold text-secondary-400 uppercase">{kpi.period}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3 mt-2">
+                                                                                    <div className="flex-1 bg-secondary-100 rounded-full h-2 overflow-hidden">
+                                                                                        <div className={`h-full rounded-full ${perc >= 100 ? 'bg-success-500' : 'bg-primary-500'}`} style={{ width: `${perc}%` }} />
                                                                                     </div>
-                                                                                ) : (
-                                                                                    typeof v === 'object' && v !== null ? (
-                                                                                        <span className="bg-secondary-50 px-2 py-0.5 rounded text-[10px]">
-                                                                                            {v.title || v.name || v.agenda || JSON.stringify(v)}
-                                                                                        </span>
-                                                                                    ) : String(v)
-                                                                                )}
+                                                                                    <span className="text-xs font-black text-secondary-700 shrink-0">{Number(kpi.current).toLocaleString()} / {Number(kpi.target).toLocaleString()} {kpi.unit}</span>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    ))
+                                                                        );
+                                                                    })
                                                                 ) : (
                                                                     <div className="text-center py-6 bg-secondary-50 rounded-2xl border-dashed border-2 border-secondary-200">
-                                                                        <p className="text-xs text-secondary-400 italic">No specific KPIs defined.</p>
+                                                                        <p className="text-xs text-secondary-400 italic">No KPIs set. Manage them from the KRA/KPI config panel.</p>
                                                                     </div>
                                                                 )}
                                                             </div>
