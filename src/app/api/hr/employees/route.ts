@@ -166,8 +166,11 @@ export const GET = authorizedRoute(
     }
 );
 
+// HR_MANAGER/HR included: the employee-profile Performance tab (an
+// hr-management surface) writes revenue targets through this PATCH — its
+// primary audience was getting a 403.
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

@@ -27,9 +27,12 @@ export default function PerformanceVsTargetChart({ data, scope = 'INDIVIDUAL' }:
         );
     }
 
-    // Process data to ensure numbers
+    // Process data to ensure numbers. Monthly snapshots carry only numeric
+    // month/year, so build the label from those first — falling straight
+    // through to `year` rendered every X-axis point as "2026".
+    const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const chartData = data.map(item => ({
-        name: item.period || item.monthName || item.year,
+        name: item.month ? `${MONTH_LABELS[item.month - 1]} ${String(item.year ?? '').slice(2)}` : (item.period && item.period !== 'YEARLY' ? item.period : (item.year || item.period || item.monthName)),
         target: item.target || item.revenueTarget || 0,
         actual: item.revenue || item.totalRevenueGenerated || 0,
         achievement: item.achievement || item.revenueAchievement || 0

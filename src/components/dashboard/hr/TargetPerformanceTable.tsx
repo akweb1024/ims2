@@ -41,6 +41,39 @@ export default function TargetPerformanceTable({ employeeId, monthlyTarget, year
             params.append('employeeId', employeeId);
             params.append('year', year.toString());
 
+            // QUARTERLY is derived client-side from the monthly snapshots: the
+            // aggregate API serves exactly one quarter per call (400 without a
+            // quarter param), which left this view fetching nothing and
+            // rendering stale monthly rows as "Qundefined".
+            if (viewMode === 'QUARTERLY') {
+                const res = await fetch(`/api/hr/performance/monthly?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const months = await res.json();
+                    const byQuarter = new Map<number, any[]>();
+                    (months || []).forEach((m: any) => {
+                        const q = Math.ceil((m.month || 1) / 3);
+                        if (!byQuarter.has(q)) byQuarter.set(q, []);
+                        byQuarter.get(q)!.push(m);
+                    });
+                    const sum = (rows: any[], k: string) => rows.reduce((t, r) => t + (Number(r[k]) || 0), 0);
+                    setSnapshots([...byQuarter.entries()].sort((a, b) => a[0] - b[0]).map(([q, rows]) => ({
+                        quarter: q,
+                        year,
+                        period: `Q${q}`,
+                        revenueTarget: sum(rows, 'revenueTarget'),
+                        totalRevenueGenerated: sum(rows, 'totalRevenueGenerated'),
+                        revenueAchievement: sum(rows, 'revenueTarget') > 0
+                            ? Math.round((sum(rows, 'totalRevenueGenerated') / sum(rows, 'revenueTarget')) * 10000) / 100
+                            : 0,
+                    })));
+                } else {
+                    setSnapshots([]);
+                }
+                return;
+            }
+
             let endpoint = '';
             if (viewMode === 'MONTHLY') {
                 endpoint = '/api/hr/performance/monthly';
@@ -56,6 +89,8 @@ export default function TargetPerformanceTable({ employeeId, monthlyTarget, year
             if (res.ok) {
                 const data = await res.json();
                 setSnapshots(data);
+            } else {
+                setSnapshots([]);
             }
         } catch (error) {
             console.error('Error fetching snapshots:', error);
