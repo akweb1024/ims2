@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Clock, Flag, Eye, Save, Trash2, CheckCircle2, Briefcase, CheckSquare, History } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
 
 const normalizeVisibility = (value?: string | null) => {
     if (!value) return 'MANAGER';
@@ -43,7 +44,9 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
     const [formData, setFormData] = useState({
         date: plan.date.split('T')[0],
         agenda: plan.agenda,
-        strategy: plan.strategy || '',
+        // System metadata (AGENDA_META::) must never be hand-edited — a broken
+        // prefix silently destroys carry/preemption/source tracking.
+        strategy: decodeAgendaMetadata(plan.strategy) ? '' : (plan.strategy || ''),
         priority: plan.priority,
         estimatedHours: plan.estimatedHours || '',
         completionStatus: plan.completionStatus,
@@ -104,9 +107,11 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         try {
             setLoading(true);
 
+            const systemMeta = decodeAgendaMetadata(plan.strategy);
             const payload = {
                 id: plan.id,
                 ...formData,
+                ...(systemMeta ? { strategy: plan.strategy } : {}),
                 estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours.toString()) : null,
                 ...(priorityChanged ? { priorityChangeComment: priorityChangeComment.trim() } : {}),
             };
@@ -210,6 +215,9 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                         />
                     </div>
 
+                    {decodeAgendaMetadata(plan.strategy) ? (
+                        <p className="text-[11px] text-secondary-400 font-semibold">This item is system-managed (auto-generated / carried / assignment) — its tracking metadata is preserved automatically.</p>
+                    ) : (
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">Strategy / Notes</label>
                         <textarea
@@ -218,6 +226,7 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                             onChange={(e) => setFormData({ ...formData, strategy: e.target.value })}
                         />
                     </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
