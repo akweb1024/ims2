@@ -6,6 +6,7 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { logger } from '@/lib/logger';
 import { workPlanSchema } from '@/lib/validation/schemas';
 import { companyScopeWhere } from '@/lib/company-scope';
+import { getISTDayRange } from '@/lib/hr/work-agenda';
 
 // GET: Get work plans (by date, employee)
 export const GET = authorizedRoute(
