@@ -25,6 +25,12 @@ export async function GET(req: NextRequest) {
             where,
             orderBy: { name: 'asc' },
             include: {
+                company: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
                 headUser: {
                     select: {
                         id: true,
@@ -81,6 +87,12 @@ export async function POST(req: NextRequest) {
                 isActive: true
             },
             include: {
+                company: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
                 headUser: {
                     select: {
                         id: true,

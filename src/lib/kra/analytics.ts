@@ -37,7 +37,7 @@ export interface KraAnalytics {
     byMember: { employeeId: string; name: string; goalCount: number; achievedCount: number; avgAchievement: number }[];
     byStatus: { status: string; count: number }[];
     byDimension: { dimension: string; count: number; avgAchievement: number }[];
-    byDepartment: { departmentId: string; name: string; employees: number; goalCount: number; avgAchievement: number }[];
+    byDepartment: { departmentId: string; name: string; companyName?: string | null; employees: number; goalCount: number; avgAchievement: number }[];
     trend: { label: string; avgAchievement: number; goalCount: number }[];
 }
 
@@ -67,22 +67,28 @@ interface ScopedProfile {
     name: string;
     departmentId: string | null;
     departmentName: string | null;
+    companyName: string | null;
 }
 
 async function resolveScopeProfiles(actor: KraAnalyticsActor, departmentId?: string | null): Promise<{ profiles: ScopedProfile[]; scope: 'TEAM' | 'COMPANY' }> {
     const select = {
         id: true,
         userId: true,
-        user: { select: { name: true, email: true, departmentId: true, department: { select: { name: true } } } },
+        user: { select: { name: true, email: true, departmentId: true, department: { select: { name: true } }, company: { select: { name: true } } } },
     } as const;
 
     let rows;
     let scope: 'TEAM' | 'COMPANY';
     if (GROUP_WIDE_ROLES.has(actor.role)) {
         scope = 'COMPANY';
+        // Group-wide, matching the rest of the KRA module (scope.ts gives these
+        // roles unrestricted reach): the 4-company group operates as one, and
+        // the department dropdown deliberately lists every company's
+        // departments — restricting the data to the actor's own company made
+        // 3 of 4 same-named departments silently return zeros.
         rows = await prisma.employeeProfile.findMany({
             where: {
-                user: { companyId: actor.companyId, isActive: true, ...(departmentId ? { departmentId } : {}) },
+                user: { isActive: true, ...(departmentId ? { departmentId } : {}) },
             },
             select,
             take: 500,
@@ -105,6 +111,7 @@ async function resolveScopeProfiles(actor: KraAnalyticsActor, departmentId?: str
         name: p.user?.name || p.user?.email || 'Unknown',
         departmentId: p.user?.departmentId ?? null,
         departmentName: p.user?.department?.name ?? null,
+        companyName: (p.user as any)?.company?.name ?? null,
     }));
     return { profiles, scope };
 }
@@ -202,10 +209,12 @@ export async function getKraTeamAnalytics(opts: {
     const deptAch = new Map<string, number[]>();
     const deptEmployees = new Map<string, Set<string>>();
     const deptName = new Map<string, string>();
+    const deptCompany = new Map<string, string | null>();
     for (const g of inWindow) {
         const p = profileById.get(g.employeeId);
         const did = p?.departmentId || 'none';
         deptName.set(did, p?.departmentName || 'Unassigned');
+        deptCompany.set(did, p?.companyName ?? null);
         if (!deptAch.has(did)) deptAch.set(did, []);
         deptAch.get(did)!.push(Math.min(100, g.achievementPercentage));
         if (!deptEmployees.has(did)) deptEmployees.set(did, new Set());
@@ -215,6 +224,7 @@ export async function getKraTeamAnalytics(opts: {
         .map(([departmentId, achs]) => ({
             departmentId,
             name: deptName.get(departmentId) || 'Unassigned',
+            companyName: deptCompany.get(departmentId) ?? null,
             employees: deptEmployees.get(departmentId)?.size || 0,
             goalCount: achs.length,
             avgAchievement: mean(achs),
