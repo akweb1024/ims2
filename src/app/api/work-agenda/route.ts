@@ -153,16 +153,26 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // WorkPlan is unique on (employeeId, date) at timestamp precision.
+            // The agenda generator, daily carry, and preemption each claim their
+            // own minute-offset band inside the day; manual adds take 700+ so a
+            // second plan on the same day no longer collides (P2002 -> 409).
+            const { start: dayStart, end: dayEnd } = getISTDayRange(new Date(validatedData.date));
+            const existingCount = await prisma.workPlan.count({
+                where: { employeeId: targetEmployeeId, date: { gte: dayStart, lte: dayEnd } },
+            });
+
             const workPlan = await prisma.workPlan.create({
                 data: {
                     employeeId: targetEmployeeId,
-                    date: new Date(validatedData.date),
+                    date: new Date(dayStart.getTime() + (700 + existingCount) * 60 * 1000),
                     agenda: validatedData.agenda,
                     strategy: validatedData.strategy,
                     priority: validatedData.priority,
                     estimatedHours: validatedData.estimatedHours ? parseFloat(validatedData.estimatedHours.toString()) : null,
                     completionStatus: 'PLANNED',
                     linkedGoalId: validatedData.linkedGoalId === 'null' ? null : validatedData.linkedGoalId,
+                    linkedKpiId: (body as any).linkedKpiId || null,
                     projectId: validatedData.projectId === 'null' ? null : validatedData.projectId,
                     taskId: validatedData.taskId === 'null' ? null : validatedData.taskId,
                     itProjectId: validatedData.itProjectId === 'null' ? null : validatedData.itProjectId,

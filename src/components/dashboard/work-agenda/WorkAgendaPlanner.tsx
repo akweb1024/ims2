@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { decodeAgendaMetadata, getISTDateString } from '@/lib/hr/work-agenda';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare, Zap, ChevronDown, ChevronUp, Award, TrendingUp, DollarSign } from 'lucide-react';
 import CreateWorkPlanModal from './CreateWorkPlanModal';
 import EditWorkPlanModal from './EditWorkPlanModal';
@@ -85,8 +86,14 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-            params.append('startDate', startOfWeek.toISOString().split('T')[0]);
-            params.append('endDate', endOfWeek.toISOString().split('T')[0]);
+            // Generated rows are timestamped at IST midnight (previous day in
+            // UTC), so widen the window a day on both sides and bucket by IST
+            // day below — otherwise every generated row lands one day early and
+            // IST-Sunday rows are invisible in every week.
+            const fetchStart = new Date(startOfWeek); fetchStart.setDate(fetchStart.getDate() - 1);
+            const fetchEnd = new Date(endOfWeek); fetchEnd.setDate(fetchEnd.getDate() + 1);
+            params.append('startDate', fetchStart.toISOString().split('T')[0]);
+            params.append('endDate', fetchEnd.toISOString().split('T')[0]);
 
             const res = await fetch(`/api/work-agenda?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -146,6 +153,7 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                     employeeId: employeeId || user.employeeId,
                     date,
                     agenda: kpi.title,
+                    linkedKpiId: kpi.id,
                     strategy: `KPI Task • ${kpi.points} pts${kpi.calculationType === 'SCALED' ? ' (Scaled)' : ''}`,
                     priority: 'HIGH',
                     visibility: 'MANAGER',
@@ -202,12 +210,12 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
     };
 
     const getPlansForDate = (date: Date) => {
-        const dateStr = date.toISOString().split('T')[0];
-        return workPlans.filter(plan => plan.date.split('T')[0] === dateStr);
+        const dateStr = getISTDateString(date);
+        return workPlans.filter(plan => getISTDateString(new Date(plan.date)) === dateStr);
     };
 
     const weekDays = getWeekDays();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString(new Date());
 
     return (
         <div className="space-y-6">
@@ -485,9 +493,22 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                                         <Edit size={16} className="text-secondary-600" />
                                     </button>
                                 </div>
-                                {plan.strategy && (
-                                    <p className="text-xs text-secondary-600 mb-2">{plan.strategy}</p>
-                                )}
+                                {(() => {
+                                    const meta = decodeAgendaMetadata(plan.strategy);
+                                    if (!meta) {
+                                        return plan.strategy ? <p className="text-xs text-secondary-600 mb-2">{plan.strategy}</p> : null;
+                                    }
+                                    return (
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                            {meta.mandatory && <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-danger-50 text-danger-700 border border-danger-200">Mandatory</span>}
+                                            {meta.carryCount ? <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200">Carried ×{meta.carryCount}</span> : null}
+                                            {meta.preemptedBy && <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-danger-100 text-danger-700">Deferred by critical task</span>}
+                                            {meta.sourceType === 'ASSIGNMENT' && <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">From assignment</span>}
+                                            {['EMPLOYEE_TEMPLATE', 'ROLE_TEMPLATE', 'GENERIC_TEMPLATE'].includes(meta.sourceType) && <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-secondary-100 text-secondary-600">Auto-generated</span>}
+                                            {meta.blockerReason && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-danger-50 text-danger-600">Blocked: {meta.blockerReason}</span>}
+                                        </div>
+                                    );
+                                })()}
                                 <div className="flex items-center gap-4 text-xs text-secondary-500 flex-wrap">
                                     {plan.estimatedHours && (
                                         <span>Estimated: {plan.estimatedHours}h</span>
