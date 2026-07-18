@@ -63,19 +63,50 @@ fi
 print_status "Database is ready"
 
 # Run database migrations (opt-in).
-# Default is to SKIP automatic migrations so they can be run manually from the
-# app terminal (e.g. `bash scripts/database-migrate.sh`). To restore automatic
-# migrations on startup, set RUN_MIGRATIONS_ON_START=true in the environment.
+# Default is to SKIP automatic migrations so they can be applied manually. To
+# apply pending migrations on startup, set RUN_MIGRATIONS_ON_START=true.
+# NB: uses scripts/migrate.cjs (pg only) — the slim image has no Prisma CLI, so
+# the old `prisma migrate deploy` path (database-migrate.sh) cannot run here.
 if [ "${RUN_MIGRATIONS_ON_START:-false}" = "true" ]; then
-    echo "🔄 Running database migrations..."
-    if bash scripts/database-migrate.sh; then
+    echo "🔄 Applying pending database migrations..."
+    if node scripts/migrate.cjs deploy; then
         print_status "Database migrations completed successfully"
     else
         print_error "Database migration failed"
         exit 1
     fi
 else
-    print_warning "Skipping automatic migrations (RUN_MIGRATIONS_ON_START is not 'true'). Run them manually: bash scripts/database-migrate.sh"
+    print_warning "Skipping automatic migrations (RUN_MIGRATIONS_ON_START is not 'true')."
+fi
+
+# Migration drift guard.
+# Refuse to boot code whose migrations have NOT been applied to the database —
+# that mismatch surfaces as runtime 500s on missing columns (it bit prod once).
+# When it blocks, the container fails its healthcheck and the orchestrator keeps
+# the previous, working container serving. Modes via MIGRATION_CHECK:
+#   enforce = block boot on pending · warn = log & continue · off = skip.
+MIGRATION_CHECK="${MIGRATION_CHECK:-warn}"
+if [ "$MIGRATION_CHECK" = "off" ]; then
+    print_warning "Migration drift check disabled (MIGRATION_CHECK=off)."
+else
+    echo "🔎 Checking migration status..."
+    if node scripts/migrate.cjs status; then
+        MIGRATION_RC=0
+    else
+        MIGRATION_RC=$?
+    fi
+    if [ "$MIGRATION_RC" -eq 0 ]; then
+        print_status "Migration status OK — schema matches this build"
+    elif [ "$MIGRATION_RC" -eq 3 ] && [ "$MIGRATION_CHECK" = "enforce" ]; then
+        print_error "Pending migrations detected — refusing to start (MIGRATION_CHECK=enforce)."
+        print_error "Apply them (RUN_MIGRATIONS_ON_START=true, or run scripts/migrate.cjs deploy), then redeploy."
+        print_error "To boot anyway, set MIGRATION_CHECK=warn or MIGRATION_CHECK=off."
+        exit 1
+    elif [ "$MIGRATION_RC" -eq 3 ]; then
+        print_warning "Pending migrations detected — starting anyway (MIGRATION_CHECK=warn). Set MIGRATION_CHECK=enforce to block."
+    else
+        print_warning "Migration check errored (rc=$MIGRATION_RC) — starting anyway."
+    fi
 fi
 
 # Ensure the Prisma Client exists. Both the Nixpacks build and the slim Docker
