@@ -17,7 +17,7 @@ interface Analytics {
     byMember: { employeeId: string; name: string; goalCount: number; achievedCount: number; avgAchievement: number }[];
     byStatus: { status: string; count: number }[];
     byDimension: { dimension: string; count: number; avgAchievement: number }[];
-    byDepartment: { departmentId: string; name: string; employees: number; goalCount: number; avgAchievement: number }[];
+    byDepartment: { departmentId: string; name: string; companyName?: string | null; employees: number; goalCount: number; avgAchievement: number }[];
     trend: { label: string; avgAchievement: number; goalCount: number }[];
 }
 
@@ -51,7 +51,7 @@ export default function TeamKraAnalyticsPage() {
     const [error, setError] = useState<string | null>(null);
     const [periodType, setPeriodType] = useState<PeriodType>('MONTHLY');
     const [ref, setRef] = useState<Date>(new Date());
-    const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+    const [departments, setDepartments] = useState<{ id: string; name: string; companyName?: string | null }[]>([]);
     const [departmentId, setDepartmentId] = useState<string>('');
 
     const authHeaders = useCallback(() => ({ Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` }), []);
@@ -83,7 +83,7 @@ export default function TeamKraAnalyticsPage() {
                 if (!r.ok) r = await fetch('/api/departments', { headers: authHeaders() });
                 if (r.ok) {
                     const d = await r.json();
-                    setDepartments(Array.isArray(d) ? d.map((x: any) => ({ id: x.id, name: x.name })) : []);
+                    setDepartments(Array.isArray(d) ? d.map((x: any) => ({ id: x.id, name: x.name, companyName: x.company?.name ?? null })) : []);
                 }
             } catch { /* optional */ }
         })();
@@ -111,7 +111,7 @@ export default function TeamKraAnalyticsPage() {
                             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}
                                 className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white max-w-[180px]">
                                 <option value="">All departments</option>
-                                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                {departments.map((d) => <option key={d.id} value={d.id}>{d.companyName ? `${d.name} — ${d.companyName}` : d.name}</option>)}
                             </select>
                         )}
                         <div className="flex items-center gap-1">
@@ -204,10 +204,10 @@ export default function TeamKraAnalyticsPage() {
                                 {data.byDepartment.length > 1 && (
                                     <ChartCard title="Department rollup (avg achievement %)">
                                         <ResponsiveContainer width="100%" height={Math.max(220, data.byDepartment.length * 42)}>
-                                            <BarChart data={data.byDepartment} layout="vertical" margin={{ left: 20, right: 30 }}>
+                                            <BarChart data={data.byDepartment.map((d) => ({ ...d, label: d.companyName ? `${d.name} — ${d.companyName}` : d.name }))} layout="vertical" margin={{ left: 20, right: 30 }}>
                                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-                                                <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+                                                <YAxis type="category" dataKey="label" width={180} tick={{ fontSize: 12 }} />
                                                 <Tooltip formatter={(v: any, _n, p: any) => [`${v}%  (${p.payload.goalCount} goals · ${p.payload.employees} ppl)`, 'Achievement']} />
                                                 <Bar dataKey="avgAchievement" radius={[0, 4, 4, 0]}>
                                                     {data.byDepartment.map((d) => <Cell key={d.departmentId} fill={barColor(d.avgAchievement)} />)}
