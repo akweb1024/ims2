@@ -3065,7 +3065,7 @@ model PerformanceMetricDefinition {
   metadata          Json?
   // --- KRA system extensions (Phase 0) ---
   dataSource        String?              @default("MANUAL") // SYSTEM | MANUAL | HYBRID
-  sourceType        String? // REVENUE_TRANSACTION | COMMUNICATION_LOG | PUBLICATION_ARTICLE | JOURNAL_ISSUE | SUPPORT_TICKET | COURSE_SALE | SUBSCRIPTION | DISPATCH | INVOICE
+  sourceType        String? // REVENUE_TRANSACTION | COMMUNICATION_LOG | IT_PROJECT_DELIVERED | PUBLICATION_ARTICLE | JOURNAL_ISSUE | SUPPORT_TICKET | COURSE_SALE | SUBSCRIPTION | DISPATCH | INVOICE
   aggregation       String?              @default("SUM") // SUM | COUNT | AVG
   department        String? // department tag for template suggestions
   createdAt         DateTime             @default(now())

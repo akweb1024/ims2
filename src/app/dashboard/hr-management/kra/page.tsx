@@ -179,8 +179,8 @@ function MetricsTab() {
             <Field label="Data source" hint="MANUAL = the employee self-reports the value in their daily report. SYSTEM/AUTO = the value is pulled automatically from another module."><select className={inputCls}
               value={editing.dataSource} onChange={(e) => setEditing({ ...editing, dataSource: e.target.value })}>
               {DATA_SOURCES.map((d) => <option key={d}>{d}</option>)}</select></Field>
-            <Field label="Source type (auto-verify)" hint="For auto/system metrics, the module the value is verified against (e.g. REVENUE_TRANSACTION). Leave blank for MANUAL metrics."><input className={inputCls}
-              value={editing.sourceType} onChange={(e) => setEditing({ ...editing, sourceType: e.target.value })} placeholder="REVENUE_TRANSACTION" /></Field>
+            <Field label="Source type (auto-verify)" hint="For SYSTEM/HYBRID metrics, the module the value is verified against: REVENUE_TRANSACTION, COMMUNICATION_LOG, or IT_PROJECT_DELIVERED (counts completed IT projects the person led). Leave blank for MANUAL metrics."><input className={inputCls}
+              value={editing.sourceType} onChange={(e) => setEditing({ ...editing, sourceType: e.target.value })} placeholder="IT_PROJECT_DELIVERED" /></Field>
             <Field label="Aggregation" hint="How multiple entries combine over the period — SUM adds them up, AVG averages them, etc."><select className={inputCls}
               value={editing.aggregation} onChange={(e) => setEditing({ ...editing, aggregation: e.target.value })}>
               {AGGREGATIONS.map((a) => <option key={a}>{a}</option>)}</select></Field>
