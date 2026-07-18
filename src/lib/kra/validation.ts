@@ -52,6 +52,15 @@ function dayWindow(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+/** Optional { role: 'manager' | 'lead' } filter for IT_PROJECT_DELIVERED metrics. */
+function projectRoleFilter(metadata: unknown): 'manager' | 'lead' | 'any' {
+  if (metadata && typeof metadata === 'object' && 'role' in metadata) {
+    const r = (metadata as { role?: unknown }).role;
+    if (r === 'manager' || r === 'lead') return r;
+  }
+  return 'any';
+}
+
 /**
  * System verifiers: given an employee + day, return the authoritative value from
  * the source module. Returning null means "no source data found for this day".
@@ -101,6 +110,37 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
     return count;
+  },
+  // Projects delivered by this employee, counted on the project's completion day.
+  // "Delivered" = ITProject moved to COMPLETED — completedAt is stamped then and
+  // cleared if it is reopened (see api/it/projects/[id]). Credits the employee as
+  // project manager OR team lead; metric metadata { "role": "manager" | "lead" }
+  // narrows to one side.
+  IT_PROJECT_DELIVERED: async ({ employeeId, companyId, date, metric }) => {
+    // Goals/contributions key on EmployeeProfile.id; ITProject keys on User.id.
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const role = projectRoleFilter(metric.metadata);
+    const ownership =
+      role === 'manager'
+        ? [{ projectManagerId: profile.userId }]
+        : role === 'lead'
+          ? [{ teamLeadId: profile.userId }]
+          : [{ projectManagerId: profile.userId }, { teamLeadId: profile.userId }];
+
+    const { start, end } = dayWindow(date);
+    return prisma.iTProject.count({
+      where: {
+        companyId,
+        status: 'COMPLETED',
+        completedAt: { gte: start, lte: end },
+        OR: ownership,
+      },
+    });
   },
   // Future: SUPPORT_TICKET, SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
   // Until a verifier exists, those sourceTypes fall through to MANUAL (manager approval).
