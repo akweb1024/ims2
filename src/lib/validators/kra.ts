@@ -19,7 +19,9 @@ export const kraMetricSchema = z.object({
   isActive: z.boolean().default(true),
   // Verifier-specific config, e.g. COMMUNICATION_LOG metrics can narrow the
   // counted types: { "communicationType": "CALL" } or { "communicationTypes": ["CALL","EMAIL"] }
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  // nullish (not optional): the API returns metadata: null and the edit form
+  // round-trips the whole object back on save, so null must be accepted.
+  metadata: z.record(z.string(), z.unknown()).nullish(),
 });
 
 export const kraMetricUpdateSchema = kraMetricSchema.partial().extend({
