@@ -22,6 +22,7 @@ export default function EditProjectPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [websites, setWebsites] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showQuickAddWebsite, setShowQuickAddWebsite] = useState(false);
 
@@ -31,6 +32,7 @@ export default function EditProjectPage() {
         type: 'REVENUE', priority: 'MEDIUM', status: 'PLANNING', isRevenueBased: true,
         estimatedRevenue: 0, itDepartmentCut: 30, startDate: '', endDate: '',
         projectManagerId: '', teamLeadId: '', visibility: 'PRIVATE', sharedWithIds: [] as string[],
+        linkedMetricId: '',
     });
 
     const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -38,11 +40,12 @@ export default function EditProjectPage() {
     const fetchInitialData = useCallback(async () => {
         try {
             setLoading(true);
-            const [projectRes, usersRes, deptsRes, websRes] = await Promise.all([
+            const [projectRes, usersRes, deptsRes, websRes, metricsRes] = await Promise.all([
                 fetch(`/api/it/projects/${projectId}`),
                 fetch('/api/users?limit=100'),
                 fetch('/api/departments'),
-                fetch('/api/it/monitoring/websites')
+                fetch('/api/it/monitoring/websites'),
+                fetch('/api/kra/metrics')
             ]);
 
             if (projectRes.ok && usersRes.ok) {
@@ -51,6 +54,7 @@ export default function EditProjectPage() {
                 setUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
                 setDepartments(await deptsRes.json() || []);
                 setWebsites(await websRes.json() || []);
+                try { const md = await metricsRes.json(); setMetrics(Array.isArray(md?.metrics) ? md.metrics : []); } catch { /* metrics optional */ }
 
                 setFormData({
                     name: projectData.name || '',
@@ -74,6 +78,7 @@ export default function EditProjectPage() {
                     teamLeadId: projectData.teamLeadId || '',
                     visibility: projectData.visibility || 'PRIVATE',
                     sharedWithIds: projectData.sharedWithIds || [],
+                    linkedMetricId: projectData.linkedMetricId || '',
                 });
 
                 if (projectData.milestones) {
@@ -120,6 +125,7 @@ export default function EditProjectPage() {
                     teamLeadId: formData.teamLeadId || null,
                     departmentId: formData.departmentId || null,
                     websiteId: formData.websiteId || null,
+                    linkedMetricId: formData.linkedMetricId || null,
                     keywords: formData.keywords ? formData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
                     taggedEmployeeIds: formData.taggedEmployeeIds,
                     milestones: milestones.map(m => ({
@@ -257,6 +263,18 @@ export default function EditProjectPage() {
                                                 <option value="URGENT">Urgent</option>
                                             </select>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2 mt-8">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Link to KRA Metric — auto-credits owner on completion</label>
+                                        <select value={formData.linkedMetricId} onChange={(e) => setFormData({ ...formData, linkedMetricId: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
+                                        >
+                                            <option value="">— None —</option>
+                                            {metrics.map((m) => (
+                                                <option key={m.id} value={m.id}>{m.name}{m.department ? ` (${m.department})` : ''}</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -191,6 +191,9 @@ export const POST = authorizedRoute(
               assignedTo: validatedData.assignedToId
                 ? { connect: { id: validatedData.assignedToId } }
                 : undefined,
+              linkedMetric: validatedData.linkedMetricId
+                ? { connect: { id: validatedData.linkedMetricId } }
+                : undefined,
               createdBy: { connect: { id: user.id } },
               reporter: validatedData.reporterId
                 ? { connect: { id: validatedData.reporterId } }

@@ -16,7 +16,7 @@ interface Task {
     category: string; type: string; priority: string; status: string;
     isRevenueBased: boolean; estimatedValue: number; itRevenueEarned: number;
     dueDate: string | null; progressPercent: number; estimatedHours: number | null;
-    assignedToId: string | null; projectId: string | null; dependencies: string[];
+    assignedToId: string | null; projectId: string | null; linkedMetricId: string | null; dependencies: string[];
     project: { id: string; name: string; projectCode: string; } | null;
     assignedTo: { id: string; name: string; email: string; } | null;
     _count: { comments: number; timeEntries: number; };

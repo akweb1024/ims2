@@ -200,6 +200,9 @@ export const POST = authorizedRoute(
               website: validatedData.websiteId
                 ? { connect: { id: validatedData.websiteId } }
                 : undefined,
+              linkedMetric: validatedData.linkedMetricId
+                ? { connect: { id: validatedData.linkedMetricId } }
+                : undefined,
               startDate: validatedData.startDate
                 ? new Date(validatedData.startDate)
                 : null,

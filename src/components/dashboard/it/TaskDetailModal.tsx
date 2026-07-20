@@ -18,6 +18,7 @@ interface Task {
     progressPercent: number;
     assignedToId: string | null;
     projectId: string | null;
+    linkedMetricId: string | null;
     dependencies: string[];
 }
 
@@ -69,6 +70,8 @@ export default function TaskDetailModal({
     const [dueDate, setDueDate] = useState('');
     const [assignedToId, setAssignedToId] = useState('');
     const [projectId, setProjectId] = useState('');
+    const [linkedMetricId, setLinkedMetricId] = useState('');
+    const [metrics, setMetrics] = useState<any[]>([]);
     const [estimatedHours, setEstimatedHours] = useState('');
     const [progressPercent, setProgressPercent] = useState('0');
     const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
@@ -81,6 +84,7 @@ export default function TaskDetailModal({
         setDueDate(data.dueDate ? new Date(data.dueDate).toISOString().split('T')[0] : '');
         setAssignedToId(data.assignedToId || '');
         setProjectId(data.projectId || '');
+        setLinkedMetricId(data.linkedMetricId || '');
         setEstimatedHours(data.estimatedHours?.toString() || '');
         setProgressPercent(data.progressPercent.toString());
         setSelectedDependencies(data.dependencies || []);
@@ -111,6 +115,14 @@ export default function TaskDetailModal({
         }
     }, [isOpen, taskId, initialTask, fetchTaskDetails, populateForm]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        fetch('/api/kra/metrics')
+            .then((r) => (r.ok ? r.json() : { metrics: [] }))
+            .then((d) => setMetrics(Array.isArray(d?.metrics) ? d.metrics : []))
+            .catch(() => {});
+    }, [isOpen]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -123,6 +135,7 @@ export default function TaskDetailModal({
                 dueDate: dueDate ? new Date(dueDate).toISOString() : null,
                 assignedToId: assignedToId || null,
                 projectId: projectId || null,
+                linkedMetricId: linkedMetricId || null,
                 estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
                 progressPercent: parseInt(progressPercent),
                 dependencies: selectedDependencies
@@ -345,6 +358,22 @@ export default function TaskDetailModal({
                                                 <option value="">Unassigned</option>
                                                 {allUsers.map(u => (
                                                     <option key={u.id} value={u.id}>{u.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                                <ShieldCheck className="h-3 w-3" /> KRA Metric (auto-credits assignee on Done)
+                                            </label>
+                                            <select
+                                                value={linkedMetricId}
+                                                onChange={(e) => setLinkedMetricId(e.target.value)}
+                                                className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 shadow-sm focus:ring-blue-500/20"
+                                            >
+                                                <option value="">— None —</option>
+                                                {metrics.map((m) => (
+                                                    <option key={m.id} value={m.id}>{m.name}{m.department ? ` (${m.department})` : ''}</option>
                                                 ))}
                                             </select>
                                         </div>
