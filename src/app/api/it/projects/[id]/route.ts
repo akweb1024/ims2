@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth-legacy";
 import { createErrorResponse } from "@/lib/api-utils";
 import { getDownlineUserIds } from "@/lib/hierarchy";
+import { creditLinkedMetric, reverseLinkedMetricCredit } from "@/lib/kra/auto-credit";
 
 export const dynamic = "force-dynamic";
 
@@ -327,6 +328,7 @@ export async function PATCH(
         "visibility",
         "sharedWithIds",
         "taggedEmployeeIds",
+        "linkedMetricId",
       ];
 
       for (const field of allowedFields) {
@@ -336,7 +338,8 @@ export async function PATCH(
             field === "projectManagerId" ||
             field === "teamLeadId" ||
             field === "departmentId" ||
-            field === "websiteId"
+            field === "websiteId" ||
+            field === "linkedMetricId"
           ) {
             const relationName = field.replace("Id", "");
             if (body[field]) {
@@ -519,6 +522,25 @@ export async function PATCH(
           milestones: true,
         },
       });
+
+      // KRA auto-credit: completing a project linked to a metric credits its PM
+      // + team lead; reopening removes the credit. Idempotent by project id.
+      const wasCompleted = existingProject.status === "COMPLETED";
+      const nowCompleted = project.status === "COMPLETED";
+      if (nowCompleted && !wasCompleted && project.linkedMetricId) {
+        await creditLinkedMetric({
+          companyId: project.companyId,
+          metricId: project.linkedMetricId,
+          sourceRefId: project.id,
+          ownerUserIds: [project.projectManagerId, project.teamLeadId],
+          date: project.completedAt ?? new Date(),
+        });
+      } else if (!nowCompleted && wasCompleted && existingProject.linkedMetricId) {
+        await reverseLinkedMetricCredit({
+          metricId: existingProject.linkedMetricId,
+          sourceRefId: project.id,
+        });
+      }
 
       return NextResponse.json(project);
     } catch (error: any) {

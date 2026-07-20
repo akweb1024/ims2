@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth-legacy";
 import { createErrorResponse } from "@/lib/api-utils";
 import { getDownlineUserIds } from "@/lib/hierarchy";
+import { creditLinkedMetric, reverseLinkedMetricCredit } from "@/lib/kra/auto-credit";
 
 export const dynamic = "force-dynamic";
 
@@ -282,13 +283,14 @@ export async function PATCH(
       "dependencies",
       "tags",
       "attachments",
+      "linkedMetricId",
     ];
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         // 1. Handle relations
         if (
-          ["projectId", "assignedToId", "reporterId", "serviceId"].includes(
+          ["projectId", "assignedToId", "reporterId", "serviceId", "linkedMetricId"].includes(
             field,
           )
         ) {
@@ -454,6 +456,25 @@ export async function PATCH(
         },
       },
     });
+
+    // KRA auto-credit: completing a task linked to a metric credits its assignee;
+    // reopening removes the credit. Idempotent by task id.
+    const wasCompleted = existingTask.status === "COMPLETED";
+    const nowCompleted = task.status === "COMPLETED";
+    if (nowCompleted && !wasCompleted && task.linkedMetricId) {
+      await creditLinkedMetric({
+        companyId: task.companyId,
+        metricId: task.linkedMetricId,
+        sourceRefId: task.id,
+        ownerUserIds: [task.assignedToId],
+        date: task.completedAt ?? new Date(),
+      });
+    } else if (!nowCompleted && wasCompleted && existingTask.linkedMetricId) {
+      await reverseLinkedMetricCredit({
+        metricId: existingTask.linkedMetricId,
+        sourceRefId: task.id,
+      });
+    }
 
     return NextResponse.json(task);
   } catch (error) {

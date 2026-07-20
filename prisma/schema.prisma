@@ -3074,6 +3074,8 @@ model PerformanceMetricDefinition {
   templateItems     KraTemplateItem[]
   contributions     MetricContribution[]
   kraGoals          EmployeeGoal[]
+  linkedITProjects  ITProject[]          @relation("ITProjectLinkedMetric")
+  linkedITTasks     ITTask[]             @relation("ITTaskLinkedMetric")
 
   @@unique([companyId, scope, key])
   @@index([companyId, scope])
@@ -4448,7 +4450,9 @@ model ITProject {
   websiteId        String?
   sharedWithIds    String[]
   visibility       ProjectVisibility     @default(PRIVATE)
+  linkedMetricId   String?
   company          Company               @relation("CompanyITProjects", fields: [companyId], references: [id], onDelete: Cascade)
+  linkedMetric     PerformanceMetricDefinition? @relation("ITProjectLinkedMetric", fields: [linkedMetricId], references: [id])
   department       Department?           @relation("DepartmentITProjects", fields: [departmentId], references: [id])
   projectManager   User?                 @relation("ProjectManager", fields: [projectManagerId], references: [id])
   teamLead         User?                 @relation("TeamLead", fields: [teamLeadId], references: [id])
@@ -4469,6 +4473,7 @@ model ITProject {
   @@index([isRevenueBased])
   @@index([departmentId])
   @@index([websiteId])
+  @@index([linkedMetricId])
 }
 
 model ITTask {
@@ -4506,7 +4511,9 @@ model ITTask {
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   serviceId       String?
+  linkedMetricId  String?
   assignedTo      User?                 @relation("ITTaskAssignee", fields: [assignedToId], references: [id])
+  linkedMetric    PerformanceMetricDefinition? @relation("ITTaskLinkedMetric", fields: [linkedMetricId], references: [id])
   company         Company               @relation("CompanyITTasks", fields: [companyId], references: [id], onDelete: Cascade)
   createdBy       User                  @relation("ITTaskCreator", fields: [createdById], references: [id])
   project         ITProject?            @relation(fields: [projectId], references: [id])
@@ -4525,6 +4532,7 @@ model ITTask {
   @@index([type])
   @@index([isRevenueBased])
   @@index([priority])
+  @@index([linkedMetricId])
 }
 
 model ITProjectDocument {
