@@ -1,12 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-async function loginAsSuperAdmin(page: any) {
-  await page.goto('/login');
-  await page.getByPlaceholder('you@example.com').fill('admin@stm.com');
-  await page.getByPlaceholder('••••••••').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await expect.poll(async () => page.url(), { timeout: 30000 }).toMatch(/\/dashboard/);
-}
+import { loginAsSuperAdmin } from './helpers';
 
 test.describe('Dashboard live smoke verification', () => {
   test('Recruitment + CRM Insights + Super Admin stats should match live APIs', async ({ page }) => {
