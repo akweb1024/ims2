@@ -4,7 +4,18 @@ import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { ArrowLeft, Briefcase, Calculator, Globe, HeartHandshake, ShieldCheck, Users } from 'lucide-react';
 import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
+import { LOGIN_PERSONAS, personaForRole, type LoginPersona } from '@/lib/personas';
+
+const PERSONA_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    'super-admin': ShieldCheck,
+    admin: Briefcase,
+    employee: Users,
+    hr: HeartHandshake,
+    accounts: Calculator,
+    customer: Globe,
+};
 
 function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) => void }) {
     const router = useRouter();
@@ -19,8 +30,11 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
     const [isHydrated, setIsHydrated] = useState(false);
     const [showCompanySelection, setShowCompanySelection] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
+    const [selectedPersona, setSelectedPersona] = useState<LoginPersona | null>(null);
+    const [postLoginDestination, setPostLoginDestination] = useState<string | null>(null);
 
-    const redirectUrl = searchParams.get('redirect_url') || '/dashboard/staff-portal';
+    const explicitRedirect = searchParams.get('redirect_url');
+    const redirectUrl = explicitRedirect || '/dashboard/staff-portal';
 
     useEffect(() => {
         setIsHydrated(true);
@@ -55,7 +69,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
                     console.error('Failed to refresh auth context after company selection', contextError);
                 }
 
-                onLoginSuccess(redirectUrl);
+                onLoginSuccess(postLoginDestination || redirectUrl);
             } else {
                 setError(data.error || 'Selection failed');
             }
@@ -90,6 +104,19 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
                 return;
             }
 
+            // Reject the login before any session is established when the
+            // account's role does not belong to the chosen sign-in persona.
+            if (selectedPersona && !selectedPersona.roles.includes(loginData.user?.role)) {
+                const actual = personaForRole(loginData.user?.role);
+                setError(
+                    `This account is not a ${selectedPersona.label} account` +
+                    (actual ? ` — it is registered under ${actual.label}.` : '.') +
+                    ' Please go back and choose the correct role.'
+                );
+                setLoading(false);
+                return;
+            }
+
             // 2. Establish the NextAuth session used by the current dashboard
             const result = await signIn('credentials', {
                 email: formData.email,
@@ -105,14 +132,19 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
 
             const { user, availableCompanies = [], token } = loginData;
 
-            // 3. Determine final destination
+            // 3. Determine final destination: an explicit redirect_url wins,
+            // otherwise land on the chosen persona's home dashboard.
             const userRole = user.role;
             const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
+            const isGenericTarget = redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal';
 
             let finalDestination = redirectUrl;
-            if (redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal') {
-                finalDestination = isStaff ? '/dashboard/staff-portal' : '/dashboard';
+            if (!explicitRedirect || isGenericTarget) {
+                finalDestination = selectedPersona
+                    ? selectedPersona.landing
+                    : (isStaff ? '/dashboard/staff-portal' : '/dashboard');
             }
+            setPostLoginDestination(finalDestination);
 
             const requiresSelection = Array.isArray(availableCompanies) && availableCompanies.length > 1 && !user.companyId;
 
@@ -178,11 +210,61 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
         );
     }
 
+    if (!selectedPersona) {
+        return (
+            <div className="p-8">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
+                    <p className="text-slate-600 mt-2">Choose how you want to sign in</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                    {LOGIN_PERSONAS.map((persona) => {
+                        const Icon = PERSONA_ICONS[persona.id] || Users;
+                        return (
+                            <button
+                                key={persona.id}
+                                type="button"
+                                onClick={() => {
+                                    setError('');
+                                    setSelectedPersona(persona);
+                                }}
+                                className="p-4 text-left border border-slate-200 rounded-xl hover:border-primary-500 hover:bg-primary-50 transition-all group"
+                            >
+                                <Icon className="w-6 h-6 text-slate-400 group-hover:text-primary-600 mb-2" />
+                                <h3 className="font-bold text-slate-900 group-hover:text-primary-700 text-sm">{persona.label}</h3>
+                                <p className="text-xs text-slate-500 mt-1">{persona.description}</p>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-6 text-center text-sm text-slate-600">
+                    Don&apos;t have an account?{' '}
+                    <Link href="/register" className="text-primary-600 hover:text-primary-700 font-bold">
+                        Create one
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-8">
+            <button
+                type="button"
+                onClick={() => {
+                    setError('');
+                    setSelectedPersona(null);
+                }}
+                className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 font-medium mb-4"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Change role
+            </button>
             <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
-                <p className="text-slate-600 mt-2">Sign in to your account to continue</p>
+                <h1 className="text-3xl font-bold text-slate-900">Sign in as {selectedPersona.label}</h1>
+                <p className="text-slate-600 mt-2">Enter your account credentials to continue</p>
             </div>
 
             {error && (
