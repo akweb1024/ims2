@@ -1,8 +1,10 @@
 
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import NotificationComposer from "@/components/dashboard/notifications/NotificationComposer";
 import {
     Plus,
     Download,
@@ -52,10 +54,10 @@ const actions = [
         route: "/dashboard/settings"
     },
     {
-        label: "Send Announcement",
+        label: "Send Notification",
         icon: Bell,
         color: "bg-rose-50 text-rose-600 hover:bg-rose-100",
-        route: "/dashboard/announcements/new"
+        route: "compose-notification"
     },
     {
         label: "Finance Control Tower",
@@ -67,6 +69,7 @@ const actions = [
 
 export default function QuickActions({ onExport }: QuickActionsProps) {
     const router = useRouter();
+    const [showComposer, setShowComposer] = useState(false);
 
     return (
         <Card>
@@ -81,7 +84,7 @@ export default function QuickActions({ onExport }: QuickActionsProps) {
                     {actions.map((action, idx) => (
                         <button
                             key={idx}
-                            onClick={() => router.push(action.route)}
+                            onClick={() => action.route === 'compose-notification' ? setShowComposer(true) : router.push(action.route)}
                             className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${action.color} group`}
                         >
                             <action.icon size={20} />
@@ -110,6 +113,8 @@ export default function QuickActions({ onExport }: QuickActionsProps) {
                         <span className="text-[10px] font-black text-secondary-700 uppercase tracking-widest">Export Dashboard Data</span>
                     </button>
                 </div>
+
+                {showComposer && <NotificationComposer onClose={() => setShowComposer(false)} />}
             </CardContent>
         </Card>
     );

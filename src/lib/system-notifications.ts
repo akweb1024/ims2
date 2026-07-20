@@ -132,7 +132,7 @@ export async function createNotification({
     }
 }
 
-async function sendPushNotification(userId: string, title: string, body: string, link: string | null) {
+export async function sendPushNotification(userId: string, title: string, body: string, link: string | null) {
     try {
         const subscriptions = await prisma.pushSubscription.findMany({
             where: { userId }
