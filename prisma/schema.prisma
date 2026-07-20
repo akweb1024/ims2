@@ -323,6 +323,7 @@ model User {
   createdITTasks                 ITTask[]                         @relation("ITTaskCreator")
   reportedITTasks                ITTask[]                         @relation("ITTaskReporter")
   itTaskComments                 ITTaskComment[]                  @relation("ITTaskComments")
+  taskComments                   TaskComment[]                    @relation("TaskComments")
   itTaskStatusChanges            ITTaskStatusHistory[]            @relation("ITStatusChanger")
   itTimeEntries                  ITTimeEntry[]                    @relation("ITTimeEntries")
   conferenceFeedbacks            ConferenceFeedback[]
@@ -1404,6 +1405,7 @@ model Task {
   inventoryItem         InventoryItem? @relation(fields: [inventoryItemId], references: [id])
   user                  User           @relation(fields: [userId], references: [id])
   workPlans             WorkPlan[]
+  comments              TaskComment[]
 
   @@index([userId])
   @@index([assignedById])
@@ -1411,6 +1413,20 @@ model Task {
   @@index([dueDate])
   @@index([companyId])
   @@index([inventoryItemId])
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation("TaskComments", fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
 }
 
 model AuditLog {

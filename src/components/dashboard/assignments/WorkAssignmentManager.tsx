@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ClipboardList, Plus, User, Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { ClipboardList, Plus, User, Calendar, AlertCircle, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
+import TaskDiscussion from './TaskDiscussion';
 
 interface Task {
     id: string;
@@ -58,6 +59,11 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [creating, setCreating] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [openDiscussionId, setOpenDiscussionId] = useState<string | null>(null);
+    // Priority changes require an explanatory comment (audited server-side).
+    const [priorityModal, setPriorityModal] = useState<{ task: Task; newPriority: Task['priority'] } | null>(null);
+    const [priorityComment, setPriorityComment] = useState('');
+    const [changingPriority, setChangingPriority] = useState(false);
     const teamMode = !userId && canAssign;
     const [assignees, setAssignees] = useState<Assignee[]>([]);
     const [capacities, setCapacities] = useState<Record<string, Capacity>>({});
@@ -152,6 +158,35 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
             alert('Network error while assigning task');
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handlePriorityChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!priorityModal || !priorityComment.trim()) return;
+        setChangingPriority(true);
+        try {
+            const res = await fetch(`/api/work-assignments/${priorityModal.task.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    priority: priorityModal.newPriority,
+                    priorityChangeComment: priorityComment.trim()
+                })
+            });
+            if (res.ok) {
+                setPriorityModal(null);
+                setPriorityComment('');
+                fetchTasks();
+            } else {
+                const err = await res.json();
+                alert(`Failed to change priority: ${err.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error changing priority:', error);
+            alert('Network error while changing priority');
+        } finally {
+            setChangingPriority(false);
         }
     };
 
@@ -425,23 +460,97 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                         </div>
                                     </div>
                                     {task.status !== 'CANCELLED' && (
-                                        <select
-                                            title="Update status"
-                                            className="input-premium text-xs font-bold py-2"
-                                            value={task.status}
-                                            disabled={updatingId === task.id}
-                                            onChange={e => handleStatusChange(task.id, e.target.value as Task['status'])}
-                                        >
-                                            <option value="PENDING">Pending</option>
-                                            <option value="IN_PROGRESS">In Progress</option>
-                                            <option value="COMPLETED">Completed</option>
-                                            <option value="CANCELLED">Cancelled</option>
-                                        </select>
+                                        <div className="flex flex-col gap-2 items-end">
+                                            <select
+                                                title="Update status"
+                                                className="input-premium text-xs font-bold py-2"
+                                                value={task.status}
+                                                disabled={updatingId === task.id}
+                                                onChange={e => handleStatusChange(task.id, e.target.value as Task['status'])}
+                                            >
+                                                <option value="PENDING">Pending</option>
+                                                <option value="IN_PROGRESS">In Progress</option>
+                                                <option value="COMPLETED">Completed</option>
+                                                <option value="CANCELLED">Cancelled</option>
+                                            </select>
+                                            <select
+                                                title="Change priority (requires a comment)"
+                                                className="input-premium text-xs font-bold py-2"
+                                                value={task.priority}
+                                                onChange={e => {
+                                                    const newPriority = e.target.value as Task['priority'];
+                                                    if (newPriority !== task.priority) {
+                                                        setPriorityComment('');
+                                                        setPriorityModal({ task, newPriority });
+                                                    }
+                                                }}
+                                            >
+                                                <option value="HIGH">High priority</option>
+                                                <option value="MEDIUM">Medium priority</option>
+                                                <option value="LOW">Low priority</option>
+                                            </select>
+                                        </div>
                                     )}
                                 </div>
+                                <button
+                                    onClick={() => setOpenDiscussionId(openDiscussionId === task.id ? null : task.id)}
+                                    className="mt-2 text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1.5"
+                                >
+                                    <MessageSquare size={14} />
+                                    {openDiscussionId === task.id ? 'Hide discussion' : 'Comments & history'}
+                                </button>
+                                {openDiscussionId === task.id && <TaskDiscussion taskId={task.id} />}
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Priority-change modal (comment mandatory, recorded in the audit log) */}
+            {priorityModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in duration-200">
+                        <div className="bg-secondary-50 p-6 border-b border-secondary-100 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-secondary-900">Change Priority</h3>
+                            <button
+                                onClick={() => setPriorityModal(null)}
+                                className="text-secondary-400 hover:text-secondary-600 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={handlePriorityChange} className="p-6 space-y-4">
+                            <p className="text-sm text-secondary-600">
+                                Changing <span className="font-bold">{priorityModal.task.title}</span> from{' '}
+                                <span className="font-bold">{priorityModal.task.priority}</span> to{' '}
+                                <span className="font-bold">{priorityModal.newPriority}</span>.
+                            </p>
+                            <div>
+                                <label className="label-premium">Reason <span className="text-red-500">*</span></label>
+                                <textarea
+                                    required
+                                    className="input-premium"
+                                    rows={3}
+                                    placeholder="Why is the priority changing?"
+                                    value={priorityComment}
+                                    onChange={e => setPriorityComment(e.target.value)}
+                                />
+                                <p className="text-xs text-secondary-400 mt-1">The reason is recorded in the task&apos;s audit history.</p>
+                            </div>
+                            <div className="flex gap-3 justify-end">
+                                <button type="button" onClick={() => setPriorityModal(null)} className="btn btn-secondary">
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={changingPriority || !priorityComment.trim()}
+                                    className="btn btn-primary disabled:opacity-50"
+                                >
+                                    {changingPriority ? 'Saving...' : 'Change Priority'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 
