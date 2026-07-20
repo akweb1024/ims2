@@ -1,16 +1,7 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
+import { loginAsSuperAdmin as loginAsAdmin } from "./helpers";
 
 test.describe.configure({ timeout: 90000 });
-
-const loginAsAdmin = async (page: Page) => {
-  await page.goto("/login");
-  await page.getByPlaceholder("you@example.com").fill("admin@stm.com");
-  await page.getByPlaceholder("••••••••").fill("password123");
-  await page.getByRole("button", { name: "Sign In" }).click();
-  await expect
-    .poll(async () => page.url(), { timeout: 30000 })
-    .toMatch(/\/dashboard/);
-};
 
 const getToken = async (page: Page) =>
   page.evaluate(() => localStorage.getItem("token"));

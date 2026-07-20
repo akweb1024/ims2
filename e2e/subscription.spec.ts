@@ -1,13 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsSuperAdmin } from './helpers';
 
 test.describe('Subscription Management', () => {
     test.beforeEach(async ({ page }) => {
-        // Login as admin
-        await page.goto('/login');
-        await page.locator('input[type="email"]').fill('admin@stm.com');
-        await page.locator('input[type="password"]').fill('password123');
-        await page.locator('button[type="submit"]').click();
-        await expect(page).toHaveURL(/.*\/dashboard/);
+        await loginAsSuperAdmin(page);
     });
 
     test('should load subscription page', async ({ page }) => {
