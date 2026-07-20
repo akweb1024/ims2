@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { createEmployeeSchema, updateEmployeeSchema } from '@/lib/validators/hr';
 import { authorizedRoute } from '@/lib/middleware-auth';
@@ -274,8 +275,21 @@ export const PATCH = authorizedRoute(
             ];
             metadataFields.forEach(f => delete (profileData as any)[f]);
 
-            // Handle designation relation separately if provided
-            const updateData: any = { ...profileData };
+            // Handle designation relation separately if provided.
+            //
+            // Defense in depth: forward ONLY real EmployeeProfile scalar columns. The
+            // payload is the flattened employee record the edit form echoes back, so it
+            // can carry stray keys — relation objects, fields the GET response started
+            // returning, or columns a drifted Prisma client no longer recognises. Any such
+            // key reaching prisma.update throws an opaque PrismaClientValidationError
+            // ("Invalid data provided") that names no field. Restricting to the model's
+            // known columns (read live from the client) makes the write immune to that
+            // whole class of failure and stays correct as the schema evolves.
+            const employeeProfileColumns = new Set(Object.keys((prisma.employeeProfile as any).fields));
+            const updateData: any = {};
+            for (const [key, value] of Object.entries(profileData)) {
+                if (employeeProfileColumns.has(key)) updateData[key] = value;
+            }
 
             if (designationId !== undefined) {
                 if (designationId === null) {
@@ -417,10 +431,26 @@ export const PATCH = authorizedRoute(
 
             return NextResponse.json(updated);
         } catch (error) {
+            // A Prisma validation failure otherwise collapses to a generic
+            // "Invalid data provided" that names no field. Surface the offending
+            // argument so the operator (and logs) can see exactly what was rejected.
+            if (error instanceof Prisma.PrismaClientValidationError) {
+                const detail = extractPrismaValidationDetail(error.message);
+                logger.error('Employee update rejected by Prisma validation', { detail });
+                return createErrorResponse(`Invalid data: ${detail}`, 400);
+            }
             return createErrorResponse(error);
         }
     }
 );
+
+// Pull the human-meaningful line out of Prisma's verbose validation message
+// (it dumps the whole invocation before stating e.g. "Unknown argument `foo`").
+function extractPrismaValidationDetail(message: string): string {
+    const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
+    const hit = lines.find(l => /^(Unknown argument|Argument |Unknown field|Invalid value|Expected )/i.test(l));
+    return (hit || lines[lines.length - 1] || 'invalid field').slice(0, 300);
+}
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
