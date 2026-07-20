@@ -489,6 +489,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Organization',
                 items: [
+                    { name: 'MD Control Center', href: '/dashboard/overview', icon: Compass, roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Company Overview', href: '/dashboard/company', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Workforce Insights', href: '/dashboard/company?tab=workforce', icon: UserCog, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Departments', href: '/dashboard/hr-management/departments', icon: Landmark, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },

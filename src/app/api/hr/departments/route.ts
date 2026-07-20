@@ -28,7 +28,8 @@ export const GET = authorizedRoute(
                 include: {
                     company: true,
                     headUser: { select: { id: true, name: true, email: true } },
-                    parentDepartment: { select: { id: true, name: true } }
+                    parentDepartment: { select: { id: true, name: true } },
+                    _count: { select: { users: true, subDepartments: true } }
                 },
                 orderBy: { name: 'asc' }
             });

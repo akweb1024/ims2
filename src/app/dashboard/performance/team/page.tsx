@@ -56,6 +56,12 @@ export default function TeamKraAnalyticsPage() {
 
     const authHeaders = useCallback(() => ({ Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` }), []);
 
+    // Allow deep links (e.g. from the MD Control Center) to preselect a department.
+    useEffect(() => {
+        const fromUrl = new URLSearchParams(window.location.search).get('departmentId');
+        if (fromUrl) setDepartmentId(fromUrl);
+    }, []);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);

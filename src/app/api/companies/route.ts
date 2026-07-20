@@ -23,7 +23,9 @@ export const GET = authorizedRoute(
                         orderBy: { createdAt: 'desc' },
                         include: {
                             _count: {
-                                select: { users: true }
+                                // `users` = multi-company membership join; `primaryUsers` =
+                                // people whose companyId points here (the actual headcount).
+                                select: { users: true, primaryUsers: true }
                             }
                         }
                     }),
