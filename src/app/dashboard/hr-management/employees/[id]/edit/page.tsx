@@ -141,7 +141,7 @@ export default function EditEmployeePage() {
                 router.push(`/dashboard/hr-management/employees/${params.id}`);
             } else {
                 const err = await res.json();
-                alert(`Failed to update: ${err.error || 'Unknown error'}`);
+                alert(`Failed to update: ${err.message || err.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error(err);
