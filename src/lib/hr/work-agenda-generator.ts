@@ -225,7 +225,7 @@ export async function generateTodayAgendaForEmployees(args: {
     const [itTasks, adhocTasks] = await Promise.all([
       prisma.iTTask.findMany({
         where: { assignedToId: profile.userId, ...(companyId ? { companyId } : {}), ...activeWindow },
-        select: { id: true, title: true, priority: true, estimatedHours: true, projectId: true },
+        select: { id: true, title: true, priority: true, estimatedHours: true, projectId: true, linkedMetricId: true },
         orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
         take: 20,
       }),
@@ -242,12 +242,14 @@ export async function generateTodayAgendaForEmployees(args: {
         title: task.title,
         priority: task.priority === 'URGENT' ? 'HIGH' : String(task.priority),
         estimatedHours: task.estimatedHours ?? 1,
+        linkedMetricId: (task.linkedMetricId ?? null) as string | null,
         link: { itTaskId: task.id, itProjectId: task.projectId ?? null },
       })),
       ...adhocTasks.map((task) => ({
         title: task.title,
         priority: task.priority === 'URGENT' ? 'HIGH' : String(task.priority),
         estimatedHours: task.estimatedEffort ?? 1,
+        linkedMetricId: null as string | null,
         link: { taskId: task.id, projectId: task.projectId ?? null },
       })),
     ];
@@ -277,6 +279,7 @@ export async function generateTodayAgendaForEmployees(args: {
           visibility: 'MANAGER',
           status: 'AUTO_GENERATED',
           companyId: companyId || null,
+          linkedKpiId: item.linkedMetricId ?? null,
           ...item.link,
         } as any
       });
