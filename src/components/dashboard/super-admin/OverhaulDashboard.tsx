@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import NotificationComposer from '@/components/dashboard/notifications/NotificationComposer';
 
 interface DashboardStats {
     period: number;
@@ -124,6 +125,7 @@ export default function SuperAdminOverhaulDashboard() {
     const [timeRange, setTimeRange] = useState('6M');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [showComposer, setShowComposer] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -256,6 +258,14 @@ export default function SuperAdminOverhaulDashboard() {
                         {stats?.health.overall === 'watch' ? 'Attention Needed' : 'Systems Healthy'}
                     </div>
 
+                    <button
+                        onClick={() => setShowComposer(true)}
+                        className="flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
+                    >
+                        <Bell size={18} />
+                        Send Notification
+                    </button>
+
                     <Link
                         href="/dashboard/super-admin/invoicing-reset"
                         className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-rose-100 transition-all hover:bg-rose-700 active:scale-95"
@@ -265,6 +275,8 @@ export default function SuperAdminOverhaulDashboard() {
                     </Link>
                 </div>
             </header>
+
+            {showComposer && <NotificationComposer onClose={() => setShowComposer(false)} />}
 
             {/* Dashboard Tabs */}
             <nav className="flex items-center gap-2 mb-8 bg-slate-100 p-1.5 rounded-3xl w-fit border border-slate-200 shadow-inner">
