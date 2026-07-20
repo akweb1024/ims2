@@ -78,6 +78,27 @@ async function withClient(fn) {
     }
 }
 
+/**
+ * Prisma Migrate's own advisory-lock key, so we also mutually exclude against
+ * any `prisma migrate` run, not just other copies of this script.
+ */
+const MIGRATE_LOCK_KEY = 72707369;
+
+/**
+ * Serialize write commands (deploy/resolve) across concurrently booting
+ * containers. Blocking acquire is deliberate: the second container waits,
+ * then finds nothing pending and no-ops. Session-level, so the lock dies
+ * with the connection even if the process is killed mid-run.
+ */
+async function withLock(client, fn) {
+    await client.query('SELECT pg_advisory_lock($1)', [MIGRATE_LOCK_KEY]);
+    try {
+        return await fn();
+    } finally {
+        await client.query('SELECT pg_advisory_unlock($1)', [MIGRATE_LOCK_KEY]).catch(() => {});
+    }
+}
+
 /** Set of migration names recorded as fully applied (finished, not rolled back). */
 async function appliedSet(client) {
     try {
@@ -168,7 +189,7 @@ async function cmdStatus() {
 }
 
 async function cmdDeploy() {
-    return withClient(async (client) => {
+    return withClient((client) => withLock(client, async () => {
         await ensureTable(client);
         const applied = await appliedSet(client);
         const pending = localMigrations().filter((n) => !applied.has(n));
@@ -201,7 +222,7 @@ async function cmdDeploy() {
         }
         out('deploy: done.');
         return 0;
-    });
+    }));
 }
 
 async function cmdResolve(names) {
@@ -209,7 +230,7 @@ async function cmdResolve(names) {
         err('resolve: pass one or more migration folder names.');
         return 1;
     }
-    return withClient(async (client) => {
+    return withClient((client) => withLock(client, async () => {
         await ensureTable(client);
         const local = new Set(localMigrations());
         const applied = await appliedSet(client);
@@ -226,7 +247,7 @@ async function cmdResolve(names) {
             out(`resolve: recorded ${name} as applied (schema assumed already present).`);
         }
         return 0;
-    });
+    }));
 }
 
 async function main() {
