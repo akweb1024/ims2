@@ -44,8 +44,10 @@ export default function NewProjectPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [departments, setDepartments] = useState<any[]>([]);
   const [websites, setWebsites] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
+    linkedMetricId: "",
     name: "",
     description: "",
     about: "",
@@ -75,7 +77,20 @@ export default function NewProjectPage() {
     fetchUsers();
     fetchDepartments();
     fetchWebsites();
+    fetchMetrics();
   }, []);
+
+  const fetchMetrics = async () => {
+    try {
+      const res = await fetch("/api/kra/metrics");
+      if (res.ok) {
+        const data = await res.json();
+        setMetrics(Array.isArray(data?.metrics) ? data.metrics : []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch KRA metrics:", error);
+    }
+  };
 
   const [showQuickAddWebsite, setShowQuickAddWebsite] = useState(false);
 
@@ -154,6 +169,7 @@ export default function NewProjectPage() {
           taggedEmployeeIds: formData.taggedEmployeeIds,
           visibility: formData.visibility,
           sharedWithIds: formData.sharedWithIds,
+          linkedMetricId: formData.linkedMetricId || null,
           milestones: milestones.map((m) => ({
             name: m.title,
             description: m.description,
@@ -335,6 +351,27 @@ export default function NewProjectPage() {
                         <option value="ENHANCEMENT">Enhancement</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="space-y-2 mt-8">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                      Link to KRA Metric — auto-credits owner on completion
+                    </label>
+                    <select
+                      value={formData.linkedMetricId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, linkedMetricId: e.target.value })
+                      }
+                      className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white transition-all outline-none"
+                    >
+                      <option value="">— None —</option>
+                      {metrics.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                          {m.department ? ` (${m.department})` : ""}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </motion.div>

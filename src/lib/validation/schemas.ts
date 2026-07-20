@@ -408,6 +408,7 @@ export const itProjectSchema = z.object({
     taggedEmployeeIds: z.array(z.string()).optional().default([]),
     visibility: z.enum(['PRIVATE', 'PUBLIC', 'INDIVIDUALS']).default('PRIVATE'),
     sharedWithIds: z.array(z.string()).optional().default([]),
+    linkedMetricId: z.string().optional().nullable(),
     milestones: z.array(z.object({
         name: z.string(),
         description: z.string().optional(),
@@ -438,6 +439,7 @@ export const itTaskSchema = z.object({
     tags: z.array(z.string()).optional().default([]),
     dependencies: z.array(z.string()).optional().default([]),
     serviceId: z.string().optional().nullable(),
+    linkedMetricId: z.string().optional().nullable(),
     progressPercent: z.number().optional().default(0).or(z.string().optional()),
 });
 
