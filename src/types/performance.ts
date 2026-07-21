@@ -13,7 +13,6 @@ export interface Goal {
     endDate: string;
     employeeId: string;
     kra?: string;
-    kpiId?: string;
     employee?: {
         id: string;
         user: {

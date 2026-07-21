@@ -1,29 +1,29 @@
 /**
- * The single EmployeeKPI write path (unification plan U2, docs/kra-unification-plan.md).
+ * The single KPI write path — goals-native (final step of KRA unification).
  *
- * Three surfaces used to write KPIs with three different rule sets — the
- * performance-workspace POST (actor's companyId, unvalidated period), the
- * KRA/KPI config panel (its own normalization), and increment approval
- * (delete-everything-and-recreate, progress reset to zero). They all call
- * upsertEmployeeKpis() now:
+ * Historically this wrote the legacy EmployeeKPI table and (later) mirrored
+ * into EmployeeGoal via the LEGACY_SYNC bridge. The legacy table is now
+ * dropped: KPI writes from the config panel, the workspace/kpis endpoint and
+ * increment approval land directly in the canonical KRA engine as
+ * EmployeeGoal rows (origin LEGACY_SYNC, isKra) for the current period
+ * window of each KPI's period type.
  *
- *  - companyId is ALWAYS the employee's own company — never the actor's,
- *    never an empty-string fallback.
+ * Preserved rules:
+ *  - companyId is ALWAYS the employee's own company — never the actor's.
  *  - one normalization: trimmed title, finite target > 0, unit default COUNT,
  *    period whitelisted (else MONTHLY), category default GENERAL.
- *  - rows match by id when given, else by case-insensitive title — repeated
- *    writes update instead of duplicating.
- *  - `current` (progress) is only written when the caller explicitly provides
- *    it; a merge never silently resets progress.
- *  - deletion is opt-in (`replaceMissing`) and never the default.
- *  - every write is mirrored into the canonical KRA engine (EmployeeGoal via
- *    upsertGoal, origin LEGACY_SYNC) — see src/lib/kra/legacy-sync.ts. The
- *    EmployeeKPI table remains only for its non-KRA consumers (work agenda,
- *    salary incentives, staff portal); KRA truth is EmployeeGoal.
+ *  - rows match by title within the period window (upsertGoal's dedupe) —
+ *    repeated writes update instead of duplicating.
+ *  - PROGRESS is owned by the KRA engine. `current` only seeds a goal that is
+ *    newly created; a merge never resets progress.
+ *  - deletion is opt-in (`replaceMissing`) and only ever removes
+ *    origin=LEGACY_SYNC goals this write didn't touch — goals assigned from
+ *    the console (TEMPLATE/MANUAL/…) are never deleted here.
  */
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
-import { syncKpiRowToGoal } from '@/lib/kra/legacy-sync';
+import type { Prisma } from '@prisma/client';
+import type { prisma } from '@/lib/prisma';
+import { upsertGoal } from '@/lib/kra/create-goals';
+import { computePeriodWindow, normalizePeriod } from '@/lib/kra/period';
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -49,7 +49,7 @@ export interface NormalizedKpi {
     category: string;
 }
 
-/** Config-panel normalization rules, now shared by every writer. */
+/** Config-panel normalization rules, shared by every writer. */
 export function normalizeKpis(raw: KpiInput[]): NormalizedKpi[] {
     return (raw || [])
         .filter((k) => k && typeof k.title === 'string' && k.title.trim().length > 0)
@@ -89,79 +89,43 @@ export async function upsertEmployeeKpis(
     const companyId = profile.user?.companyId;
     if (!companyId) throw new Error('Employee has no company — cannot write KPIs');
 
-    const existing = await db.employeeKPI.findMany({
-        where: { employeeId: args.employeeId },
-        select: { id: true, title: true },
-    });
-    const byId = new Map(existing.map((e) => [e.id, e]));
-    const byTitle = new Map(existing.map((e) => [e.title.trim().toLowerCase(), e]));
-
+    const now = new Date();
     const result: UpsertKpisResult = { created: 0, updated: 0, deleted: 0 };
-    const touchedIds = new Set<string>();
+    const touchedGoalIds = new Set<string>();
 
     for (const item of args.kpis) {
-        const match =
-            (item.id && byId.get(item.id)) || byTitle.get(item.title.toLowerCase()) || null;
-
-        let kpiId: string;
-        if (match) {
-            await db.employeeKPI.update({
-                where: { id: match.id },
-                data: {
-                    title: item.title,
-                    target: item.target,
-                    unit: item.unit,
-                    period: item.period,
-                    category: item.category,
-                    ...(item.current !== undefined ? { current: item.current } : {}),
-                    updatedAt: new Date(),
-                },
-            });
-            kpiId = match.id;
-            touchedIds.add(match.id);
-            result.updated++;
-        } else {
-            const created = await db.employeeKPI.create({
-                data: {
-                    employeeId: args.employeeId,
-                    companyId,
-                    title: item.title,
-                    target: item.target,
-                    current: item.current ?? 0,
-                    unit: item.unit,
-                    period: item.period,
-                    category: item.category,
-                },
-            });
-            kpiId = created.id;
-            touchedIds.add(created.id);
-            result.created++;
-        }
-
-        // KRA-engine bridge: mirror the row into the canonical EmployeeGoal so
-        // the HR KRA console / my-performance / workload dashboards show the
-        // same target regardless of which surface wrote it. Target syncs;
-        // progress stays owned by the KRA engine (current only seeds creation).
-        await syncKpiRowToGoal(db, {
+        const period = normalizePeriod(item.period);
+        const window = computePeriodWindow(period, now);
+        const upserted = await upsertGoal(db, {
             employeeId: args.employeeId,
             companyId,
-            kraStatement: profile.kra ?? null,
-            kpi: {
-                id: kpiId,
-                title: item.title,
-                target: item.target,
-                current: item.current ?? 0,
-                unit: item.unit,
-                period: item.period,
-                category: item.category,
-            },
+            origin: 'LEGACY_SYNC',
+            title: item.title,
+            unit: item.unit || 'COUNT',
+            targetValue: item.target,
+            type: period,
+            startDate: window.startDate,
+            endDate: window.endDate,
+            isKra: true,
+            kra: profile.kra ?? null,
+            dataSource: 'MANUAL',
+            initialCurrent: item.current,
         });
+        touchedGoalIds.add(upserted.id);
+        if (upserted.created) result.created++;
+        else result.updated++;
     }
 
     if (args.replaceMissing) {
-        const toDelete = existing.filter((e) => !touchedIds.has(e.id)).map((e) => e.id);
+        // Only LEGACY_SYNC goals in current windows are candidates — console-
+        // assigned goals are never deleted by a KPI-panel replace.
+        const candidates = await db.employeeGoal.findMany({
+            where: { employeeId: args.employeeId, isKra: true, origin: 'LEGACY_SYNC', endDate: { gte: now } },
+            select: { id: true },
+        });
+        const toDelete = candidates.filter((g) => !touchedGoalIds.has(g.id)).map((g) => g.id);
         if (toDelete.length > 0) {
-            await db.employeeKPI.deleteMany({ where: { id: { in: toDelete } } });
+            await db.employeeGoal.deleteMany({ where: { id: { in: toDelete } } });
             result.deleted = toDelete.length;
         }
     }

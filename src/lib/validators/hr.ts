@@ -289,7 +289,6 @@ export const employeeGoalSchema = z.object({
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
     employeeId: z.string().uuid(),
-    kpiId: z.string().uuid().optional().nullable(),
 });
 
 export const incentiveSchemaValidator = z.object({

@@ -21,7 +21,6 @@
     "seed:publication-demo": "tsx scripts/seed-publication-demo.ts",
     "seed:kra-goals": "tsx scripts/seed-kra-goals.ts",
     "kra:materialize": "tsx scripts/materialize-kra-templates.ts",
-    "kra:migrate-legacy": "tsx scripts/migrate-employee-kpis.ts",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test": "playwright test e2e/auth.spec.ts e2e/crm-invoice-flows.spec.ts e2e/conference-followups.spec.ts",
     "test:e2e": "playwright test",

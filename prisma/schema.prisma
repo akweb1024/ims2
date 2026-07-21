@@ -85,7 +85,6 @@ model Company {
   employeeCompanyDesignations       EmployeeCompanyDesignation[]
   expenseAllocations                EmployeeExpenseAllocation[]
   employeeGoals                     EmployeeGoal[]
-  employeeKpis                      EmployeeKPI[]
   pointLogs                         EmployeePointLog[]
   taskTemplates                     EmployeeTaskTemplate[]
   expenseAllocationRules            ExpenseAllocationRule[]
@@ -1837,7 +1836,6 @@ model EmployeeProfile {
   expenseAllocations       EmployeeExpenseAllocation[]
   goals                    EmployeeGoal[]
   incentives               EmployeeIncentive[]
-  kpis                     EmployeeKPI[]
   pointLogs                EmployeePointLog[]
   designatRef              Designation?                      @relation(fields: [designationId], references: [id])
   user                     User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2514,26 +2512,6 @@ model PerformanceReview {
 
   @@index([companyId])
   @@index([salaryIncrementRecordId])
-}
-
-model EmployeeKPI {
-  id         String          @id @default(uuid())
-  employeeId String
-  title      String
-  target     Float
-  current    Float           @default(0)
-  unit       String
-  period     String
-  category   String          @default("GENERAL")
-  companyId  String
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @default(now())
-  goals      EmployeeGoal[]
-  company    Company         @relation(fields: [companyId], references: [id])
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([employeeId])
-  @@index([companyId])
 }
 
 model PerformanceInsight {
@@ -3815,7 +3793,6 @@ model EmployeeGoal {
   reviewerId            String?
   reviewNotes           String?
   companyId             String
-  kpiId                 String?
   // --- KRA system extensions (Phase 0) ---
   metricId              String?
   templateId            String?
@@ -3838,7 +3815,6 @@ model EmployeeGoal {
   updatedAt             DateTime                     @updatedAt
   company               Company                      @relation(fields: [companyId], references: [id])
   employee              EmployeeProfile              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  kpi                   EmployeeKPI?                 @relation(fields: [kpiId], references: [id])
   metric                PerformanceMetricDefinition? @relation(fields: [metricId], references: [id])
   reviewer              User?                        @relation("GoalReviewer", fields: [reviewerId], references: [id])
   evaluations           GoalEvaluation[]

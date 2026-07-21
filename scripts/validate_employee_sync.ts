@@ -6,7 +6,7 @@ async function validateEmployeeSync() {
     const results = {
         idResolution: { passed: 0, failed: 0 },
         salaryStructure: { passed: 0, failed: 0 },
-        employeeKPI: { passed: 0, failed: 0 },
+        kraGoals: { passed: 0, failed: 0 },
         designation: { passed: 0, failed: 0 }
     };
 
@@ -86,8 +86,8 @@ async function validateEmployeeSync() {
             }
         }
 
-        // 3. Test EmployeeKPI Sync
-        console.log('\n📋 Test 3: EmployeeKPI Record Synchronization');
+        // 3. Test KRA goal sync (EmployeeKPI is dropped; goals are canonical)
+        console.log('\n📋 Test 3: KRA Goal Synchronization');
         console.log('─'.repeat(50));
 
         const incrementsWithKPI = await prisma.salaryIncrementRecord.findMany({
@@ -100,7 +100,7 @@ async function validateEmployeeSync() {
             include: {
                 employeeProfile: {
                     include: {
-                        kpis: true
+                        goals: { where: { isKra: true } }
                     }
                 }
             },
@@ -109,17 +109,17 @@ async function validateEmployeeSync() {
 
         for (const increment of incrementsWithKPI) {
             const newKPIs = increment.newKPI as any[];
-            const actualKPIs = increment.employeeProfile.kpis;
+            const actualKPIs = increment.employeeProfile.goals;
 
             if (newKPIs && Array.isArray(newKPIs) && newKPIs.length > 0) {
                 if (actualKPIs.length >= newKPIs.length) {
                     console.log(`✅ Employee ${increment.employeeProfile.employeeId}: KPIs synced`);
                     console.log(`   - Expected KPIs: ${newKPIs.length}, Actual: ${actualKPIs.length}`);
-                    results.employeeKPI.passed++;
+                    results.kraGoals.passed++;
                 } else {
                     console.log(`❌ Employee ${increment.employeeProfile.employeeId}: KPI count mismatch`);
                     console.log(`   - Expected: ${newKPIs.length}, Actual: ${actualKPIs.length}`);
-                    results.employeeKPI.failed++;
+                    results.kraGoals.failed++;
                 }
             }
         }
@@ -170,7 +170,7 @@ async function validateEmployeeSync() {
         console.log(`\nBreakdown:`);
         console.log(`  - ID Resolution: ${results.idResolution.passed} passed, ${results.idResolution.failed} failed`);
         console.log(`  - SalaryStructure: ${results.salaryStructure.passed} passed, ${results.salaryStructure.failed} failed`);
-        console.log(`  - EmployeeKPI: ${results.employeeKPI.passed} passed, ${results.employeeKPI.failed} failed`);
+        console.log(`  - KRA goals: ${results.kraGoals.passed} passed, ${results.kraGoals.failed} failed`);
         console.log(`  - Designation: ${results.designation.passed} passed, ${results.designation.failed} failed`);
 
         if (totalFailed === 0) {

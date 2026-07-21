@@ -54,11 +54,9 @@ export interface UnifiedGoalInput {
     reviewerId?: string | null;
     assignedById?: string | null;
     visibility?: string;
-    /** Legacy EmployeeKPI row this goal mirrors (LEGACY_SYNC bridge). */
-    kpiId?: string | null;
     /**
-     * Starting progress for a NEWLY created goal (e.g. migrating a legacy KPI
-     * that already has `current`). Ignored on update — a re-sync never resets
+     * Starting progress for a NEWLY created goal (e.g. a KPI-panel write that
+     * already carries `current`). Ignored on update — a re-write never resets
      * or overwrites progress the KRA engine owns.
      */
     initialCurrent?: number;
@@ -111,7 +109,6 @@ export async function upsertGoal(db: Db, input: UnifiedGoalInput): Promise<Upser
         visibility: input.visibility ?? 'MANAGER',
         ...(input.reviewerId !== undefined ? { reviewerId: input.reviewerId } : {}),
         ...(input.assignedById ? { assignedById: input.assignedById } : {}),
-        ...(input.kpiId !== undefined ? { kpiId: input.kpiId } : {}),
     };
 
     if (existing) {
