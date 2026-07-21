@@ -1,0 +1,57 @@
+name: Clean Actions Caches
+
+# One-shot, manually triggered cleanup of the repo's GitHub Actions caches.
+# Use it to clear accumulated caches (e.g. the old buildkit-blob entries left
+# behind after the deploy build switched to a registry-backed cache). Run it
+# from the Actions tab → "Clean Actions Caches" → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "What to delete"
+        type: choice
+        default: buildkit
+        options:
+          - buildkit   # only Docker buildkit layer caches (buildkit-blob*, index-buildkit*)
+          - all        # every Actions cache in the repo
+
+permissions:
+  actions: write
+
+jobs:
+  clean:
+    name: Delete Actions caches
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Delete caches
+        run: |
+          set -euo pipefail
+          echo "Cache usage before:"
+          gh api "repos/$REPO/actions/cache/usage" \
+            --jq '"  \(.active_caches_count) caches, \(.active_caches_size_in_bytes / 1073741824 | . * 100 | floor / 100) GB"' || true
+
+          if [ "${{ inputs.scope }}" = "all" ]; then
+            echo "Deleting ALL caches…"
+            gh cache delete --all -R "$REPO" || echo "Nothing to delete."
+          else
+            echo "Deleting buildkit layer caches…"
+            # Page through and delete only buildkit-* keys (leaves npm/setup caches intact).
+            deleted=0
+            while :; do
+              ids=$(gh cache list -R "$REPO" --limit 100 --json id,key \
+                --jq '.[] | select(.key | test("buildkit")) | .id')
+              [ -z "$ids" ] && break
+              for id in $ids; do
+                gh cache delete "$id" -R "$REPO" && deleted=$((deleted+1))
+              done
+            done
+            echo "Deleted $deleted buildkit cache(s)."
+          fi
+
+          echo "Cache usage after:"
+          gh api "repos/$REPO/actions/cache/usage" \
+            --jq '"  \(.active_caches_count) caches, \(.active_caches_size_in_bytes / 1073741824 | . * 100 | floor / 100) GB"' || true
