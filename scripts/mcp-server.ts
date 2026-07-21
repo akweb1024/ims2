@@ -65,7 +65,12 @@ function makePrisma(): PrismaClient {
     } catch {
         pool = new Pool({ connectionString: url });
     }
-    return new PrismaClient({ adapter: new PrismaPg(pool), log: ['error'] });
+    // No Prisma logging: with `log: ['error']` Prisma writes error lines to
+    // stdout, which for a stdio MCP server is the JSON-RPC channel and must stay
+    // pure JSON — a stray "prisma:error" line corrupts the protocol. Errors are
+    // already surfaced to the client via each tool's response and to stderr by
+    // the fatal handler, so we keep stdout clean here.
+    return new PrismaClient({ adapter: new PrismaPg(pool), log: [] });
 }
 
 const prisma = makePrisma();
