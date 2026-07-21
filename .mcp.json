@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ims2": {
+      "command": "npx",
+      "args": ["tsx", "scripts/mcp-server.ts"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    }
+  }
+}
