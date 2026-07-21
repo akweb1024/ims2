@@ -36,7 +36,19 @@ by hand. Logs go to stderr.
 
 ## Wiring it into a client
 
-### Claude Desktop / Claude Code (`mcp.json` / `claude_desktop_config.json`)
+### Claude Code — project config (checked in)
+
+A project-scoped [`.mcp.json`](../.mcp.json) is committed at the repo root, so
+Claude Code auto-detects the server when run from the project. It reads the
+connection string from your shell's `DATABASE_URL` (`${DATABASE_URL}`) — nothing
+is hard-coded. Just export it and open Claude Code in the repo:
+
+```bash
+export DATABASE_URL='postgresql://user:pass@host:5432/db'
+claude   # approve the `ims2` server on first use
+```
+
+### Claude Desktop / Claude Code (manual `mcp.json` / `claude_desktop_config.json`)
 
 ```jsonc
 {
