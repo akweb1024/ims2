@@ -1,23 +1,38 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/company-scope';
 
-export async function POST(request: Request, context: any) {
+const RECRUITER_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'];
+
+// A screening belongs to the company of the job posting behind its interview. Users
+// without all-company clearance may only act on screenings in their own company.
+function canAccessCompany(user: any, companyId: string | null): boolean {
+    if (canAccessAllCompanies(user)) return true;
+    return !!user.companyId && companyId === user.companyId;
+}
+
+export const POST = authorizedRoute(RECRUITER_ROLES, async (req: NextRequest, user, context) => {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
         const params = await context.params;
         const interviewId = params.id;
-        const data = await request.json(); 
+        const data = await req.json();
         // Expected data: { recommendation, finalNotes }
 
-        const screening = await prisma.interviewScreening.findUnique({ 
+        const screening = await prisma.interviewScreening.findUnique({
             where: { interviewId },
-            include: { responses: true, template: true }
+            include: {
+                responses: true,
+                template: true,
+                interview: {
+                    include: { application: { include: { jobPosting: { select: { companyId: true } } } } },
+                },
+            }
         });
-        
-        if (!screening) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+        if (!screening || !canAccessCompany(user, screening.interview?.application?.jobPosting?.companyId ?? null)) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
         if (screening.status === 'SUBMITTED') {
             return NextResponse.json({ error: 'Already submitted' }, { status: 400 });
         }
@@ -113,4 +128,4 @@ export async function POST(request: Request, context: any) {
         console.error('Submit Screening Error:', error);
         return NextResponse.json({ error: 'Failed to submit' }, { status: 500 });
     }
-}
+});
