@@ -119,6 +119,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My IT Tasks', href: '/dashboard/my-tasks', icon: ClipboardList, roles: INTERNAL },
                     { name: 'My To-Dos', href: '/dashboard/tasks', icon: CheckSquare, roles: INTERNAL },
                     { name: 'My Performance', href: '/dashboard/my-performance', icon: TrendingUp, roles: INTERNAL },
+                    { name: 'My Publication Workload', href: '/dashboard/my-publication-workload', icon: Newspaper, roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },
                     { name: 'Get IT Help', href: '/dashboard/service-desk', icon: Ticket, roles: INTERNAL },
                 ]
             },
