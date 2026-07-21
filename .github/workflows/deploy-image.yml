@@ -10,8 +10,15 @@ name: Build & Deploy Image
 #   2. Point the Coolify resource at ghcr.io/akweb1024/ims2:latest (Docker Image).
 #   3. Add repo secrets COOLIFY_WEBHOOK_URL (+ COOLIFY_TOKEN) for auto-deploy.
 
+# Gated on CI: this runs only after the "CI/CD Pipeline" workflow completes on main.
+# The job below then refuses to ship unless that run's conclusion was success, so a
+# failing lint/type-check/build/test blocks the production image + Coolify deploy.
+# (Previously this triggered directly on push and shipped in parallel with CI, so a
+# red test suite could not stop a deploy.) workflow_dispatch stays for manual deploys.
 on:
-  push:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
     branches: [main]
   workflow_dispatch: {}
 
@@ -26,6 +33,13 @@ jobs:
   build-push-deploy:
     name: Build, push to GHCR, trigger Coolify
     runs-on: ubuntu-latest
+    # Deploy only when triggered manually, or when the CI run that triggered us was a
+    # push to main that succeeded. A failed/cancelled CI run fires workflow_run too, so
+    # this guard is what actually enforces the gate — the job is skipped otherwise.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     permissions:
       contents: read
       packages: write
@@ -35,6 +49,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # For workflow_run events the default checkout ref is the branch tip, which can
+          # drift ahead of the commit CI actually validated. Pin to the exact SHA CI ran
+          # on so we ship precisely what passed. Falls back to the ref for manual dispatch.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,7 +73,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:${{ github.event.workflow_run.head_sha || github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

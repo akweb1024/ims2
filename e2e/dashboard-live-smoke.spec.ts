@@ -53,21 +53,20 @@ test.describe('Dashboard live smoke verification', () => {
 
     // Super Admin
     await page.goto('/dashboard/super-admin');
-    await expect(page.getByRole('heading', { name: 'Executive Control Tower' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Enterprise Command' })).toBeVisible();
 
+    // The dashboard defaults to the 6-month ("6M") reporting window on load.
     const superAdminApi = await page.evaluate(async () => {
-      const res = await fetch('/api/super-admin/analytics');
+      const res = await fetch('/api/super-admin/dashboard-stats?period=6');
       if (!res.ok) return null;
       return res.json();
     });
     expect(superAdminApi).not.toBeNull();
 
-    const activeCompanies = superAdminApi?.executive?.activeCompanies ?? 0;
-    const totalHeadcount = superAdminApi?.executive?.totalHeadcount ?? 0;
-    await expect(page.getByText(new RegExp(`${activeCompanies} Companies`))).toBeVisible();
-    await expect(page.getByText(new RegExp(`${totalHeadcount} Employees`))).toBeVisible();
-
-    await expect(page.getByText('Last updated:')).toBeVisible();
+    const globalWorkforce = superAdminApi?.kpis?.workforce?.current ?? 0;
+    await expect(
+      page.locator('p', { hasText: 'Global Workforce' }).locator('xpath=following-sibling::h2[1]'),
+    ).toHaveText(String(globalWorkforce));
   });
 });
 
