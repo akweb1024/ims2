@@ -195,6 +195,7 @@ export async function GET(req: NextRequest) {
             month: true,
             status: true,
             isComplete: true,
+            plannedReleaseAt: true,
             expectedManuscripts: true,
             volume: {
               select: {
@@ -206,11 +207,15 @@ export async function GET(req: NextRequest) {
             },
             articles: { select: { manuscriptStatus: true } },
           },
-          orderBy: [{ volume: { volumeNumber: 'asc' } }, { issueNumber: 'asc' }],
+          orderBy: [
+            { plannedReleaseAt: { sort: 'asc', nulls: 'last' } },
+            { volume: { volumeNumber: 'asc' } },
+            { issueNumber: 'asc' },
+          ],
           take: 20,
         })
       : [];
-    const releases = issues.map((i) => toRelease(i as unknown as IssueInput));
+    const releases = issues.map((i) => toRelease(i as unknown as IssueInput, now));
 
     const roleTemplate =
       managedJournals.length > 0

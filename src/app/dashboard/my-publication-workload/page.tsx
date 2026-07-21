@@ -9,7 +9,7 @@ import {
 type StageGroup = 'INTAKE' | 'REVIEW' | 'QUALITY' | 'PRODUCTION' | 'PUBLISHED';
 type DueState = 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING' | 'NONE';
 type KpiState = 'ON_TRACK' | 'AT_RISK' | 'BEHIND';
-type ReleaseState = 'ON_TRACK' | 'AT_RISK' | 'BEHIND';
+type ReleaseState = 'ON_TIME' | 'AT_RISK' | 'OVERDUE';
 
 interface Kpi {
     key: string; label: string; current: number; target: number; unit: string;
@@ -27,7 +27,7 @@ interface PipelineStage { key: string; label: string; count: number; }
 interface Release {
     issueId: string; journalName: string; domain: string; label: string;
     status: string; completion: number; readyArticles: number; expectedManuscripts: number;
-    releaseState: ReleaseState;
+    plannedReleaseAt: string | null; daysToRelease: number | null; releaseState: ReleaseState;
 }
 interface Workload {
     employee: {
@@ -70,9 +70,9 @@ const KPI_STATE: Record<KpiState, { pill: string; bar: string; label: string }> 
     BEHIND: { pill: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300', bar: 'bg-rose-500', label: 'Behind' },
 };
 const REL_PILL: Record<ReleaseState, string> = {
-    ON_TRACK: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    ON_TIME: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
     AT_RISK: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-    BEHIND: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+    OVERDUE: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
 };
 
 const fmtDue = (iso: string | null) =>
@@ -288,8 +288,8 @@ export default function PublicationWorkloadPage() {
                                         <p className="text-[11px] text-slate-400">{r.label} · {r.domain}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-xs font-semibold tabular-nums">{r.readyArticles}/{r.expectedManuscripts || '—'}</p>
-                                        <p className="text-[10px] text-slate-400">ready</p>
+                                        <p className="text-xs font-semibold tabular-nums">{fmtDue(r.plannedReleaseAt)}</p>
+                                        <p className="text-[10px] text-slate-400">{r.readyArticles}/{r.expectedManuscripts || '—'} ready</p>
                                     </div>
                                     <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full whitespace-nowrap ${REL_PILL[r.releaseState]}`}>
                                         {r.releaseState.replace('_', ' ').toLowerCase()}

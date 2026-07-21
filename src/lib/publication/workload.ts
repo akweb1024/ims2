@@ -16,7 +16,7 @@ export type StageGroup = 'INTAKE' | 'REVIEW' | 'QUALITY' | 'PRODUCTION' | 'PUBLI
 export type DueState = 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING' | 'NONE';
 export type KpiDirection = 'HIGHER_BETTER' | 'LOWER_BETTER';
 export type KpiState = 'ON_TRACK' | 'AT_RISK' | 'BEHIND';
-export type ReleaseState = 'ON_TRACK' | 'AT_RISK' | 'BEHIND';
+export type ReleaseState = 'ON_TIME' | 'AT_RISK' | 'OVERDUE';
 export type Period = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
 
 /** Live manuscriptStatus values, folded into the display stages (order matters). */
@@ -55,9 +55,16 @@ export function stageGroupOf(stage: ManuscriptStatus): StageGroup {
   return STAGE_GROUP[stage] ?? 'REVIEW';
 }
 
-/** UTC midnight for `d` — day boundary used for all due/transition comparisons. */
+/** UTC midnight for `d` — day boundary used for all date comparisons. */
 export function startOfUTCDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+/** Whole-day difference of `target` from `now` (negative = in the past). */
+export function dayDiff(target: Date | string, now: Date): number {
+  const t = startOfUTCDay(new Date(target)).getTime();
+  const n = startOfUTCDay(now).getTime();
+  return Math.round((t - n) / 86_400_000);
 }
 
 export interface DueInfo { dueState: DueState; daysToDue: number | null; }
@@ -65,9 +72,7 @@ export interface DueInfo { dueState: DueState; daysToDue: number | null; }
 /** Whole-day difference of the due date from `now` (negative = overdue). */
 export function dueInfo(dueDate: Date | string | null | undefined, now: Date): DueInfo {
   if (!dueDate) return { dueState: 'NONE', daysToDue: null };
-  const due = startOfUTCDay(new Date(dueDate)).getTime();
-  const today = startOfUTCDay(now).getTime();
-  const days = Math.round((due - today) / 86_400_000);
+  const days = dayDiff(dueDate, now);
   if (days < 0) return { dueState: 'OVERDUE', daysToDue: days };
   if (days === 0) return { dueState: 'DUE_TODAY', daysToDue: 0 };
   return { dueState: 'UPCOMING', daysToDue: days };
@@ -254,12 +259,18 @@ export function buildPipeline(
 
 // ---- Releases -----------------------------------------------------------
 
+/** An issue this many days out (or fewer) that isn't production-ready is at risk. */
+export const RELEASE_AT_RISK_WINDOW_DAYS = 7;
+/** Completion (%) at or above which an issue counts as production-ready. */
+export const RELEASE_READY_THRESHOLD = 80;
+
 export interface IssueInput {
   id: string;
   issueNumber: number;
   month: string | null;
   status: string;
   isComplete: boolean;
+  plannedReleaseAt: Date | string | null;
   expectedManuscripts: number;
   volume: { volumeNumber: number; journal: { id: string; name: string; domain: { name: string } | null } };
   articles: { manuscriptStatus: ManuscriptStatus | null }[];
@@ -268,7 +279,8 @@ export interface IssueInput {
 export interface ReleaseOut {
   issueId: string; journalId: string; journalName: string; domain: string; label: string;
   month: string | null; status: string; expectedManuscripts: number; readyArticles: number;
-  completion: number; releaseState: ReleaseState;
+  completion: number; plannedReleaseAt: string | null; daysToRelease: number | null;
+  releaseState: ReleaseState;
 }
 
 export function issueCompletion(ready: number, expected: number, isComplete: boolean): number {
@@ -277,15 +289,45 @@ export function issueCompletion(ready: number, expected: number, isComplete: boo
   return Math.min(100, Math.round((ready / expected) * 100));
 }
 
-export function releaseState(completion: number, isComplete: boolean, status: string): ReleaseState {
-  if (isComplete || status === 'PUBLISHED' || completion >= 100) return 'ON_TRACK';
-  if (completion >= 50) return 'AT_RISK';
-  return 'BEHIND';
+export interface ReleaseRiskInput {
+  plannedReleaseAt: Date | string | null;
+  completion: number;
+  isComplete: boolean;
+  status: string;
+  now: Date;
 }
 
-export function toRelease(i: IssueInput): ReleaseOut {
+/**
+ * Date-driven release risk. An already-published/complete issue is ON_TIME.
+ * Otherwise: past its planned date → OVERDUE; within the risk window and not yet
+ * production-ready → AT_RISK; else ON_TIME. With no planned date we can't judge
+ * against a schedule, so we degrade to a completion signal.
+ */
+export function releaseState(args: ReleaseRiskInput): { releaseState: ReleaseState; daysToRelease: number | null } {
+  const { plannedReleaseAt, completion, isComplete, status, now } = args;
+  const days = plannedReleaseAt != null ? dayDiff(plannedReleaseAt, now) : null;
+
+  if (isComplete || status === 'PUBLISHED') return { releaseState: 'ON_TIME', daysToRelease: days };
+  if (days === null) {
+    return { releaseState: completion >= RELEASE_READY_THRESHOLD ? 'ON_TIME' : 'AT_RISK', daysToRelease: null };
+  }
+  if (days < 0) return { releaseState: 'OVERDUE', daysToRelease: days };
+  if (days <= RELEASE_AT_RISK_WINDOW_DAYS && completion < RELEASE_READY_THRESHOLD) {
+    return { releaseState: 'AT_RISK', daysToRelease: days };
+  }
+  return { releaseState: 'ON_TIME', daysToRelease: days };
+}
+
+export function toRelease(i: IssueInput, now: Date): ReleaseOut {
   const ready = i.articles.filter((a) => a.manuscriptStatus && READY_STATUSES.includes(a.manuscriptStatus)).length;
   const completion = issueCompletion(ready, i.expectedManuscripts, i.isComplete);
+  const risk = releaseState({
+    plannedReleaseAt: i.plannedReleaseAt,
+    completion,
+    isComplete: i.isComplete,
+    status: i.status,
+    now,
+  });
   return {
     issueId: i.id,
     journalId: i.volume.journal.id,
@@ -297,6 +339,8 @@ export function toRelease(i: IssueInput): ReleaseOut {
     expectedManuscripts: i.expectedManuscripts,
     readyArticles: ready,
     completion,
-    releaseState: releaseState(completion, i.isComplete, i.status),
+    plannedReleaseAt: i.plannedReleaseAt ? new Date(i.plannedReleaseAt).toISOString() : null,
+    daysToRelease: risk.daysToRelease,
+    releaseState: risk.releaseState,
   };
 }

@@ -165,19 +165,37 @@ test('summarize counts overdue and due-today', () => {
 
 // ---- releases ------------------------------------------------------------
 
-test('issueCompletion and releaseState', () => {
+test('issueCompletion caps and honours isComplete', () => {
   assert.equal(issueCompletion(3, 6, false), 50);
   assert.equal(issueCompletion(0, 0, true), 100); // isComplete wins
   assert.equal(issueCompletion(10, 6, false), 100); // capped
-  assert.equal(releaseState(100, false, 'IN_PROGRESS'), 'ON_TRACK');
-  assert.equal(releaseState(60, false, 'PLANNED'), 'AT_RISK');
-  assert.equal(releaseState(20, false, 'PLANNED'), 'BEHIND');
-  assert.equal(releaseState(0, false, 'PUBLISHED'), 'ON_TRACK'); // published wins
+  assert.equal(issueCompletion(1, 0, false), 0); // no expected count
 });
 
-test('toRelease counts ready (galley/published) articles', () => {
+test('releaseState is date-driven (now = 2026-07-21)', () => {
+  const on = (a: Parameters<typeof releaseState>[0]) => releaseState(a).releaseState;
+  // published / complete → ON_TIME regardless of date
+  assert.equal(on({ plannedReleaseAt: '2026-07-10', completion: 0, isComplete: false, status: 'PUBLISHED', now: NOW }), 'ON_TIME');
+  assert.equal(on({ plannedReleaseAt: null, completion: 0, isComplete: true, status: 'IN_PROGRESS', now: NOW }), 'ON_TIME');
+  // past planned date and not ready → OVERDUE
+  const od = releaseState({ plannedReleaseAt: '2026-07-19', completion: 40, isComplete: false, status: 'PLANNED', now: NOW });
+  assert.equal(od.releaseState, 'OVERDUE');
+  assert.equal(od.daysToRelease, -2);
+  // within 7 days and below the ready threshold → AT_RISK
+  assert.equal(on({ plannedReleaseAt: '2026-07-26', completion: 50, isComplete: false, status: 'IN_PROGRESS', now: NOW }), 'AT_RISK');
+  // within 7 days but production-ready (>=80%) → ON_TIME
+  assert.equal(on({ plannedReleaseAt: '2026-07-26', completion: 90, isComplete: false, status: 'IN_PROGRESS', now: NOW }), 'ON_TIME');
+  // far out → ON_TIME even at low completion
+  assert.equal(on({ plannedReleaseAt: '2026-08-30', completion: 10, isComplete: false, status: 'PLANNED', now: NOW }), 'ON_TIME');
+  // no planned date → degrade to a completion signal
+  assert.equal(on({ plannedReleaseAt: null, completion: 85, isComplete: false, status: 'PLANNED', now: NOW }), 'ON_TIME');
+  assert.equal(on({ plannedReleaseAt: null, completion: 40, isComplete: false, status: 'PLANNED', now: NOW }), 'AT_RISK');
+});
+
+test('toRelease counts ready articles and assesses date risk', () => {
   const issue: IssueInput = {
-    id: 'i1', issueNumber: 4, month: 'July', status: 'IN_PROGRESS', isComplete: false, expectedManuscripts: 4,
+    id: 'i1', issueNumber: 4, month: 'July', status: 'IN_PROGRESS', isComplete: false,
+    plannedReleaseAt: '2026-07-24T00:00:00Z', expectedManuscripts: 4,
     volume: { volumeNumber: 18, journal: { id: 'jC', name: 'Catalysis', domain: { name: 'Chemistry' } } },
     articles: [
       { manuscriptStatus: 'GALLEY_PROOF' },
@@ -186,10 +204,12 @@ test('toRelease counts ready (galley/published) articles', () => {
       { manuscriptStatus: null },
     ],
   };
-  const r = toRelease(issue);
+  const r = toRelease(issue, NOW);
   assert.equal(r.readyArticles, 2);
   assert.equal(r.completion, 50);
   assert.equal(r.label, 'Vol 18 · Issue 4');
-  assert.equal(r.releaseState, 'AT_RISK');
+  assert.equal(r.releaseState, 'AT_RISK'); // 3 days out, 50% < 80%
+  assert.equal(r.daysToRelease, 3);
+  assert.equal(r.plannedReleaseAt, new Date('2026-07-24T00:00:00Z').toISOString());
   assert.equal(r.domain, 'Chemistry');
 });
