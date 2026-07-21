@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { kraTemplateSchema, kraTemplateUpdateSchema } from '@/lib/validators/kra';
+import { itemKey, propagateTemplateToGoals } from '@/lib/kra/template-propagation';
 
 const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
@@ -100,7 +101,7 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
       if (count !== ids.length) return createErrorResponse('One or more metrics are invalid', 400);
     }
 
-    const template = await prisma.$transaction(async (tx) => {
+    const { template, propagation } = await prisma.$transaction(async (tx) => {
       await tx.kraTemplate.update({
         where: { id },
         data: {
@@ -112,7 +113,16 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
         },
       });
 
+      let prop = null;
       if (items) {
+        // Capture pre-edit defaults so propagation can tell an edited default
+        // apart from a per-employee tweak (tweaked goals are left alone).
+        const oldItems = await tx.kraTemplateItem.findMany({
+          where: { templateId: id },
+          select: { metricId: true, periodType: true, defaultTarget: true },
+        });
+        const oldDefaults = new Map(oldItems.map((i) => [itemKey(i.metricId, i.periodType as string), i.defaultTarget]));
+
         await tx.kraTemplateItem.deleteMany({ where: { templateId: id } });
         if (items.length) {
           await tx.kraTemplateItem.createMany({
@@ -129,12 +139,16 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
             })),
           });
         }
+
+        // Push the edit into current-period goals assigned from this template.
+        prop = await propagateTemplateToGoals(tx, { templateId: id, oldDefaults });
       }
 
-      return tx.kraTemplate.findUnique({ where: { id }, include: templateInclude });
+      const updated = await tx.kraTemplate.findUnique({ where: { id }, include: templateInclude });
+      return { template: updated, propagation: prop };
     });
 
-    return NextResponse.json({ template });
+    return NextResponse.json({ template, ...(propagation ? { propagation } : {}) });
   } catch (error) {
     return createErrorResponse(error);
   }

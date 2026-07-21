@@ -7,8 +7,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { evaluateContribution, type ContributionStatus } from '@/lib/kra/validation';
-
-const VERIFIED_STATUSES: ContributionStatus[] = ['AUTO_VERIFIED', 'MANAGER_APPROVED'];
+import { recountGoalsForMetric } from '@/lib/kra/recount';
 
 export interface ContributionEntry {
   metricId: string;
@@ -83,41 +82,14 @@ export async function recordContributions(args: RecordArgs) {
 }
 
 /**
- * Recompute every KRA EmployeeGoal for (employee, metric) from its verified
- * contributions whose date falls inside the goal's [startDate, endDate] window.
- * The same daily contribution naturally counts toward MONTHLY/QUARTERLY/YEARLY goals.
+ * Recompute every EmployeeGoal for (employee, metric). Delegates to the ONE
+ * recount engine (src/lib/kra/recount.ts, Phase 3 unification): currentValue =
+ * countable (verified + pending MANUAL self-reports), verifiedValue =
+ * verified-only, achievement from countable. The same daily contribution
+ * naturally counts toward MONTHLY/QUARTERLY/YEARLY goals.
  */
 export async function rollupGoalsForMetric(args: { employeeId: string; metricId: string }) {
-  const goals = await prisma.employeeGoal.findMany({
-    where: { employeeId: args.employeeId, metricId: args.metricId, isKra: true },
-    select: { id: true, startDate: true, endDate: true, targetValue: true, status: true },
-  });
-
-  for (const goal of goals) {
-    const agg = await prisma.metricContribution.aggregate({
-      _sum: { verifiedValue: true },
-      where: {
-        employeeId: args.employeeId,
-        metricId: args.metricId,
-        status: { in: VERIFIED_STATUSES },
-        date: { gte: goal.startDate, lte: goal.endDate },
-      },
-    });
-    const verified = agg._sum.verifiedValue ?? 0;
-    const achievement = goal.targetValue > 0 ? Math.min(100, (verified / goal.targetValue) * 100) : 0;
-
-    await prisma.employeeGoal.update({
-      where: { id: goal.id },
-      data: {
-        verifiedValue: verified,
-        currentValue: verified,
-        achievementPercentage: achievement,
-        ...(achievement >= 100 && goal.status === 'IN_PROGRESS' ? { status: 'ACHIEVED' } : {}),
-      },
-    });
-  }
-
-  return goals.length;
+  return recountGoalsForMetric(prisma, args);
 }
 
 export interface ReviewArgs {
