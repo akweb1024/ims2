@@ -21,60 +21,22 @@ import {
 } from '@/lib/kra/scope';
 import { notify, userIdForProfile } from '@/lib/kra/notify';
 import { upsertGoal } from '@/lib/kra/create-goals';
+import { recountGoal, recountGoalsForMetric } from '@/lib/kra/recount';
 
-const VERIFIED_STATUSES = new Set(['AUTO_VERIFIED', 'MANAGER_APPROVED']);
 const EDITABLE_STATUSES = new Set(['PENDING', 'IN_PROGRESS', 'REJECTED']);
 
-/** Contribution value that counts toward goal progress. */
-function countableValue(c: { status: string; source: string; reportedValue: number; verifiedValue: number | null }): number {
-  if (c.status === 'REJECTED') return 0;
-  if (VERIFIED_STATUSES.has(c.status)) return c.verifiedValue ?? c.reportedValue;
-  if (c.source === 'MANUAL') return c.reportedValue; // self-report counts immediately
-  return 0; // unverified system contribution waits for review
-}
-
 /**
- * Recompute one goal's progress from its metric's contributions inside the window.
- * progressValue is ALWAYS the (countable) sum of logs — never incremented directly.
+ * Progress counting is delegated to the ONE recount engine (Phase 3
+ * unification): src/lib/kra/recount.ts. These wrappers keep the historical
+ * names for this module's internal call sites.
  */
 export async function recomputeGoalProgress(goalId: string): Promise<void> {
-  const goal = await prisma.employeeGoal.findUnique({
-    where: { id: goalId },
-    select: { id: true, employeeId: true, metricId: true, startDate: true, endDate: true, targetValue: true, status: true },
-  });
-  if (!goal || !goal.metricId) return;
-
-  const contributions = await prisma.metricContribution.findMany({
-    where: {
-      employeeId: goal.employeeId,
-      metricId: goal.metricId,
-      date: { gte: goal.startDate, lte: goal.endDate },
-    },
-    select: { status: true, source: true, reportedValue: true, verifiedValue: true },
-  });
-
-  const done = contributions.reduce((s, c) => s + countableValue(c), 0);
-  const pct = goal.targetValue > 0 ? Math.min(100, (done / goal.targetValue) * 100) : 0;
-
-  await prisma.employeeGoal.update({
-    where: { id: goal.id },
-    data: {
-      currentValue: done,
-      verifiedValue: done,
-      achievementPercentage: pct,
-      // First log flips PENDING -> IN_PROGRESS; never override submitted/verified/rejected.
-      ...(goal.status === 'PENDING' ? { status: 'IN_PROGRESS' } : {}),
-    },
-  });
+  await recountGoal(prisma, goalId);
 }
 
 /** Recompute every goal that draws on a given (employee, metric). */
 export async function recomputeGoalsForMetric(employeeId: string, metricId: string): Promise<void> {
-  const goals = await prisma.employeeGoal.findMany({
-    where: { employeeId, metricId },
-    select: { id: true },
-  });
-  for (const g of goals) await recomputeGoalProgress(g.id);
+  await recountGoalsForMetric(prisma, { employeeId, metricId });
 }
 
 export interface LogProgressArgs {
