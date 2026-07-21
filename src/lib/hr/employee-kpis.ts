@@ -16,9 +16,14 @@
  *  - `current` (progress) is only written when the caller explicitly provides
  *    it; a merge never silently resets progress.
  *  - deletion is opt-in (`replaceMissing`) and never the default.
+ *  - every write is mirrored into the canonical KRA engine (EmployeeGoal via
+ *    upsertGoal, origin LEGACY_SYNC) — see src/lib/kra/legacy-sync.ts. The
+ *    EmployeeKPI table remains only for its non-KRA consumers (work agenda,
+ *    salary incentives, staff portal); KRA truth is EmployeeGoal.
  */
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { syncKpiRowToGoal } from '@/lib/kra/legacy-sync';
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -78,7 +83,7 @@ export async function upsertEmployeeKpis(
 ): Promise<UpsertKpisResult> {
     const profile = await db.employeeProfile.findUnique({
         where: { id: args.employeeId },
-        select: { id: true, user: { select: { companyId: true } } },
+        select: { id: true, kra: true, user: { select: { companyId: true } } },
     });
     if (!profile) throw new Error('Employee profile not found');
     const companyId = profile.user?.companyId;
@@ -98,6 +103,7 @@ export async function upsertEmployeeKpis(
         const match =
             (item.id && byId.get(item.id)) || byTitle.get(item.title.toLowerCase()) || null;
 
+        let kpiId: string;
         if (match) {
             await db.employeeKPI.update({
                 where: { id: match.id },
@@ -111,6 +117,7 @@ export async function upsertEmployeeKpis(
                     updatedAt: new Date(),
                 },
             });
+            kpiId = match.id;
             touchedIds.add(match.id);
             result.updated++;
         } else {
@@ -126,9 +133,29 @@ export async function upsertEmployeeKpis(
                     category: item.category,
                 },
             });
+            kpiId = created.id;
             touchedIds.add(created.id);
             result.created++;
         }
+
+        // KRA-engine bridge: mirror the row into the canonical EmployeeGoal so
+        // the HR KRA console / my-performance / workload dashboards show the
+        // same target regardless of which surface wrote it. Target syncs;
+        // progress stays owned by the KRA engine (current only seeds creation).
+        await syncKpiRowToGoal(db, {
+            employeeId: args.employeeId,
+            companyId,
+            kraStatement: profile.kra ?? null,
+            kpi: {
+                id: kpiId,
+                title: item.title,
+                target: item.target,
+                current: item.current ?? 0,
+                unit: item.unit,
+                period: item.period,
+                category: item.category,
+            },
+        });
     }
 
     if (args.replaceMissing) {

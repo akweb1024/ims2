@@ -249,24 +249,41 @@ export const GET = authorizedRoute(
                         checkOut: true,
                     },
                 }),
-                prisma.employeeKPI.findMany({
+                // KRA targets come from the canonical engine (EmployeeGoal),
+                // not the legacy EmployeeKPI table — mapped to the same shape
+                // so the overview panel is unchanged. `type` is the goal's
+                // period; only the current window's goals are shown.
+                prisma.employeeGoal.findMany({
                     where: {
                         employeeId: { in: profileIds },
-                        period: PERIOD_TO_KPI[period],
+                        isKra: true,
+                        type: PERIOD_TO_KPI[period] as never,
+                        startDate: { lte: end },
+                        endDate: { gte: start },
                     },
                     select: {
                         id: true,
                         employeeId: true,
                         title: true,
-                        target: true,
-                        current: true,
+                        targetValue: true,
+                        currentValue: true,
                         unit: true,
-                        period: true,
-                        category: true,
+                        type: true,
+                        dimension: true,
                         updatedAt: true,
                     },
                     orderBy: { updatedAt: 'desc' },
-                }),
+                }).then((goals) => goals.map((g) => ({
+                    id: g.id,
+                    employeeId: g.employeeId,
+                    title: g.title,
+                    target: g.targetValue,
+                    current: g.currentValue,
+                    unit: g.unit,
+                    period: g.type as string,
+                    category: (g.dimension as string | null) ?? 'GENERAL',
+                    updatedAt: g.updatedAt,
+                }))),
             ]);
 
             const reportMap = new Map<string, typeof workReports>();

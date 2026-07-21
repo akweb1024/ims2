@@ -309,15 +309,21 @@ export async function getUnifiedPerformance(
                 select: {
                     id: true,
                     designation: true,
-                    kpis: {
-                        where: period ? { period } : {},
+                    // KRA targets from the canonical engine (EmployeeGoal),
+                    // mapped below to the legacy kpi shape the page expects.
+                    goals: {
+                        where: {
+                            isKra: true,
+                            endDate: { gte: new Date() },
+                            ...(period ? { type: period as never } : {}),
+                        },
                         select: {
                             id: true,
                             title: true,
-                            target: true,
-                            current: true,
-                            period: true,
-                            category: true,
+                            targetValue: true,
+                            currentValue: true,
+                            type: true,
+                            dimension: true,
                             createdAt: true
                         },
                         orderBy: { createdAt: 'desc' },
@@ -375,7 +381,15 @@ export async function getUnifiedPerformance(
         userEmail: u.email,
         companyId: u.companyId || '',
         companyName: u.company?.name || 'Unknown',
-        kpis: u.employeeProfile?.kpis || [],
+        kpis: (u.employeeProfile?.goals || []).map(g => ({
+            id: g.id,
+            title: g.title,
+            target: g.targetValue,
+            current: g.currentValue,
+            period: g.type as string,
+            category: (g.dimension as string | null) ?? 'GENERAL',
+            createdAt: g.createdAt,
+        })),
         reviews: u.employeeProfile?.performanceReviews.map(p => ({
             id: p.id,
             period: p.period,
