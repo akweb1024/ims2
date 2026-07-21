@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateCronRequest } from '@/lib/cron-auth';
 import { computePerformanceIndex } from '@/lib/kra/performance-index';
+import { computeKraRollupsForCompany } from '@/lib/kra/rollups';
 import type { KraPeriodType } from '@/lib/kra/period';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
       .filter((p) => ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'].includes(p)) as KraPeriodType[];
 
     const companies = await prisma.company.findMany({ select: { id: true, name: true } });
-    const results: Array<{ companyId: string; companyName: string; employees: number; snapshots: number }> = [];
+    const results: Array<{ companyId: string; companyName: string; employees: number; snapshots: number; rollups: number }> = [];
 
     for (const company of companies) {
       const profiles = await prisma.employeeProfile.findMany({
@@ -36,7 +37,16 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      results.push({ companyId: company.id, companyName: company.name, employees: profiles.length, snapshots });
+      // Roll the fresh per-employee indices up into team/department/company
+      // aggregates — same period labels, so they can never disagree with the
+      // employee-level snapshots they summarize.
+      let rollups = 0;
+      for (const periodType of periods) {
+        const r = await computeKraRollupsForCompany(prisma, { companyId: company.id, periodType });
+        rollups += r.reduce((sum, x) => sum + x.subjects, 0);
+      }
+
+      results.push({ companyId: company.id, companyName: company.name, employees: profiles.length, snapshots, rollups });
     }
 
     return NextResponse.json({ ok: true, periods, results });

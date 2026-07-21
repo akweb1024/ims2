@@ -156,6 +156,7 @@ model Company {
   kraTemplates                      KraTemplate[]
   metricContributions               MetricContribution[]
   performanceIndices                PerformanceIndex[]
+  kraRollups                        KraRollup[]
 }
 
 model CompanyIntegration {
@@ -6774,6 +6775,34 @@ model PerformanceIndex {
   @@unique([employeeId, periodType, period])
   @@index([companyId])
   @@index([employeeId])
+}
+
+/// Aggregated KRA outcomes above the employee level. One row per
+/// (level, subject, periodType, period): TEAM subjects are manager user ids
+/// (direct reports), DEPARTMENT subjects are Department ids, COMPANY subjects
+/// are the company id itself. Derived from PerformanceIndex + EmployeeGoal by
+/// computeKraRollupsForCompany (kra-snapshot cron); never edited by hand.
+model KraRollup {
+  id             String   @id @default(uuid())
+  companyId      String
+  level          String // TEAM | DEPARTMENT | COMPANY
+  subjectId      String // managerUserId | departmentId | companyId
+  subjectName    String
+  periodType     GoalType @default(MONTHLY)
+  period         String // same label convention as PerformanceIndex.period
+  employeeCount  Int      @default(0)
+  goalCount      Int      @default(0)
+  avgAchievement Float    @default(0) // mean of employees' KRA achievementScore
+  avgIndex       Float    @default(0) // mean of employees' overallIndex
+  gradeCounts    Json? // { "A": n, "B": n, ... }
+  dimensionAvgs  Json? // { "OUTPUT": pct, "QUALITY": pct, ... }
+  computedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([level, subjectId, periodType, period])
+  @@index([companyId, level, periodType, period])
 }
 
 /// Goal-level verification step (2-step TL -> MANAGER approval chain). Spec §10.
