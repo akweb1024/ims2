@@ -10,14 +10,24 @@ import crypto from 'crypto';
  */
 export async function POST(req: NextRequest) {
     try {
-        const payload = await req.json();
-        
+        // Read the raw body so the HMAC is verified against the exact bytes the vendor
+        // signed. Re-serializing a parsed object (JSON.stringify(await req.json())) can
+        // reorder keys / drop whitespace and produce a different digest than the sender's.
+        const rawBody = await req.text();
+
+        let payload: any;
+        try {
+            payload = JSON.parse(rawBody);
+        } catch {
+            return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+        }
+
         // Example Payload Structure Expected from vendor:
-        // { 
+        // {
         //    "companyId": "uuid",
-        //    "articleId": "uuid", 
-        //    "status": "COMPLETED", 
-        //    "similarityScore": 14, 
+        //    "articleId": "uuid",
+        //    "status": "COMPLETED",
+        //    "similarityScore": 14,
         //    "reportUrl": "https://..."
         // }
 
@@ -35,17 +45,28 @@ export async function POST(req: NextRequest) {
              return NextResponse.json({ error: 'Scanner integration not active for this tenant.' }, { status: 403 });
         }
 
-        // Webhook Secret Validation (Assuming headers pass an x-signature, we validate here)
-        const signature = req.headers.get('x-hmac-signature');
-        if (signature && integration.key) {
-            const hmac = crypto.createHmac('sha256', integration.key);
-            const digest = hmac.update(JSON.stringify(payload)).digest('hex');
-            if (signature !== digest) {
-                return NextResponse.json({ error: 'Invalid Webhook Signature' }, { status: 401 });
-            }
+        // 2. Webhook Signature Validation — MANDATORY (fail closed). Without this, an
+        // attacker who omits the signature header could forge scan verdicts and auto-reject
+        // arbitrary manuscripts. A missing secret or missing/invalid signature is rejected.
+        const secret = integration.key;
+        if (!secret) {
+            console.warn(`[Webhook] Plagiarism Scanner for company ${companyId} has no HMAC secret configured; rejecting.`);
+            return NextResponse.json({ error: 'Webhook secret not configured for this tenant.' }, { status: 403 });
         }
 
-        // 2. Update the specific Article with the Plagiarism details
+        const signature = req.headers.get('x-hmac-signature');
+        if (!signature) {
+            return NextResponse.json({ error: 'Missing Webhook Signature' }, { status: 401 });
+        }
+
+        const digest = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+        const signatureBuf = Buffer.from(signature, 'utf8');
+        const digestBuf = Buffer.from(digest, 'utf8');
+        if (signatureBuf.length !== digestBuf.length || !crypto.timingSafeEqual(signatureBuf, digestBuf)) {
+            return NextResponse.json({ error: 'Invalid Webhook Signature' }, { status: 401 });
+        }
+
+        // 3. Update the specific Article with the Plagiarism details
         // Note: Checking if Article model exists, we update the metrics directly.
         // If your schema uses different fields, adjust the data payload below.
         
