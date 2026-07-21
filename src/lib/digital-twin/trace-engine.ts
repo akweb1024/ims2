@@ -181,9 +181,11 @@ export async function buildTwinTrace(
         },
       },
     }),
-    prisma.employeeKPI.findMany({
+    // KRA truth is EmployeeGoal (unification) — mapped to the legacy KPI shape.
+    prisma.employeeGoal.findMany({
       where: {
         companyId,
+        isKra: true,
         updatedAt: { gte: since },
       },
       orderBy: { updatedAt: "desc" },
@@ -192,9 +194,9 @@ export async function buildTwinTrace(
         id: true,
         employeeId: true,
         title: true,
-        target: true,
-        current: true,
-        period: true,
+        targetValue: true,
+        currentValue: true,
+        type: true,
         updatedAt: true,
         employee: {
           select: {
@@ -202,7 +204,16 @@ export async function buildTwinTrace(
           },
         },
       },
-    }),
+    }).then((goals) => goals.map((g) => ({
+      id: g.id,
+      employeeId: g.employeeId,
+      title: g.title,
+      target: g.targetValue,
+      current: g.currentValue,
+      period: g.type as string,
+      updatedAt: g.updatedAt,
+      employee: g.employee,
+    }))),
     prisma.projectMember.findMany({
       where: {
         joinedAt: { gte: since },

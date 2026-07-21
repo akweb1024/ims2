@@ -9,6 +9,17 @@ import {
 
 type PeriodType = 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
 
+interface OrgRollup {
+    id: string;
+    level: 'TEAM' | 'DEPARTMENT' | 'COMPANY';
+    subjectName: string;
+    employeeCount: number;
+    goalCount: number;
+    avgAchievement: number;
+    avgIndex: number;
+    gradeCounts: Record<string, number> | null;
+}
+
 interface Analytics {
     period: string;
     periodType: string;
@@ -53,6 +64,7 @@ export default function TeamKraAnalyticsPage() {
     const [ref, setRef] = useState<Date>(new Date());
     const [departments, setDepartments] = useState<{ id: string; name: string; companyName?: string | null }[]>([]);
     const [departmentId, setDepartmentId] = useState<string>('');
+    const [rollups, setRollups] = useState<OrgRollup[] | null>(null);
 
     const authHeaders = useCallback(() => ({ Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` }), []);
 
@@ -94,6 +106,23 @@ export default function TeamKraAnalyticsPage() {
             } catch { /* optional */ }
         })();
     }, [authHeaders]);
+
+    // Stored org-level roll-ups (KraRollup) for the same period the analytics
+    // show — same source of truth, so the numbers always agree.
+    useEffect(() => {
+        if (!data?.period) { setRollups(null); return; }
+        (async () => {
+            try {
+                const params = new URLSearchParams({ periodType, period: data.period });
+                const res = await fetch(`/api/kra/rollups?${params.toString()}`, { headers: authHeaders() });
+                if (!res.ok) { setRollups(null); return; }
+                const json = await res.json();
+                setRollups(Array.isArray(json.rollups) ? json.rollups : null);
+            } catch {
+                setRollups(null);
+            }
+        })();
+    }, [data?.period, periodType, authHeaders]);
 
     const isCompanyScope = data?.scope === 'COMPANY';
 
@@ -145,6 +174,49 @@ export default function TeamKraAnalyticsPage() {
                             <SummaryCard icon={<Clock className="w-4 h-4" />} label="Pending verify" value={data.summary.pendingVerification} color="text-amber-600" />
                             <SummaryCard icon={<AlertTriangle className="w-4 h-4" />} label="At risk" value={data.summary.atRisk} color="text-rose-600" />
                         </div>
+
+                        {/* Organization levels — stored KraRollup aggregates */}
+                        {rollups && rollups.length > 0 && (
+                            <div className="bg-white rounded-xl border border-gray-200 p-4">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-3">Organization levels — {data.period}</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                                                <th className="py-2 pr-3">Level</th>
+                                                <th className="py-2 pr-3">Name</th>
+                                                <th className="py-2 pr-3 text-right">Employees</th>
+                                                <th className="py-2 pr-3 text-right">Goals</th>
+                                                <th className="py-2 pr-3 text-right">Avg achievement</th>
+                                                <th className="py-2 pr-3 text-right">Avg index</th>
+                                                <th className="py-2">Grades</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rollups.map((r) => (
+                                                <tr key={r.id} className="border-b border-gray-50 last:border-0">
+                                                    <td className="py-2 pr-3">
+                                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${r.level === 'COMPANY' ? 'bg-indigo-50 text-indigo-700' : r.level === 'DEPARTMENT' ? 'bg-violet-50 text-violet-700' : 'bg-sky-50 text-sky-700'}`}>
+                                                            {r.level.toLowerCase()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 pr-3 font-medium text-gray-900">{r.subjectName}</td>
+                                                    <td className="py-2 pr-3 text-right tabular-nums">{r.employeeCount}</td>
+                                                    <td className="py-2 pr-3 text-right tabular-nums">{r.goalCount}</td>
+                                                    <td className="py-2 pr-3 text-right tabular-nums font-semibold" style={{ color: barColor(r.avgAchievement) }}>{r.avgAchievement}%</td>
+                                                    <td className="py-2 pr-3 text-right tabular-nums">{r.avgIndex}</td>
+                                                    <td className="py-2 text-xs text-gray-500">
+                                                        {r.gradeCounts && Object.keys(r.gradeCounts).length > 0
+                                                            ? Object.entries(r.gradeCounts).sort(([a], [b]) => a.localeCompare(b)).map(([g, n]) => `${g}×${n}`).join('  ')
+                                                            : '—'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
                         {data.summary.totalGoals === 0 ? (
                             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
