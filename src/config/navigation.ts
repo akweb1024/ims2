@@ -178,6 +178,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Team KPI Overview', href: '/dashboard/manager/team/performance', icon: BarChart3, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Goal Appraisals', href: '/dashboard/performance/goals', icon: Award, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance Observatory', href: '/dashboard/performance-observability', icon: Compass, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'FINANCE_ADMIN'] },
+                    { name: 'KRA Insights', href: '/dashboard/insights', icon: Sparkles, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR', 'TEAM_LEADER'] },
                     { name: 'Workspace Guide', href: '/dashboard/performance/workspace/help', icon: BookOpen, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'TEAM_LEADER'] },
                 ]
             },
