@@ -27,7 +27,7 @@ import { prisma } from '@/lib/prisma';
 import { computeCarryForward } from '@/lib/kra/carry-forward';
 import { notify, userIdForProfile } from '@/lib/kra/notify';
 
-export type GoalOrigin = 'TEMPLATE' | 'MANUAL' | 'PROVISION' | 'ROLLOVER';
+export type GoalOrigin = 'TEMPLATE' | 'MANUAL' | 'PROVISION' | 'ROLLOVER' | 'LEGACY_SYNC';
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -54,6 +54,14 @@ export interface UnifiedGoalInput {
     reviewerId?: string | null;
     assignedById?: string | null;
     visibility?: string;
+    /** Legacy EmployeeKPI row this goal mirrors (LEGACY_SYNC bridge). */
+    kpiId?: string | null;
+    /**
+     * Starting progress for a NEWLY created goal (e.g. migrating a legacy KPI
+     * that already has `current`). Ignored on update — a re-sync never resets
+     * or overwrites progress the KRA engine owns.
+     */
+    initialCurrent?: number;
 }
 
 export interface UpsertGoalResult {
@@ -103,6 +111,7 @@ export async function upsertGoal(db: Db, input: UnifiedGoalInput): Promise<Upser
         visibility: input.visibility ?? 'MANAGER',
         ...(input.reviewerId !== undefined ? { reviewerId: input.reviewerId } : {}),
         ...(input.assignedById ? { assignedById: input.assignedById } : {}),
+        ...(input.kpiId !== undefined ? { kpiId: input.kpiId } : {}),
     };
 
     if (existing) {
@@ -110,15 +119,18 @@ export async function upsertGoal(db: Db, input: UnifiedGoalInput): Promise<Upser
         return { id: existing.id, created: false };
     }
 
+    const initialCurrent = Math.max(0, input.initialCurrent ?? 0);
     const goal = await db.employeeGoal.create({
         data: {
             ...data,
             employeeId: input.employeeId,
             companyId: input.companyId,
-            currentValue: 0,
+            currentValue: initialCurrent,
             verifiedValue: 0,
-            achievementPercentage: 0,
-            status: 'PENDING',
+            achievementPercentage: carry.targetValue > 0
+                ? Math.min(100, (initialCurrent / carry.targetValue) * 100)
+                : 0,
+            status: initialCurrent > 0 ? 'IN_PROGRESS' : 'PENDING',
         },
     });
     return { id: goal.id, created: true };
@@ -140,6 +152,12 @@ const ORIGIN_MESSAGES: Record<GoalOrigin, (n: number, period?: string) => { titl
     ROLLOVER: (n) => ({
         title: 'Monthly goals rolled over',
         message: `${n} goal${n > 1 ? 's were' : ' was'} carried into the new month, including any unmet targets.`,
+    }),
+    // Mirrored from a legacy KPI write — the manager already acted in that UI,
+    // so word it as an update rather than a fresh assignment.
+    LEGACY_SYNC: (n) => ({
+        title: 'Your KRA targets were updated',
+        message: `${n} target${n > 1 ? 's were' : ' was'} updated on your performance dashboard.`,
     }),
 };
 

@@ -15,6 +15,14 @@
  */
 export type KraPeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
 
+const VALID_PERIOD_TYPES: KraPeriodType[] = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'];
+
+/** Whitelist a free-form period string onto KraPeriodType (default MONTHLY). */
+export function normalizePeriod(period: string): KraPeriodType {
+  const p = (period || '').toUpperCase() as KraPeriodType;
+  return VALID_PERIOD_TYPES.includes(p) ? p : 'MONTHLY';
+}
+
 export interface PeriodWindow {
   startDate: Date;
   endDate: Date;
