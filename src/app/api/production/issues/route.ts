@@ -44,6 +44,14 @@ export const POST = authorizedRoute(
             const body = await req.json();
             const { volumeId, issueNumber, month, title, expectedManuscripts } = body;
 
+            // Optional planned release date.
+            let plannedReleaseAt: Date | undefined;
+            if (body.plannedReleaseAt) {
+                const d = new Date(body.plannedReleaseAt);
+                if (isNaN(d.getTime())) return createErrorResponse('Invalid plannedReleaseAt date', 400);
+                plannedReleaseAt = d;
+            }
+
             // Verify if user is editor of this journal
             const volume = await prisma.journalVolume.findUnique({
                 where: { id: volumeId },
@@ -63,6 +71,7 @@ export const POST = authorizedRoute(
                     month,
                     title,
                     expectedManuscripts: parseInt(expectedManuscripts || '0'),
+                    plannedReleaseAt,
                     status: 'PLANNED'
                 }
             });

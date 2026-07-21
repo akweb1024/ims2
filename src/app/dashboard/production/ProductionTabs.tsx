@@ -15,6 +15,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import IssuesReleasePanel from './IssuesReleasePanel';
 
 export default function ProductionTabs({ journals, articles }: { journals: any[], articles: any[] }) {
     const [activeTab, setActiveTab] = useState<'overview' | 'journals' | 'issues' | 'articles'>('overview');
@@ -129,6 +130,11 @@ export default function ProductionTabs({ journals, articles }: { journals: any[]
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Issues Tab — release scheduling */}
+            {activeTab === 'issues' && (
+                <IssuesReleasePanel journals={journals} />
             )}
 
             {/* Articles / Manuscript Tab */}

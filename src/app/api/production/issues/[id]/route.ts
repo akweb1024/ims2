@@ -22,6 +22,19 @@ export const PATCH = authorizedRoute(
                 return createErrorResponse('Forbidden', 403);
             }
 
+            // Planned release date: present-and-empty clears it, a value sets it,
+            // absent leaves it unchanged.
+            let plannedReleaseAt: Date | null | undefined;
+            if ('plannedReleaseAt' in body) {
+                if (!body.plannedReleaseAt) {
+                    plannedReleaseAt = null;
+                } else {
+                    const d = new Date(body.plannedReleaseAt);
+                    if (isNaN(d.getTime())) return createErrorResponse('Invalid plannedReleaseAt date', 400);
+                    plannedReleaseAt = d;
+                }
+            }
+
             const updated = await prisma.journalIssue.update({
                 where: { id },
                 data: {
@@ -32,6 +45,7 @@ export const PATCH = authorizedRoute(
                     expectedManuscripts: body.expectedManuscripts ? parseInt(body.expectedManuscripts) : undefined,
                     isComplete: body.isComplete,
                     validationStatus: body.validationStatus,
+                    plannedReleaseAt,
                     publishedAt: body.status === 'PUBLISHED' ? new Date() : undefined
                 }
             });
