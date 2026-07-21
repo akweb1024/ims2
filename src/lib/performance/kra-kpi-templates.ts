@@ -111,6 +111,16 @@ export const KRA_KPI_TEMPLATES: KRAKPITemplate[] = [
             { title: 'Monthly revenue influenced', target: 500000, current: 0, unit: 'INR', period: 'MONTHLY', category: 'REVENUE' },
             { title: 'CRM hygiene score', target: 95, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'DATA_QUALITY' },
             { title: 'Campaign contribution to SQLs', target: 30, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'MARKETING_IMPACT' },
+            // --- Traditional methods (field / direct sales) ---
+            { title: 'Daily sales calls / connects', target: 40, current: 0, unit: 'CALLS', period: 'DAILY', category: 'TRADITIONAL_ACTIVITY' },
+            { title: 'Weekly client meetings & demos', target: 8, current: 0, unit: 'MEETINGS', period: 'WEEKLY', category: 'TRADITIONAL_ACTIVITY' },
+            { title: 'Monthly collections realized', target: 400000, current: 0, unit: 'INR', period: 'MONTHLY', category: 'TRADITIONAL_REVENUE' },
+            { title: 'Referrals & walk-ins generated', target: 6, current: 0, unit: 'REFERRALS', period: 'MONTHLY', category: 'TRADITIONAL_PIPELINE' },
+            // --- Modern methods (digital marketing) ---
+            { title: 'Marketing-qualified leads from campaigns', target: 40, current: 0, unit: 'MQLS', period: 'MONTHLY', category: 'DIGITAL_PIPELINE' },
+            { title: 'Email & social engagement rate', target: 25, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'DIGITAL_ENGAGEMENT' },
+            { title: 'Content & posts published', target: 8, current: 0, unit: 'CONTENT', period: 'MONTHLY', category: 'DIGITAL_CONTENT' },
+            { title: 'Cost per acquisition (CAC)', target: 1500, current: 0, unit: 'INR_MAX', period: 'MONTHLY', category: 'DIGITAL_EFFICIENCY' },
         ],
     },
     {
@@ -126,6 +136,13 @@ export const KRA_KPI_TEMPLATES: KRAKPITemplate[] = [
             { title: 'Team work-report submission compliance', target: 95, current: 0, unit: 'PERCENT', period: 'WEEKLY', category: 'DISCIPLINE' },
             { title: 'Campaign ROI score', target: 3, current: 0, unit: 'RATIO', period: 'QUARTERLY', category: 'MARKETING_IMPACT' },
             { title: 'High performer retention in team', target: 90, current: 0, unit: 'PERCENT', period: 'YEARLY', category: 'PEOPLE_DEVELOPMENT' },
+            // --- Traditional methods (field / direct sales) ---
+            { title: 'Field sales coverage vs plan', target: 90, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'TRADITIONAL_ACTIVITY' },
+            { title: 'Team collections vs billed', target: 92, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'TRADITIONAL_REVENUE' },
+            // --- Modern methods (digital marketing) ---
+            { title: 'Marketing-sourced pipeline share', target: 35, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'DIGITAL_PIPELINE' },
+            { title: 'Return on ad spend (ROAS)', target: 4, current: 0, unit: 'RATIO', period: 'QUARTERLY', category: 'DIGITAL_EFFICIENCY' },
+            { title: 'Blended customer acquisition cost', target: 2000, current: 0, unit: 'INR_MAX', period: 'QUARTERLY', category: 'DIGITAL_EFFICIENCY' },
         ],
     },
     {
