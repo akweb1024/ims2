@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextauth';
 import prisma from '@/lib/prisma';
+import { syncPublicationMetricCredit } from '@/lib/kra/publication-credit';
 
 // POST - Update manuscript status
 export async function POST(req: NextRequest) {
@@ -52,6 +53,15 @@ export async function POST(req: NextRequest) {
                 reason,
                 comments
             }
+        });
+
+        // KRA auto-credit: publishing credits the journal manager's linked
+        // metric; un-publishing reverses it. Idempotent by article id.
+        await syncPublicationMetricCredit({
+            articleId,
+            fromStatus: article.manuscriptStatus,
+            toStatus,
+            date: updatedArticle.publicationDate ?? undefined,
         });
 
         return NextResponse.json(updatedArticle);

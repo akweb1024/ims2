@@ -810,11 +810,15 @@ model Journal {
   abbreviation      String?                   @unique
   frequencyTrack    String?                   @default("TRACK_A")
   subscriptionYear  Int?
+  // KRA link: publishing an article in this journal auto-credits this metric
+  // to the journal manager. Mirrors ITProject/ITTask.linkedMetricId.
+  linkedMetricId    String?
   articles          Article[]
   editorialBoard    EditorialBoardMember[]
   domain            JournalDomain?            @relation(fields: [domainId], references: [id])
   editor            User?                     @relation("JournalEditor", fields: [editorId], references: [id])
   journalManager    User?                     @relation("JournalManager", fields: [journalManagerId], references: [id])
+  linkedMetric      PerformanceMetricDefinition? @relation("JournalLinkedMetric", fields: [linkedMetricId], references: [id])
   publisher         Publisher?                @relation(fields: [publisherId], references: [id])
   indexingTracking  JournalIndexingTracking[]
   reviewers         JournalReviewer[]
@@ -832,6 +836,7 @@ model Journal {
   @@index([domainId])
   @@index([publisherId])
   @@index([journalManagerId])
+  @@index([linkedMetricId])
 }
 
 model Plan {
@@ -3092,6 +3097,7 @@ model PerformanceMetricDefinition {
   kraGoals          EmployeeGoal[]
   linkedITProjects  ITProject[]          @relation("ITProjectLinkedMetric")
   linkedITTasks     ITTask[]             @relation("ITTaskLinkedMetric")
+  linkedJournals    Journal[]            @relation("JournalLinkedMetric")
 
   @@unique([companyId, scope, key])
   @@index([companyId, scope])
