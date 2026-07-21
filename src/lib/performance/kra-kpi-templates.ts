@@ -235,4 +235,43 @@ export const KRA_KPI_TEMPLATES: KRAKPITemplate[] = [
             { title: 'Team capability development sessions', target: 6, current: 0, unit: 'SESSIONS', period: 'YEARLY', category: 'PEOPLE_DEVELOPMENT' },
         ],
     },
+    {
+        // IT is a shared function: its people support every department's in-house
+        // team members, so the KRA is framed around cross-department enablement
+        // (SLA/CSAT), on-time delivery of IT project/tasks raised by other teams,
+        // and reliable, secure systems — not a single-department silo.
+        id: 'it_support_individual',
+        name: 'IT Support & Infrastructure Executive Template',
+        family: 'IT & Infrastructure',
+        roleType: 'INDIVIDUAL',
+        kra: 'Keep every department productive: resolve in-house support requests within SLA, deliver assigned IT project/tasks on time, and maintain reliable, secure systems across the organization.',
+        kpis: [
+            { title: 'Daily internal support tickets resolved', target: 12, current: 0, unit: 'TICKETS', period: 'DAILY', category: 'SUPPORT' },
+            { title: 'First-response SLA compliance', target: 95, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'SUPPORT' },
+            { title: 'Ticket resolution within SLA', target: 90, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'SUPPORT' },
+            { title: 'Internal user satisfaction (CSAT)', target: 90, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'SATISFACTION' },
+            { title: 'Assigned IT project/tasks delivered on time', target: 90, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'DELIVERY' },
+            { title: 'Departments actively supported', target: 6, current: 0, unit: 'DEPARTMENTS', period: 'MONTHLY', category: 'COVERAGE' },
+            { title: 'System / service uptime', target: 99.5, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'RELIABILITY' },
+            { title: 'Security patching & backup compliance', target: 98, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'SECURITY' },
+            { title: 'Recurring-issue reduction / automation', target: 4, current: 0, unit: 'IMPROVEMENTS', period: 'YEARLY', category: 'IMPROVEMENT' },
+        ],
+    },
+    {
+        id: 'it_support_manager',
+        name: 'IT Support & Infrastructure Manager Template',
+        family: 'IT & Infrastructure',
+        roleType: 'MANAGER',
+        kra: 'Lead cross-department IT support and infrastructure: sustain SLA and uptime, deliver the IT project portfolio raised across teams, and keep every in-house department enabled, secure, and unblocked.',
+        kpis: [
+            { title: 'Team ticket SLA achievement', target: 95, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'SUPPORT' },
+            { title: 'Average resolution turnaround', target: 8, current: 0, unit: 'HOURS_MAX', period: 'MONTHLY', category: 'SUPPORT' },
+            { title: 'IT project portfolio on-time delivery', target: 90, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'DELIVERY' },
+            { title: 'Infrastructure uptime', target: 99.9, current: 0, unit: 'PERCENT', period: 'MONTHLY', category: 'RELIABILITY' },
+            { title: 'Escalation closure turnaround', target: 24, current: 0, unit: 'HOURS_MAX', period: 'WEEKLY', category: 'OPERATIONS' },
+            { title: 'Security & compliance audit score', target: 95, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'SECURITY' },
+            { title: 'Internal stakeholder satisfaction', target: 90, current: 0, unit: 'PERCENT', period: 'QUARTERLY', category: 'SATISFACTION' },
+            { title: 'Cross-skilling coverage in team', target: 80, current: 0, unit: 'PERCENT', period: 'YEARLY', category: 'PEOPLE_DEVELOPMENT' },
+        ],
+    },
 ];
