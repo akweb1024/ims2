@@ -16,9 +16,11 @@ export const GET = authorizedRoute(
             const periodParam = (searchParams.get('period') || '').toUpperCase();
             const allowedPeriods = new Set(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']);
 
-            const where: any = {};
+            // KRA truth is EmployeeGoal (unification); `period` maps onto the
+            // goal's period type. Response keeps the legacy KPI shape.
+            const where: any = { isKra: true };
             Object.assign(where, companyScopeWhere(user));
-            if (allowedPeriods.has(periodParam)) where.period = periodParam;
+            if (allowedPeriods.has(periodParam)) where.type = periodParam;
 
             const selfProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
 
@@ -67,7 +69,7 @@ export const GET = authorizedRoute(
                 // Admin/HR with no employeeId: company-wide KPI list
             }
 
-            const kpis = await prisma.employeeKPI.findMany({
+            const goals = await prisma.employeeGoal.findMany({
                 where,
                 include: {
                     employee: {
@@ -77,7 +79,21 @@ export const GET = authorizedRoute(
                 orderBy: { updatedAt: 'desc' }
             });
 
-            return NextResponse.json(kpis);
+            // Legacy KPI response shape, sourced from the canonical goals.
+            return NextResponse.json(goals.map((g) => ({
+                id: g.id,
+                employeeId: g.employeeId,
+                companyId: g.companyId,
+                title: g.title,
+                target: g.targetValue,
+                current: g.currentValue,
+                unit: g.unit,
+                period: g.type as string,
+                category: (g.dimension as string | null) ?? 'GENERAL',
+                createdAt: g.createdAt,
+                updatedAt: g.updatedAt,
+                employee: g.employee,
+            })));
         } catch (error) {
             return createErrorResponse(error);
         }
@@ -120,24 +136,62 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // The GET now serves canonical EmployeeGoal rows, so an incoming id
+            // may be a goal id. Resolve it to the linked legacy row (kpiId) so
+            // the unified write path can id-match; fall back to title matching.
+            let legacyId: string | undefined;
             if (id) {
-                const existingKpi = await prisma.employeeKPI.findUnique({
+                const goal = await prisma.employeeGoal.findUnique({
                     where: { id: String(id) },
-                    select: { id: true, employeeId: true },
+                    select: { id: true, employeeId: true, kpiId: true },
                 });
-                if (!existingKpi) return createErrorResponse('KPI not found', 404);
-                if (existingKpi.employeeId !== targetProfile.id) {
-                    return createErrorResponse('Forbidden: KPI does not belong to target employee', 403);
+                if (goal) {
+                    if (goal.employeeId !== targetProfile.id) {
+                        return createErrorResponse('Forbidden: KPI does not belong to target employee', 403);
+                    }
+                    legacyId = goal.kpiId ?? undefined;
+                } else {
+                    const existingKpi = await prisma.employeeKPI.findUnique({
+                        where: { id: String(id) },
+                        select: { id: true, employeeId: true },
+                    });
+                    if (!existingKpi) return createErrorResponse('KPI not found', 404);
+                    if (existingKpi.employeeId !== targetProfile.id) {
+                        return createErrorResponse('Forbidden: KPI does not belong to target employee', 403);
+                    }
+                    legacyId = existingKpi.id;
                 }
             }
 
             // Unified KPI write path: validates period/unit/target, matches by
-            // id-or-title (no duplicates), uses the EMPLOYEE's companyId.
-            const normalized = normalizeKpis([{ id: id ? String(id) : undefined, title, target, current, unit, period, category }]);
+            // id-or-title (no duplicates), uses the EMPLOYEE's companyId, and
+            // mirrors into the canonical EmployeeGoal via the LEGACY_SYNC bridge.
+            const normalized = normalizeKpis([{ id: legacyId, title, target, current, unit, period, category }]);
             if (normalized.length === 0) {
                 return createErrorResponse('Invalid KPI: title and a positive target are required', 400);
             }
             await upsertEmployeeKpis(prisma, { employeeId: targetProfile.id, kpis: normalized });
+
+            // Respond with the canonical goal (same shape the GET serves).
+            const savedGoal = await prisma.employeeGoal.findFirst({
+                where: { employeeId: targetProfile.id, title: normalized[0].title, isKra: true },
+                orderBy: { updatedAt: 'desc' },
+            });
+            if (savedGoal) {
+                return NextResponse.json({
+                    id: savedGoal.id,
+                    employeeId: savedGoal.employeeId,
+                    companyId: savedGoal.companyId,
+                    title: savedGoal.title,
+                    target: savedGoal.targetValue,
+                    current: savedGoal.currentValue,
+                    unit: savedGoal.unit,
+                    period: savedGoal.type as string,
+                    category: (savedGoal.dimension as string | null) ?? 'GENERAL',
+                    createdAt: savedGoal.createdAt,
+                    updatedAt: savedGoal.updatedAt,
+                });
+            }
             const saved = await prisma.employeeKPI.findFirst({
                 where: { employeeId: targetProfile.id, title: normalized[0].title },
             });
@@ -157,7 +211,28 @@ export const DELETE = authorizedRoute(
             const id = searchParams.get('id');
             if (!id) return createErrorResponse('ID required', 400);
 
-            await prisma.employeeKPI.delete({ where: { id } });
+            const scopeOk = (companyId: string | null) =>
+                user.role === 'SUPER_ADMIN' || (companyId && companyId === user.companyId);
+
+            // The id may be a canonical goal id (what the GET serves) or a
+            // legacy EmployeeKPI id. Delete the pair together so the two
+            // layers cannot drift apart.
+            const goal = await prisma.employeeGoal.findUnique({
+                where: { id },
+                select: { id: true, kpiId: true, companyId: true },
+            });
+            if (goal) {
+                if (!scopeOk(goal.companyId)) return createErrorResponse('Forbidden', 403);
+                await prisma.employeeGoal.delete({ where: { id: goal.id } });
+                if (goal.kpiId) await prisma.employeeKPI.deleteMany({ where: { id: goal.kpiId } });
+                return NextResponse.json({ message: 'KPI deleted' });
+            }
+
+            const kpi = await prisma.employeeKPI.findUnique({ where: { id }, select: { id: true, companyId: true } });
+            if (!kpi) return createErrorResponse('KPI not found', 404);
+            if (!scopeOk(kpi.companyId)) return createErrorResponse('Forbidden', 403);
+            await prisma.employeeGoal.deleteMany({ where: { kpiId: kpi.id } });
+            await prisma.employeeKPI.delete({ where: { id: kpi.id } });
             return NextResponse.json({ message: 'KPI deleted' });
         } catch (error) {
             return createErrorResponse(error);

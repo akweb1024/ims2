@@ -167,19 +167,29 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
           pointsEarned: true,
         },
       }),
-      prisma.employeeKPI.findMany({
-        where: { employeeId: { in: employeeIds } },
+      // KRA truth is EmployeeGoal (unification) — mapped to the legacy shape.
+      prisma.employeeGoal.findMany({
+        where: { employeeId: { in: employeeIds }, isKra: true },
         select: {
           id: true,
           employeeId: true,
           title: true,
-          current: true,
-          target: true,
-          period: true,
+          currentValue: true,
+          targetValue: true,
+          type: true,
           unit: true,
           updatedAt: true,
         },
-      }),
+      }).then((goals) => goals.map((g) => ({
+        id: g.id,
+        employeeId: g.employeeId,
+        title: g.title,
+        current: g.currentValue,
+        target: g.targetValue,
+        period: g.type as string,
+        unit: g.unit,
+        updatedAt: g.updatedAt,
+      }))),
       prisma.monthlyPerformanceSnapshot.findMany({
         where: {
           employeeId: { in: employeeIds },
