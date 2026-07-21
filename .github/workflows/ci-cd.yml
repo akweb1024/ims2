@@ -133,7 +133,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run tests
-        run: npm test --if-present
+        # Run the FULL Playwright suite (test:e2e), not the 3-spec `npm test` subset.
+        # The subset skipped 5 specs in CI — including crm-auth-boundaries, the most
+        # security-relevant one — so authorization regressions could merge unnoticed.
+        run: npm run test:e2e
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
           AUTH_SECRET: test-secret-for-tests-only-min-32-chars
