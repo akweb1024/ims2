@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { READY_STATUSES } from '@/lib/publication/workload';
 
 export const GET = authorizedRoute(
     [],
@@ -30,7 +31,21 @@ export const GET = authorizedRoute(
                 ]
             });
 
-            return NextResponse.json(issues);
+            // Per-issue count of production-ready articles (galley/published) —
+            // the same basis the workload view uses for release risk.
+            const issueIds = issues.map((i) => i.id);
+            const readyGroups = issueIds.length
+                ? await prisma.article.groupBy({
+                    by: ['issueId'],
+                    where: { issueId: { in: issueIds }, manuscriptStatus: { in: READY_STATUSES as any } },
+                    _count: true,
+                })
+                : [];
+            const readyMap = new Map(readyGroups.map((g) => [g.issueId, g._count]));
+
+            const withReady = issues.map((i) => ({ ...i, readyArticles: readyMap.get(i.id) ?? 0 }));
+
+            return NextResponse.json(withReady);
         } catch (error) {
             return createErrorResponse(error);
         }

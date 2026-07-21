@@ -15,6 +15,7 @@ interface Issue {
     plannedReleaseAt: string | null;
     expectedManuscripts: number;
     volume: { volumeNumber: number; year: number };
+    readyArticles: number;
     _count: { articles: number };
 }
 
@@ -26,11 +27,11 @@ const RISK_PILL: Record<ReleaseState, string> = {
 
 const toDateInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
 
-// Rough completion proxy for the risk pill: total articles vs expected. (The
-// workload view uses "ready" articles; here we only have the total count.)
+// Completion for the risk pill: production-ready (galley/published) articles vs
+// expected — the same basis the workload view uses.
 function riskFor(issue: Issue, draft: string): { state: ReleaseState; days: number | null } {
     const completion = issue.expectedManuscripts > 0
-        ? Math.round((issue._count.articles / issue.expectedManuscripts) * 100)
+        ? Math.round((issue.readyArticles / issue.expectedManuscripts) * 100)
         : (issue.isComplete ? 100 : 0);
     const r = releaseState({
         plannedReleaseAt: draft || null,
@@ -147,8 +148,11 @@ export default function IssuesReleasePanel({ journals }: { journals: any[] }) {
                                                     {issue.status.replace('_', ' ').toLowerCase()}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3 tabular-nums text-secondary-600 font-bold">
-                                                {issue._count.articles}/{issue.expectedManuscripts || '—'}
+                                            <td className="px-5 py-3">
+                                                <p className="tabular-nums text-secondary-600 font-bold">
+                                                    {issue.readyArticles}/{issue.expectedManuscripts || '—'} <span className="text-[10px] font-black uppercase text-secondary-400">ready</span>
+                                                </p>
+                                                <p className="text-[11px] text-secondary-400 tabular-nums">{issue._count.articles} total</p>
                                             </td>
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center gap-2">
