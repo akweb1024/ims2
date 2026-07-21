@@ -3138,11 +3138,14 @@ model JournalIssue {
   title               String?
   status              IssueStatus   @default(PLANNED)
   publishedAt         DateTime?
+  plannedReleaseAt    DateTime?
   expectedManuscripts Int           @default(0)
   isComplete          Boolean       @default(false)
   validationStatus    String?
   articles            Article[]
   volume              JournalVolume @relation(fields: [volumeId], references: [id])
+
+  @@index([plannedReleaseAt])
 }
 
 model Article {
