@@ -167,14 +167,16 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
           },
           orderBy: { date: 'desc' }
         },
-        kpis: {
+        // KRA truth is EmployeeGoal (legacy EmployeeKPI dropped).
+        goals: {
           where: {
             companyId,
+            isKra: true,
             updatedAt: { gte: thirtyDaysAgo },
           },
           select: {
-            target: true,
-            current: true,
+            targetValue: true,
+            currentValue: true,
           },
         },
         user: {
@@ -317,9 +319,9 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         )
         : 0;
 
-      const kpiProgressValues = (emp.kpis || [])
-        .filter((kpi) => kpi.target > 0)
-        .map((kpi) => (kpi.current / kpi.target) * 100);
+      const kpiProgressValues = (emp.goals || [])
+        .filter((goal) => goal.targetValue > 0)
+        .map((goal) => (goal.currentValue / goal.targetValue) * 100);
       const avgKpiProgress = kpiProgressValues.length > 0
         ? Number(
           (

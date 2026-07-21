@@ -115,9 +115,7 @@ export async function generateTodayAgendaForEmployees(args: {
           startDate: { lte: end },
           endDate: { gte: start }
         },
-        // kpiId is the mirrored legacy row (LEGACY_SYNC bridge) — kept on the
-        // WorkPlan so linkedKpiId consumers stay stable during the migration.
-        select: { id: true, title: true, metricId: true, kpiId: true }
+        select: { id: true, title: true, metricId: true }
       })
     ]);
 
@@ -156,9 +154,7 @@ export async function generateTodayAgendaForEmployees(args: {
     }
 
     const retainedAgendaKeys = new Set(retainedExisting.map((row) => normalizeTitle(row.agenda)));
-    // KRA truth is EmployeeGoal (unification): the goal carries the title, the
-    // metric link, and — via kpiId — the mirrored legacy row. The old separate
-    // EmployeeKPI title map is redundant now that goals mirror every KPI.
+    // KRA truth is EmployeeGoal (the legacy EmployeeKPI table is dropped).
     const exactGoalByTitle = new Map(goals.map((g) => [normalizeTitle(g.title), g]));
     const goalByMetricId = new Map(goals.filter((g) => g.metricId).map((g) => [g.metricId as string, g]));
 
@@ -173,7 +169,7 @@ export async function generateTodayAgendaForEmployees(args: {
       // employee's current goal for that metric regardless of titles. Title
       // matching remains only for legacy templates without a metric.
       const linkedGoal = (t.metricId && goalByMetricId.get(t.metricId)) || exactGoalByTitle.get(agendaKey) || null;
-      const linkedKpiId = linkedGoal?.kpiId ?? null;
+      const linkedKpiId = null; // legacy EmployeeKPI dropped; linkedGoalId is the canonical link
       const sourceType = getSourceType(t, employeeProfileId);
       const isConflict = retainedAgendaKeys.has(agendaKey);
 

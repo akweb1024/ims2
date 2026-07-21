@@ -76,7 +76,6 @@ export const GET = authorizedRoute(
                             }
                         }
                     },
-                    kpi: true,
                     evaluations: {
                         include: {
                             evaluator: { select: { name: true } },

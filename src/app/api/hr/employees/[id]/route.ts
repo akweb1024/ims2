@@ -76,9 +76,7 @@ export const GET = authorizedRoute(
                     },
                     goals: {
                         orderBy: { endDate: 'desc' },
-                        include: { kpi: true }
                     },
-                    kpis: true,
                     companyDesignations: {
                         include: {
                             company: {
@@ -142,8 +140,7 @@ export const GET = authorizedRoute(
                         documents: true,
                         designatRef: true,
                         leaveRequests: { orderBy: { startDate: 'desc' } },
-                        goals: { orderBy: { endDate: 'desc' }, include: { kpi: true } },
-                        kpis: true,
+                        goals: { orderBy: { endDate: 'desc' } },
                         companyDesignations: {
                             include: {
                                 company: {

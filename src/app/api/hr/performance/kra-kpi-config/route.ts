@@ -86,8 +86,12 @@ export const GET = authorizedRoute(
                     designation: true,
                     kra: true,
                     user: { select: { name: true, email: true } },
-                    kpis: {
-                        where: period && ALLOWED_KPI_PERIODS.has(period) ? { period } : undefined,
+                    // KRA truth is EmployeeGoal (legacy EmployeeKPI is dropped).
+                    goals: {
+                        where: {
+                            isKra: true,
+                            ...(period && ALLOWED_KPI_PERIODS.has(period) ? { type: period as never } : {}),
+                        },
                         orderBy: { updatedAt: 'desc' },
                     },
                 },
@@ -101,7 +105,18 @@ export const GET = authorizedRoute(
                 email: profile.user?.email || '',
                 designation: profile.designation || 'N/A',
                 kra: profile.kra || '',
-                kpis: profile.kpis,
+                kpis: (profile.goals || []).map((g) => ({
+                    id: g.id,
+                    employeeId: g.employeeId,
+                    title: g.title,
+                    target: g.targetValue,
+                    current: g.currentValue,
+                    unit: g.unit,
+                    period: g.type as string,
+                    category: (g.dimension as string | null) ?? 'GENERAL',
+                    createdAt: g.createdAt,
+                    updatedAt: g.updatedAt,
+                })),
             })));
         } catch (error) {
             return createErrorResponse(error);
@@ -157,7 +172,7 @@ export const PUT = authorizedRoute(
                         id: true,
                         userId: true,
                         kra: true,
-                        kpis: { orderBy: { updatedAt: 'desc' } },
+                        goals: { where: { isKra: true }, orderBy: { updatedAt: 'desc' } },
                     },
                 });
 
