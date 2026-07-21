@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { DashboardScope, DashboardWidgetKey } from './widgets';
 import { getISTDateRangeForPeriod } from '@/lib/date-utils';
+import { previousMonthBase, summarizeAttendance } from '@/lib/dashboard/attendance-summary';
 import { getManagerTeamUserIds } from '@/lib/team-auth';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
@@ -186,20 +187,20 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
 
 async function getAttendanceOverview(ctx: DashboardPayloadContext) {
   const current = getISTDateRangeForPeriod('MONTHLY');
-  const previousBase = new Date(current.start);
-  previousBase.setMonth(previousBase.getMonth() - 1);
-  const previous = getISTDateRangeForPeriod('MONTHLY', previousBase);
+  // One ms before the current IST month start is inside the previous IST
+  // month — timezone-safe, unlike Date.setMonth() on a server-local reading.
+  const previous = getISTDateRangeForPeriod('MONTHLY', previousMonthBase(current.start));
   const employeeIds = await resolveEmployeeIdsForScope(ctx);
   const companyId = selfScopedCompanyId(ctx);
 
-  const [currentAttendance, previousAttendance, activeEmployees] = await Promise.all([
+  const [currentRecords, previousRecords] = await Promise.all([
     prisma.attendance.findMany({
       where: {
         ...(companyId ? { companyId } : {}),
         employeeId: { in: employeeIds },
         date: { gte: current.start, lte: current.end },
       },
-      select: { employeeId: true, isLate: true, status: true, date: true },
+      select: { isLate: true, status: true },
     }),
     prisma.attendance.findMany({
       where: {
@@ -207,33 +208,22 @@ async function getAttendanceOverview(ctx: DashboardPayloadContext) {
         employeeId: { in: employeeIds },
         date: { gte: previous.start, lte: previous.end },
       },
-      select: { employeeId: true, isLate: true, status: true, date: true },
-    }),
-    prisma.employeeProfile.count({
-      where: {
-        id: { in: employeeIds },
-        user: {
-          isActive: true,
-          ...(companyId ? { companyId } : {}),
-        },
-      },
+      select: { isLate: true, status: true },
     }),
   ]);
 
-  const uniqueCurrentPresent = new Set(currentAttendance.map((record) => record.employeeId)).size;
-  const uniquePreviousPresent = new Set(previousAttendance.map((record) => record.employeeId)).size;
-  const currentLate = currentAttendance.filter((record) => record.isLate).length;
-  const previousLate = previousAttendance.filter((record) => record.isLate).length;
-  const currentAbsent = Math.max(0, activeEmployees - uniqueCurrentPresent);
-  const previousAbsent = Math.max(0, activeEmployees - uniquePreviousPresent);
+  // Coherent person-day counts: present days by status, late days, and
+  // explicitly recorded absent days (see attendance-summary.ts).
+  const currentSummary = summarizeAttendance(currentRecords);
+  const previousSummary = summarizeAttendance(previousRecords);
 
   return {
-    currentAttendance: uniqueCurrentPresent,
-    previousAttendance: uniquePreviousPresent,
-    currentLate,
-    previousLate,
-    currentAbsent,
-    previousAbsent,
+    currentAttendance: currentSummary.presentDays,
+    previousAttendance: previousSummary.presentDays,
+    currentLate: currentSummary.lateDays,
+    previousLate: previousSummary.lateDays,
+    currentAbsent: currentSummary.absentDays,
+    previousAbsent: previousSummary.absentDays,
   };
 }
 
