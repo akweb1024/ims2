@@ -87,7 +87,7 @@ export async function generateTodayAgendaForEmployees(args: {
       continue;
     }
 
-    const [templates, goals, kpis] = await Promise.all([
+    const [templates, goals] = await Promise.all([
       prisma.employeeTaskTemplate.findMany({
         where: {
           ...(companyId ? { companyId } : {}),
@@ -115,11 +115,9 @@ export async function generateTodayAgendaForEmployees(args: {
           startDate: { lte: end },
           endDate: { gte: start }
         },
-        select: { id: true, title: true, metricId: true }
-      }),
-      prisma.employeeKPI.findMany({
-        where: { employeeId: employeeProfileId },
-        select: { id: true, title: true, target: true, current: true }
+        // kpiId is the mirrored legacy row (LEGACY_SYNC bridge) — kept on the
+        // WorkPlan so linkedKpiId consumers stay stable during the migration.
+        select: { id: true, title: true, metricId: true, kpiId: true }
       })
     ]);
 
@@ -158,8 +156,10 @@ export async function generateTodayAgendaForEmployees(args: {
     }
 
     const retainedAgendaKeys = new Set(retainedExisting.map((row) => normalizeTitle(row.agenda)));
+    // KRA truth is EmployeeGoal (unification): the goal carries the title, the
+    // metric link, and — via kpiId — the mirrored legacy row. The old separate
+    // EmployeeKPI title map is redundant now that goals mirror every KPI.
     const exactGoalByTitle = new Map(goals.map((g) => [normalizeTitle(g.title), g]));
-    const exactKpiByTitle = new Map(kpis.map((k) => [normalizeTitle(k.title), k]));
     const goalByMetricId = new Map(goals.filter((g) => g.metricId).map((g) => [g.metricId as string, g]));
 
     let generatedForEmployee = 0;
@@ -173,7 +173,7 @@ export async function generateTodayAgendaForEmployees(args: {
       // employee's current goal for that metric regardless of titles. Title
       // matching remains only for legacy templates without a metric.
       const linkedGoal = (t.metricId && goalByMetricId.get(t.metricId)) || exactGoalByTitle.get(agendaKey) || null;
-      const linkedKpi = exactKpiByTitle.get(agendaKey) || null;
+      const linkedKpiId = linkedGoal?.kpiId ?? null;
       const sourceType = getSourceType(t, employeeProfileId);
       const isConflict = retainedAgendaKeys.has(agendaKey);
 
@@ -181,7 +181,7 @@ export async function generateTodayAgendaForEmployees(args: {
         version: 1,
         sourceType,
         templateId: t.id,
-        linkedKpiId: linkedKpi?.id || null,
+        linkedKpiId,
         mandatory: sourceType === 'EMPLOYEE_TEMPLATE' || sourceType === 'ROLE_TEMPLATE',
         sequence: idx + 1,
         conflictFlag: isConflict,
@@ -200,7 +200,7 @@ export async function generateTodayAgendaForEmployees(args: {
           estimatedHours: t.targetValue ? Number(t.targetValue) : 1,
           completionStatus: 'PLANNED',
           linkedGoalId: linkedGoal?.id || null,
-          linkedKpiId: linkedKpi?.id || null,
+          linkedKpiId,
           visibility: 'MANAGER',
           status: 'AUTO_GENERATED',
           companyId: companyId || null,

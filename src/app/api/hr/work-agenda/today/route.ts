@@ -80,9 +80,10 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
       orderBy: [{ employeeId: 'asc' }, { date: 'asc' }]
     });
 
-    const latestKpiByEmployeeRows = await prisma.employeeKPI.groupBy({
+    // KPI freshness now comes from the canonical KRA goals (unification).
+    const latestKpiByEmployeeRows = await prisma.employeeGoal.groupBy({
       by: ['employeeId'],
-      where: { employeeId: { in: employeeIds } },
+      where: { employeeId: { in: employeeIds }, isKra: true },
       _max: { updatedAt: true }
     });
     const latestKpiByEmployee = new Map<string, Date>();
