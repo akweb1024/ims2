@@ -140,14 +140,21 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
     // Handle Zod validation errors
     if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
         const zodError = error as any;
+        // Zod 4 exposes `.issues`; `.errors` is a removed alias (undefined here),
+        // which used to leave `details` empty so the client couldn't tell which
+        // field failed. Surface the field paths + messages.
+        const issues = (zodError.issues ?? zodError.errors ?? []) as Array<{ path?: (string | number)[]; message?: string }>;
+        const fieldMessage = issues
+            .map((i) => `${(i.path ?? []).join('.') || 'field'}: ${i.message ?? 'invalid'}`)
+            .join('; ');
         return NextResponse.json(
             {
                 error: 'ValidationError',
-                message: 'Validation failed',
+                message: fieldMessage ? `Validation failed — ${fieldMessage}` : 'Validation failed',
                 statusCode: 400,
                 timestamp,
                 path,
-                details: zodError.errors,
+                details: issues,
             },
             { status: 400 }
         );

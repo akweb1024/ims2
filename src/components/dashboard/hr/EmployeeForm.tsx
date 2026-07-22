@@ -33,6 +33,7 @@ const initialFormState = {
     designationJustification: '',
     taskTemplateLink: '',
     kra: '',
+    kraTemplateId: '',
     totalExperienceYears: 0,
     totalExperienceMonths: 0,
     relevantExperienceMonths: 0,
@@ -94,6 +95,7 @@ export default function EmployeeForm({
 }: EmployeeFormProps) {
     const [empForm, setEmpForm] = useState(initialFormState);
     const [grades, setGrades] = useState<any[]>([]);
+    const [kraTemplates, setKraTemplates] = useState<Array<{ id: string; name: string; items?: any[] }>>([]);
 
     // Load the company's grade ladder for the grade dropdown (ICDR §2).
     useEffect(() => {
@@ -103,6 +105,18 @@ export default function EmployeeForm({
                 const res = await fetch('/api/hr/grades', { headers: { Authorization: `Bearer ${token}` } });
                 if (res.ok) setGrades((await res.json()).grades || []);
             } catch { /* non-fatal */ }
+        })();
+    }, []);
+
+    // Load KRA templates so onboarding can assign one to the new hire (the
+    // assignment happens after creation via /api/kra/assign).
+    useEffect(() => {
+        (async () => {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+                const res = await fetch('/api/kra/templates', { headers: { Authorization: `Bearer ${token}` } });
+                if (res.ok) setKraTemplates((await res.json()).templates || []);
+            } catch { /* non-fatal — the KRA template picker is optional */ }
         })();
     }, []);
 
@@ -315,12 +329,33 @@ export default function EmployeeForm({
                             />
                             <p className="text-[10px] text-secondary-500 mt-1">Clarify the scope and authority level of this role.</p>
                         </div>
+                        {mode === 'create' && (
+                            <div>
+                                <label className="label-premium">KRA Template</label>
+                                <select
+                                    className="input-premium"
+                                    value={empForm.kraTemplateId || ''}
+                                    onChange={e => setEmpForm({ ...empForm, kraTemplateId: e.target.value })}
+                                >
+                                    <option value="">— None (auto-assign from department template) —</option>
+                                    {kraTemplates.map(t => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.name}{t.items?.length ? ` (${t.items.length} KPIs)` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-secondary-500 mt-1">
+                                    Assigns this template&apos;s KRA goals to the new employee on creation. Leave as None to let the
+                                    department template auto-provision.
+                                </p>
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="label-premium">KRA / KPI Redefinition</label>
+                                <label className="label-premium">KRA / KPI Redefinition (note)</label>
                                 <textarea
                                     className="input-premium h-24"
-                                    placeholder="Define Key Result Areas and Performance Indicators..."
+                                    placeholder="Optional free-text note about Key Result Areas..."
                                     value={empForm.kra || ''}
                                     onChange={e => setEmpForm({ ...empForm, kra: e.target.value })}
                                 />

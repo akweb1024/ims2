@@ -102,6 +102,11 @@ export default function NewEmployeePage() {
                 delete cleanData.targets;
             }
 
+            // The KRA template is assigned via /api/kra/assign after creation,
+            // not stored on the profile — keep it out of the create payload.
+            const kraTemplateId = cleanData.kraTemplateId || null;
+            delete cleanData.kraTemplateId;
+
             const res = await fetch('/api/hr/employees', {
                 method: 'POST',
                 headers: {
@@ -113,11 +118,29 @@ export default function NewEmployeePage() {
 
             if (res.ok) {
                 const result = await res.json();
+                // Assign the chosen KRA template's goals to the new employee.
+                // Non-fatal: the employee is already created; a failure here just
+                // means KRA can be assigned later from the Assign KRA screen.
+                if (kraTemplateId && result?.profile?.id) {
+                    try {
+                        await fetch('/api/kra/assign', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ templateId: kraTemplateId, periodType: 'MONTHLY', employeeIds: [result.profile.id] }),
+                        });
+                    } catch { /* assignment is best-effort at onboarding time */ }
+                }
                 alert('Employee onboarded successfully!');
                 router.push(`/dashboard/hr-management/employees/${result.profile.id}`);
             } else {
-                const err = await res.json();
-                alert(`Failed: ${err.error || 'Unknown error'}`);
+                const err = await res.json().catch(() => ({}));
+                // Prefer the detailed validation message (now includes the offending
+                // field names), then per-field details, then a generic fallback.
+                const fieldLines = Array.isArray(err?.details)
+                    ? err.details.map((d: any) => `• ${(d.path ?? []).join('.') || 'field'}: ${d.message ?? 'invalid'}`).join('\n')
+                    : '';
+                const msg = err?.message || err?.error || 'Unknown error';
+                alert(`Could not onboard employee:\n\n${msg}${fieldLines ? `\n\n${fieldLines}` : ''}`);
             }
         } catch (err) {
             console.error(err);
