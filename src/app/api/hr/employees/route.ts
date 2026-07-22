@@ -310,6 +310,16 @@ export const PATCH = authorizedRoute(
                 }
             }
 
+            // Shift is likewise a relation FK (shiftId → shift), so the raw scalar
+            // is rejected in checked-update mode; write it through the relation.
+            if (updateData.shiftId !== undefined) {
+                const shiftId = updateData.shiftId;
+                delete updateData.shiftId;
+                updateData.shift = shiftId === null
+                    ? { disconnect: true }
+                    : { connect: { id: shiftId } };
+            }
+
             // Safety: Remove any nulls that shouldn't be null (Prisma Float/Int with default)
             const nonNullableNumbers = [
                 'totalExperienceYears', 'totalExperienceMonths',
