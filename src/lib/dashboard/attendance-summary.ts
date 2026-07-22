@@ -146,6 +146,10 @@ export function countClasses(cls: DayClass[]): DerivedCounts {
 export interface EmployeeAttendanceInput {
     present: Map<string, boolean>; // dateKey -> isLate
     leaveDates: Set<string>;
+    /** Joining date key (YYYY-MM-DD). Days before it are ignored — a new joiner
+     * is not "absent" for days before they joined. Omit to consider the whole
+     * window. */
+    activeFrom?: string;
 }
 
 /** Sum derived person-day counts across a set of employees over one window. */
@@ -156,7 +160,11 @@ export function aggregateDerived(
 ): DerivedCounts {
     const total: DerivedCounts = { presentDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0 };
     for (const e of employees) {
-        const c = countClasses(classifyEmployeeDays(dateKeys, e.present, e.leaveDates, holidayDates));
+        // Trim the leading days before the joining date. dateKeys is consecutive
+        // and sorted, so a >= filter yields a contiguous suffix — the sandwich
+        // adjacency inside it stays intact.
+        const keys = e.activeFrom ? dateKeys.filter((k) => k >= e.activeFrom!) : dateKeys;
+        const c = countClasses(classifyEmployeeDays(keys, e.present, e.leaveDates, holidayDates));
         total.presentDays += c.presentDays;
         total.lateDays += c.lateDays;
         total.absentDays += c.absentDays;
