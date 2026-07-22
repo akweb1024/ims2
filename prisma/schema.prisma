@@ -3829,6 +3829,29 @@ model EmployeeGoal {
   @@index([status])
 }
 
+/// A write action proposed through the ims2 MCP server (scripts/mcp-server.ts).
+/// The propose_* tool stores the fully-resolved plan here as PENDING; nothing
+/// touches business tables until an explicit approve_proposal call flips it to
+/// EXECUTED. Rows double as the admin-console audit trail and are never
+/// deleted by the tools.
+model McpProposal {
+  id          String    @id @default(uuid())
+  action      String // e.g. ASSIGN_KRA_GOALS
+  status      String    @default("PENDING") // PENDING | EXECUTED | REJECTED | FAILED
+  instruction String // the admin's instruction, verbatim
+  payload     Json // resolved, validated plan (metric, employees, targets, window)
+  preview     String // human-readable summary shown at propose time
+  proposedBy  String // User id of the admin driving the MCP session
+  decidedAt   DateTime? // when approved or rejected
+  result      Json? // per-item outcome after execution
+  error       String? // failure detail when status = FAILED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model IncentiveSchema {
   id          String     @id @default(uuid())
   companyId   String

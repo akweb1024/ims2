@@ -30,9 +30,17 @@ const getClient = () => {
     }
 
     const adapter = new PrismaPg(pool);
+    // PRISMA_LOG_SILENT: stdio consumers (the MCP server) must keep stdout as a
+    // pure JSON-RPC channel — even a stray error line corrupts the protocol.
+    const log =
+        process.env.PRISMA_LOG_SILENT === '1'
+            ? []
+            : process.env.NODE_ENV === 'development'
+              ? (['query', 'error', 'warn'] as const)
+              : (['error'] as const);
     return new PrismaClient({
         adapter,
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+        log: [...log],
     });
 };
 

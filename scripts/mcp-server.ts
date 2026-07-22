@@ -17,8 +17,17 @@
  *
  * Runtime contract:
  *   - the ONLY required env var is DATABASE_URL (same string the app uses);
- *     no app secrets are needed, so this server never imports env-validation.
+ *     no app secrets are needed, so the read-only server never imports
+ *     env-validation.
  *   - run with:  DATABASE_URL=... npm run mcp:server
+ *
+ * WRITE MODE (opt-in): setting DATABASE_URL_RW + MCP_ADMIN_EMAIL additionally
+ * registers the KRA-assignment write tools (propose_kra_goals /
+ * approve_proposal / reject_proposal / list_mcp_proposals). Writes are
+ * two-layer gated: propose only records a PENDING McpProposal + preview;
+ * approve_proposal is the sole execution path and requires the admin's
+ * explicit go-ahead (see src/lib/kra/mcp-proposals.ts). Read tools stay on the
+ * read-only DATABASE_URL; only the write module uses the RW connection.
  *
  * Unlike the app routes, the server passes no companyId, so it queries across
  * every tenant the connection can reach — scope the DATABASE_URL accordingly.
@@ -40,8 +49,11 @@ import {
 
 // --- Prisma (self-contained, DATABASE_URL only) --------------------------
 
-function makePrisma(): PrismaClient {
-    const url = process.env.DATABASE_URL;
+const RO_URL = process.env.DATABASE_URL;
+const RW_URL = process.env.DATABASE_URL_RW;
+const WRITE_MODE = Boolean(RW_URL);
+
+function makePrisma(url: string | undefined): PrismaClient {
     if (!url) {
         throw new Error('DATABASE_URL is not set — the ims2 MCP server needs it to reach the database.');
     }
@@ -67,7 +79,19 @@ function makePrisma(): PrismaClient {
     return new PrismaClient({ adapter: new PrismaPg(pool), log: [] });
 }
 
-const prisma = makePrisma();
+const prisma = makePrisma(RO_URL);
+
+// Write module, loaded lazily in main() only when WRITE_MODE is on. It pulls
+// the app's prisma singleton, which must bind to the RW url — see main().
+type ProposalsModule = typeof import('../src/lib/kra/mcp-proposals');
+let proposals: ProposalsModule | null = null;
+
+function writeMod(): ProposalsModule {
+    if (!proposals) {
+        throw new Error('Write tools are disabled: set DATABASE_URL_RW and MCP_ADMIN_EMAIL to enable them.');
+    }
+    return proposals;
+}
 
 // --- response helpers ----------------------------------------------------
 
@@ -161,6 +185,78 @@ const TOOLS: Tool[] = [
     },
 ];
 
+const WRITE_TOOLS: Tool[] = [
+    {
+        name: 'propose_kra_goals',
+        description:
+            'STEP 1 of assigning KRA/KPI goals. Resolves the metric + employees, validates targets, and records a PENDING proposal — it creates NOTHING. Returns a preview and a proposalId. You MUST show the preview to the admin and wait for their explicit yes before calling approve_proposal. The metric must already exist (this server never creates metrics).',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                instruction: { type: 'string', description: "The admin's instruction, verbatim — stored in the audit trail." },
+                metric: { type: 'string', description: 'Existing metric: id or exact name (case-insensitive).' },
+                employees: {
+                    type: 'array',
+                    description: 'Employees to assign the goal to.',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            employee: { type: 'string', description: 'Employee name, email, profile id, or employee code.' },
+                            target: { type: 'number', description: 'Per-employee target (overrides the proposal-level target).' },
+                            dailyTarget: { type: 'number', description: 'Optional per-day pace target.' },
+                        },
+                        required: ['employee'],
+                    },
+                },
+                target: { type: 'number', description: 'Default target for every employee without an override.' },
+                period: {
+                    type: 'string',
+                    enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'],
+                    description: 'Goal period (default MONTHLY; window = the current period).',
+                },
+                title: { type: 'string', description: 'Goal title (defaults to the metric name).' },
+                isKra: { type: 'boolean', description: 'Counts toward the weighted KRA score (default true).' },
+                weight: { type: 'number', description: 'Weight in the KRA score (default 1).' },
+                reviewer: { type: 'string', description: 'Optional reviewer (same reference forms as employees).' },
+            },
+            required: ['instruction', 'metric', 'employees'],
+        },
+    },
+    {
+        name: 'approve_proposal',
+        description:
+            'STEP 2 — executes a PENDING proposal (creates/updates the goals) and marks it EXECUTED. ONLY call this after the human admin has explicitly approved the exact preview shown to them; never infer approval. confirm must be the literal string "APPROVE".',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                proposalId: { type: 'string', description: 'The id returned by propose_kra_goals.' },
+                confirm: { type: 'string', description: 'Must be exactly "APPROVE".' },
+            },
+            required: ['proposalId', 'confirm'],
+        },
+    },
+    {
+        name: 'reject_proposal',
+        description: 'Marks a PENDING proposal REJECTED (audit-trail entry, nothing executed). Use when the admin declines or changes their mind.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                proposalId: { type: 'string' },
+                reason: { type: 'string', description: "The admin's reason, if given." },
+            },
+            required: ['proposalId'],
+        },
+    },
+    {
+        name: 'list_mcp_proposals',
+        description: 'Recent MCP proposals with status (PENDING / EXECUTED / REJECTED / FAILED), previews and execution results — the audit trail.',
+        inputSchema: {
+            type: 'object',
+            properties: { limit: { type: 'number', description: 'Max rows (default 20, max 100).' } },
+        },
+    },
+];
+
 // --- handlers (thin adapters over the shared query lib) ------------------
 
 const HANDLERS: Record<string, (args: Record<string, unknown>) => Promise<ReturnType<typeof ok>>> = {
@@ -174,13 +270,31 @@ const HANDLERS: Record<string, (args: Record<string, unknown>) => Promise<Return
         respond(await performanceIndex(prisma, { employee: String(a.employee ?? ''), period: a.period as string, periodLabel: a.periodLabel as string })),
     kra_rollup: async (a) =>
         ok(await kraRollup(prisma, { level: a.level as string, period: a.period as string, periodLabel: a.periodLabel as string, subject: a.subject as string })),
+    propose_kra_goals: async (a) => {
+        const mod = writeMod();
+        const actor = await mod.requireMcpAdmin(process.env.MCP_ADMIN_EMAIL);
+        return ok(await mod.proposeAssignGoals(actor, a as never));
+    },
+    approve_proposal: async (a) => {
+        const mod = writeMod();
+        const actor = await mod.requireMcpAdmin(process.env.MCP_ADMIN_EMAIL);
+        return ok(await mod.approveProposal(actor, String(a.proposalId ?? ''), String(a.confirm ?? '')));
+    },
+    reject_proposal: async (a) => {
+        const mod = writeMod();
+        const actor = await mod.requireMcpAdmin(process.env.MCP_ADMIN_EMAIL);
+        return ok(await mod.rejectProposal(actor, String(a.proposalId ?? ''), a.reason as string | undefined));
+    },
+    list_mcp_proposals: async (a) => ok(await writeMod().listProposals(a.limit as number | undefined)),
 };
 
 // --- server wiring -------------------------------------------------------
 
 const server = new Server({ name: 'ims2', version: '0.1.0' }, { capabilities: { tools: {} } });
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: WRITE_MODE ? [...TOOLS, ...WRITE_TOOLS] : TOOLS,
+}));
 
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const handler = HANDLERS[req.params.name];
@@ -193,10 +307,27 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 });
 
 async function main() {
+    if (WRITE_MODE) {
+        // The write module reuses the app's goal service, which binds the app
+        // prisma singleton to process.env.DATABASE_URL at import time — point
+        // it at the RW role before the dynamic import. The read tools above
+        // keep their own client on the read-only url. env-validation needs a
+        // JWT_SECRET to exist; nothing in this process signs tokens, and the
+        // singleton must stay silent on stdout (JSON-RPC channel).
+        process.env.DATABASE_URL = RW_URL;
+        process.env.JWT_SECRET ||= 'mcp-server-local-unused';
+        process.env.PRISMA_LOG_SILENT = '1';
+        proposals = await import('../src/lib/kra/mcp-proposals');
+    }
+
     const transport = new StdioServerTransport();
     await server.connect(transport);
     // stderr only — stdout is the JSON-RPC channel and must stay clean.
-    console.error('[ims2-mcp] ready — 5 read-only tools over DATABASE_URL.');
+    console.error(
+        WRITE_MODE
+            ? `[ims2-mcp] ready — ${TOOLS.length} read tools + ${WRITE_TOOLS.length} write tools (two-layer approval) as ${process.env.MCP_ADMIN_EMAIL ?? 'UNSET ADMIN'}.`
+            : `[ims2-mcp] ready — ${TOOLS.length} read-only tools over DATABASE_URL.`,
+    );
 }
 
 main().catch((err) => {

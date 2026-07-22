@@ -74,10 +74,46 @@ claude   # approve the `ims2` server on first use
 - "Give me the attendance summary for amit@conwiz.in for 2026-06."
 - "Show the COMPANY KRA roll-up for this quarter."
 
+## Write mode (opt-in): KRA assignment with two-layer approval
+
+By default the server is read-only. Setting **both** of these enables four
+additional tools:
+
+```bash
+DATABASE_URL=...        # read-only connection (as before)
+DATABASE_URL_RW=...     # separate connection with DML rights — enables write mode
+MCP_ADMIN_EMAIL=...     # the acting admin; must be an ADMIN/SUPER_ADMIN/HR/HR_MANAGER user
+```
+
+| Tool | What it does |
+| --- | --- |
+| `propose_kra_goals` | Resolves metric + employees, validates targets, stores a **PENDING `McpProposal`** and returns a preview. Creates nothing. |
+| `approve_proposal` | The **only** execution path. Requires the id from propose plus the literal `confirm: "APPROVE"`, then creates/updates the goals via `upsertGoal()` (same dedupe/carry-forward/notify as the Assign UI) and marks the proposal EXECUTED. |
+| `reject_proposal` | Marks a PENDING proposal REJECTED (audit entry, nothing executed). |
+| `list_mcp_proposals` | The audit trail — recent proposals with status and results. |
+
+Approval is two-layer:
+
+1. **Chat** — the assistant must show the preview and wait for the admin's
+   explicit yes before calling `approve_proposal`. A proposal whose period
+   window has already ended is refused as stale.
+2. **App** — every proposal row is visible to admins at
+   `/dashboard/hr-management/kra/mcp-log` (linked from the KRA console), with
+   preview, decision time and per-employee outcome.
+
+Notes:
+
+- The metric must already exist — the server never creates metric definitions.
+- `proposedBy`/`assignedById` are stamped with the `MCP_ADMIN_EMAIL` user, so
+  provenance matches a manual assignment by that admin.
+- Point `DATABASE_URL_RW` at a **dedicated DML-only role** (no DDL); keep the
+  plain `DATABASE_URL` on a read-only role so the read tools stay physically
+  read-only.
+
 ## Design notes
 
-- **Read-only by construction** — there are no write tools; every handler only
-  issues `findMany` / `findFirst`.
+- **Read-only by construction** (without `DATABASE_URL_RW`) — the base five
+  handlers only issue `findMany` / `findFirst`.
 - **Self-contained** — it builds its own Prisma client from `DATABASE_URL` and
   deliberately does *not* import the app's `env-validation`, so it runs without
   the full app secret set.
