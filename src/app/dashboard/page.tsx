@@ -348,7 +348,7 @@ export default function DashboardPage() {
                 );
             case 'attendance_overview':
                 return (
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <DashboardMetric
                             label="Attendance"
                             value={`${data.currentAttendance || 0}`}
@@ -366,6 +366,12 @@ export default function DashboardPage() {
                             value={`${data.currentAbsent || 0}`}
                             subtext={`Last month ${data.previousAbsent || 0}`}
                             tone="danger"
+                        />
+                        <DashboardMetric
+                            label="On Leave"
+                            value={`${data.currentLeave || 0}`}
+                            subtext={`Last month ${data.previousLeave || 0}`}
+                            tone="info"
                         />
                     </div>
                 );
