@@ -133,8 +133,14 @@ export default function NewEmployeePage() {
                 alert('Employee onboarded successfully!');
                 router.push(`/dashboard/hr-management/employees/${result.profile.id}`);
             } else {
-                const err = await res.json();
-                alert(`Failed: ${err.error || 'Unknown error'}`);
+                const err = await res.json().catch(() => ({}));
+                // Prefer the detailed validation message (now includes the offending
+                // field names), then per-field details, then a generic fallback.
+                const fieldLines = Array.isArray(err?.details)
+                    ? err.details.map((d: any) => `• ${(d.path ?? []).join('.') || 'field'}: ${d.message ?? 'invalid'}`).join('\n')
+                    : '';
+                const msg = err?.message || err?.error || 'Unknown error';
+                alert(`Could not onboard employee:\n\n${msg}${fieldLines ? `\n\n${fieldLines}` : ''}`);
             }
         } catch (err) {
             console.error(err);

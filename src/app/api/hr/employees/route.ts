@@ -465,8 +465,12 @@ export const POST = authorizedRoute(
             }
             const {
                 email, name, password, role, companyId, companyIds, allowedModules, departmentId, companyDesignations,
+                // Pulled out so they don't leak into EmployeeProfile.create: `isActive`
+                // and `department` are User-level (or relation) fields, not profile columns.
+                isActive, department: _department,
                 ...rest
             } = result.data as any;
+            const userIsActive = isActive === undefined || isActive === null ? true : Boolean(isActive);
 
             // Fetch company data to get employeeIdPrefix
             const targetCompanyId = companyId || user.companyId;
@@ -539,6 +543,7 @@ export const POST = authorizedRoute(
                         role: (role || targetUser.role) as any,
                         name: name || targetUser.name,
                         departmentId: departmentId || targetUser.departmentId,
+                        isActive: userIsActive,
                         ...(normalizedCompanyIds.length > 0 && {
                             companies: {
                                 set: normalizedCompanyIds.map((id: string) => ({ id }))
@@ -557,6 +562,7 @@ export const POST = authorizedRoute(
                         role: role as any,
                         companyId: companyId || user.companyId,
                         departmentId: departmentId,
+                        isActive: userIsActive,
                         allowedModules: normalizedAllowedModules,
                         companies: {
                             connect: normalizedCompanyIds.map((id: string) => ({ id }))
