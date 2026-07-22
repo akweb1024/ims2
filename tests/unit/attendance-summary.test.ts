@@ -123,3 +123,16 @@ test('aggregateDerived sums across employees over the same window', () => {
   ]);
   assert.deepEqual(total, { presentDays: 1, lateDays: 0, absentDays: 1, leaveDays: 2 });
 });
+
+test('activeFrom (joining date) excludes pre-join days from absence', () => {
+  const keys = enumerateDateKeys('2026-07-06', '2026-07-09'); // Mon..Thu, no records
+  // Without a join date: all 4 working days are absent.
+  const noJoin = aggregateDerived(keys, new Set(), [{ present: new Map(), leaveDates: new Set() }]);
+  assert.equal(noJoin.absentDays, 4);
+  // Joined on Wed 07-08: only Wed + Thu count → 2 absent, not 4.
+  const joined = aggregateDerived(keys, new Set(), [{ present: new Map(), leaveDates: new Set(), activeFrom: '2026-07-08' }]);
+  assert.equal(joined.absentDays, 2);
+  // Joins after the window → contributes nothing.
+  const future = aggregateDerived(keys, new Set(), [{ present: new Map(), leaveDates: new Set(), activeFrom: '2026-08-01' }]);
+  assert.deepEqual(future, { presentDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0 });
+});

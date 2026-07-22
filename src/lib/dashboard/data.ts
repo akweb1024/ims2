@@ -215,7 +215,7 @@ async function deriveAttendanceWindow(
     return { presentDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0 };
   }
 
-  const [attRows, leaves, holidays] = await Promise.all([
+  const [attRows, leaves, holidays, profiles] = await Promise.all([
     prisma.attendance.findMany({
       where: { ...(companyId ? { companyId } : {}), employeeId: { in: employeeIds }, date: { gte: window.start, lte: window.end } },
       select: { employeeId: true, date: true, isLate: true, status: true },
@@ -237,16 +237,25 @@ async function deriveAttendanceWindow(
       },
       select: { date: true },
     }),
+    // Joining dates — a new joiner is not "absent" for days before they joined.
+    prisma.employeeProfile.findMany({
+      where: { id: { in: employeeIds } },
+      select: { id: true, dateOfJoining: true },
+    }),
   ]);
 
   const holidayDates = new Set(holidays.map((h) => formatToISTDate(h.date)));
+  const joinKeyByEmp = new Map<string, string>();
+  for (const p of profiles) {
+    if (p.dateOfJoining) joinKeyByEmp.set(p.id, formatToISTDate(p.dateOfJoining));
+  }
 
   // Every scoped active employee participates — an employee with no present row
   // and no leave is genuinely absent on each working day.
   const byEmp = new Map<string, EmployeeAttendanceInput>();
   const ensure = (id: string) => {
     let e = byEmp.get(id);
-    if (!e) { e = { present: new Map<string, boolean>(), leaveDates: new Set<string>() }; byEmp.set(id, e); }
+    if (!e) { e = { present: new Map<string, boolean>(), leaveDates: new Set<string>(), activeFrom: joinKeyByEmp.get(id) }; byEmp.set(id, e); }
     return e;
   };
   for (const id of employeeIds) ensure(id);
