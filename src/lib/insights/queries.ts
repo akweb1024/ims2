@@ -374,3 +374,137 @@ export async function kraRollup(db: Db, args: KraRollupArgs) {
         })),
     };
 }
+
+// --- template assignments (which template → which employees) --------------
+
+export interface TemplateAssignmentsArgs {
+    companyId?: string;
+    query?: string;        // template name contains
+    department?: string;   // assignee's department name contains
+    managerUserId?: string; // assignee reports to this manager (direct)
+}
+
+/**
+ * Every KRA template with the employees it is assigned to. An assignment is an
+ * EmployeeGoal carrying that template's id (set by /api/kra/assign and the
+ * auto-provisioner). The department / team filters narrow the assignee lists;
+ * templates with no matching assignee still appear (0 assigned) unless a name
+ * filter excludes them, so HR can see unused templates too.
+ */
+export async function templateAssignments(db: Db, args: TemplateAssignmentsArgs) {
+    const query = (args.query ?? '').trim();
+    const department = (args.department ?? '').trim();
+    const managerUserId = (args.managerUserId ?? '').trim();
+    const filtering = Boolean(department || managerUserId);
+
+    const templates = await db.kraTemplate.findMany({
+        where: {
+            ...(args.companyId ? { companyId: args.companyId } : {}),
+            isActive: true,
+            ...(query ? { name: { contains: query, mode: 'insensitive' } } : {}),
+        },
+        select: { id: true, name: true, description: true, _count: { select: { items: true } } },
+        orderBy: { name: 'asc' },
+    });
+    if (templates.length === 0) return { templateCount: 0, assignedEmployees: 0, templates: [] };
+
+    const templateIds = templates.map((t) => t.id);
+
+    // Distinct (template, employee) pairs — an employee has many goals per template.
+    const goals = await db.employeeGoal.findMany({
+        where: {
+            ...(args.companyId ? { companyId: args.companyId } : {}),
+            templateId: { in: templateIds },
+            isKra: true,
+            ...(filtering
+                ? {
+                      employee: {
+                          user: {
+                              ...(department ? { department: { name: { contains: department, mode: 'insensitive' } } } : {}),
+                              ...(managerUserId ? { managerId: managerUserId } : {}),
+                          },
+                      },
+                  }
+                : {}),
+        },
+        distinct: ['templateId', 'employeeId'],
+        select: {
+            templateId: true,
+            employee: {
+                select: {
+                    id: true,
+                    employeeId: true,
+                    designation: true,
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                            department: { select: { name: true } },
+                            manager: { select: { name: true } },
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    const byTemplate = new Map<string, Array<Record<string, unknown>>>();
+    const distinctEmployees = new Set<string>();
+    for (const g of goals) {
+        if (!g.templateId || !g.employee) continue;
+        distinctEmployees.add(g.employee.id);
+        const list = byTemplate.get(g.templateId) ?? [];
+        list.push({
+            profileId: g.employee.id,
+            employeeCode: g.employee.employeeId,
+            name: g.employee.user.name,
+            email: g.employee.user.email,
+            designation: g.employee.designation,
+            department: g.employee.user.department?.name ?? null,
+            managerName: g.employee.user.manager?.name ?? null,
+        });
+        byTemplate.set(g.templateId, list);
+    }
+
+    let out = templates.map((t) => {
+        const employees = (byTemplate.get(t.id) ?? []).sort((a, b) =>
+            String(a.name ?? a.email).localeCompare(String(b.name ?? b.email))
+        );
+        return {
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            kpiCount: t._count.items,
+            employeeCount: employees.length,
+            employees,
+        };
+    });
+    // When a department/team filter is active, hide templates with no match.
+    if (filtering) out = out.filter((t) => t.employeeCount > 0);
+
+    return { templateCount: out.length, assignedEmployees: distinctEmployees.size, templates: out };
+}
+
+/** Filter options for the assignments view: departments and manager "teams". */
+export async function insightsFilters(db: Db, companyId?: string) {
+    const [departments, managers] = await Promise.all([
+        db.department.findMany({
+            where: { ...(companyId ? { companyId } : {}), isActive: true },
+            select: { id: true, name: true },
+            orderBy: { name: 'asc' },
+        }),
+        // Users who manage at least one active person = the "teams".
+        db.user.findMany({
+            where: {
+                ...(companyId ? { companyId } : {}),
+                subordinates: { some: { isActive: true } },
+            },
+            select: { id: true, name: true, email: true },
+            orderBy: { name: 'asc' },
+        }),
+    ]);
+    return {
+        departments: departments.map((d) => ({ id: d.id, name: d.name })),
+        teams: managers.map((m) => ({ managerUserId: m.id, managerName: m.name || m.email })),
+    };
+}
