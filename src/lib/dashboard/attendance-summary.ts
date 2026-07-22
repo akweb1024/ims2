@@ -57,3 +57,110 @@ export function summarizeAttendance(records: AttendanceRecordLike[]): Attendance
 export function previousMonthBase(currentStart: Date): Date {
     return new Date(currentStart.getTime() - 1);
 }
+
+// ---------------------------------------------------------------------------
+// Derived (calendar-based) attendance
+//
+// The status-row counts above only see days the system actually recorded. But
+// a missed day usually has NO row at all, so "absent" read as zero. The derived
+// model instead walks every calendar day of the period and classifies it, so
+// absences fall out of the calendar rather than needing an explicit ABSENT row.
+//
+// Rules (per the business):
+//   - Sunday is the weekly off and is NOT absent …
+//   - … unless it is *sandwiched* between absent days on both sides, then it is.
+//   - A public holiday is never absent.
+//   - An approved leave counts as leave, not absent.
+//   - Any other working day with no present record is absent.
+// The caller caps the window at "today" so future days are never absent.
+// ---------------------------------------------------------------------------
+
+export type DayClass = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'HOLIDAY' | 'WEEKOFF';
+
+export interface DerivedCounts {
+    presentDays: number;
+    lateDays: number;
+    absentDays: number;
+    leaveDays: number;
+}
+
+/** Calendar day-of-week for a YYYY-MM-DD key (0 = Sunday), timezone-independent. */
+export function isSundayKey(dateKey: string): boolean {
+    return new Date(`${dateKey}T00:00:00Z`).getUTCDay() === 0;
+}
+
+/** Inclusive, consecutive list of YYYY-MM-DD keys from startKey to endKey. */
+export function enumerateDateKeys(startKey: string, endKey: string): string[] {
+    const keys: string[] = [];
+    if (!startKey || !endKey || startKey > endKey) return keys;
+    const cur = new Date(`${startKey}T00:00:00Z`);
+    const end = new Date(`${endKey}T00:00:00Z`);
+    while (cur <= end) {
+        keys.push(cur.toISOString().slice(0, 10));
+        cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    return keys;
+}
+
+/**
+ * Classify one employee's days over an ordered, consecutive date-key list.
+ * Priority: worked (present row) > approved leave > holiday > Sunday week-off >
+ * absent. Then a sandwich pass flips any Sunday week-off flanked by ABSENT on
+ * both adjacent calendar days to ABSENT.
+ */
+export function classifyEmployeeDays(
+    dateKeys: string[],
+    present: Map<string, boolean>, // dateKey -> isLate
+    leaveDates: Set<string>,
+    holidayDates: Set<string>,
+): DayClass[] {
+    const cls: DayClass[] = dateKeys.map((d) => {
+        if (present.has(d)) return present.get(d) ? 'LATE' : 'PRESENT';
+        if (leaveDates.has(d)) return 'LEAVE';
+        if (holidayDates.has(d)) return 'HOLIDAY';
+        if (isSundayKey(d)) return 'WEEKOFF';
+        return 'ABSENT';
+    });
+    // Sundays are never adjacent to each other, so reading the (partly mutated)
+    // array is safe — a Sunday's neighbours are always Sat/Mon, never Sundays.
+    for (let i = 0; i < cls.length; i++) {
+        if (cls[i] !== 'WEEKOFF') continue;
+        const prev = i > 0 ? cls[i - 1] : undefined;
+        const next = i < cls.length - 1 ? cls[i + 1] : undefined;
+        if (prev === 'ABSENT' && next === 'ABSENT') cls[i] = 'ABSENT';
+    }
+    return cls;
+}
+
+export function countClasses(cls: DayClass[]): DerivedCounts {
+    let presentDays = 0, lateDays = 0, absentDays = 0, leaveDays = 0;
+    for (const c of cls) {
+        if (c === 'PRESENT' || c === 'LATE') presentDays++;
+        if (c === 'LATE') lateDays++;
+        if (c === 'ABSENT') absentDays++;
+        if (c === 'LEAVE') leaveDays++;
+    }
+    return { presentDays, lateDays, absentDays, leaveDays };
+}
+
+export interface EmployeeAttendanceInput {
+    present: Map<string, boolean>; // dateKey -> isLate
+    leaveDates: Set<string>;
+}
+
+/** Sum derived person-day counts across a set of employees over one window. */
+export function aggregateDerived(
+    dateKeys: string[],
+    holidayDates: Set<string>,
+    employees: EmployeeAttendanceInput[],
+): DerivedCounts {
+    const total: DerivedCounts = { presentDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0 };
+    for (const e of employees) {
+        const c = countClasses(classifyEmployeeDays(dateKeys, e.present, e.leaveDates, holidayDates));
+        total.presentDays += c.presentDays;
+        total.lateDays += c.lateDays;
+        total.absentDays += c.absentDays;
+        total.leaveDays += c.leaveDays;
+    }
+    return total;
+}

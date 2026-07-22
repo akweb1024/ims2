@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { DashboardScope, DashboardWidgetKey } from './widgets';
-import { getISTDateRangeForPeriod } from '@/lib/date-utils';
-import { previousMonthBase, summarizeAttendance } from '@/lib/dashboard/attendance-summary';
+import { getISTDateRangeForPeriod, formatToISTDate } from '@/lib/date-utils';
+import {
+  previousMonthBase,
+  PRESENT_STATUSES,
+  enumerateDateKeys,
+  aggregateDerived,
+  type EmployeeAttendanceInput,
+} from '@/lib/dashboard/attendance-summary';
 import { getManagerTeamUserIds } from '@/lib/team-auth';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
@@ -185,6 +191,78 @@ async function getMarketingSalesPerformance(ctx: DashboardPayloadContext) {
   };
 }
 
+/** String min/max on YYYY-MM-DD keys (lexicographic == chronological). */
+const maxKey = (a: string, b: string) => (a > b ? a : b);
+const minKey = (a: string, b: string) => (a < b ? a : b);
+
+/**
+ * Derived, calendar-based attendance for one month window. Absence falls out of
+ * the calendar (Sunday week-off, Sunday-sandwich, holiday-exempt, approved-leave
+ * = leave) rather than needing explicit ABSENT rows — which the system never
+ * writes, so the old widget always read absent = 0. The window is capped at
+ * today so future days are never counted absent.
+ */
+async function deriveAttendanceWindow(
+  window: { start: Date; end: Date },
+  employeeIds: string[],
+  companyId: string | null,
+) {
+  const todayKey = formatToISTDate(new Date());
+  const startKey = formatToISTDate(window.start);
+  const endKey = minKey(formatToISTDate(window.end), todayKey); // don't count the future
+  const dateKeys = enumerateDateKeys(startKey, endKey);
+  if (dateKeys.length === 0 || employeeIds.length === 0) {
+    return { presentDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0 };
+  }
+
+  const [attRows, leaves, holidays] = await Promise.all([
+    prisma.attendance.findMany({
+      where: { ...(companyId ? { companyId } : {}), employeeId: { in: employeeIds }, date: { gte: window.start, lte: window.end } },
+      select: { employeeId: true, date: true, isLate: true, status: true },
+    }),
+    prisma.leaveRequest.findMany({
+      where: {
+        ...(companyId ? { companyId } : {}),
+        employeeId: { in: employeeIds },
+        status: 'APPROVED',
+        startDate: { lte: window.end },
+        endDate: { gte: window.start },
+      },
+      select: { employeeId: true, startDate: true, endDate: true },
+    }),
+    prisma.holiday.findMany({
+      where: {
+        date: { gte: window.start, lte: window.end },
+        ...(companyId ? { OR: [{ companyId }, { companyId: null }] } : {}),
+      },
+      select: { date: true },
+    }),
+  ]);
+
+  const holidayDates = new Set(holidays.map((h) => formatToISTDate(h.date)));
+
+  // Every scoped active employee participates — an employee with no present row
+  // and no leave is genuinely absent on each working day.
+  const byEmp = new Map<string, EmployeeAttendanceInput>();
+  const ensure = (id: string) => {
+    let e = byEmp.get(id);
+    if (!e) { e = { present: new Map<string, boolean>(), leaveDates: new Set<string>() }; byEmp.set(id, e); }
+    return e;
+  };
+  for (const id of employeeIds) ensure(id);
+  for (const r of attRows) {
+    if (PRESENT_STATUSES.has((r.status || '').toUpperCase())) ensure(r.employeeId).present.set(formatToISTDate(r.date), r.isLate);
+  }
+  for (const lv of leaves) {
+    const e = ensure(lv.employeeId);
+    const from = maxKey(formatToISTDate(lv.startDate), startKey);
+    const to = minKey(formatToISTDate(lv.endDate), endKey);
+    for (const k of enumerateDateKeys(from, to)) e.leaveDates.add(k);
+  }
+
+  return aggregateDerived(dateKeys, holidayDates, [...byEmp.values()]);
+}
+
 async function getAttendanceOverview(ctx: DashboardPayloadContext) {
   const current = getISTDateRangeForPeriod('MONTHLY');
   // One ms before the current IST month start is inside the previous IST
@@ -193,37 +271,20 @@ async function getAttendanceOverview(ctx: DashboardPayloadContext) {
   const employeeIds = await resolveEmployeeIdsForScope(ctx);
   const companyId = selfScopedCompanyId(ctx);
 
-  const [currentRecords, previousRecords] = await Promise.all([
-    prisma.attendance.findMany({
-      where: {
-        ...(companyId ? { companyId } : {}),
-        employeeId: { in: employeeIds },
-        date: { gte: current.start, lte: current.end },
-      },
-      select: { isLate: true, status: true },
-    }),
-    prisma.attendance.findMany({
-      where: {
-        ...(companyId ? { companyId } : {}),
-        employeeId: { in: employeeIds },
-        date: { gte: previous.start, lte: previous.end },
-      },
-      select: { isLate: true, status: true },
-    }),
+  const [cur, prev] = await Promise.all([
+    deriveAttendanceWindow(current, employeeIds, companyId),
+    deriveAttendanceWindow(previous, employeeIds, companyId),
   ]);
 
-  // Coherent person-day counts: present days by status, late days, and
-  // explicitly recorded absent days (see attendance-summary.ts).
-  const currentSummary = summarizeAttendance(currentRecords);
-  const previousSummary = summarizeAttendance(previousRecords);
-
   return {
-    currentAttendance: currentSummary.presentDays,
-    previousAttendance: previousSummary.presentDays,
-    currentLate: currentSummary.lateDays,
-    previousLate: previousSummary.lateDays,
-    currentAbsent: currentSummary.absentDays,
-    previousAbsent: previousSummary.absentDays,
+    currentAttendance: cur.presentDays,
+    previousAttendance: prev.presentDays,
+    currentLate: cur.lateDays,
+    previousLate: prev.lateDays,
+    currentAbsent: cur.absentDays,
+    previousAbsent: prev.absentDays,
+    currentLeave: cur.leaveDays,
+    previousLeave: prev.leaveDays,
   };
 }
 
