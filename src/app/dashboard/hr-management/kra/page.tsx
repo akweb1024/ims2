@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode, ReactElement } from 'react';
 import { FiTarget, FiGrid, FiUsers, FiPlus, FiTrash2, FiEdit2, FiCheck, FiInbox, FiX, FiBarChart2, FiStar, FiInfo } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -356,6 +357,14 @@ function TemplatesTab() {
 
 /* -------------------------------- Assign ------------------------------- */
 
+interface TemplateAssignmentRow {
+  id: string;
+  name: string;
+  kpiCount: number;
+  employeeCount: number;
+  employees: { profileId: string; name: string | null; email: string; designation: string | null; department: string | null; managerName: string | null }[];
+}
+
 function AssignTab() {
   const [templates, setTemplates] = useState<KraTemplate[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -366,6 +375,20 @@ function AssignTab() {
   const [departmentId, setDepartmentId] = useState('');
   const [employeeIds, setEmployeeIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [assignments, setAssignments] = useState<TemplateAssignmentRow[]>([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
+
+  const loadAssignments = useCallback(async () => {
+    setLoadingAssignments(true);
+    try {
+      const data = await kraFetch<{ templates: TemplateAssignmentRow[] }>('/api/insights/templates');
+      setAssignments(data.templates ?? []);
+    } catch {
+      /* assignments list is a read-only convenience; don't block the assign form */
+    } finally {
+      setLoadingAssignments(false);
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -380,7 +403,8 @@ function AssignTab() {
         setEmployees(Array.isArray(e) ? e : []);
       } catch (err: any) { toast.error(err.message); }
     })();
-  }, []);
+    loadAssignments();
+  }, [loadAssignments]);
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
 
@@ -395,12 +419,13 @@ function AssignTab() {
       else body.employeeIds = employeeIds;
       const res = await kraFetch<any>('/api/kra/assign', { method: 'POST', body: JSON.stringify(body) });
       toast.success(`${res.period}: ${res.employees} employees × ${res.metrics} metrics → ${res.created} created, ${res.updated} updated`);
+      loadAssignments(); // reflect the new assignment in the list below
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   };
 
   return (
-    <div className="max-w-2xl">
-      <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+    <div className="max-w-3xl space-y-6">
+      <div className="max-w-2xl border border-gray-200 rounded-xl p-5 space-y-4">
         <Field label="Template">
           <select className={inputCls} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
             <option value="">— Select —</option>
@@ -464,6 +489,42 @@ function AssignTab() {
         <p className="text-xs text-gray-400">
           Applying again for the same period updates the targets (no duplicate goals are created).
         </p>
+      </div>
+
+      {/* Which template is currently assigned to which employees / departments */}
+      <div className="border border-gray-200 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2"><FiUsers /> Current assignments</h3>
+          <button onClick={loadAssignments} className="text-xs text-indigo-600 hover:text-indigo-700">Refresh</button>
+        </div>
+        {loadingAssignments ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : assignments.length === 0 ? (
+          <p className="text-sm text-gray-400">No templates yet. Build one under Templates, then assign it above.</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {assignments.map((t) => (
+              <div key={t.id} className="py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-900">{t.name}</span>
+                  <span className="shrink-0 text-xs text-gray-500">{t.kpiCount} KPIs · {t.employeeCount} assigned</span>
+                </div>
+                {t.employees.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {t.employees.map((e) => (
+                      <span key={e.profileId} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700">
+                        {e.name || e.email}
+                        {e.department ? <span className="text-gray-400">· {e.department}</span> : null}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-400">Not assigned to anyone yet.</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -840,8 +901,15 @@ function Modal({ title, children, onClose, onSave, wide }: {
 }) {
   // Right-side drawer: at least 40% of the screen (wider for the template editor), full
   // height, with a sticky header/footer and a scrollable body.
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
+  //
+  // Rendered through a portal to <body>: the dashboard shell has transformed
+  // ancestors (sidebar/animation), which make `position: fixed` resolve against
+  // that ancestor instead of the viewport — so without the portal the drawer
+  // rendered *inside* the content column and overlapped the page instead of
+  // covering it.
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black/40 flex justify-end" onClick={onClose}>
       <div
         className={`bg-white shadow-2xl h-full flex flex-col w-full min-w-[380px] ${wide ? 'sm:w-[60%] sm:max-w-[860px]' : 'sm:w-[42%] sm:max-w-[640px]'} animate-in slide-in-from-right duration-200`}
         onClick={(e) => e.stopPropagation()}
@@ -856,6 +924,7 @@ function Modal({ title, children, onClose, onSave, wide }: {
           <button onClick={onSave} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
