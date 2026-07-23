@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
 import { assertCompanyAccess, canAccessAllCompanies, normalizeAllowedModulesForWrite, resolveCompanyScope } from '@/lib/access-policy';
 import { provisionEmployee } from '@/lib/kra/provision';
+import { hashPassword } from '@/lib/auth-core';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
@@ -568,7 +569,7 @@ export const POST = authorizedRoute(
                     data: {
                         email,
                         name,
-                        password: password,
+                        password: await hashPassword(password),
                         role: role as any,
                         companyId: companyId || user.companyId,
                         departmentId: departmentId,
