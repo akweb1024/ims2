@@ -424,13 +424,13 @@ export const EmailTemplates = {
 
     onboardingInvite: (userName: string, inviteUrl: string) => ({
         subject: 'Complete your onboarding - STM Journals',
-        text: `Dear ${userName}, your employee account is ready. Set your password and complete onboarding here: ${inviteUrl}. This link will expire in 1 hour.`,
+        text: `Dear ${userName}, your employee account is ready. Set your password and complete onboarding here: ${inviteUrl}. This link will expire in 7 days.`,
         html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                 <h1 style="color: #2563eb;">Your account is ready</h1>
                 <p>Dear <strong>${escapeHtml(userName)}</strong>,</p>
                 <p>Your employee account has been created. To continue, set your password and finish the onboarding steps.</p>
-                <p>This invite link is valid for <strong>1 hour</strong>.</p>
+                <p>This invite link is valid for <strong>7 days</strong>.</p>
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${inviteUrl}"
                        style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
@@ -443,6 +443,53 @@ export const EmailTemplates = {
         `
     }),
  
+    applicationReceived: (applicantName: string, jobTitle: string, examUrl: string | null, statusUrl: string | null) => ({
+        subject: `Application received — ${jobTitle}`,
+        text: `Dear ${applicantName}, thank you for applying for the ${jobTitle} position. `
+            + (examUrl
+                ? `Your next step is the online skill assessment: ${examUrl}. `
+                : `Our team will review your application and get back to you. `)
+            + (statusUrl ? `You can track your application status anytime here: ${statusUrl}` : ''),
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Application Received</h1>
+                <p>Dear <strong>${escapeHtml(applicantName)}</strong>,</p>
+                <p>Thank you for applying for the <strong>${escapeHtml(jobTitle)}</strong> position. Your application has been received.</p>
+                ${examUrl ? `
+                <p>Your next step is a short online skill assessment:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${examUrl}"
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Start Skill Assessment
+                    </a>
+                </div>` : `
+                <p>Our team will review your application and get back to you.</p>`}
+                ${statusUrl ? `<p>You can track your application status anytime using <a href="${statusUrl}">your personal tracking link</a>. Please keep this email — the link is your only way to check your status.</p>` : ''}
+                <p>Best regards,<br/>The Recruitment Team</p>
+            </div>
+        `
+    }),
+
+    interviewScheduled: (applicantName: string, jobTitle: string, whenText: string, type: string, joinDetail: string | null) => ({
+        subject: `Interview scheduled — ${jobTitle}`,
+        text: `Dear ${applicantName}, your interview for the ${jobTitle} position has been scheduled for ${whenText} (${type}).`
+            + (joinDetail ? ` Details: ${joinDetail}` : ''),
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Interview Scheduled</h1>
+                <p>Dear <strong>${escapeHtml(applicantName)}</strong>,</p>
+                <p>Your interview for the <strong>${escapeHtml(jobTitle)}</strong> position has been scheduled.</p>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 4px; border-left: 4px solid #2563eb; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>When:</strong> ${escapeHtml(whenText)}</p>
+                    <p style="margin: 5px 0;"><strong>Format:</strong> ${escapeHtml(type)}</p>
+                    ${joinDetail ? `<p style="margin: 5px 0;"><strong>Where / Link:</strong> ${escapeHtml(joinDetail)}</p>` : ''}
+                </div>
+                <p>If the time does not work for you, please reply to this email so we can reschedule.</p>
+                <p>Best regards,<br/>The Recruitment Team</p>
+            </div>
+        `
+    }),
+
     passwordResetConfirmation: (userName: string) => ({
         subject: 'Password Reset Successful - STM Journals',
         text: `Dear ${userName}, your password has been successfully reset.`,
