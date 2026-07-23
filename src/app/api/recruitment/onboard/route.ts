@@ -20,7 +20,10 @@ export const POST = authorizedRoute(
                 include: { jobPosting: true }
             });
 
-            if (!application || application.status !== 'SELECTED') {
+            // OFFER qualifies too: screening submit advances candidates to OFFER
+            // automatically, but nothing programmatic ever sets SELECTED, so gating
+            // on SELECTED alone stalled hires until someone dragged the card.
+            if (!application || !['OFFER', 'SELECTED'].includes(application.status)) {
                 return createErrorResponse('Application not eligible for onboarding', 400);
             }
 

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { companyScopeWhere } from '@/lib/company-scope';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'],
@@ -46,6 +47,16 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Missing required fields', 400);
             }
 
+            const application = await prisma.jobApplication.findUnique({
+                where: { id: applicationId },
+                select: {
+                    applicantName: true,
+                    applicantEmail: true,
+                    jobPosting: { select: { title: true } }
+                }
+            });
+            if (!application) return createErrorResponse('Application not found', 404);
+
             const interview = await prisma.recruitmentInterview.create({
                 data: {
                     applicationId,
@@ -65,6 +76,31 @@ export const POST = authorizedRoute(
                 where: { id: applicationId },
                 data: { status: 'INTERVIEW' }
             });
+
+            // Notify the candidate (non-fatal; mock-logged when no provider is set).
+            // Format in server TZ — symmetric with how the datetime-local string
+            // was parsed above, so the email shows the time HR actually picked.
+            try {
+                const whenText = interview.scheduledAt.toLocaleString('en-IN', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit',
+                });
+                const template = EmailTemplates.interviewScheduled(
+                    application.applicantName,
+                    application.jobPosting.title,
+                    whenText,
+                    interview.type,
+                    interview.meetingLink || interview.location || null,
+                );
+                await sendEmail({
+                    to: application.applicantEmail,
+                    subject: template.subject,
+                    text: template.text,
+                    html: template.html,
+                });
+            } catch (err) {
+                console.error('Failed to send interview-scheduled email:', err);
+            }
 
             return NextResponse.json(interview);
         } catch (error) {

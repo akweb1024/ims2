@@ -113,7 +113,7 @@ export default function ApplicantPipeline() {
             total: applications.length,
             interview: applications.filter(a => (a.status || '').toUpperCase() === 'INTERVIEW').length,
             offer: applications.filter(a => (a.status || '').toUpperCase() === 'OFFER').length,
-            hired: applications.filter(a => (a.status || '').toUpperCase() === 'HIRED').length,
+            hired: applications.filter(a => ['HIRED', 'ONBOARDED'].includes((a.status || '').toUpperCase())).length,
         };
     }, [applications]);
 
@@ -194,6 +194,11 @@ export default function ApplicantPipeline() {
                                 // the score and decide whether to advance to INTERVIEW.
                                 return s === 'SCREENING' || s === 'EXAM_PENDING' || s === 'EXAM_COMPLETED'
                                     || s === 'EXAM_PASSED' || s === 'EXAM_FAILED';
+                            }
+                            if (stage === 'HIRED') {
+                                // The onboard API sets ONBOARDED (never HIRED), so map it
+                                // here or hired candidates silently drop off the board.
+                                return s === 'HIRED' || s === 'ONBOARDED';
                             }
                             return s === stage;
                         }) || [];
@@ -320,7 +325,7 @@ export default function ApplicantPipeline() {
                                                     </button>
                                                 )}
 
-                                                {stage === 'SELECTED' && (
+                                                {(stage === 'OFFER' || stage === 'SELECTED') && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setOnboardApp(app); }}
                                                         className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 uppercase hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
