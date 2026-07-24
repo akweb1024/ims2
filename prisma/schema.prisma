@@ -1804,6 +1804,8 @@ model EmployeeProfile {
   taskTemplateLink         String?
   lastPromotionDate        DateTime?
   nextReviewDate           DateTime?
+  probationEndDate         DateTime?
+  employmentStatus         String                            @default("PROBATION")
   qualification            String?
   relevantExperienceMonths Int                               @default(0)
   relevantExperienceYears  Int                               @default(0)
@@ -1832,6 +1834,7 @@ model EmployeeProfile {
   digitalDocuments         DigitalDocument[]
   hrComments               EmployeeComment[]
   companyDesignations      EmployeeCompanyDesignation[]
+  confirmationReviews      ConfirmationReview[]
   documents                EmployeeDocument[]
   expenseAllocations       EmployeeExpenseAllocation[]
   goals                    EmployeeGoal[]
@@ -2076,6 +2079,31 @@ model EmployeeDocument {
   employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
+}
+
+// Probation confirmation review: manager recommendation → HR sign-off before an
+// employee's employmentStatus flips from PROBATION to CONFIRMED (or is extended).
+model ConfirmationReview {
+  id                    String          @id @default(uuid())
+  employeeId            String
+  status                String          @default("PENDING") // PENDING | RECOMMENDED | CONFIRMED | REJECTED | EXTENDED
+  probationEndDate      DateTime?
+  kraSnapshot           Json?
+  managerRecommendation String? // CONFIRM | EXTEND | TERMINATE
+  managerNote           String?
+  recommendedById       String?
+  recommendedAt         DateTime?
+  hrDecision            String? // CONFIRMED | REJECTED | EXTENDED
+  hrNote                String?
+  decidedById           String?
+  decidedAt             DateTime?
+  newProbationEndDate   DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
 }
 
 model Attendance {

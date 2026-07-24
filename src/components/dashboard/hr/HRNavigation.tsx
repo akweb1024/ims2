@@ -32,6 +32,7 @@ const CATEGORIES: NavCategory[] = [
         tabs: [
             { id: 'employees', label: 'All Employees' },
             { id: 'onboarding', label: 'Onboarding Pipeline' },
+            { id: 'confirmations', label: 'Probation Confirmations', href: '/dashboard/hr-management/confirmations' },
             { id: 'documents', label: 'Document Vault' },
             { id: 'document-templates', label: 'Offer/Contract Templates' },
         ]

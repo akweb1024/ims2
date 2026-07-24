@@ -76,6 +76,8 @@ export function dueOccurrence(job: CronJob, now: Date): string | null {
  *  - work-agenda: before the workday, after rollover/snapshot windows.
  *  - attendance digests: the four slots hard-coded in the digest route.
  *  - process-renewals: just after midnight, per the route's own comment.
+ *  - probation-reminders: morning, after agenda — opens confirmation reviews for
+ *    employees whose probation is ending and pings their manager.
  *  - razorpay-sync / think-tank: hourly / nightly housekeeping (idempotent).
  */
 export const CRON_JOBS: CronJob[] = [
@@ -88,6 +90,7 @@ export const CRON_JOBS: CronJob[] = [
     { name: 'think-tank-tally', path: '/api/cron/think-tank/tally', dailyAt: '03:30' },
     { name: 'think-tank-reveal', path: '/api/cron/think-tank/reveal', dailyAt: '03:45' },
     { name: 'work-agenda', path: '/api/cron/work-agenda/generate', dailyAt: '06:00' },
+    { name: 'probation-reminders', path: '/api/cron/probation-reminders', dailyAt: '07:00' },
     { name: 'digest-0930', path: '/api/cron/attendance-whatsapp-digest?slot=0930', dailyAt: '09:30' },
     { name: 'digest-1100', path: '/api/cron/attendance-whatsapp-digest?slot=1100', dailyAt: '11:00' },
     { name: 'digest-1730', path: '/api/cron/attendance-whatsapp-digest?slot=1730', dailyAt: '17:30' },
