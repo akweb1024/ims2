@@ -184,7 +184,7 @@ export default function JobDetailPage() {
                                             </div>
                                         ) : (
                                             <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mb-6">
-                                                <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">What's Next</p>
+                                                <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">What&apos;s Next</p>
                                                 <h4 className="font-bold text-primary-900">Our team will review your application and reach out about next steps.</h4>
                                             </div>
                                         )}
