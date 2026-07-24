@@ -6,6 +6,7 @@
  */
 export const DOCUMENT_TYPES = [
     { value: 'OFFER_LETTER', label: 'Offer Letter' },
+    { value: 'APPOINTMENT_LETTER', label: 'Appointment Letter' },
     { value: 'CONTRACT', label: 'Employment Contract' },
     { value: 'NDA', label: 'Non-Disclosure Agreement' },
     { value: 'RELIEVING_LETTER', label: 'Relieving Letter' },
