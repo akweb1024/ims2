@@ -100,13 +100,12 @@ export const PATCH = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { id, status, currentStage, rating, notes } = body;
+            const { id, status, rating, notes } = body;
 
             if (!id) return createErrorResponse('Application ID required', 400);
 
             const updateData: any = {};
             if (status) updateData.status = status;
-            if (currentStage) updateData.currentStage = currentStage;
             if (rating) updateData.rating = rating;
             if (notes) updateData.notes = notes;
 
