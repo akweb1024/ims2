@@ -2062,13 +2062,20 @@ model EmployeeComment {
 }
 
 model EmployeeDocument {
-  id         String          @id @default(uuid())
-  employeeId String
-  name       String
-  fileUrl    String
-  fileType   String?
-  uploadedAt DateTime        @default(now())
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  id           String          @id @default(uuid())
+  employeeId   String
+  name         String
+  fileUrl      String
+  fileType     String?
+  documentType String?
+  status       String          @default("PENDING")
+  verifiedAt   DateTime?
+  verifiedById String?
+  reviewNote   String?
+  uploadedAt   DateTime        @default(now())
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
 }
 
 model Attendance {

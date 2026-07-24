@@ -313,7 +313,15 @@ export const useDocumentMutations = () => {
         },
     });
 
-    return { upload, remove };
+    const verify = useMutation({
+        mutationFn: (data: { id: string; decision: 'verified' | 'rejected' | 'pending'; reviewNote?: string }) =>
+            fetchJson('/api/hr/documents', 'PATCH', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+        },
+    });
+
+    return { upload, remove, verify };
 };
 
 export const useCreateJob = () => {

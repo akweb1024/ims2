@@ -267,7 +267,7 @@ const HRManagementContent = () => {
     const { correct: attendanceCorrectionMutation } = useAttendanceMutations();
     const deleteEmployeeMutation = useDeleteEmployee();
     const { updateStatus: updateLeaveStatus } = useLeaveRequestMutations();
-    const { upload: uploadDoc, remove: removeDoc } = useDocumentMutations();
+    const { upload: uploadDoc, remove: removeDoc, verify: verifyDoc } = useDocumentMutations();
     const bulkSalaryMutation = useBulkSalaryMutation();
     const { create: createAdvance } = useAdvanceMutations();
     const { create: createDept, update: updateDept, remove: removeDept } = useDepartmentMutations();
@@ -350,23 +350,48 @@ const HRManagementContent = () => {
     const handleDocumentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!selectedDocEmp) return;
-        const formData = new FormData(e.currentTarget);
+        const formEl = e.currentTarget;
+        const formData = new FormData(formEl);
+        const file = formData.get('file') as File | null;
+        const name = String(formData.get('name') || '').trim();
+        const documentType = String(formData.get('documentType') || '');
+        if (!file || !file.size) { alert('Please choose a file to upload.'); return; }
         try {
+            // Store the actual file first (auth-gated /api/files serving), then record it.
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+            const up = new FormData();
+            up.append('file', file);
+            up.append('category', 'documents');
+            const upRes = await fetch('/api/upload', {
+                method: 'POST',
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                body: up,
+            });
+            const upData = await upRes.json().catch(() => ({}));
+            if (!upRes.ok) throw new Error(upData?.error || 'File upload failed');
+
             await uploadDoc.mutateAsync({
                 employeeId: selectedDocEmp.id,
-                name: formData.get('name'),
-                fileUrl: formData.get('fileUrl'),
-                fileType: 'DOCUMENT'
+                name: name || file.name,
+                fileUrl: upData.url,
+                fileType: upData.mimeType || 'DOCUMENT',
+                documentType: documentType || null,
             });
-            e.currentTarget.reset();
-            alert('Document uploaded!');
-        } catch (err) { console.error(err); }
+            formEl.reset();
+        } catch (err: any) { alert(err?.message || 'Upload failed'); }
     };
 
     const handleDeleteDocument = async (id: string) => {
         if (!confirm('Delete this document?')) return;
         try {
             await removeDoc.mutateAsync(id);
+        } catch (err) { console.error(err); }
+    };
+
+    const handleVerifyDocument = async (id: string, decision: 'verified' | 'rejected') => {
+        const reviewNote = decision === 'rejected' ? (prompt('Reason for rejection (optional):') || '') : '';
+        try {
+            await verifyDoc.mutateAsync({ id, decision, reviewNote });
         } catch (err) { console.error(err); }
     };
 
@@ -712,31 +737,58 @@ const HRManagementContent = () => {
                                             </div>
                                         </div>
 
-                                        <form onSubmit={handleDocumentUpload} className="bg-white p-4 rounded-2xl border border-dashed border-secondary-300 flex gap-2 items-center">
-                                            <div className="flex-1">
-                                                <input name="name" className="input text-xs py-2" placeholder="Document Name (e.g. ID Proof)" title="Document Name" required />
-                                            </div>
-                                            <div className="flex-1">
-                                                <input name="fileUrl" className="input text-xs py-2" placeholder="Document URL (https://...)" title="Document URL" required />
-                                            </div>
-                                            <button className="btn btn-primary py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap">+ Upload</button>
+                                        <form onSubmit={handleDocumentUpload} className="bg-white p-4 rounded-2xl border border-dashed border-secondary-300 flex flex-wrap gap-2 items-center">
+                                            <input name="name" className="input text-xs py-2 flex-1 min-w-[140px]" placeholder="Document Name (e.g. ID Proof)" title="Document Name" required />
+                                            <select name="documentType" className="input text-xs py-2 w-40" title="Document Type" defaultValue="">
+                                                <option value="">Type (optional)</option>
+                                                <option value="PAN">PAN Card</option>
+                                                <option value="AADHAAR">Aadhaar</option>
+                                                <option value="UAN">UAN</option>
+                                                <option value="PF">PF</option>
+                                                <option value="PASSPORT">Passport</option>
+                                                <option value="EDUCATION">Education Certificate</option>
+                                                <option value="EXPERIENCE">Experience Letter</option>
+                                                <option value="BANK">Bank Proof</option>
+                                                <option value="OTHER">Other</option>
+                                            </select>
+                                            <input name="file" type="file" className="input text-xs py-1.5 flex-1 min-w-[160px]" title="Document File" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" required />
+                                            <button className="btn btn-primary py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap" disabled={uploadDoc.isPending}>{uploadDoc.isPending ? 'Uploading…' : '+ Upload'}</button>
                                         </form>
 
                                         <div className="space-y-3 overflow-y-auto h-[350px] pr-2">
                                             {empDocuments.length === 0 ? (
                                                 <div className="text-center py-10 text-secondary-300 font-bold italic">No documents uploaded for this employee.</div>
-                                            ) : empDocuments.map(doc => (
-                                                <div key={doc.id} className="group bg-white p-4 rounded-xl border border-secondary-100 hover:border-primary-300 hover:shadow-md transition-all flex justify-between items-center">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-secondary-50 text-2xl flex items-center justify-center rounded-lg">📄</div>
-                                                        <div>
-                                                            <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="font-bold text-secondary-900 hover:text-primary-600 hover:underline">{doc.name}</a>
-                                                            <p className="text-[10px] text-secondary-400">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                            ) : empDocuments.map(doc => {
+                                                const status = (doc.status || 'PENDING').toUpperCase();
+                                                const badge = status === 'VERIFIED' ? 'bg-success-50 text-success-700'
+                                                    : status === 'REJECTED' ? 'bg-danger-50 text-danger-700'
+                                                    : 'bg-warning-50 text-warning-700';
+                                                const canVerify = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'].includes(userRole);
+                                                return (
+                                                <div key={doc.id} className="group bg-white p-4 rounded-xl border border-secondary-100 hover:border-primary-300 hover:shadow-md transition-all flex justify-between items-center gap-3">
+                                                    <div className="flex items-center gap-4 min-w-0">
+                                                        <div className="w-10 h-10 bg-secondary-50 text-2xl flex items-center justify-center rounded-lg shrink-0">📄</div>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="font-bold text-secondary-900 hover:text-primary-600 hover:underline truncate">{doc.name}</a>
+                                                                {doc.documentType ? <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400">{doc.documentType}</span> : null}
+                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${badge}`}>{status}</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-secondary-400">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}{doc.reviewNote ? ` · ${doc.reviewNote}` : ''}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => handleDeleteDocument(doc.id)} className="text-danger-400 hover:text-danger-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity">🗑️</button>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        {canVerify && status !== 'VERIFIED' ? (
+                                                            <button onClick={() => handleVerifyDocument(doc.id, 'verified')} className="text-[10px] font-bold text-success-600 hover:bg-success-50 px-2 py-1 rounded" title="Verify">Verify</button>
+                                                        ) : null}
+                                                        {canVerify && status !== 'REJECTED' ? (
+                                                            <button onClick={() => handleVerifyDocument(doc.id, 'rejected')} className="text-[10px] font-bold text-danger-600 hover:bg-danger-50 px-2 py-1 rounded" title="Reject">Reject</button>
+                                                        ) : null}
+                                                        <button onClick={() => handleDeleteDocument(doc.id)} className="text-danger-400 hover:text-danger-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">🗑️</button>
+                                                    </div>
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </>
                                 ) : (

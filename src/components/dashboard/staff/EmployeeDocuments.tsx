@@ -178,16 +178,25 @@ export default function EmployeeDocuments({ data, fullProfile }: EmployeeDocumen
                                 Support Documents & Archives
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {additionalDocs.map((doc: any) => (
+                                {additionalDocs.map((doc: any) => {
+                                    const status = (doc.status || 'PENDING').toUpperCase();
+                                    const badge = status === 'VERIFIED' ? 'bg-success-50 text-success-700'
+                                        : status === 'REJECTED' ? 'bg-danger-50 text-danger-700'
+                                        : 'bg-warning-50 text-warning-700';
+                                    return (
                                     <div key={doc.id} className="p-4 rounded-2xl border border-secondary-100 flex items-center gap-4 hover:shadow-md transition-all bg-white group">
                                         <div className="w-10 h-10 bg-secondary-50 group-hover:bg-primary-50 group-hover:text-primary-600 flex items-center justify-center rounded-xl text-xl transition-colors">📄</div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-secondary-900 truncate text-sm" title={doc.name}>{doc.name}</p>
-                                            <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-tighter">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${badge}`}>{status}</span>
+                                                <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-tighter">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
                                         <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-primary-600 hover:text-primary-800 text-xs font-bold">View</a>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
