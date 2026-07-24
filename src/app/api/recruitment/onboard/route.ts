@@ -86,34 +86,34 @@ export const POST = authorizedRoute(
                     include: { employeeProfile: true }
                 });
 
-                // 2. Auto-Generate Offer Letter (If Template Exists)
-                const offerTemplate = await tx.documentTemplate.findFirst({
-                    where: {
-                        companyId: targetCompanyId,
-                        type: 'OFFER_LETTER',
-                        isActive: true
-                    }
-                });
-
-                let offerDocId = null;
-
-                if (offerTemplate) {
-                    // Real employee profile was just created above — hydrate with the shared full
-                    // placeholder set so offer letters never leak raw {{ctcAnnual}}, {{employeeId}}, etc.
-                    const employeeForVars = { ...newUser.employeeProfile!, user: newUser };
-                    const content = hydrate(offerTemplate.content, buildLetterVars(employeeForVars, company));
-
+                // 2. Auto-generate the offer and appointment letters from the company's
+                //    active templates. Missing template ⇒ that letter is silently skipped
+                //    (same opt-in behaviour the offer letter has always had). Real employee
+                //    profile was just created above — hydrate with the shared full placeholder
+                //    set so letters never leak raw {{ctcAnnual}}, {{employeeId}}, etc.
+                const employeeForVars = { ...newUser.employeeProfile!, user: newUser };
+                const issueLetter = async (type: string, title: string): Promise<string | null> => {
+                    const template = await tx.documentTemplate.findFirst({
+                        where: { companyId: targetCompanyId, type, isActive: true }
+                    });
+                    if (!template) return null;
+                    const content = hydrate(template.content, buildLetterVars(employeeForVars, company));
                     const doc = await tx.digitalDocument.create({
                         data: {
-                            templateId: offerTemplate.id,
+                            templateId: template.id,
                             employeeId: newUser.employeeProfile!.id,
-                            title: 'Offer Letter',
-                            content: content,
+                            title,
+                            content,
                             status: 'PENDING'
                         }
                     });
-                    offerDocId = doc.id;
-                }
+                    return doc.id;
+                };
+
+                const offerDocId = await issueLetter('OFFER_LETTER', 'Offer Letter');
+                // Appointment letter is the formal engagement doc; issue it as a draft so
+                // HR can review before it's shared. Lives on the employee's digital documents.
+                await issueLetter('APPOINTMENT_LETTER', 'Appointment Letter');
 
                 // 3. Update Application
                 await tx.jobApplication.update({

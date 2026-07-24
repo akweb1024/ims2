@@ -35,7 +35,7 @@ export const HR_PRESETS = [
     },
     {
         title: 'Appointment Letter',
-        type: 'CONTRACT',
+        type: 'APPOINTMENT_LETTER',
         content: `
 <p><strong>Private &amp; Confidential</strong></p>
 <p><strong>{{name}}</strong><br>{{parentage}}<br>{{address}}<br>Mob: {{phone}} &nbsp; Email: {{email}}</p>
