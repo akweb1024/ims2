@@ -9,6 +9,16 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { jobPostingId, name, email, phone, resumeUrl } = body;
 
+        // Look up the job (and whether it has an exam) up front: the exam decides
+        // the starting status, and this doubles as an existence check — a bad
+        // jobPostingId used to surface as an opaque FK error on create.
+        const job = await prisma.jobPosting.findUnique({
+            where: { id: jobPostingId },
+            select: { title: true, exam: { select: { id: true } } },
+        });
+        if (!job) return createErrorResponse('Job posting not found', 404);
+        const hasExam = !!job.exam;
+
         const application = await prisma.jobApplication.create({
             data: {
                 jobPostingId,
@@ -16,29 +26,28 @@ export async function POST(req: NextRequest) {
                 applicantEmail: email,
                 applicantPhone: phone,
                 resumeUrl,
-                status: 'EXAM_PENDING'
-            },
-            include: {
-                jobPosting: { select: { title: true, exam: { select: { id: true } } } }
+                // Only route through the exam when the job actually has one; otherwise
+                // the candidate would sit at EXAM_PENDING forever with nothing to take.
+                status: hasExam ? 'EXAM_PENDING' : 'APPLIED'
             }
         });
 
-        const examLink = `/careers/exam?appId=${application.id}`;
+        const examLink = hasExam ? `/careers/exam?appId=${application.id}` : null;
 
         // Tokenized tracking link — the candidate's only handle on their
         // application status (no account is created by applying).
         const token = applicationStatusToken(application.id);
         const statusUrl = token ? `/careers/application/${application.id}?token=${token}` : null;
 
-        // Email the exam + tracking links; the response links only survive as
-        // long as the success screen stays open. Non-fatal: the application is
+        // Email the (optional) exam + tracking links; the response links only survive
+        // as long as the success screen stays open. Non-fatal: the application is
         // already saved, and sendEmail mock-logs when no provider is configured.
         const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         try {
             const template = EmailTemplates.applicationReceived(
                 application.applicantName,
-                application.jobPosting.title,
-                application.jobPosting.exam ? `${baseUrl}${examLink}` : null,
+                job.title,
+                examLink ? `${baseUrl}${examLink}` : null,
                 statusUrl ? `${baseUrl}${statusUrl}` : null,
             );
             await sendEmail({
@@ -51,8 +60,7 @@ export async function POST(req: NextRequest) {
             console.error('Failed to send application-received email:', err);
         }
 
-        const { jobPosting: _jobPosting, ...applicationData } = application;
-        return NextResponse.json({ ...applicationData, examLink, statusUrl });
+        return NextResponse.json({ ...application, examLink, statusUrl, hasExam });
     } catch (error: any) {
         return createErrorResponse(error);
     }

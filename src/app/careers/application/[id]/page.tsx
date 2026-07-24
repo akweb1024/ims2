@@ -7,13 +7,19 @@ import { ArrowLeft, CheckCircle2, Circle, Clock, XCircle } from 'lucide-react';
 // Candidate-facing application tracker. Reached via the tokenized link handed
 // out on the apply success screen — no account or login involved.
 
-const STAGES = [
-    { label: 'Application Received', reached: () => true },
-    { label: 'Skill Assessment', reached: (s: string) => !['EXAM_PENDING'].includes(s) },
-    { label: 'Under Review', reached: (s: string) => ['EXAM_COMPLETED', 'EXAM_PASSED', 'SCREENING', 'INTERVIEW', 'OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
-    { label: 'Interview', reached: (s: string) => ['INTERVIEW', 'OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
-    { label: 'Offer & Hiring', reached: (s: string) => ['OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
-];
+// Jobs without an exam skip the Skill Assessment step entirely — those
+// applicants start at APPLIED, which reads as "Under Review" to the candidate.
+function buildStages(hasExam: boolean) {
+    return [
+        { label: 'Application Received', reached: () => true },
+        ...(hasExam
+            ? [{ label: 'Skill Assessment', reached: (s: string) => !['EXAM_PENDING'].includes(s) }]
+            : []),
+        { label: 'Under Review', reached: (s: string) => ['APPLIED', 'EXAM_COMPLETED', 'EXAM_PASSED', 'SCREENING', 'INTERVIEW', 'OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
+        { label: 'Interview', reached: (s: string) => ['INTERVIEW', 'OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
+        { label: 'Offer & Hiring', reached: (s: string) => ['OFFER', 'SELECTED', 'HIRED', 'ONBOARDED'].includes(s) },
+    ];
+}
 
 const TERMINAL: Record<string, { title: string; note: string }> = {
     REJECTED: {
@@ -72,6 +78,7 @@ export default function ApplicationTrackerPage() {
     }, [params.id, load]);
 
     const terminal = application ? TERMINAL[application.status] : undefined;
+    const stages = buildStages(!!application?.hasExam);
 
     return (
         <div className="min-h-screen bg-secondary-50 font-sans text-secondary-900">
@@ -125,9 +132,9 @@ export default function ApplicationTrackerPage() {
                                 </div>
 
                                 <ol className="space-y-0">
-                                    {STAGES.map((stage, i) => {
+                                    {stages.map((stage, i) => {
                                         const reached = stage.reached(application.status);
-                                        const isCurrent = reached && (i === STAGES.length - 1 || !STAGES[i + 1].reached(application.status));
+                                        const isCurrent = reached && (i === stages.length - 1 || !stages[i + 1].reached(application.status));
                                         return (
                                             <li key={stage.label} className="flex gap-4">
                                                 <div className="flex flex-col items-center">
@@ -136,7 +143,7 @@ export default function ApplicationTrackerPage() {
                                                     ) : (
                                                         <Circle className="text-secondary-200" size={22} />
                                                     )}
-                                                    {i < STAGES.length - 1 && (
+                                                    {i < stages.length - 1 && (
                                                         <div className={`w-0.5 flex-1 min-h-8 ${reached && !isCurrent ? 'bg-success-300' : 'bg-secondary-100'}`} />
                                                     )}
                                                 </div>
