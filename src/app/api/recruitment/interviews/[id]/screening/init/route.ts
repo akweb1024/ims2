@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/company-scope';
+
+const RECRUITER_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'];
+
+// A screening belongs to the company of the job posting behind its interview.
+function canAccessCompany(user: any, companyId: string | null): boolean {
+    if (canAccessAllCompanies(user)) return true;
+    return !!user.companyId && companyId === user.companyId;
+}
 
 // Initialize a screening for an interview
-export async function POST(request: Request, context: any) {
+export const POST = authorizedRoute(RECRUITER_ROLES, async (req: NextRequest, user, context) => {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
         const params = await context.params;
         const interviewId = params.id;
-        const data = await request.json(); // { templateId: string }
+        const data = await req.json(); // { templateId: string }
 
         if (!data.templateId) {
             return NextResponse.json({ error: 'Template ID required' }, { status: 400 });
@@ -18,10 +24,16 @@ export async function POST(request: Request, context: any) {
 
         const interview = await prisma.recruitmentInterview.findUnique({
             where: { id: interviewId },
-            include: { application: true, screening: true }
+            include: {
+                application: { include: { jobPosting: { select: { companyId: true } } } },
+                screening: true
+            }
         });
 
-        if (!interview) return NextResponse.json({ error: 'Interview not found' }, { status: 404 });
+        // 404 (not 403) on cross-tenant so we don't leak that the interview exists.
+        if (!interview || !canAccessCompany(user, interview.application?.jobPosting?.companyId ?? null)) {
+            return NextResponse.json({ error: 'Interview not found' }, { status: 404 });
+        }
         if (interview.screening) return NextResponse.json({ error: 'Screening already initialized' }, { status: 400 });
 
         const template = await prisma.screeningTemplate.findUnique({ where: { id: data.templateId } });
@@ -43,4 +55,4 @@ export async function POST(request: Request, context: any) {
         console.error('Init Screening Error:', error);
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
-}
+});

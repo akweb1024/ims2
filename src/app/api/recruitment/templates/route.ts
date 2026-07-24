@@ -1,14 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { canAccessAllCompanies } from '@/lib/company-scope';
 
-export async function GET(request: Request) {
+const RECRUITER_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'];
+
+export const GET = authorizedRoute(RECRUITER_ROLES, async (req: NextRequest, user) => {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        const { searchParams } = new URL(request.url);
-        const companyId = searchParams.get('companyId') || user.companyId;
+        const { searchParams } = new URL(req.url);
+        // Company-scoped users may only read their own company's templates,
+        // regardless of any companyId passed in the query (was a cross-tenant read).
+        const companyId = canAccessAllCompanies(user)
+            ? (searchParams.get('companyId') || user.companyId)
+            : user.companyId;
 
         const templates = await prisma.screeningTemplate.findMany({
             where: {
@@ -23,15 +27,12 @@ export async function GET(request: Request) {
         console.error('Fetch Templates Error:', error);
         return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 });
     }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = authorizedRoute(RECRUITER_ROLES, async (req: NextRequest, user) => {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const data = await req.json();
 
-        const data = await request.json();
-        
         const template = await prisma.screeningTemplate.create({
             data: {
                 title: data.title,
@@ -52,4 +53,4 @@ export async function POST(request: Request) {
         console.error('Create Template Error:', error);
         return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
     }
-}
+});
