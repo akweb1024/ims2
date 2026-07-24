@@ -89,7 +89,9 @@ export default function EmployeeOnboardingWorkflow() {
     backupAccess: false,
     securityTools: '',
     otherBenefits: '',
+    assetIds: [] as string[],
   });
+  const [assets, setAssets] = useState<any[]>([]);
 
   const progress = useMemo(() => {
     const done = Object.values(stepSaved).filter(Boolean).length;
@@ -316,6 +318,16 @@ export default function EmployeeOnboardingWorkflow() {
     setTeamActorMap(payload?.actorMap || {});
   };
 
+  const loadAssets = async () => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/it/assets', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return;
+    const payload = await res.json().catch(() => []);
+    setAssets(Array.isArray(payload) ? payload : []);
+  };
+
   const loadEmployeeFromTeamRow = async (employeeId: string) => {
     if (!employeeId) return;
     setMode('UPGRADE');
@@ -344,7 +356,7 @@ export default function EmployeeOnboardingWorkflow() {
         setEmployees(Array.isArray(empData) ? empData : []);
         setManagers((Array.isArray(empData) ? empData : []).filter((e: any) => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'HR', 'HR_MANAGER'].includes(e?.user?.role)));
         setDepartments(Array.isArray(depData) ? depData : []);
-        await Promise.all([loadSummary(), loadTeamSnapshot()]);
+        await Promise.all([loadSummary(), loadTeamSnapshot(), loadAssets()]);
       } catch {
         setEmployees([]);
         setDepartments([]);
@@ -394,6 +406,7 @@ export default function EmployeeOnboardingWorkflow() {
         backupAccess: Boolean(perks.backupAccess),
         securityTools: perks.securityTools || '',
         otherBenefits: perks.otherBenefits || '',
+        assetIds: Array.isArray(perks.assetIds) ? perks.assetIds : [],
       }));
       await loadWorkflowState(p.id);
       await loadTeamSnapshot();
@@ -491,6 +504,7 @@ export default function EmployeeOnboardingWorkflow() {
           backupAccess: Boolean(form.backupAccess),
           securityTools: form.securityTools || '',
           otherBenefits: form.otherBenefits || '',
+          assetIds: Array.isArray(form.assetIds) ? form.assetIds : [],
         };
         await persistStepState(targetId, step, true, step, stepData);
         setStepSaved((prev) => ({ ...prev, [step]: true }));
@@ -549,8 +563,11 @@ export default function EmployeeOnboardingWorkflow() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || payload?.message || 'Failed to update approval');
-      await Promise.all([loadWorkflowState(targetId), loadSummary(), loadTeamSnapshot()]);
-      setStatusMessage(`${step === 'verification' ? 'Verification' : 'Perks'} ${decision}.`);
+      await Promise.all([loadWorkflowState(targetId), loadSummary(), loadTeamSnapshot(), loadAssets()]);
+      const assignedNote = step === 'perks' && payload?.assignedAssetCount
+        ? ` ${payload.assignedAssetCount} asset(s) assigned.`
+        : '';
+      setStatusMessage(`${step === 'verification' ? 'Verification' : 'Perks'} ${decision}.${assignedNote}`);
     } catch (e: any) {
       alert(e?.message || 'Failed to update approval');
     } finally {
@@ -822,6 +839,41 @@ export default function EmployeeOnboardingWorkflow() {
             <input className="input" placeholder="Software Access (comma-separated)" value={form.softwareAccess} onChange={(e) => setForm({ ...form, softwareAccess: e.target.value })} />
             <input className="input" placeholder="Security Tools / Access" value={form.securityTools} onChange={(e) => setForm({ ...form, securityTools: e.target.value })} />
             <textarea className="input w-full min-h-[90px]" placeholder="Other Benefits / Allotments" value={form.otherBenefits} onChange={(e) => setForm({ ...form, otherBenefits: e.target.value })} />
+
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-secondary-500 mb-1">Company Assets</p>
+              <p className="text-xs text-secondary-500 mb-2">Selected assets are marked assigned to this employee when Perks is approved.</p>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-secondary-200 p-2 space-y-1">
+                {(() => {
+                  const selectable = assets.filter((a) => a.status === 'AVAILABLE' || form.assetIds.includes(a.id));
+                  if (selectable.length === 0) {
+                    return <p className="text-xs text-secondary-400">No available assets. Add assets under IT Management → Assets.</p>;
+                  }
+                  return selectable.map((a) => {
+                    const checked = form.assetIds.includes(a.id);
+                    const alreadyAssigned = a.status === 'ASSIGNED' && checked;
+                    return (
+                      <label key={a.id} className="flex items-center gap-2 text-sm text-secondary-700">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={alreadyAssigned}
+                          onChange={(e) => setForm((f: any) => ({
+                            ...f,
+                            assetIds: e.target.checked
+                              ? [...f.assetIds, a.id]
+                              : f.assetIds.filter((x: string) => x !== a.id),
+                          }))}
+                        />
+                        <span className="font-semibold">{a.name}</span>
+                        <span className="text-secondary-400">({a.type}{a.serialNumber ? ` · ${a.serialNumber}` : ''})</span>
+                        {alreadyAssigned ? <span className="text-[10px] font-black text-success-600 uppercase">Assigned</span> : null}
+                      </label>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
           </div>
         ) : null}
 

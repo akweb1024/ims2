@@ -291,15 +291,44 @@ export const PATCH = authorizedRoute(
         updatedAt: new Date().toISOString(),
       };
 
-      const updated = await prisma.employeeProfile.update({
-        where: { id: employeeId },
-        data: {
-          metrics: {
-            ...(metrics || {}),
-            onboardingWorkflow: nextState,
-          }
-        },
-        select: { id: true }
+      // On perks approval, assign the IT assets HR selected during the perks step
+      // to the new hire. Only assets that are still AVAILABLE (or already this
+      // hire's — idempotent on re-approval) and belong to the hire's company are
+      // touched; assets held by someone else are silently skipped.
+      const hireUserId: string | undefined = access.profile.user?.id;
+      const hireCompanyId: string | null | undefined = access.profile.user?.companyId;
+      const assetIdsToAssign: string[] =
+        step === 'perks' && action === 'approve' && approvalDecision !== 'rejected'
+          && Array.isArray(nextSteps.perks?.details?.assetIds)
+          ? nextSteps.perks.details.assetIds.filter((x: any) => typeof x === 'string')
+          : [];
+
+      let assignedAssetCount = 0;
+      const updated = await prisma.$transaction(async (tx) => {
+        const profile = await tx.employeeProfile.update({
+          where: { id: employeeId },
+          data: {
+            metrics: {
+              ...(metrics || {}),
+              onboardingWorkflow: nextState,
+            }
+          },
+          select: { id: true }
+        });
+
+        if (assetIdsToAssign.length && hireUserId && hireCompanyId) {
+          const res = await tx.iTAsset.updateMany({
+            where: {
+              id: { in: assetIdsToAssign },
+              companyId: hireCompanyId,
+              OR: [{ status: 'AVAILABLE' }, { assignedToId: hireUserId }],
+            },
+            data: { status: 'ASSIGNED', assignedToId: hireUserId },
+          });
+          assignedAssetCount = res.count;
+        }
+
+        return profile;
       });
 
       await createAuditLog({
@@ -318,10 +347,11 @@ export const PATCH = authorizedRoute(
           action,
           approvalDecision: approvalDecision || null,
           approvalReason,
+          assignedAssetCount,
         }
       });
 
-      return NextResponse.json({ success: true, state: nextState, employeeId: updated.id });
+      return NextResponse.json({ success: true, state: nextState, employeeId: updated.id, assignedAssetCount });
     } catch (error: any) {
       return createErrorResponse(error?.message || error);
     }
