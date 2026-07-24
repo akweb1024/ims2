@@ -50,15 +50,21 @@ export default function JobBoard() {
                         <div className="w-20 h-20 bg-success-100 text-success-600 rounded-full flex items-center justify-center text-4xl mx-auto">✓</div>
                         <h2 className="text-3xl font-bold text-secondary-900">Application Received!</h2>
                         <p className="text-secondary-600">Your application ID is: <span className="font-mono font-bold">{applicationStatus.id}</span></p>
-                        <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100">
-                            <p className="text-primary-800 font-bold mb-4">Next Step: Online Entrance Exam</p>
-                            <a
-                                href={`/recruitment/exam/${applicationStatus.id}`}
-                                className="btn btn-primary px-8 py-3 rounded-xl inline-block shadow-lg"
-                            >
-                                Start Exam Now
-                            </a>
-                        </div>
+                        {applicationStatus.hasExam ? (
+                            <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100">
+                                <p className="text-primary-800 font-bold mb-4">Next Step: Online Entrance Exam</p>
+                                <a
+                                    href={`/recruitment/exam/${applicationStatus.id}`}
+                                    className="btn btn-primary px-8 py-3 rounded-xl inline-block shadow-lg"
+                                >
+                                    Start Exam Now
+                                </a>
+                            </div>
+                        ) : (
+                            <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100">
+                                <p className="text-primary-800 font-bold">Our team will review your application and be in touch about next steps.</p>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6">

@@ -26,7 +26,7 @@ export async function GET(
                 status: true,
                 createdAt: true,
                 jobPosting: {
-                    select: { title: true, location: true, type: true },
+                    select: { title: true, location: true, type: true, exam: { select: { id: true } } },
                 },
             },
         });
@@ -35,10 +35,19 @@ export async function GET(
             return NextResponse.json({ error: 'Application not found' }, { status: 404 });
         }
 
+        const { jobPosting, ...rest } = application;
+        const hasExam = !!jobPosting?.exam;
+
         return NextResponse.json({
-            ...application,
+            ...rest,
+            // Drop the exam id from the exposed job — the tracker only needs to know
+            // whether an assessment stage applies at all.
+            jobPosting: jobPosting
+                ? { title: jobPosting.title, location: jobPosting.location, type: jobPosting.type }
+                : null,
+            hasExam,
             // Let candidates resume a pending assessment from the tracker.
-            examLink: application.status === 'EXAM_PENDING' ? `/careers/exam?appId=${application.id}` : null,
+            examLink: hasExam && rest.status === 'EXAM_PENDING' ? `/careers/exam?appId=${rest.id}` : null,
         });
     } catch (error) {
         return createErrorResponse(error);

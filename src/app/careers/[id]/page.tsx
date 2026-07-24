@@ -176,11 +176,18 @@ export default function JobDetailPage() {
                                         <h3 className="text-2xl font-black text-secondary-900 mb-2">Application Received!</h3>
                                         <p className="text-secondary-500 mb-6">Our AI is reviewing your profile.</p>
 
-                                        <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mb-6">
-                                            <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">Next Step</p>
-                                            <h4 className="font-bold text-primary-900 mb-4">Complete your Skill Assessment to proceed.</h4>
-                                            <a href={examLink || '#'} className="btn bg-primary-600 text-white w-full py-3 rounded-xl font-bold block hover:scale-105 transition-transform shadow-lg shadow-primary-200">Start Assessment Now ⚡</a>
-                                        </div>
+                                        {examLink ? (
+                                            <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mb-6">
+                                                <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">Next Step</p>
+                                                <h4 className="font-bold text-primary-900 mb-4">Complete your Skill Assessment to proceed.</h4>
+                                                <a href={examLink} className="btn bg-primary-600 text-white w-full py-3 rounded-xl font-bold block hover:scale-105 transition-transform shadow-lg shadow-primary-200">Start Assessment Now ⚡</a>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-primary-50 p-6 rounded-2xl border border-primary-100 mb-6">
+                                                <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">What's Next</p>
+                                                <h4 className="font-bold text-primary-900">Our team will review your application and reach out about next steps.</h4>
+                                            </div>
+                                        )}
 
                                         {statusUrl && (
                                             <div className="bg-secondary-50 p-6 rounded-2xl border border-secondary-200 mb-6 text-left">
