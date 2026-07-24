@@ -9,6 +9,23 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 import { provisionEmployee } from '@/lib/kra/provision';
 import { buildLetterVars, hydrate } from '@/lib/services/documents/letterVars';
 
+// Derive the next employee ID from the highest existing EMP-<n>. The old
+// row-count approach reused a number after any profile deletion (employeeId is
+// @unique, so the reuse made the whole onboard fail); max+1 is stable, and the
+// caller retries on the concurrent-insert race.
+async function nextEmployeeId(): Promise<string> {
+    const rows = await prisma.employeeProfile.findMany({
+        where: { employeeId: { startsWith: 'EMP-' } },
+        select: { employeeId: true },
+    });
+    let maxNum = 1000;
+    for (const r of rows) {
+        const n = parseInt((r.employeeId ?? '').slice(4), 10);
+        if (Number.isFinite(n) && n > maxNum) maxNum = n;
+    }
+    return `EMP-${maxNum + 1}`;
+}
+
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
@@ -45,11 +62,12 @@ export const POST = authorizedRoute(
             const hashedPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
             let onboardedUser: any = null;
 
-            // Generate Emp ID (Simple count + 1 for now)
-            const count = await prisma.employeeProfile.count();
-            const empId = `EMP-${(count + 1001).toString()}`;
-
-            await prisma.$transaction(async (tx) => {
+            // Retry on an employeeId unique-constraint collision (a concurrent onboard
+            // picking the same number); nextEmployeeId re-reads the max each pass.
+            for (let attempt = 1; ; attempt++) {
+              const empId = await nextEmployeeId();
+              try {
+                await prisma.$transaction(async (tx) => {
                 // 1. Create User
                 const newUser = await tx.user.create({
                     data: {
@@ -138,7 +156,16 @@ export const POST = authorizedRoute(
                 });
 
                 onboardedUser = newUser;
-            });
+                });
+                break;
+              } catch (err: any) {
+                // Only an employeeId collision is retryable; a duplicate email means the
+                // applicant already has an account — a real error, so rethrow it.
+                const target = JSON.stringify(err?.meta?.target ?? '');
+                if (err?.code === 'P2002' && target.includes('employeeId') && attempt < 5) continue;
+                throw err;
+              }
+            }
 
             // New-hire KRA/Goals auto-provisioning (idempotent; non-fatal).
             if (onboardedUser) {
