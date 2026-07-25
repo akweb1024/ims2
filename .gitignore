@@ -46,6 +46,12 @@ dev_logs.txt
 # Test scripts
 scripts/test-rate-limit.sh
 
+# Test/build artifacts (Playwright output, local SQLite dev DBs)
+test-results/
+playwright-report/
+*.db
+*.db-journal
+
 # Documents at the repo root (HR letters, contracts — PII must never enter git)
 /*.pdf
 /*.docx
