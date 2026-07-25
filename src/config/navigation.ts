@@ -31,6 +31,7 @@ import {
     Landmark,
     Laptop,
     Layers,
+    LifeBuoy,
     Lightbulb,
     Lock,
     MessageSquare,
@@ -122,6 +123,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Publication Workload', href: '/dashboard/my-publication-workload', icon: Newspaper, roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },
                     { name: 'My Sales & Marketing', href: '/dashboard/my-sales-workload', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Get IT Help', href: '/dashboard/service-desk', icon: Ticket, roles: INTERNAL },
+                    { name: 'Support Tickets', href: '/dashboard/support', icon: LifeBuoy, roles: INTERNAL },
                 ]
             },
             {
