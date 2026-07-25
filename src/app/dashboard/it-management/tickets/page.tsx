@@ -14,7 +14,7 @@ interface TicketItem {
     category: string; status: string; resolution?: string;
     assetId?: string;
     asset?: { name: string; serialNumber: string };
-    requester: { id: string; name: string; email: string };
+    requester: { id: string; name: string | null; email: string | null };
     createdAt: string; updatedAt: string;
 }
 
@@ -351,9 +351,9 @@ export default function ITTicketsPage() {
                                                     <div className="flex items-center gap-6 pt-2">
                                                         <div className="flex items-center gap-3">
                                                             <div className="h-8 w-8 bg-slate-900 rounded-xl flex items-center justify-center text-[10px] text-white font-black shadow-lg">
-                                                                {ticket.requester.name.charAt(0)}
+                                                                {(ticket.requester?.name || ticket.requester?.email || 'U').charAt(0)}
                                                             </div>
-                                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{ticket.requester.name}</p>
+                                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{ticket.requester?.name || ticket.requester?.email || 'Unknown'}</p>
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-400 capitalize">
                                                             <Clock className="h-3.5 w-3.5 text-slate-300" /> {new Date(ticket.createdAt).toLocaleDateString()}
