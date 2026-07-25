@@ -84,6 +84,8 @@ export const CRON_JOBS: CronJob[] = [
     { name: 'observability-15m', path: '/api/cron/performance-observability?cadence=15m', everyMinutes: 15 },
     { name: 'observability-60m', path: '/api/cron/performance-observability?cadence=60m', everyMinutes: 60 },
     { name: 'razorpay-sync', path: '/api/cron/razorpay-sync', everyMinutes: 60 },
+    { name: 'support-ticket-escalate', path: '/api/cron/support-tickets/escalate', everyMinutes: 60 },
+    { name: 'work-session-auto-close', path: '/api/cron/work-sessions/auto-close', everyMinutes: 30 },
     { name: 'process-renewals', path: '/api/cron/process-renewals', dailyAt: '00:15' },
     { name: 'kra-rollover', path: '/api/cron/kra-rollover', dailyAt: '02:30', dayOfMonth: 1 },
     { name: 'kra-snapshot', path: '/api/cron/kra-snapshot?periods=MONTHLY,QUARTERLY', dailyAt: '03:00' },

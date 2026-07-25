@@ -8,6 +8,7 @@ import {
   ticketInclude,
   canTriageTickets,
   isValidPriority,
+  slaDueDate,
 } from '@/lib/support-tickets';
 
 /**
@@ -85,6 +86,7 @@ export const POST = authorizedRoute(TICKET_USER_ROLES, async (req: NextRequest, 
         departmentId,
         assetId: body.assetId || null,
         status: 'OPEN',
+        dueAt: slaDueDate(body.priority || 'MEDIUM'),
       },
       include: ticketInclude,
     });

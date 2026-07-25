@@ -142,7 +142,53 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
   },
-  // Future: SUPPORT_TICKET, SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
+  // Support tickets resolved by this employee, counted on the day they were resolved.
+  // A ticket carries resolvedAt only while it sits in a done state (RESOLVED/CLOSED) —
+  // reopening clears it (see api/it/tickets/[id]) — so counting resolvedAt-in-day credits
+  // the resolver once and reverses if the ticket is reopened. Metric metadata
+  // { "category": "HARDWARE" } narrows to one category.
+  SUPPORT_TICKET: async ({ employeeId, companyId, date, metric }) => {
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const category =
+      metric.metadata && typeof metric.metadata === 'object' && 'category' in metric.metadata
+        ? (metric.metadata as { category?: unknown }).category
+        : undefined;
+
+    const { start, end } = dayWindow(date);
+    return prisma.iTSupportTicket.count({
+      where: {
+        companyId,
+        assignedToId: profile.userId,
+        status: { in: ['RESOLVED', 'CLOSED'] },
+        resolvedAt: { gte: start, lte: end },
+        ...(typeof category === 'string' && category ? { category } : {}),
+      },
+    });
+  },
+  // Hours this employee logged in project work sessions on the report day. Sums the
+  // durationMinutes of sessions that ended that day (a running session isn't counted until
+  // it stops), returned as hours. See lib/work-sessions + api/work-sessions.
+  WORK_SESSION_HOURS: async ({ employeeId, companyId, date }) => {
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const { start, end } = dayWindow(date);
+    const agg = await prisma.projectWorkSession.aggregate({
+      _sum: { durationMinutes: true },
+      where: { companyId, userId: profile.userId, endedAt: { gte: start, lte: end } },
+    });
+    const minutes = agg._sum.durationMinutes ?? 0;
+    return Math.round((minutes / 60) * 100) / 100; // hours, 2dp
+  },
+  // Future: SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
   // Until a verifier exists, those sourceTypes fall through to MANUAL (manager approval).
 };
 

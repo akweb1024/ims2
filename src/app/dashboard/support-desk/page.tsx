@@ -98,6 +98,13 @@ export default function SupportPage() {
                                     {t.department?.name && (
                                         <span className="text-[10px] font-bold text-secondary-400 uppercase tracking-wider flex items-center gap-1"><Building2 size={11} /> {t.department.name}</span>
                                     )}
+                                    {t.dueAt && !['RESOLVED', 'CLOSED'].includes(t.status) && (
+                                        new Date(t.dueAt) < new Date() ? (
+                                            <span className="text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider bg-rose-50 text-rose-700 border-rose-200">Overdue</span>
+                                        ) : (
+                                            <span className="text-[10px] font-bold text-secondary-400 uppercase tracking-wider">Due {new Date(t.dueAt).toLocaleDateString()}</span>
+                                        )
+                                    )}
                                 </div>
                                 <h3 className="font-black text-secondary-900 truncate group-hover:text-primary-600">{t.title}</h3>
                                 <div className="flex items-center gap-3 mt-1 text-xs text-secondary-500">
