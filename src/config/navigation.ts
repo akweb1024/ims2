@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import {
     LineChart,
+    Radio,
+    Timer,
     AlertTriangle,
     Award,
     Banknote,
@@ -118,6 +120,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Submit Daily Report', href: '/dashboard/staff-portal/submit-report', icon: PenLine, roles: INTERNAL },
                     { name: 'My IT Tasks', href: '/dashboard/my-tasks', icon: ClipboardList, roles: INTERNAL },
                     { name: 'My To-Dos', href: '/dashboard/tasks', icon: CheckSquare, roles: INTERNAL },
+                    { name: 'My Work', href: '/dashboard/my-work', icon: Timer, roles: INTERNAL },
                     { name: 'My Performance', href: '/dashboard/my-performance', icon: TrendingUp, roles: INTERNAL },
                     { name: 'My Publication Workload', href: '/dashboard/my-publication-workload', icon: Newspaper, roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },
                     { name: 'My Sales & Marketing', href: '/dashboard/my-sales-workload', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
@@ -163,6 +166,7 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'My Team',
                 items: [
                     { name: 'Team Members', href: '/dashboard/manager/team', icon: Users, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
+                    { name: 'Live Work Activity', href: '/dashboard/work-activity', icon: Radio, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'HR_MANAGER'] },
                     { name: 'Team Attendance', href: '/dashboard/manager/team/attendance', icon: Clock, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Team Leave Requests', href: '/dashboard/manager/team/leaves', icon: Palmtree, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Team Work Report History', href: '/dashboard/manager/team/work-reports', icon: FileText, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
