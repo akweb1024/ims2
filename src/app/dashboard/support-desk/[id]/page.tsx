@@ -17,6 +17,14 @@ const STATUSES = ['OPEN', 'IN_PROGRESS', 'ON_HOLD', 'RESOLVED', 'CLOSED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const personLabel = (u?: { name?: string | null; email?: string | null } | null) => u?.name || u?.email || 'Unknown';
 
+/** ISO → "YYYY-MM-DDTHH:mm" in local time for <input type="datetime-local">. */
+const toLocalInput = (d?: string | null) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;
+};
+
 export default function SupportTicketDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { data: ticket, isLoading } = useTicket(id);
@@ -27,7 +35,7 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
 
     const [reply, setReply] = useState('');
     const [internal, setInternal] = useState(false);
-    const [draft, setDraft] = useState<{ status: string; priority: string; assignedToId: string; resolution: string } | null>(null);
+    const [draft, setDraft] = useState<{ status: string; priority: string; assignedToId: string; resolution: string; dueAt: string } | null>(null);
 
     useEffect(() => {
         if (ticket && !draft) {
@@ -36,6 +44,7 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
                 priority: ticket.priority,
                 assignedToId: ticket.assignedTo?.id || '',
                 resolution: ticket.resolution || '',
+                dueAt: toLocalInput(ticket.dueAt),
             });
         }
     }, [ticket, draft]);
@@ -46,7 +55,7 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
     const saveTriage = async () => {
         if (!draft) return;
         try {
-            await update.mutateAsync({ id, status: draft.status, priority: draft.priority, assignedToId: draft.assignedToId || null, resolution: draft.resolution });
+            await update.mutateAsync({ id, status: draft.status, priority: draft.priority, assignedToId: draft.assignedToId || null, resolution: draft.resolution, dueAt: draft.dueAt || null });
             toast.success('Ticket updated');
         } catch (e: any) {
             toast.error(e?.message || 'Update failed');
@@ -143,6 +152,9 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
                         <div className="flex justify-between items-center"><span className="text-secondary-400 font-bold uppercase text-[11px] flex items-center gap-1"><Building2 size={12} /> Department</span><span className="font-semibold text-secondary-800">{ticket.department?.name || 'IT'}</span></div>
                         <div className="flex justify-between items-center"><span className="text-secondary-400 font-bold uppercase text-[11px] flex items-center gap-1"><UserCheck size={12} /> Assignee</span><span className="font-semibold text-secondary-800">{ticket.assignedTo?.name || 'Unassigned'}</span></div>
                         <div className="flex justify-between"><span className="text-secondary-400 font-bold uppercase text-[11px]">Raised</span><span className="font-semibold text-secondary-800">{new Date(ticket.createdAt).toLocaleDateString()}</span></div>
+                        {ticket.dueAt && !['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+                            <div className="flex justify-between"><span className="text-secondary-400 font-bold uppercase text-[11px]">Due</span><span className={`font-semibold ${new Date(ticket.dueAt) < new Date() ? 'text-rose-600' : 'text-secondary-800'}`}>{new Date(ticket.dueAt).toLocaleString()}{new Date(ticket.dueAt) < new Date() ? ' · overdue' : ''}</span></div>
+                        )}
                         {ticket.resolvedAt && <div className="flex justify-between"><span className="text-secondary-400 font-bold uppercase text-[11px]">Resolved</span><span className="font-semibold text-secondary-800">{new Date(ticket.resolvedAt).toLocaleDateString()}</span></div>}
                     </div>
 
@@ -167,6 +179,10 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
                                     <option value="">Unassigned</option>
                                     {assignees.map((a) => <option key={a.userId} value={a.userId}>{a.name}{a.departmentName ? ` · ${a.departmentName}` : ''}</option>)}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-secondary-500 uppercase mb-1">Due (SLA)</label>
+                                <input type="datetime-local" value={draft.dueAt} onChange={(e) => setDraft({ ...draft, dueAt: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none text-sm" />
                             </div>
                             <div>
                                 <label className="block text-[11px] font-bold text-secondary-500 uppercase mb-1">Resolution note</label>

@@ -47,6 +47,20 @@ export const ticketInclude = {
   _count: { select: { comments: true } },
 } as const;
 
+/** Default SLA — hours from creation to due, by priority. */
+export const SLA_HOURS: Record<TicketPriority, number> = {
+  CRITICAL: 4,
+  HIGH: 24,
+  MEDIUM: 72,
+  LOW: 168,
+};
+
+/** The due time for a new ticket of `priority`, measured from `from` (default now). */
+export function slaDueDate(priority: string, from: Date = new Date()): Date {
+  const hours = SLA_HOURS[(priority as TicketPriority)] ?? SLA_HOURS.MEDIUM;
+  return new Date(from.getTime() + hours * 3600 * 1000);
+}
+
 export function isValidStatus(s: unknown): s is TicketStatus {
   return typeof s === 'string' && (TICKET_STATUSES as readonly string[]).includes(s);
 }

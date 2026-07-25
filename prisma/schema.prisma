@@ -3753,6 +3753,10 @@ model ITSupportTicket {
   category     String?
   resolution   String?
   resolvedAt   DateTime?
+  // SLA: when the ticket is due, and when an overdue escalation was last raised (so the
+  // escalation cron notifies once, not every run).
+  dueAt        DateTime?
+  escalatedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   asset        ITAsset? @relation(fields: [assetId], references: [id])

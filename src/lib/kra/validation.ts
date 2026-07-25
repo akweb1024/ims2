@@ -142,7 +142,35 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
   },
-  // Future: SUPPORT_TICKET, SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
+  // Support tickets resolved by this employee, counted on the day they were resolved.
+  // A ticket carries resolvedAt only while it sits in a done state (RESOLVED/CLOSED) —
+  // reopening clears it (see api/it/tickets/[id]) — so counting resolvedAt-in-day credits
+  // the resolver once and reverses if the ticket is reopened. Metric metadata
+  // { "category": "HARDWARE" } narrows to one category.
+  SUPPORT_TICKET: async ({ employeeId, companyId, date, metric }) => {
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const category =
+      metric.metadata && typeof metric.metadata === 'object' && 'category' in metric.metadata
+        ? (metric.metadata as { category?: unknown }).category
+        : undefined;
+
+    const { start, end } = dayWindow(date);
+    return prisma.iTSupportTicket.count({
+      where: {
+        companyId,
+        assignedToId: profile.userId,
+        status: { in: ['RESOLVED', 'CLOSED'] },
+        resolvedAt: { gte: start, lte: end },
+        ...(typeof category === 'string' && category ? { category } : {}),
+      },
+    });
+  },
+  // Future: SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
   // Until a verifier exists, those sourceTypes fall through to MANUAL (manager approval).
 };
 
