@@ -142,6 +142,24 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
   },
+  // Hours this employee logged in project work sessions on the report day. Sums the
+  // durationMinutes of sessions that ended that day (a running session isn't counted until
+  // it stops), returned as hours. See lib/work-sessions + api/work-sessions.
+  WORK_SESSION_HOURS: async ({ employeeId, companyId, date }) => {
+    const profile = await prisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+    if (!profile?.userId) return null;
+
+    const { start, end } = dayWindow(date);
+    const agg = await prisma.projectWorkSession.aggregate({
+      _sum: { durationMinutes: true },
+      where: { companyId, userId: profile.userId, endedAt: { gte: start, lte: end } },
+    });
+    const minutes = agg._sum.durationMinutes ?? 0;
+    return Math.round((minutes / 60) * 100) / 100; // hours, 2dp
+  },
   // Future: SUPPORT_TICKET, SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
   // Until a verifier exists, those sourceTypes fall through to MANUAL (manager approval).
 };

@@ -48,6 +48,14 @@ export const useMySessions = () =>
         select: (d: any) => (Array.isArray(d) ? d : []),
     });
 
+/** Completed-session time totals over a window (managers/admins). */
+export const useTimeAnalytics = (days = 7, enabled = true) =>
+    useQuery({
+        queryKey: ['work-sessions-analytics', days],
+        queryFn: () => fetchJson(`/api/work-sessions/analytics?days=${days}`),
+        enabled,
+    });
+
 /** Live "who is working now" feed for managers/admins. */
 export const useLiveSessions = (enabled = true) =>
     useQuery({
