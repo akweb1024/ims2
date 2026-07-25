@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Radio, Users, Clock, Folder, FolderKanban } from 'lucide-react';
-import { useLiveSessions, formatMinutes } from '@/hooks/useWorkSessions';
+import { useLiveSessions, useTimeAnalytics, formatMinutes } from '@/hooks/useWorkSessions';
 
 const personLabel = (u?: { name?: string | null; email?: string | null } | null) =>
     u?.name || u?.email || 'Someone';
@@ -17,6 +17,7 @@ const elapsed = (startedAt: string, now: number) => Math.max(0, Math.round((now 
  */
 export default function WorkActivityPage() {
     const { data, isLoading, isError } = useLiveSessions();
+    const { data: analytics } = useTimeAnalytics(7);
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
         const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -110,6 +111,32 @@ export default function WorkActivityPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Historical time — last 7 days */}
+            {analytics && analytics.byProject?.length > 0 && (
+                <div className="card-premium p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-black text-secondary-900">Logged — last 7 days</h3>
+                        <span className="text-xs font-bold text-secondary-500">Total {formatMinutes(analytics.totalMinutes)} · {analytics.sessionCount} sessions</span>
+                    </div>
+                    <div className="space-y-2">
+                        {analytics.byProject.slice(0, 12).map((p: any) => {
+                            const pct = analytics.totalMinutes ? Math.round((p.minutes / analytics.totalMinutes) * 100) : 0;
+                            return (
+                                <div key={p.key} className="flex items-center gap-3">
+                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase shrink-0 ${p.kind === 'IT' ? 'bg-indigo-50 text-indigo-600' : 'bg-primary-50 text-primary-600'}`}>{p.kind === 'IT' ? 'IT' : 'CO'}</span>
+                                    <span className="font-semibold text-secondary-800 text-sm truncate w-48 shrink-0">{p.name}</span>
+                                    <div className="flex-1 h-2 rounded-full bg-secondary-100 overflow-hidden">
+                                        <div className="h-full bg-primary-400 rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <span className="text-xs font-bold text-secondary-700 tabular-nums w-16 text-right shrink-0">{formatMinutes(p.minutes)}</span>
+                                    <span className="text-[11px] text-secondary-400 w-14 text-right shrink-0">{p.users} {p.users === 1 ? 'person' : 'people'}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             )}
         </div>
     );

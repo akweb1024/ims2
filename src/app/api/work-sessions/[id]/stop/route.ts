@@ -21,7 +21,7 @@ export const POST = authorizedRoute(
   async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const id = (await params).id;
-      const session = await prisma.projectWorkSession.findUnique({ where: { id }, select: { id: true, userId: true, startedAt: true, endedAt: true, note: true } });
+      const session = await prisma.projectWorkSession.findUnique({ where: { id }, select: { id: true, userId: true, startedAt: true, endedAt: true, note: true, itProjectId: true } });
       if (!session) return createErrorResponse('Session not found', 404);
 
       if (session.userId !== user.id) {
@@ -46,6 +46,19 @@ export const POST = authorizedRoute(
         },
         include: sessionInclude,
       });
+
+      // Roll the logged time into the IT project's actualHours (Company Project has no such
+      // field). Best-effort — a hours hiccup must not fail the stop.
+      if (session.itProjectId && updated.durationMinutes) {
+        try {
+          await prisma.iTProject.update({
+            where: { id: session.itProjectId },
+            data: { actualHours: { increment: updated.durationMinutes / 60 } },
+          });
+        } catch (err) {
+          console.error('[work-session] actualHours roll-up failed', { itProjectId: session.itProjectId, err });
+        }
+      }
 
       return NextResponse.json(serializeSession(updated));
     } catch (error) {
