@@ -31,6 +31,22 @@ export const useProjectAssignees = (enabled: boolean) =>
         select: (data: any) => (data?.assignees ?? []) as Array<{ userId: string; name: string; departmentName: string | null }>,
     });
 
+/**
+ * Active KRA metrics a project can be linked to. Company-scoped by the endpoint, so it
+ * lists the current user's company metrics — which is the project's company for anyone
+ * with edit rights (a group-wide admin editing another company's project is the one edge
+ * where the list may not match; the credit path ignores a cross-company link anyway).
+ */
+export const useKraMetrics = (enabled: boolean = true) =>
+    useQuery({
+        queryKey: ['kra-metrics'],
+        queryFn: () => fetchJson('/api/kra/metrics'),
+        enabled,
+        staleTime: 5 * 60 * 1000,
+        select: (data: any) =>
+            (data?.metrics ?? []) as Array<{ id: string; name: string; unit: string; department: string | null }>,
+    });
+
 /** Review thread on a project, newest first, replies nested. */
 export const useProjectComments = (projectId: string) =>
     useQuery({

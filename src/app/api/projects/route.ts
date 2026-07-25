@@ -76,6 +76,8 @@ export const POST = authorizedRoute(
                     endDate: body.endDate ? new Date(body.endDate) : undefined,
                     managerId: body.managerId || user.id, // Default to creator if not specified
                     leadId: body.leadId,
+                    // Optional KRA metric link. Empty string from the form means "no link".
+                    linkedMetricId: body.linkedMetricId || null,
                     members: {
                         create: (body.memberIds || []).map((id: string) => ({
                             userId: id,

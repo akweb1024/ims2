@@ -1,10 +1,10 @@
 'use client';
 
-import { useProject, useProjectMutations, useProjectComments, useProjectCommentMutations } from '@/hooks/useProjects';
+import { useProject, useProjectMutations, useProjectComments, useProjectCommentMutations, useKraMetrics } from '@/hooks/useProjects';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useState, use } from 'react';
-import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit, MessageSquare, Building2, CornerDownRight } from 'lucide-react';
+import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit, MessageSquare, Building2, CornerDownRight, Target } from 'lucide-react';
 import Link from 'next/link';
 
 /** User.name is nullable throughout this schema — never render a bare name. */
@@ -30,6 +30,8 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     const [newCommentPrivate, setNewCommentPrivate] = useState(false);
     const [replyTo, setReplyTo] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');
+    // Metric options are only needed while the edit modal is open.
+    const { data: kraMetrics = [] } = useKraMetrics(isEditing);
 
     if (isLoading) return <div className="p-10 text-center animate-pulse">Loading Project Details...</div>;
     if (!project) return <div className="p-10 text-center text-red-500">Project not found</div>;
@@ -42,6 +44,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
             priority: project.priority,
             startDate: toDateInput(project.startDate),
             endDate: toDateInput(project.endDate),
+            linkedMetricId: project.linkedMetricId || '',
         });
         setIsEditing(true);
     };
@@ -123,6 +126,12 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                         )}
                     </div>
                     <h1 className="text-4xl font-black text-secondary-900 tracking-tight">{project.title}</h1>
+                    {project.linkedMetric && (
+                        <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200">
+                            <Target size={12} /> KRA: {project.linkedMetric.name}
+                            {project.status === 'COMPLETED' && <span className="text-success-600">· credited</span>}
+                        </span>
+                    )}
                 </div>
                 {/* The board is group-wide but editing belongs to the owning company, so the
                     server tells us whether to offer these at all rather than letting the
@@ -511,6 +520,26 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                                     <input id="proj-end" type="date" value={draft.endDate} onChange={(e) => setDraft({ ...draft, endDate: e.target.value })} className="w-full mt-1 px-4 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none" />
                                 </div>
                             </div>
+
+                            {/* Optional KRA link — completing the project auto-credits this metric
+                                for its manager + lead. Only offered when the company has metrics. */}
+                            {kraMetrics.length > 0 && (
+                                <div>
+                                    <label htmlFor="proj-kra" className="text-xs font-black text-secondary-500 uppercase">Link to KRA Metric</label>
+                                    <select
+                                        id="proj-kra"
+                                        value={draft.linkedMetricId}
+                                        onChange={(e) => setDraft({ ...draft, linkedMetricId: e.target.value })}
+                                        className="w-full mt-1 px-4 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 outline-none"
+                                    >
+                                        <option value="">— No KRA link —</option>
+                                        {kraMetrics.map((m) => (
+                                            <option key={m.id} value={m.id}>{m.name}{m.unit ? ` (${m.unit})` : ''}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[11px] text-secondary-400 mt-1">Completing this project credits the metric for the manager &amp; lead.</p>
+                                </div>
+                            )}
 
                             <div className="pt-2 flex gap-3">
                                 <button type="button" onClick={() => setIsEditing(false)} className="flex-1 px-4 py-2 rounded-lg border border-secondary-200 text-secondary-600 font-bold hover:bg-secondary-50 transition-all">
