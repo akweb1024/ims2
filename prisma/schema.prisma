@@ -242,6 +242,7 @@ model Department {
   taskTemplates           EmployeeTaskTemplate[]
   expenseAllocationRules  ExpenseAllocationRule[]
   itProjects              ITProject[]                  @relation("DepartmentITProjects")
+  supportTickets          ITSupportTicket[]            @relation("ITTicketDepartment")
   jobApplications         JobApplication[]
   jobPostings             JobPosting[]
   performanceSnapshots    MonthlyPerformanceSnapshot[]
@@ -320,6 +321,7 @@ model User {
   itProjectSuggestions           ITProjectSuggestion[]
   itResolutions                  ITSupportTicket[]                @relation("ITResolver")
   itRequests                     ITSupportTicket[]                @relation("ITRequestor")
+  itTicketComments               ITSupportTicketComment[]         @relation("ITTicketCommentAuthor")
   assignedITTasks                ITTask[]                         @relation("ITTaskAssignee")
   createdITTasks                 ITTask[]                         @relation("ITTaskCreator")
   reportedITTasks                ITTask[]                         @relation("ITTaskReporter")
@@ -3740,6 +3742,9 @@ model ITSupportTicket {
   companyId    String
   requesterId  String
   assignedToId String?
+  // Target department the request is routed to (IT, or any other department). Null = IT
+  // by default, preserving the original IT-helpdesk behaviour.
+  departmentId String?
   assetId      String?
   title        String
   description  String
@@ -3747,18 +3752,38 @@ model ITSupportTicket {
   status       String   @default("OPEN")
   category     String?
   resolution   String?
+  resolvedAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   asset        ITAsset? @relation(fields: [assetId], references: [id])
   assignedTo   User?    @relation("ITResolver", fields: [assignedToId], references: [id])
   company      Company  @relation(fields: [companyId], references: [id])
+  department   Department? @relation("ITTicketDepartment", fields: [departmentId], references: [id])
   requester    User     @relation("ITRequestor", fields: [requesterId], references: [id])
+  comments     ITSupportTicketComment[]
 
   @@index([companyId])
   @@index([requesterId])
   @@index([assignedToId])
+  @@index([departmentId])
   @@index([status])
   @@index([priority])
+}
+
+/// A follow-up entry on a support ticket. Public comments are visible to the requester and
+/// triagers; `isInternal` notes are visible to triagers only. Cascades away with its ticket.
+model ITSupportTicketComment {
+  id         String          @id @default(uuid())
+  ticketId   String
+  userId     String
+  body       String
+  isInternal Boolean         @default(false)
+  createdAt  DateTime        @default(now())
+  ticket     ITSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user       User            @relation("ITTicketCommentAuthor", fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@index([userId])
 }
 
 model FinancialRecord {
