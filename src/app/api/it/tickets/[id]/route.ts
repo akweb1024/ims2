@@ -75,6 +75,10 @@ export const PATCH = authorizedRoute(
         }
         if (body.category !== undefined) data.category = body.category || null;
         if (body.resolution !== undefined) data.resolution = body.resolution || null;
+        if (body.dueAt !== undefined) {
+          data.dueAt = body.dueAt ? new Date(body.dueAt) : null;
+          data.escalatedAt = null; // a fresh due time gets a fresh escalation window
+        }
         if (body.departmentId !== undefined) {
           data.department = body.departmentId ? { connect: { id: body.departmentId } } : { disconnect: true };
         }
