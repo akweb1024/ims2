@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useProjects, useProjectMutations, useProjectAssignees } from '@/hooks/useProjects';
+import { useProjects, useProjectMutations, useProjectAssignees, useKraMetrics } from '@/hooks/useProjects';
 import { Plus, Folder, Calendar, Users, AlertCircle, ArrowRight, CheckCircle, Clock, Search, Building2, X } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
-const EMPTY_PROJECT = { title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED', memberIds: [] as string[] };
+const EMPTY_PROJECT = { title: '', description: '', startDate: '', endDate: '', priority: 'MEDIUM', status: 'PLANNED', linkedMetricId: '', memberIds: [] as string[] };
 
 const STATUS_OPTIONS = ['PLANNED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'];
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -32,6 +32,7 @@ export default function ProjectsPage() {
     const [newProject, setNewProject] = useState(EMPTY_PROJECT);
     // Only fetched once the form is open — no reason to load the directory otherwise.
     const { data: assignees = [] } = useProjectAssignees(isCreating);
+    const { data: kraMetrics = [] } = useKraMetrics(isCreating);
 
     // Company options come from the board itself — every internal user can see the
     // projects but not necessarily list companies, so there is no directory to call.
@@ -310,6 +311,25 @@ export default function ProjectsPage() {
                                         </select>
                                     </div>
                                 </div>
+                                {/* Optional KRA link — completing this project auto-credits the
+                                    chosen metric for its manager + lead. Hidden when the company
+                                    has no KRA metrics, so there is nothing to pick. */}
+                                {kraMetrics.length > 0 && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-secondary-600 uppercase mb-1">Link to KRA Metric (optional)</label>
+                                        <select
+                                            className="w-full px-4 py-2 rounded-lg border border-secondary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+                                            value={newProject.linkedMetricId}
+                                            onChange={e => setNewProject({ ...newProject, linkedMetricId: e.target.value })}
+                                        >
+                                            <option value="">— No KRA link —</option>
+                                            {kraMetrics.map((m) => (
+                                                <option key={m.id} value={m.id}>{m.name}{m.unit ? ` (${m.unit})` : ''}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[11px] text-secondary-400 mt-1">Marking the project Completed will credit this metric for the manager &amp; lead.</p>
+                                    </div>
+                                )}
                                 {/* POST /api/projects has always accepted memberIds; the form
                                     never sent them, so every project created here started with
                                     an empty team. */}

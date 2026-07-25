@@ -3077,6 +3077,7 @@ model PerformanceMetricDefinition {
   linkedITProjects  ITProject[]          @relation("ITProjectLinkedMetric")
   linkedITTasks     ITTask[]             @relation("ITTaskLinkedMetric")
   linkedJournals    Journal[]            @relation("JournalLinkedMetric")
+  linkedProjects    Project[]            @relation("ProjectLinkedMetric")
 
   @@unique([companyId, scope, key])
   @@index([companyId, scope])
@@ -5122,12 +5123,16 @@ model Project {
   companyId   String
   managerId   String?
   leadId      String?
+  // Optional link to a KRA metric. Completing a linked project auto-credits the
+  // metric for its manager + lead (see lib/kra/auto-credit). Mirrors ITProject.linkedMetricId.
+  linkedMetricId String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   issues      Issue[]
   company     Company         @relation(fields: [companyId], references: [id])
   lead        User?           @relation("BusinessTeamLead", fields: [leadId], references: [id])
   manager     User?           @relation("BusinessProjectManager", fields: [managerId], references: [id])
+  linkedMetric PerformanceMetricDefinition? @relation("ProjectLinkedMetric", fields: [linkedMetricId], references: [id])
   members     ProjectMember[]
   comments    ProjectComment[]
   tasks       Task[]
@@ -5135,6 +5140,7 @@ model Project {
 
   @@index([companyId])
   @@index([managerId])
+  @@index([linkedMetricId])
 }
 
 /// Review / feedback thread on a business Project. Mirrors ITProjectComment (threaded via

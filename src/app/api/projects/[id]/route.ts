@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { PROJECT_VIEWER_ROLES, PROJECT_EDITOR_ROLES } from '@/lib/projects-access';
 import { canAccessAllCompanies } from '@/lib/company-scope';
+import { creditLinkedMetric, reverseLinkedMetricCredit } from '@/lib/kra/auto-credit';
 
 type Actor = { role: string; companyId?: string | null; allowedModules?: string[] };
 
@@ -45,6 +46,7 @@ export const GET = authorizedRoute(
                     company: { select: { id: true, name: true } },
                     manager: { select: { name: true, email: true, id: true } },
                     lead: { select: { name: true, email: true, id: true } },
+                    linkedMetric: { select: { id: true, name: true, unit: true } },
                     members: {
                         include: {
                             user: { select: { name: true, email: true, role: true, id: true } }
@@ -96,6 +98,13 @@ export const PUT = authorizedRoute(
 
             const body = await req.json();
 
+            // Needed before the write to detect completion / link transitions for KRA credit.
+            const existing = await prisma.project.findUnique({
+                where: { id },
+                select: { status: true, linkedMetricId: true, managerId: true, leadId: true, companyId: true },
+            });
+            if (!existing) return createErrorResponse('Project not found', 404);
+
             const updated = await prisma.project.update({
                 where: { id },
                 data: {
@@ -109,10 +118,36 @@ export const PUT = authorizedRoute(
                     endDate: body.endDate === undefined ? undefined : (body.endDate ? new Date(body.endDate) : null),
                     managerId: body.managerId,
                     leadId: body.leadId,
+                    // Optional KRA metric link; '' clears it, absent leaves it untouched.
+                    linkedMetricId: body.linkedMetricId === undefined ? undefined : (body.linkedMetricId || null),
                     // Members are settable at creation (POST /api/projects takes memberIds)
                     // but there is no edit path for them yet.
                 }
             });
+
+            // KRA auto-credit. Completing a linked project credits its manager + lead;
+            // reopening it — or moving the link off a still-completed project — reverses
+            // that credit. Idempotent by project id, so re-saving at the same state is a
+            // no-op. Owners resolve to their own company's metric only (creditLinkedMetric
+            // ignores a cross-company link), which is the safe outcome for a group-wide admin
+            // editing another company's project.
+            const DONE = 'COMPLETED';
+            const wasDone = existing.status === DONE;
+            const nowDone = updated.status === DONE;
+            const before = wasDone ? existing.linkedMetricId : null;
+            const after = nowDone ? updated.linkedMetricId : null;
+            if (before && before !== after) {
+                await reverseLinkedMetricCredit({ metricId: before, sourceRefId: updated.id });
+            }
+            if (after && after !== before) {
+                await creditLinkedMetric({
+                    companyId: updated.companyId,
+                    metricId: after,
+                    sourceRefId: updated.id,
+                    ownerUserIds: [updated.managerId, updated.leadId],
+                    date: new Date(),
+                });
+            }
 
             return NextResponse.json(updated);
         } catch (error) {
