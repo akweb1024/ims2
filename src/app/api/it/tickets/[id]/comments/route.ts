@@ -72,7 +72,7 @@ export const POST = authorizedRoute(
             title: 'New reply on a ticket',
             message: `${(user as any).name || user.email || 'Someone'} replied on "${ticket.title}"`,
             type: 'INFO',
-            link: `/dashboard/support/${id}`,
+            link: `/dashboard/support-desk/${id}`,
             category: 'GENERAL',
           }).catch(() => {}),
         ),

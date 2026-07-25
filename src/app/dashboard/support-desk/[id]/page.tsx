@@ -76,7 +76,7 @@ export default function SupportTicketDetail({ params }: { params: Promise<{ id: 
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
-            <Link href="/dashboard/support" className="inline-flex items-center gap-1.5 text-sm font-bold text-secondary-500 hover:text-primary-600">
+            <Link href="/dashboard/support-desk" className="inline-flex items-center gap-1.5 text-sm font-bold text-secondary-500 hover:text-primary-600">
                 <ArrowLeft size={16} /> Back to tickets
             </Link>
 

@@ -104,7 +104,7 @@ export const PATCH = authorizedRoute(
           title: 'Ticket assigned to you',
           message: `You were assigned: ${updated.title}`,
           type: 'INFO',
-          link: `/dashboard/support/${id}`,
+          link: `/dashboard/support-desk/${id}`,
           category: 'GENERAL',
         }).catch(() => {});
       }
@@ -116,7 +116,7 @@ export const PATCH = authorizedRoute(
           title: `Ticket ${data.status.replace('_', ' ').toLowerCase()}`,
           message: `Your ticket "${updated.title}" is now ${data.status.replace('_', ' ')}`,
           type: 'INFO',
-          link: `/dashboard/support/${id}`,
+          link: `/dashboard/support-desk/${id}`,
           category: 'GENERAL',
         }).catch(() => {});
       }
