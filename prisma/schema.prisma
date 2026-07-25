@@ -99,6 +99,7 @@ model Company {
   itTickets                         ITSupportTicket[]
   itTasks                           ITTask[]                           @relation("CompanyITTasks")
   itTimeEntries                     ITTimeEntry[]                      @relation("CompanyITTimeEntries")
+  projectWorkSessions               ProjectWorkSession[]
   incentiveSchemas                  IncentiveSchema[]
   institutions                      Institution[]
   internships                       Internship[]
@@ -326,6 +327,7 @@ model User {
   taskComments                   TaskComment[]                    @relation("TaskComments")
   itTaskStatusChanges            ITTaskStatusHistory[]            @relation("ITStatusChanger")
   itTimeEntries                  ITTimeEntry[]                    @relation("ITTimeEntries")
+  projectWorkSessions            ProjectWorkSession[]
   conferenceFeedbacks            ConferenceFeedback[]
   assignedInstitutions           Institution[]                    @relation("InstitutionOwner")
   mentoredInternships            Internship[]                     @relation("InternshipMentor")
@@ -4525,6 +4527,7 @@ model ITProject {
   tasks            ITTask[]
   timeEntries      ITTimeEntry[]
   workPlans        WorkPlan[]
+  workSessions     ProjectWorkSession[]
   taggedEmployees  User[]                @relation("ProjectTaggedEmployees")
 
   @@index([companyId])
@@ -4656,6 +4659,50 @@ model ITTimeEntry {
   @@index([taskId])
   @@index([userId])
   @@index([date])
+}
+
+/// A single "clock-in" work session an employee runs on a project. `startedAt` is stamped
+/// on start; `endedAt` is null while the session is running (this is the live "who's
+/// working now" signal) and set on stop, when `durationMinutes` is computed. Links to
+/// EITHER a Company Project or an IT project (exactly one of the two). Activities logged
+/// during the session live in ProjectWorkSessionActivity. One running session per employee
+/// is enforced in the API, not the schema.
+model ProjectWorkSession {
+  id              String     @id @default(uuid())
+  companyId       String
+  userId          String
+  projectId       String?
+  itProjectId     String?
+  startedAt       DateTime   @default(now())
+  endedAt         DateTime?
+  durationMinutes Int?
+  note            String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [userId], references: [id])
+  project         Project?   @relation(fields: [projectId], references: [id])
+  itProject       ITProject? @relation(fields: [itProjectId], references: [id])
+  activities      ProjectWorkSessionActivity[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([itProjectId])
+  @@index([endedAt])
+  @@index([startedAt])
+}
+
+/// An activity note an employee records while a work session is running — the running
+/// diary of what they actually did. Cascades away with its session.
+model ProjectWorkSessionActivity {
+  id          String             @id @default(uuid())
+  sessionId   String
+  description String
+  createdAt   DateTime           @default(now())
+  session     ProjectWorkSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model ITTaskStatusHistory {
@@ -5172,6 +5219,7 @@ model Project {
   comments    ProjectComment[]
   tasks       Task[]
   workPlans   WorkPlan[]
+  workSessions ProjectWorkSession[]
 
   @@index([companyId])
   @@index([managerId])

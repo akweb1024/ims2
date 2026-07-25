@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { useState, use } from 'react';
 import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit, MessageSquare, Building2, CornerDownRight, Target } from 'lucide-react';
 import Link from 'next/link';
+import WorkSessionPanel from '@/components/dashboard/work-sessions/WorkSessionPanel';
 
 /** User.name is nullable throughout this schema — never render a bare name. */
 const personLabel = (u?: { name?: string | null; email?: string | null } | null) =>
@@ -438,6 +439,8 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
 
                 {/* Sidebar: Team & Info */}
                 <div className="space-y-6">
+                    <WorkSessionPanel projectId={project.id} />
+
                     <div className="card-premium p-6">
                         <h3 className="font-black text-lg text-secondary-900 mb-4">Project Team</h3>
                         <div className="space-y-4">

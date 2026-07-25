@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { createErrorResponse } from '@/lib/api-utils';
+import { SESSION_USER_ROLES, sessionInclude, serializeSession, resolveProjectRef } from '@/lib/work-sessions';
+
+/**
+ * GET /api/work-sessions
+ *   ?projectId= / ?itProjectId=  → all sessions on that project (team view for its detail page)
+ *   ?mine=true (or default)      → the caller's own sessions
+ *   ?active=true                 → only running sessions (endedAt IS NULL)
+ */
+export const GET = authorizedRoute(SESSION_USER_ROLES, async (req: NextRequest, user) => {
+  try {
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get('projectId');
+    const itProjectId = searchParams.get('itProjectId');
+    const active = searchParams.get('active') === 'true';
+    const mine = searchParams.get('mine') === 'true' || (!projectId && !itProjectId);
+
+    const where: any = {};
+    if (active) where.endedAt = null;
+    if (projectId) where.projectId = projectId;
+    else if (itProjectId) where.itProjectId = itProjectId;
+    else if (mine) where.userId = user.id;
+
+    const sessions = await prisma.projectWorkSession.findMany({
+      where,
+      include: sessionInclude,
+      orderBy: { startedAt: 'desc' },
+      take: 200,
+    });
+
+    return NextResponse.json(sessions.map(serializeSession));
+  } catch (error) {
+    return createErrorResponse(error);
+  }
+});
+
+/**
+ * POST /api/work-sessions — start a session ("clock in") on a project.
+ * Body: { projectId? , itProjectId? , note? } — exactly one project id.
+ * Refuses if the caller already has a running session (409) — one focus at a time.
+ */
+export const POST = authorizedRoute(SESSION_USER_ROLES, async (req: NextRequest, user) => {
+  try {
+    if (!user.companyId) return createErrorResponse('Company association required', 403);
+    const body = await req.json();
+
+    const ref = await resolveProjectRef(body);
+    if ('error' in ref) return createErrorResponse(ref.error, 400);
+
+    const running = await prisma.projectWorkSession.findFirst({
+      where: { userId: user.id, endedAt: null },
+      include: sessionInclude,
+    });
+    if (running) {
+      return NextResponse.json(
+        {
+          error: 'You already have a running session. Stop it before starting another.',
+          running: serializeSession(running),
+        },
+        { status: 409 },
+      );
+    }
+
+    const session = await prisma.projectWorkSession.create({
+      data: {
+        companyId: user.companyId,
+        userId: user.id,
+        projectId: ref.projectId,
+        itProjectId: ref.itProjectId,
+        note: body.note?.trim() || null,
+      },
+      include: sessionInclude,
+    });
+
+    return NextResponse.json(serializeSession(session), { status: 201 });
+  } catch (error) {
+    return createErrorResponse(error);
+  }
+});

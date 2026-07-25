@@ -20,6 +20,7 @@ import ProjectTimeline from '@/components/dashboard/it/ProjectTimeline';
 import ProjectComments from '@/components/dashboard/it/ProjectComments';
 import ProjectSuggestions from '@/components/dashboard/it/ProjectSuggestions';
 import FleetAuditModal from '@/components/dashboard/it/FleetAuditModal';
+import WorkSessionPanel from '@/components/dashboard/work-sessions/WorkSessionPanel';
 
 interface Project {
     id: string; projectCode: string; name: string; description: string | null;
@@ -303,6 +304,7 @@ export default function ProjectDetailPage() {
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
                                 {activeTab === 'overview' ? (
                                     <div className="space-y-8">
+                                        <WorkSessionPanel itProjectId={projectId} />
                                         {/* Briefing Card */}
                                         <div className="bg-slate-800 backdrop-blur-xl rounded-[2rem] p-8 lg:p-10 border border-white/10 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000 pointer-events-none">
