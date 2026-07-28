@@ -1,20 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Ticket, Plus, User, Clock, Loader2, X, Save, 
+import {
+    Ticket, Plus, User, Clock, Loader2, X, Save,
     Filter, Search, ArrowRight, CheckCircle2, AlertCircle,
     HardDrive, Monitor, Wifi, Lock, Shield, ChevronRight,
     Command, Zap, Layers, RefreshCcw
 } from 'lucide-react';
+import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
+import {
+    ticketLifecycle, taskLifecycle, lifecycleStart,
+    TICKET_LIFECYCLES, TICKET_LIFECYCLE_LABELS,
+    type LifecycleKey, type StartState,
+} from '@/lib/it/lifecycle';
+
+interface Person { id: string; name: string | null; email: string | null }
 
 interface TicketItem {
     id: string; title: string; description: string; priority: string;
     category: string; status: string; resolution?: string;
     assetId?: string;
     asset?: { name: string; serialNumber: string };
-    requester: { id: string; name: string | null; email: string | null };
+    requester: Person;
+    assignedTo?: Person | null;
+    department?: { id: string; name: string } | null;
+    dueAt?: string | null; resolvedAt?: string | null;
     createdAt: string; updatedAt: string;
 }
 
@@ -23,17 +34,14 @@ interface TicketItem {
 interface ServiceRequest {
     id: string; taskCode: string; title: string; description: string | null;
     priority: string; status: string; createdAt: string;
-    createdBy?: { name: string } | null;
-    assignedTo?: { name: string } | null;
+    startDate?: string | null; dueDate?: string | null; completedAt?: string | null;
+    createdBy?: Person | null;
+    assignedTo?: Person | null;
     service?: { name: string } | null;
 }
 
-// TaskStatus → tab mapping (tasks use PENDING/…/COMPLETED, tickets use OPEN/…/CLOSED)
-const REQUEST_TAB_STATUSES: Record<string, string[]> = {
-    OPEN: ['PENDING', 'IN_PROGRESS', 'UNDER_REVIEW'],
-    RESOLVED: ['COMPLETED'],
-    CLOSED: ['CANCELLED'],
-};
+/** A queue item plus its derived lifecycle stage and timing state. */
+type Staged<T> = T & { lifecycle: LifecycleKey; start: StartState };
 
 const PRIORITY_THEME: Record<string, { bg: string, text: string, shadow: string, icon: any }> = {
     CRITICAL: { bg: 'bg-rose-500', text: 'text-rose-500', shadow: 'shadow-rose-200', icon: Shield },
@@ -56,7 +64,7 @@ export default function ITTicketsPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [userRole, setUserRole] = useState('');
-    const [activeTab, setActiveTab] = useState('OPEN');
+    const [stage, setStage] = useState<LifecycleKey | 'ALL'>('ALL');
     const [editingTicket, setEditingTicket] = useState<TicketItem | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -121,25 +129,68 @@ export default function ITTicketsPage() {
 
     const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
 
-    const filteredTickets = tickets.filter((t) => {
-        const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                             t.description.toLowerCase().includes(searchQuery.toLowerCase());
-        if (!matchesSearch) return false;
-
-        if (activeTab === 'ALL') return true;
-        if (activeTab === 'OPEN') return ['OPEN', 'IN_PROGRESS'].includes(t.status);
-        if (activeTab === 'RESOLVED') return t.status === 'RESOLVED';
-        return t.status === activeTab;
-    });
-
-    const filteredRequests = requests.filter((r) => {
+    // Search, then stamp each item with its lifecycle stage and how long it has been sitting.
+    // Tickets and service requests use different status enums but land in the same buckets.
+    const searchedTickets = useMemo<Staged<TicketItem>[]>(() => {
         const q = searchQuery.toLowerCase();
-        const matchesSearch = r.title.toLowerCase().includes(q) ||
-                             (r.description || '').toLowerCase().includes(q);
-        if (!matchesSearch) return false;
-        if (activeTab === 'ALL') return true;
-        return (REQUEST_TAB_STATUSES[activeTab] || []).includes(r.status);
-    });
+        return tickets
+            .filter((t) =>
+                t.title.toLowerCase().includes(q) ||
+                (t.description || '').toLowerCase().includes(q) ||
+                (t.requester?.name || '').toLowerCase().includes(q))
+            .map((t) => {
+                const lifecycle = ticketLifecycle(t.status);
+                return {
+                    ...t,
+                    lifecycle,
+                    start: lifecycleStart({
+                        lifecycle, kind: 'queue',
+                        startDate: t.createdAt,
+                        dueDate: t.dueAt,
+                        completedAt: t.resolvedAt,
+                    }),
+                };
+            });
+    }, [tickets, searchQuery]);
+
+    const searchedRequests = useMemo<Staged<ServiceRequest>[]>(() => {
+        const q = searchQuery.toLowerCase();
+        return requests
+            .filter((r) =>
+                r.title.toLowerCase().includes(q) ||
+                (r.description || '').toLowerCase().includes(q))
+            .map((r) => {
+                const lifecycle = taskLifecycle(r.status);
+                return {
+                    ...r,
+                    lifecycle,
+                    start: lifecycleStart({
+                        lifecycle, kind: 'queue',
+                        startDate: r.startDate || r.createdAt,
+                        dueDate: r.dueDate,
+                        completedAt: r.completedAt,
+                    }),
+                };
+            });
+    }, [requests, searchQuery]);
+
+    const active = source === 'TICKETS' ? searchedTickets : searchedRequests;
+
+    const stageCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        active.forEach((item) => { counts[item.lifecycle] = (counts[item.lifecycle] ?? 0) + 1; });
+        return counts;
+    }, [active]);
+
+    const filteredTickets = stage === 'ALL'
+        ? searchedTickets
+        : searchedTickets.filter((t) => t.lifecycle === stage);
+    const filteredRequests = stage === 'ALL'
+        ? searchedRequests
+        : searchedRequests.filter((r) => r.lifecycle === stage);
+
+    const breachedCount = active.filter((i) => i.start.tone === 'late').length;
+    const untouchedCount = active.filter((i) => i.lifecycle === 'UPCOMING').length;
 
     return (
         <>
@@ -194,7 +245,7 @@ export default function ITTicketsPage() {
                         {/* Source toggle — ITSupportTicket vs employee ITTask service requests */}
                         <div className="flex bg-indigo-50 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
                             {(['TICKETS', 'REQUESTS'] as const).map(s => (
-                                <button key={s} onClick={() => setSource(s)}
+                                <button key={s} onClick={() => { setSource(s); setStage('ALL'); }}
                                     className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                                         source === s
                                         ? 'bg-white text-indigo-600 shadow-md ring-1 ring-indigo-100'
@@ -202,19 +253,6 @@ export default function ITTicketsPage() {
                                     }`}
                                 >
                                     {s === 'TICKETS' ? `Support Tickets (${tickets.length})` : `Service Requests (${requests.length})`}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
-                            {['OPEN', 'RESOLVED', 'CLOSED', 'ALL'].map(tab => (
-                                <button key={tab} onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                                        activeTab === tab 
-                                        ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' 
-                                        : 'text-slate-500 hover:text-slate-700'
-                                    }`}
-                                >
-                                    {tab === 'OPEN' ? 'Active Matrix' : tab.charAt(0) + tab.slice(1).toLowerCase()}
                                 </button>
                             ))}
                         </div>
@@ -227,6 +265,38 @@ export default function ITTicketsPage() {
                             />
                         </div>
                     </motion.div>
+
+                    {/* Lifecycle stages — same buckets the projects and task board use */}
+                    {!loading && (
+                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                            className="space-y-3"
+                        >
+                            <LifecycleTabs
+                                tone="light"
+                                value={stage}
+                                onChange={setStage}
+                                stages={source === 'TICKETS' ? TICKET_LIFECYCLES : ['RUNNING', 'UPCOMING', 'COMPLETED', 'FAILED']}
+                                counts={stageCounts}
+                                total={active.length}
+                                labels={TICKET_LIFECYCLE_LABELS}
+                                allLabel="Full Queue"
+                            />
+                            {(breachedCount > 0 || untouchedCount > 0) && (
+                                <div className="flex flex-wrap items-center gap-2 px-1">
+                                    {breachedCount > 0 && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-black uppercase tracking-widest">
+                                            <AlertCircle className="h-3 w-3" /> {breachedCount} past due
+                                        </span>
+                                    )}
+                                    {untouchedCount > 0 && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                                            <Clock className="h-3 w-3" /> {untouchedCount} nobody started yet
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
 
                     {/* Content Grid */}
                     {loading ? (
@@ -267,14 +337,24 @@ export default function ITTicketsPage() {
                                                 </span>
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.taskCode}</span>
                                                 <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-slate-900 text-white">{r.priority}</span>
+                                                <StartPill state={r.start} tone="light" />
                                             </div>
                                             <h3 className="text-2xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{r.title}</h3>
                                             {r.description && (
                                                 <p className="text-slate-500 text-sm font-medium line-clamp-2 max-w-3xl leading-relaxed">{r.description}</p>
                                             )}
                                             <div className="flex flex-wrap items-center gap-6 pt-1 text-xs font-bold text-slate-500">
-                                                <span className="flex items-center gap-2"><User className="h-3.5 w-3.5 text-slate-300" /> {r.createdBy?.name || 'Unknown'}</span>
-                                                <span>Assigned: {r.assignedTo?.name || 'Unassigned'}</span>
+                                                <PeopleStack
+                                                    tone="light"
+                                                    caption={null}
+                                                    emptyLabel="Nobody on it"
+                                                    people={[
+                                                        ...(r.assignedTo ? [{ ...r.assignedTo, role: 'Working on it' }] : []),
+                                                        ...(r.createdBy && r.createdBy.id !== r.assignedTo?.id
+                                                            ? [{ ...r.createdBy, role: 'Raised by' }] : []),
+                                                    ]}
+                                                />
+                                                <span>{r.assignedTo ? `Assigned: ${r.assignedTo.name || r.assignedTo.email}` : 'Unassigned'}</span>
                                                 <span className="flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-slate-300" /> {new Date(r.createdAt).toLocaleDateString()}</span>
                                             </div>
                                         </div>
@@ -343,18 +423,28 @@ export default function ITTicketsPage() {
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                                             ID: {ticket.id.slice(0, 8).toUpperCase()}
                                                         </span>
+                                                        <StartPill state={ticket.start} tone="light" />
                                                     </div>
                                                     <div>
                                                         <h3 className="text-2xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors mb-3 leading-tight">{ticket.title}</h3>
                                                         <p className="text-slate-500 text-sm font-medium line-clamp-2 max-w-3xl leading-relaxed">{ticket.description}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-6 pt-2">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-8 w-8 bg-slate-900 rounded-xl flex items-center justify-center text-[10px] text-white font-black shadow-lg">
-                                                                {(ticket.requester?.name || ticket.requester?.email || 'U').charAt(0)}
-                                                            </div>
-                                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{ticket.requester?.name || ticket.requester?.email || 'Unknown'}</p>
-                                                        </div>
+                                                    <div className="flex flex-wrap items-center gap-6 pt-2">
+                                                        <PeopleStack
+                                                            tone="light"
+                                                            caption={null}
+                                                            emptyLabel="Nobody on it"
+                                                            people={[
+                                                                ...(ticket.assignedTo ? [{ ...ticket.assignedTo, role: 'Working on it' }] : []),
+                                                                ...(ticket.requester && ticket.requester.id !== ticket.assignedTo?.id
+                                                                    ? [{ ...ticket.requester, role: 'Requester' }] : []),
+                                                            ]}
+                                                        />
+                                                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                                            {ticket.assignedTo
+                                                                ? `Handled by ${ticket.assignedTo.name || ticket.assignedTo.email}`
+                                                                : 'Awaiting assignment'}
+                                                        </p>
                                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-400 capitalize">
                                                             <Clock className="h-3.5 w-3.5 text-slate-300" /> {new Date(ticket.createdAt).toLocaleDateString()}
                                                         </div>
@@ -379,6 +469,7 @@ export default function ITTicketsPage() {
                                                         >
                                                             <option value="OPEN">Open Protocol</option>
                                                             <option value="IN_PROGRESS">Active Logic</option>
+                                                            <option value="ON_HOLD">On Hold</option>
                                                             <option value="RESOLVED">Resolution Handled</option>
                                                             <option value="CLOSED">Secure Close</option>
                                                         </select>

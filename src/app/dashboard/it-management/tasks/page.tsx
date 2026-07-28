@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,24 +10,48 @@ import {
     Zap, TrendingUp, Activity
 } from 'lucide-react';
 import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
+import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
+import {
+    taskLifecycle, lifecycleStart,
+    TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS,
+    type LifecycleKey,
+} from '@/lib/it/lifecycle';
 
+interface Person { id: string; name: string | null; email: string | null; }
 interface Task {
     id: string; taskCode: string; title: string; description: string | null;
     category: string; type: string; priority: string; status: string;
     isRevenueBased: boolean; estimatedValue: number; itRevenueEarned: number;
-    dueDate: string | null; progressPercent: number; estimatedHours: number | null;
+    startDate: string | null; dueDate: string | null; completedAt: string | null;
+    progressPercent: number; estimatedHours: number | null;
     assignedToId: string | null; projectId: string | null; linkedMetricId: string | null; dependencies: string[];
     project: { id: string; name: string; projectCode: string; } | null;
-    assignedTo: { id: string; name: string; email: string; } | null;
+    assignedTo: Person | null;
+    reporter?: Person | null;
+    createdBy?: Person | null;
     _count: { comments: number; timeEntries: number; };
 }
 
-const STATUSES = [
-    { value: 'PENDING', label: 'To Do', bg: 'bg-slate-800/60', dot: 'bg-slate-400', accent: 'border-slate-600/30', text: 'text-slate-400', headerBg: 'bg-slate-700/30', countBg: 'bg-slate-600/40' },
-    { value: 'IN_PROGRESS', label: 'In Progress', bg: 'bg-blue-950/60', dot: 'bg-blue-400', accent: 'border-blue-600/30', text: 'text-blue-400', headerBg: 'bg-blue-900/30', countBg: 'bg-blue-700/30' },
-    { value: 'UNDER_REVIEW', label: 'In Review', bg: 'bg-amber-950/60', dot: 'bg-amber-400', accent: 'border-amber-700/30', text: 'text-amber-400', headerBg: 'bg-amber-900/30', countBg: 'bg-amber-700/30' },
-    { value: 'COMPLETED', label: 'Done', bg: 'bg-emerald-950/60', dot: 'bg-emerald-400', accent: 'border-emerald-700/30', text: 'text-emerald-400', headerBg: 'bg-emerald-900/30', countBg: 'bg-emerald-700/30' },
+/** Board columns, each tied to the lifecycle stage it represents. */
+const STATUSES: {
+    value: string; label: string; lifecycle: LifecycleKey;
+    bg: string; dot: string; accent: string; text: string; headerBg: string; countBg: string;
+}[] = [
+    { value: 'PENDING', label: 'To Do', lifecycle: 'UPCOMING', bg: 'bg-violet-950/40', dot: 'bg-violet-400', accent: 'border-violet-700/30', text: 'text-violet-400', headerBg: 'bg-violet-900/30', countBg: 'bg-violet-700/30' },
+    { value: 'IN_PROGRESS', label: 'In Progress', lifecycle: 'RUNNING', bg: 'bg-blue-950/60', dot: 'bg-blue-400', accent: 'border-blue-600/30', text: 'text-blue-400', headerBg: 'bg-blue-900/30', countBg: 'bg-blue-700/30' },
+    { value: 'UNDER_REVIEW', label: 'In Review', lifecycle: 'RUNNING', bg: 'bg-amber-950/60', dot: 'bg-amber-400', accent: 'border-amber-700/30', text: 'text-amber-400', headerBg: 'bg-amber-900/30', countBg: 'bg-amber-700/30' },
+    { value: 'COMPLETED', label: 'Done', lifecycle: 'COMPLETED', bg: 'bg-emerald-950/60', dot: 'bg-emerald-400', accent: 'border-emerald-700/30', text: 'text-emerald-400', headerBg: 'bg-emerald-900/30', countBg: 'bg-emerald-700/30' },
+    { value: 'CANCELLED', label: 'Failed', lifecycle: 'FAILED', bg: 'bg-rose-950/40', dot: 'bg-rose-400', accent: 'border-rose-700/30', text: 'text-rose-400', headerBg: 'bg-rose-900/30', countBg: 'bg-rose-700/30' },
 ];
+
+/** Tailwind needs literal class names, so map the visible column count to its grid class. */
+const COLUMN_GRID: Record<number, string> = {
+    1: 'lg:grid-cols-1',
+    2: 'lg:grid-cols-2',
+    3: 'lg:grid-cols-3',
+    4: 'lg:grid-cols-4',
+    5: 'lg:grid-cols-5',
+};
 
 const PRIORITY_STYLE: Record<string, { bg: string; text: string; border: string }> = {
     CRITICAL: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
@@ -55,6 +79,7 @@ export default function TasksPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [view, setView] = useState<'my' | 'team' | 'all'>('my');
+    const [stage, setStage] = useState<LifecycleKey | 'ALL'>('ALL');
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [priorityFilter, setPriorityFilter] = useState<string>('');
     const [projectFilter, setProjectFilter] = useState<string>('');
@@ -94,13 +119,49 @@ export default function TasksPage() {
     useEffect(() => { fetchTasks(); }, [fetchTasks]);
     useEffect(() => { fetchMetadata(); }, [fetchMetadata]);
 
-    const filteredTasks = tasks.filter((task) =>
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.taskCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Search, then decorate each task with its lifecycle stage and kick-off state once —
+    // the board, the stage tabs and the footer all read from this.
+    const filteredTasks = useMemo(() => {
+        const q = searchTerm.toLowerCase();
+        return tasks
+            .filter((task) =>
+                task.title.toLowerCase().includes(q) ||
+                task.taskCode.toLowerCase().includes(q) ||
+                task.description?.toLowerCase().includes(q)
+            )
+            .map((task) => {
+                const lifecycle = taskLifecycle(task.status);
+                return {
+                    ...task,
+                    lifecycle,
+                    start: lifecycleStart({
+                        lifecycle,
+                        startDate: task.startDate,
+                        dueDate: task.dueDate,
+                        completedAt: task.completedAt,
+                    }),
+                };
+            });
+    }, [tasks, searchTerm]);
+
+    type BoardTask = (typeof filteredTasks)[number];
 
     const getTasksByStatus = (status: string) => filteredTasks.filter((t) => t.status === status);
+
+    const stageCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        filteredTasks.forEach((t) => { counts[t.lifecycle] = (counts[t.lifecycle] ?? 0) + 1; });
+        return counts;
+    }, [filteredTasks]);
+
+    // Selecting a stage narrows the board to the columns that make up that stage.
+    const visibleColumns = stage === 'ALL' ? STATUSES : STATUSES.filter((s) => s.lifecycle === stage);
+
+    const lateCount = filteredTasks.filter((t) => t.start.tone === 'late').length;
+    const unassignedCount = filteredTasks.filter(
+        (t) => !t.assignedTo && t.lifecycle !== 'COMPLETED' && t.lifecycle !== 'FAILED',
+    ).length;
+    const crewSize = new Set(filteredTasks.map((t) => t.assignedTo?.id).filter(Boolean)).size;
 
     const handleDragStart = (e: React.DragEvent, taskId: string) => {
         e.dataTransfer.setData('taskId', taskId);
@@ -127,10 +188,18 @@ export default function TasksPage() {
         } catch { setTasks(originalTasks); }
     };
 
-    const TaskCard = ({ task }: { task: Task }) => {
+    const TaskCard = ({ task }: { task: BoardTask }) => {
         const pri = PRIORITY_STYLE[task.priority] || PRIORITY_STYLE.LOW;
         const typ = TYPE_COLOR[task.type] || { bg: 'bg-slate-500/10', text: 'text-slate-400' };
-        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED';
+
+        // Everyone attached to this task, most relevant first.
+        const people = [
+            ...(task.assignedTo ? [{ ...task.assignedTo, role: 'Assignee' }] : []),
+            ...(task.reporter && task.reporter.id !== task.assignedTo?.id
+                ? [{ ...task.reporter, role: 'Reporter' }] : []),
+            ...(task.createdBy && task.createdBy.id !== task.assignedTo?.id && task.createdBy.id !== task.reporter?.id
+                ? [{ ...task.createdBy, role: 'Raised by' }] : []),
+        ];
 
         return (
             <div
@@ -156,16 +225,16 @@ export default function TasksPage() {
                             <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border ${pri.bg} ${pri.text} ${pri.border}`}>
                                 {task.priority}
                             </div>
-                            {isOverdue && (
-                                <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1">
-                                    <AlertTriangle className="h-2.5 w-2.5" /> Overdue
-                                </span>
-                            )}
                         </div>
 
                         <h4 className="font-bold text-slate-200 text-sm mb-2 line-clamp-2 leading-tight group-hover:text-white transition-colors">
                             {task.title}
                         </h4>
+
+                        {/* Has this actually been picked up, and is it on time? */}
+                        <div className="mb-2.5">
+                            <StartPill state={task.start} />
+                        </div>
 
                         <div className="flex flex-wrap gap-1.5 mb-3">
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold ${typ.bg} ${typ.text}`}>
@@ -195,18 +264,8 @@ export default function TasksPage() {
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
-                            <div>
-                                {task.assignedTo ? (
-                                    <div className="h-6 w-6 rounded-lg bg-blue-600 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-white" title={task.assignedTo.name}>
-                                        {task.assignedTo.name.charAt(0)}
-                                    </div>
-                                ) : (
-                                    <div className="h-6 w-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-600" title="Unassigned">
-                                        <User className="h-3 w-3" />
-                                    </div>
-                                )}
-                            </div>
+                        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/5">
+                            <PeopleStack people={people} max={3} size="sm" caption={null} emptyLabel="Unassigned" />
                             <div className="flex items-center gap-2 text-[9px] font-bold text-slate-600">
                                 {task.dueDate && (
                                     <span className="flex items-center gap-0.5">
@@ -321,6 +380,40 @@ export default function TasksPage() {
                     </AnimatePresence>
                 </motion.div>
 
+                {/* ── LIFECYCLE STAGES ────────────────────────── */}
+                {!loading && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                        <LifecycleTabs
+                            value={stage}
+                            onChange={setStage}
+                            stages={TASK_LIFECYCLES}
+                            counts={stageCounts}
+                            total={filteredTasks.length}
+                            labels={TASK_LIFECYCLE_LABELS}
+                            allLabel="Whole Board"
+                        />
+                        {(lateCount > 0 || unassignedCount > 0 || crewSize > 0) && (
+                            <div className="flex flex-wrap items-center gap-2 px-1">
+                                {lateCount > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-950/70 border border-rose-500/30 text-rose-300 text-[10px] font-black uppercase tracking-widest">
+                                        <AlertTriangle className="h-3 w-3" /> {lateCount} behind schedule
+                                    </span>
+                                )}
+                                {unassignedCount > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                                        <User className="h-3 w-3" /> {unassignedCount} unassigned
+                                    </span>
+                                )}
+                                {crewSize > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+                                        <Activity className="h-3 w-3" /> {crewSize} people holding work
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
                 {/* ── KANBAN BOARD ────────────────────────────── */}
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -328,8 +421,8 @@ export default function TasksPage() {
                         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Loading board...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
-                        {STATUSES.map((status, statusIndex) => {
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${COLUMN_GRID[visibleColumns.length] ?? 'lg:grid-cols-5'} gap-5 items-start`}>
+                        {visibleColumns.map((status, statusIndex) => {
                             const statusTasks = getTasksByStatus(status.value);
                             return (
                                 <motion.div key={status.value}
@@ -384,7 +477,7 @@ export default function TasksPage() {
                                 </div>
                                 <h3 className="font-black text-white">Board Analytics</h3>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                                 <div className="space-y-1 text-center">
                                     <p className="text-3xl font-black text-white">{filteredTasks.length}</p>
                                     <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Total Tasks</p>
