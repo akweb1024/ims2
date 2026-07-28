@@ -5,27 +5,51 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Plus, Search, Filter, FolderKanban, Calendar, DollarSign,
+    Plus, Search, Filter, FolderKanban, DollarSign,
     TrendingUp, CheckCircle2, AlertCircle, Pause, LayoutGrid, PieChart,
     ArrowUpRight, Target, ShieldCheck, Zap, Globe, Clock, ChevronDown,
     X, Users, Layers, Tag, Activity,
 } from 'lucide-react';
 import ProjectAnalytics from '@/components/dashboard/it/ProjectAnalytics';
 import FleetAuditModal from '@/components/dashboard/it/FleetAuditModal';
+import {
+    LifecycleTabs, LifecycleHeading, StartPill, PeopleStack,
+} from '@/components/dashboard/it/LifecycleUI';
+import {
+    projectLifecycle, lifecycleStart, LIFECYCLE_THEME,
+    PROJECT_LIFECYCLES, PROJECT_LIFECYCLE_LABELS,
+    type LifecycleKey, type StartState,
+} from '@/lib/it/lifecycle';
 
 /* ─── Types ───────────────────────────────────────────────── */
-interface Personnel { id: string; name: string; email: string; }
+interface Personnel { id: string; name: string | null; email: string | null; }
+interface TeamMember extends Personnel {
+    role: 'Manager' | 'Lead' | 'Contributor' | 'Member';
+    openTasks: number;
+    doneTasks: number;
+}
 interface Project {
     id: string; projectCode: string; name: string; description: string | null;
     category: string; type: string; status: string; priority: string;
     isRevenueBased: boolean; estimatedRevenue: number; actualRevenue: number;
     itRevenueEarned: number; itDepartmentCut: number;
-    startDate: string | null; endDate: string | null;
+    startDate: string | null; endDate: string | null; completedAt: string | null;
     visibility: string;
     projectManager: Personnel | null;
     teamLead: Personnel | null;
+    team?: TeamMember[];
     website?: { id: string; name: string; url: string; status: string } | null;
-    stats: { totalTasks: number; completedTasks: number; inProgressTasks: number; completionRate: number; };
+    stats: {
+        totalTasks: number; completedTasks: number; inProgressTasks: number;
+        completionRate: number; teamSize?: number; activeContributors?: number;
+    };
+}
+
+/** A project plus the lifecycle facts derived from it, computed once per render pass. */
+interface DecoratedProject extends Project {
+    lifecycle: LifecycleKey;
+    start: StartState;
+    progress: number;
 }
 
 /* ─── Constants ───────────────────────────────────────────── */
@@ -77,17 +101,14 @@ function getUI(status: string) {
     };
 }
 
-function Avatar({ person, color = 'bg-blue-600' }: { person: Personnel; color?: string }) {
-    return (
-        <div className="flex items-center gap-1.5 min-w-0">
-            <div className={`h-6 w-6 rounded-lg ${color} flex items-center justify-center text-[10px] font-black text-white shrink-0`}>
-                {person.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-[10px] font-semibold text-slate-400 truncate max-w-[70px]">
-                {person.name.split(' ')[0]}
-            </span>
-        </div>
-    );
+/** Everyone attached to the project, falling back to command personnel on older payloads. */
+function rosterOf(p: Project): TeamMember[] {
+    if (p.team?.length) return p.team;
+    const fallback: TeamMember[] = [];
+    if (p.projectManager) fallback.push({ ...p.projectManager, role: 'Manager', openTasks: 0, doneTasks: 0 });
+    if (p.teamLead && p.teamLead.id !== p.projectManager?.id)
+        fallback.push({ ...p.teamLead, role: 'Lead', openTasks: 0, doneTasks: 0 });
+    return fallback;
 }
 
 /* ─── Filter Chip ─────────────────────────────────────────── */
@@ -107,6 +128,124 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
     );
 }
 
+/* ─── Project Card ────────────────────────────────────────── */
+function ProjectCard({ p, index, onOpen }: { p: DecoratedProject; index: number; onOpen: () => void }) {
+    const ui  = getUI(p.status);
+    const pri = PRIORITY_STYLES[p.priority] ?? PRIORITY_STYLES.LOW;
+    const catLabel = CATEGORY_LABELS[p.category] ?? p.category;
+    const stage = LIFECYCLE_THEME[p.lifecycle];
+    const roster = rosterOf(p);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(index, 12) * 0.04 }}
+            onClick={onOpen}
+            className="group relative bg-slate-800/80 hover:bg-slate-800 border border-white/10 hover:border-white/20 rounded-2xl p-5 cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-2xl hover:shadow-black/40"
+        >
+            {/* Left colour accent bar — keyed to the lifecycle stage */}
+            <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${stage.bar} opacity-40 group-hover:opacity-100 transition-all duration-300 rounded-l-2xl`} />
+
+            {/* Top stripe glow on hover */}
+            <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${ui.accent} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+
+            {/* ── Card Header ── */}
+            <div className="flex justify-between items-start mb-3 pl-3">
+                <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 font-mono">{p.projectCode}</span>
+                        <div className={`h-1.5 w-1.5 rounded-full ${ui.dot} animate-pulse`} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-100 leading-tight group-hover:text-blue-300 transition-colors line-clamp-1">
+                        {p.name}
+                    </h3>
+                </div>
+                <div className="p-1.5 bg-slate-700/60 rounded-lg group-hover:bg-blue-500/20 transition-colors ml-2 shrink-0">
+                    <ArrowUpRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                </div>
+            </div>
+
+            {/* Kick-off state — does this project actually run right now? */}
+            <div className="pl-3 mb-3">
+                <StartPill state={p.start} />
+            </div>
+
+            {/* Description */}
+            <p className="text-slate-400 text-xs font-medium line-clamp-2 mb-3 pl-3 min-h-[2.5rem] leading-relaxed">
+                {p.description || 'No description provided.'}
+            </p>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-1.5 mb-3 pl-3">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${ui.badgeBg} ${ui.badgeText} ${ui.badgeBorder}`}>
+                    <ui.icon className="h-2.5 w-2.5" /> {ui.label}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-slate-700/60 text-slate-300 border-white/10">
+                    <Layers className="h-2.5 w-2.5" /> {catLabel}
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${pri}`}>
+                    {p.priority}
+                </span>
+                {p.visibility === 'PUBLIC' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                        <Globe className="h-2.5 w-2.5" /> Public
+                    </span>
+                )}
+                {p.isRevenueBased && (
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <DollarSign className="h-2.5 w-2.5" /> Revenue
+                    </span>
+                )}
+                {p.website && (
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border flex items-center gap-1 ${p.website.status === 'UP' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                        <Globe className="h-2.5 w-2.5" /> {p.website.status}
+                    </span>
+                )}
+            </div>
+
+            {/* Progress bar */}
+            <div className="space-y-1.5 mb-4 pl-3">
+                <div className="flex justify-between text-[10px] font-bold">
+                    <span className="text-slate-500">Progress</span>
+                    <span className={stage.dark.text}>{p.progress}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-700/80 rounded-full overflow-hidden">
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${p.progress}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut', delay: Math.min(index, 12) * 0.04 + 0.2 }}
+                        className={`h-full rounded-full ${p.progress === 100 ? 'bg-emerald-400' : stage.bar}`}
+                    />
+                </div>
+                <div className="flex justify-between text-[10px] font-medium text-slate-600">
+                    <span>{p.stats.completedTasks} done</span>
+                    <span>{p.stats.totalTasks} total tasks</span>
+                </div>
+            </div>
+
+            {/* Footer: who is on it + deadline */}
+            <div className="pt-3 border-t border-white/[0.07] flex items-center justify-between gap-3 pl-3">
+                <PeopleStack people={roster.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    email: m.email,
+                    role: m.role,
+                    note: m.openTasks || m.doneTasks ? `${m.openTasks} open · ${m.doneTasks} done` : null,
+                }))} caption="on it" />
+                <div className="flex items-center gap-1 text-slate-600 shrink-0">
+                    <Clock className="h-3 w-3" />
+                    <span className="text-[10px] font-semibold">
+                        {p.endDate
+                            ? new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                            : 'Ongoing'}
+                    </span>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
 /* ═══ Main Component ════════════════════════════════════════ */
 export default function ProjectsPage() {
     const { data: session } = useSession();
@@ -119,6 +258,7 @@ export default function ProjectsPage() {
     const [typeFilter, setTypeFilter]       = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [personnelFilter, setPersonnelFilter] = useState(''); // managerId
+    const [stage, setStage]                 = useState<LifecycleKey | 'ALL'>('ALL');
     const [showFilters, setShowFilters]     = useState(false);
     const [viewMode, setViewMode]           = useState<'grid' | 'analytics'>('grid');
     const [showFleetAudit, setShowFleetAudit] = useState(false);
@@ -144,10 +284,51 @@ export default function ProjectsPage() {
     useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
     /* ── Derived data ──────────────────────────────────────── */
-    const filtered = projects.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.projectCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.description ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+    // Search + lifecycle decoration in one pass; everything below reads these.
+    const searched = useMemo<DecoratedProject[]>(() => {
+        const q = searchTerm.toLowerCase();
+        return projects
+            .filter(p =>
+                p.name.toLowerCase().includes(q) ||
+                p.projectCode.toLowerCase().includes(q) ||
+                (p.description ?? '').toLowerCase().includes(q)
+            )
+            .map(p => {
+                const lifecycle = projectLifecycle(p.status);
+                return {
+                    ...p,
+                    lifecycle,
+                    start: lifecycleStart({
+                        lifecycle,
+                        startDate: p.startDate,
+                        dueDate: p.endDate,
+                        completedAt: p.completedAt,
+                    }),
+                    // A finished project with no task breakdown still reads as delivered.
+                    progress: p.stats.totalTasks > 0
+                        ? p.stats.completionRate
+                        : lifecycle === 'COMPLETED' ? 100 : 0,
+                };
+            });
+    }, [projects, searchTerm]);
+
+    const stageCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        searched.forEach(p => { counts[p.lifecycle] = (counts[p.lifecycle] ?? 0) + 1; });
+        return counts;
+    }, [searched]);
+
+    const visible = useMemo(
+        () => (stage === 'ALL' ? searched : searched.filter(p => p.lifecycle === stage)),
+        [searched, stage],
+    );
+
+    // When no single stage is selected, the grid becomes one section per stage.
+    const grouped = useMemo(
+        () => PROJECT_LIFECYCLES
+            .map(key => ({ key, items: searched.filter(p => p.lifecycle === key) }))
+            .filter(g => g.items.length > 0),
+        [searched],
     );
 
     // Build unique personnel list from fetched project data
@@ -157,12 +338,23 @@ export default function ProjectsPage() {
             if (p.projectManager) map.set(p.projectManager.id, p.projectManager);
             if (p.teamLead)       map.set(p.teamLead.id, p.teamLead);
         });
-        return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+        return [...map.values()].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }, [projects]);
 
-    const activeCount    = projects.filter(p => p.status === 'IN_PROGRESS').length;
-    const completedCount = projects.filter(p => p.status === 'COMPLETED').length;
+    // Distinct people holding work across everything currently in view.
+    const crewSize = useMemo(() => {
+        const ids = new Set<string>();
+        searched.forEach(p => rosterOf(p).forEach(m => ids.add(m.id)));
+        return ids.size;
+    }, [searched]);
+
+    const runningCount   = stageCounts.RUNNING   ?? 0;
+    const upcomingCount  = stageCounts.UPCOMING  ?? 0;
+    const completedCount = stageCounts.COMPLETED ?? 0;
+    const failedCount    = stageCounts.FAILED    ?? 0;
     const totalRevenue   = projects.reduce((s, p) => s + (p.itRevenueEarned || 0), 0);
+    const notStarted     = searched.filter(p => !p.start.started && p.lifecycle !== 'FAILED' && p.lifecycle !== 'ARCHIVED').length;
+    const lateCount      = searched.filter(p => p.start.tone === 'late').length;
 
     const isAdmin = (session?.user as any)?.role &&
         ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'TEAM_LEADER', 'HR_MANAGER', 'FINANCE_ADMIN'].includes((session?.user as any)?.role);
@@ -194,7 +386,7 @@ export default function ProjectsPage() {
             setter:  setPersonnelFilter,
             options: [
                 ['', 'All Personnel'],
-                ...personnel.map(p => [p.id, p.name] as [string, string]),
+                ...personnel.map(p => [p.id, p.name || p.email || 'Unknown'] as [string, string]),
             ] as [string, string][],
         },
         {
@@ -210,7 +402,7 @@ export default function ProjectsPage() {
         },
         {
             key:     'status',
-            label:   'Status',
+            label:   'Exact Status',
             icon:    Activity,
             value:   statusFilter,
             setter:  setStatusFilter,
@@ -259,9 +451,12 @@ export default function ProjectsPage() {
                             {!loading && (
                                 <div className="flex flex-wrap items-center gap-2">
                                     {[
-                                        { val: projects.length,   label: 'Total',     color: 'bg-slate-700/80 text-slate-200 border border-white/10' },
-                                        { val: activeCount,       label: 'Active',    color: 'bg-blue-500/20 text-blue-200 border border-blue-500/30' },
-                                        { val: completedCount,    label: 'Completed', color: 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30' },
+                                        { val: projects.length,  label: 'Total',     color: 'bg-slate-700/80 text-slate-200 border border-white/10' },
+                                        { val: runningCount,     label: 'Running',   color: 'bg-blue-500/20 text-blue-200 border border-blue-500/30' },
+                                        { val: upcomingCount,    label: 'Upcoming',  color: 'bg-violet-500/20 text-violet-200 border border-violet-500/30' },
+                                        { val: completedCount,   label: 'Completed', color: 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30' },
+                                        { val: failedCount,      label: 'Failed',    color: 'bg-rose-500/20 text-rose-200 border border-rose-500/30' },
+                                        { val: crewSize,         label: 'People',    color: 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/30' },
                                         { val: `₹${(totalRevenue / 1000).toFixed(1)}K`, label: 'Revenue', color: 'bg-amber-500/20 text-amber-200 border border-amber-500/30' },
                                     ].map(s => (
                                         <span key={s.label} className={`px-3 py-1 rounded-xl text-xs font-bold ${s.color}`}>
@@ -298,6 +493,35 @@ export default function ProjectsPage() {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* ── LIFECYCLE STAGES ─────────────────────────────── */}
+                {viewMode === 'grid' && !loading && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                        <LifecycleTabs
+                            value={stage}
+                            onChange={setStage}
+                            stages={PROJECT_LIFECYCLES}
+                            counts={stageCounts}
+                            total={searched.length}
+                            labels={PROJECT_LIFECYCLE_LABELS}
+                            allLabel="All Stages"
+                        />
+                        {(notStarted > 0 || lateCount > 0) && (
+                            <div className="flex flex-wrap items-center gap-2 px-1">
+                                {lateCount > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-950/70 border border-rose-500/30 text-rose-300 text-[10px] font-bold uppercase tracking-widest">
+                                        <AlertCircle className="h-3 w-3" /> {lateCount} behind schedule
+                                    </span>
+                                )}
+                                {notStarted > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-[10px] font-bold uppercase tracking-widest">
+                                        <Clock className="h-3 w-3" /> {notStarted} not started yet
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
 
                 {/* ── SEARCH & FILTER PANEL ─────────────────────────── */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
@@ -409,7 +633,7 @@ export default function ProjectsPage() {
                 <AnimatePresence mode="wait">
                     {viewMode === 'analytics' ? (
                         <motion.div key="analytics" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                            <ProjectAnalytics projects={filtered} />
+                            <ProjectAnalytics projects={searched} />
                         </motion.div>
 
                     ) : loading ? (
@@ -421,7 +645,7 @@ export default function ProjectsPage() {
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loading projects...</p>
                         </div>
 
-                    ) : filtered.length === 0 ? (
+                    ) : visible.length === 0 ? (
                         <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                             className="py-24 flex flex-col items-center text-center"
                         >
@@ -431,8 +655,18 @@ export default function ProjectsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-black text-white">No Projects Found</h3>
-                                    <p className="text-slate-400 text-sm">Try adjusting your filters or create a new project.</p>
+                                    <p className="text-slate-400 text-sm">
+                                        {stage === 'ALL'
+                                            ? 'Try adjusting your filters or create a new project.'
+                                            : 'Nothing sits in this stage right now.'}
+                                    </p>
                                 </div>
+                                {stage !== 'ALL' && (
+                                    <button onClick={() => setStage('ALL')}
+                                        className="px-6 py-2.5 bg-slate-700 text-slate-200 font-bold text-sm rounded-xl hover:bg-slate-600 transition-all border border-white/10">
+                                        Show All Stages
+                                    </button>
+                                )}
                                 {hasActiveFilters && (
                                     <button onClick={clearAllFilters}
                                         className="px-6 py-2.5 bg-slate-700 text-slate-200 font-bold text-sm rounded-xl hover:bg-slate-600 transition-all border border-white/10">
@@ -450,142 +684,48 @@ export default function ProjectsPage() {
                             </div>
                         </motion.div>
 
+                    ) : stage === 'ALL' ? (
+                        /* Grouped: one section per lifecycle stage, active work first */
+                        <motion.div key="grouped" className="space-y-8">
+                            {grouped.map(group => (
+                                <section key={group.key} className="space-y-4">
+                                    <LifecycleHeading
+                                        stage={group.key}
+                                        count={group.items.length}
+                                        labels={PROJECT_LIFECYCLE_LABELS}
+                                    />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                        {group.items.map((p, idx) => (
+                                            <ProjectCard key={p.id} p={p} index={idx}
+                                                onOpen={() => router.push(`/dashboard/it-management/projects/${p.id}`)} />
+                                        ))}
+                                    </div>
+                                </section>
+                            ))}
+                        </motion.div>
+
                     ) : (
                         <motion.div key="grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                            {filtered.map((p, idx) => {
-                                const ui  = getUI(p.status);
-                                const pri = PRIORITY_STYLES[p.priority] ?? PRIORITY_STYLES.LOW;
-                                const catLabel = CATEGORY_LABELS[p.category] ?? p.category;
-
-                                return (
-                                    <motion.div
-                                        key={p.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.04 }}
-                                        onClick={() => router.push(`/dashboard/it-management/projects/${p.id}`)}
-                                        className="group relative bg-slate-800/80 hover:bg-slate-800 border border-white/10 hover:border-white/20 rounded-2xl p-5 cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-2xl hover:shadow-black/40"
-                                    >
-                                        {/* Left colour accent bar */}
-                                        <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${ui.accentBar} opacity-30 group-hover:opacity-100 transition-all duration-300 rounded-l-2xl`} />
-
-                                        {/* Top stripe glow on hover */}
-                                        <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${ui.accent} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
-
-                                        {/* ── Card Header ── */}
-                                        <div className="flex justify-between items-start mb-3 pl-3">
-                                            <div className="space-y-1 min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 font-mono">{p.projectCode}</span>
-                                                    <div className={`h-1.5 w-1.5 rounded-full ${ui.dot} animate-pulse`} />
-                                                </div>
-                                                <h3 className="text-sm font-black text-slate-100 leading-tight group-hover:text-blue-300 transition-colors line-clamp-1">
-                                                    {p.name}
-                                                </h3>
-                                            </div>
-                                            <div className="p-1.5 bg-slate-700/60 rounded-lg group-hover:bg-blue-500/20 transition-colors ml-2 shrink-0">
-                                                <ArrowUpRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <p className="text-slate-400 text-xs font-medium line-clamp-2 mb-3 pl-3 min-h-[2.5rem] leading-relaxed">
-                                            {p.description || 'No description provided.'}
-                                        </p>
-
-                                        {/* Badges */}
-                                        <div className="flex flex-wrap gap-1.5 mb-3 pl-3">
-                                            {/* Status */}
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${ui.badgeBg} ${ui.badgeText} ${ui.badgeBorder}`}>
-                                                <ui.icon className="h-2.5 w-2.5" /> {ui.label}
-                                            </span>
-                                            {/* Core Category */}
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-slate-700/60 text-slate-300 border-white/10">
-                                                <Layers className="h-2.5 w-2.5" /> {catLabel}
-                                            </span>
-                                            {/* Priority */}
-                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${pri}`}>
-                                                {p.priority}
-                                            </span>
-                                            {/* Visibility */}
-                                            {p.visibility === 'PUBLIC' && (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                                                    <Globe className="h-2.5 w-2.5" /> Public
-                                                </span>
-                                            )}
-                                            {/* Revenue */}
-                                            {p.isRevenueBased && (
-                                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                                                    <DollarSign className="h-2.5 w-2.5" /> Revenue
-                                                </span>
-                                            )}
-                                            {/* Website status */}
-                                            {p.website && (
-                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border flex items-center gap-1 ${p.website.status === 'UP' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
-                                                    <Globe className="h-2.5 w-2.5" /> {p.website.status}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Progress bar */}
-                                        <div className="space-y-1.5 mb-4 pl-3">
-                                            <div className="flex justify-between text-[10px] font-bold">
-                                                <span className="text-slate-500">Progress</span>
-                                                <span className={ui.badgeText}>{p.stats.completionRate}%</span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-slate-700/80 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${p.stats.completionRate}%` }}
-                                                    transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.04 + 0.2 }}
-                                                    className={`h-full rounded-full ${p.stats.completionRate === 100 ? 'bg-emerald-400' : ui.barColor}`}
-                                                />
-                                            </div>
-                                            <div className="flex justify-between text-[10px] font-medium text-slate-600">
-                                                <span>{p.stats.completedTasks} done</span>
-                                                <span>{p.stats.totalTasks} total tasks</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Footer: personnel + deadline */}
-                                        <div className="pt-3 border-t border-white/[0.07] flex items-center justify-between pl-3">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                {p.projectManager && (
-                                                    <Avatar person={p.projectManager} color="bg-blue-600" />
-                                                )}
-                                                {p.teamLead && p.teamLead.id !== p.projectManager?.id && (
-                                                    <>
-                                                        <div className="h-3 w-px bg-white/10" />
-                                                        <Avatar person={p.teamLead} color="bg-indigo-600" />
-                                                    </>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-1 text-slate-600 shrink-0">
-                                                <Clock className="h-3 w-3" />
-                                                <span className="text-[10px] font-semibold">
-                                                    {p.endDate
-                                                        ? new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
-                                                        : 'Ongoing'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
+                            {visible.map((p, idx) => (
+                                <ProjectCard key={p.id} p={p} index={idx}
+                                    onOpen={() => router.push(`/dashboard/it-management/projects/${p.id}`)} />
+                            ))}
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* ── BOTTOM STATS BAR ─────────────────────────────── */}
-                {!loading && filtered.length > 0 && viewMode === 'grid' && (
+                {!loading && visible.length > 0 && viewMode === 'grid' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-800/70 border border-white/10 rounded-2xl"
+                        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 p-6 bg-slate-800/70 border border-white/10 rounded-2xl"
                     >
                         {[
-                            { val: filtered.length,                              label: 'Showing',       color: 'text-white',        bg: 'bg-slate-700/60' },
-                            { val: activeCount,                                   label: 'Active',        color: 'text-blue-400',     bg: 'bg-blue-500/10' },
-                            { val: completedCount,                                label: 'Completed',     color: 'text-emerald-400',  bg: 'bg-emerald-500/10' },
-                            { val: `₹${(totalRevenue / 1000).toFixed(1)}K`,     label: 'IT Revenue',    color: 'text-amber-400',    bg: 'bg-amber-500/10' },
+                            { val: visible.length,   label: 'Showing',    color: 'text-white',        bg: 'bg-slate-700/60' },
+                            { val: runningCount,     label: 'Running',    color: 'text-blue-400',     bg: 'bg-blue-500/10' },
+                            { val: upcomingCount,    label: 'Upcoming',   color: 'text-violet-400',   bg: 'bg-violet-500/10' },
+                            { val: completedCount,   label: 'Completed',  color: 'text-emerald-400',  bg: 'bg-emerald-500/10' },
+                            { val: failedCount,      label: 'Failed',     color: 'text-rose-400',     bg: 'bg-rose-500/10' },
+                            { val: `₹${(totalRevenue / 1000).toFixed(1)}K`, label: 'IT Revenue', color: 'text-amber-400', bg: 'bg-amber-500/10' },
                         ].map(s => (
                             <div key={s.label} className={`text-center space-y-1 py-3 rounded-xl ${s.bg}`}>
                                 <p className={`text-2xl font-black ${s.color}`}>{s.val}</p>
