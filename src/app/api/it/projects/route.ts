@@ -10,6 +10,7 @@ import { createNotification } from "@/lib/system-notifications";
 import { logger } from "@/lib/logger";
 import { itProjectSchema } from "@/lib/validation/schemas";
 import { getDownlineUserIds } from "@/lib/hierarchy";
+import { buildProjectRoster } from "@/lib/it/roster";
 
 export const dynamic = "force-dynamic";
 
@@ -32,29 +33,6 @@ const ALL_ACCESS_ROLES = [
   "IT_ADMIN",
   "MANAGER",
 ];
-
-/**
- * Project roster roles, most senior first. A person attached in several ways (say, the
- * project manager who also owns two tasks) is listed once under their highest role.
- */
-const TEAM_ROLE_RANK = {
-  Manager: 0,
-  Lead: 1,
-  Contributor: 2,
-  Member: 3,
-} as const;
-type TeamRole = keyof typeof TEAM_ROLE_RANK;
-
-interface Personnel {
-  id: string;
-  name: string | null;
-  email: string | null;
-}
-interface TeamMember extends Personnel {
-  role: TeamRole;
-  openTasks: number;
-  doneTasks: number;
-}
 
 // GET /api/it/projects - List all projects (filtered by role)
 export const GET = authorizedRoute(
@@ -164,44 +142,14 @@ export const GET = authorizedRoute(
         const completionRate =
           totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-        // Command personnel, tagged employees and anyone holding a task on it, deduped.
-        // Someone who appears twice keeps their highest-ranking role.
-        const team = new Map<string, TeamMember>();
-        const enrol = (person: Personnel | null, role: TeamRole) => {
-          if (!person) return;
-          const existing = team.get(person.id);
-          if (existing) {
-            if (TEAM_ROLE_RANK[role] < TEAM_ROLE_RANK[existing.role])
-              existing.role = role;
-            return;
-          }
-          team.set(person.id, {
-            id: person.id,
-            name: person.name,
-            email: person.email,
-            role,
-            openTasks: 0,
-            doneTasks: 0,
-          });
-        };
-
-        enrol(project.projectManager, "Manager");
-        enrol(project.teamLead, "Lead");
-        project.taggedEmployees.forEach((e) => enrol(e, "Member"));
-        project.tasks.forEach((task) => {
-          if (!task.assignedTo) return;
-          enrol(task.assignedTo, "Contributor");
-          const member = team.get(task.assignedTo.id);
-          if (!member) return;
-          if (task.status === "COMPLETED") member.doneTasks += 1;
-          else if (task.status !== "CANCELLED") member.openTasks += 1;
+        // Command personnel, tagged employees and anyone holding a task on it, deduped —
+        // same builder the project detail page runs, so the two screens always agree.
+        const roster = buildProjectRoster({
+          projectManager: project.projectManager,
+          teamLead: project.teamLead,
+          taggedEmployees: project.taggedEmployees,
+          tasks: project.tasks,
         });
-
-        const roster = [...team.values()].sort(
-          (a, b) =>
-            TEAM_ROLE_RANK[a.role] - TEAM_ROLE_RANK[b.role] ||
-            (a.name || "").localeCompare(b.name || ""),
-        );
 
         return {
           ...project,
