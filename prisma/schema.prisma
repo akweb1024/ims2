@@ -1869,6 +1869,11 @@ model EmployeeProfile {
   privateDailyNoteTags     PrivateDailyNoteTag[]
   metricContributions      MetricContribution[]
   performanceIndices       PerformanceIndex[]
+
+  // Declared to match reality: 20260708120000_employee_standing_shift already creates this
+  // index, so every migrated database has it while the schema did not admit to it — which
+  // made `prisma migrate diff` report phantom drift against a perfectly correct database.
+  @@index([shiftId])
 }
 
 model PrivateDailyNote {
