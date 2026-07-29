@@ -7,22 +7,33 @@ import {
     ListTodo, FolderKanban, Clock, CheckCircle2, CircleDot,
     AlertCircle, ArrowRight, BarChart3, RefreshCw, Eye, ChevronRight, Calendar, User, Tag, LayoutGrid, Zap, Sparkles, TrendingUp
 } from 'lucide-react';
+import { StartPill, PeopleStack, LIFECYCLE_ICON } from '@/components/dashboard/it/LifecycleUI';
+import {
+    taskLifecycle, projectLifecycle, lifecycleStart, lifecycleLabel,
+    LIFECYCLE_THEME, TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS, PROJECT_LIFECYCLE_LABELS,
+    type LifecycleKey,
+} from '@/lib/it/lifecycle';
+
+interface Person { id: string; name: string | null; email: string | null }
 
 interface Task {
     id: string; taskCode: string; title: string; description?: string;
     status: string; priority: string; category: string; progressPercent: number;
-    dueDate?: string;
+    startDate?: string | null; dueDate?: string | null; completedAt?: string | null;
     project?: { id: string; name: string; projectCode: string };
-    assignedTo?: { id: string; name: string; email: string };
-    createdBy?: { id: string; name: string; email: string };
+    assignedTo?: Person | null;
+    createdBy?: Person | null;
+    reporter?: Person | null;
     tags: string[];
 }
 
 interface Project {
     id: string; projectCode: string; name: string; status: string; priority: string; category: string;
+    startDate?: string | null; endDate?: string | null; completedAt?: string | null;
     stats: { totalTasks: number; completedTasks: number; inProgressTasks: number; completionRate: number };
-    projectManager?: { id: string; name: string; email: string };
-    teamLead?: { id: string; name: string; email: string };
+    projectManager?: Person | null;
+    teamLead?: Person | null;
+    team?: Array<{ id: string; name: string | null; email: string | null; role: string; openTasks: number; doneTasks: number }>;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
@@ -33,20 +44,13 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
     CANCELLED: { label: 'Aborted', bg: 'bg-rose-50/50', text: 'text-rose-700', dot: 'bg-rose-500' },
 };
 
+// Task priority is the Priority enum: LOW / MEDIUM / HIGH / URGENT. There is no CRITICAL.
 const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
     LOW: { label: 'Low', text: 'text-emerald-600', bg: 'bg-emerald-50' },
     MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },
     HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },
-    CRITICAL: { label: 'Critical', text: 'text-rose-600', bg: 'bg-rose-50' },
+    URGENT: { label: 'Urgent', text: 'text-rose-600', bg: 'bg-rose-50' },
 };
-
-const STAT_FILTERS = [
-    { label: 'Total', filter: 'ALL', color: 'bg-slate-900', key: 'total' as const },
-    { label: 'Pending', filter: 'PENDING', color: 'bg-amber-500', key: 'pending' as const },
-    { label: 'Active', filter: 'IN_PROGRESS', color: 'bg-blue-600', key: 'inProgress' as const },
-    { label: 'In Review', filter: 'UNDER_REVIEW', color: 'bg-indigo-500', key: 'underReview' as const },
-    { label: 'Settled', filter: 'COMPLETED', color: 'bg-emerald-600', key: 'completed' as const },
-];
 
 export default function MyTasksPage() {
     const router = useRouter();
@@ -54,7 +58,7 @@ export default function MyTasksPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
-    const [activeFilter, setActiveFilter] = useState<string>('ALL');
+    const [stage, setStage] = useState<LifecycleKey | 'ALL'>('ALL');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -84,16 +88,29 @@ export default function MyTasksPage() {
         } catch (err) { console.error('Progress update failed:', err); }
     };
 
-    const stats = {
-        total: tasks.length,
-        pending: tasks.filter(t => t.status === 'PENDING').length,
-        inProgress: tasks.filter(t => t.status === 'IN_PROGRESS').length,
-        underReview: tasks.filter(t => t.status === 'UNDER_REVIEW').length,
-        completed: tasks.filter(t => t.status === 'COMPLETED').length,
-    };
+    // Stamp every task with its lifecycle stage and kick-off state, the same way the IT task
+    // board and the projects grid do, so a person sees one vocabulary across all of them.
+    const staged = tasks.map(task => {
+        const lifecycle = taskLifecycle(task.status);
+        return {
+            ...task,
+            lifecycle,
+            start: lifecycleStart({
+                lifecycle,
+                startDate: task.startDate,
+                dueDate: task.dueDate,
+                completedAt: task.completedAt,
+            }),
+        };
+    });
 
-    const filteredTasks = activeFilter === 'ALL' ? tasks : tasks.filter(t => t.status === activeFilter);
-    const isOverdue = (dueDate?: string) => dueDate ? new Date(dueDate) < new Date() : false;
+    const stageCounts = staged.reduce<Record<string, number>>((acc, t) => {
+        acc[t.lifecycle] = (acc[t.lifecycle] ?? 0) + 1;
+        return acc;
+    }, {});
+
+    const filteredTasks = stage === 'ALL' ? staged : staged.filter(t => t.lifecycle === stage);
+    const lateCount = staged.filter(t => t.start.tone === 'late').length;
 
     if (loading) {
         return (
@@ -132,23 +149,44 @@ export default function MyTasksPage() {
                     </div>
                 </motion.div>
 
-                {/* Status Hub */}
+                {/* Lifecycle Hub — one tile per stage, doubling as the queue filter */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                    {STAT_FILTERS.map((s, idx) => (
-                        <motion.button key={s.filter} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            onClick={() => setActiveFilter(s.filter)}
-                            className={`group relative p-6 rounded-[2rem] border transition-all text-left overflow-hidden ${activeFilter === s.filter ? 'bg-white border-white shadow-xl ring-2 ring-indigo-600/10' : 'bg-white/40 border-white/60 hover:bg-white/60 hover:border-white h-full'}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`h-2 w-2 rounded-full ${s.color}`} />
-                                {activeFilter === s.filter && <Sparkles className="h-4 w-4 text-indigo-600" />}
-                            </div>
-                            <h3 className="text-3xl font-black text-slate-900 leading-none">{stats[s.key]}</h3>
-                            <p className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
-                            {activeFilter === s.filter && <div className="absolute bottom-0 left-0 h-1 bg-indigo-600 transition-all w-full" />}
-                        </motion.button>
-                    ))}
+                    {[
+                        { key: 'ALL' as const, label: 'Everything', count: staged.length, dot: 'bg-slate-900', accent: 'text-slate-900' },
+                        ...TASK_LIFECYCLES.map(k => ({
+                            key: k,
+                            label: lifecycleLabel(k, TASK_LIFECYCLE_LABELS),
+                            count: stageCounts[k] ?? 0,
+                            dot: LIFECYCLE_THEME[k].dot,
+                            accent: LIFECYCLE_THEME[k].light.text,
+                        })),
+                    ].map((s, idx) => {
+                        const active = stage === s.key;
+                        const Icon = s.key === 'ALL' ? Sparkles : LIFECYCLE_ICON[s.key];
+                        return (
+                            <motion.button key={s.key} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                                onClick={() => setStage(active ? 'ALL' : s.key)}
+                                className={`group relative p-6 rounded-[2rem] border transition-all text-left overflow-hidden ${active ? 'bg-white border-white shadow-xl ring-2 ring-indigo-600/10' : 'bg-white/40 border-white/60 hover:bg-white/60 hover:border-white h-full'}`}
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`h-2 w-2 rounded-full ${s.dot}`} />
+                                    <Icon className={`h-4 w-4 ${active ? s.accent : 'text-slate-300'}`} />
+                                </div>
+                                <h3 className={`text-3xl font-black leading-none ${active ? s.accent : 'text-slate-900'}`}>{s.count}</h3>
+                                <p className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
+                                {active && <div className="absolute bottom-0 left-0 h-1 bg-indigo-600 transition-all w-full" />}
+                            </motion.button>
+                        );
+                    })}
                 </div>
+
+                {lateCount > 0 && (
+                    <div className="px-2 -mt-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-black uppercase tracking-widest">
+                            <AlertCircle className="h-3 w-3" /> {lateCount} behind schedule
+                        </span>
+                    </div>
+                )}
 
                 {/* Mission Stream (Projects) */}
                 {projects.length > 0 && (
@@ -162,33 +200,52 @@ export default function MyTasksPage() {
                            </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {projects.map((project, idx) => (
-                                <motion.div key={project.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + (idx * 0.1) }}
-                                    onClick={() => router.push(`/dashboard/it-management/projects/${project.id}`)}
-                                    className="group bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/80 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer transition-all border-b-4 hover:border-b-blue-500 overflow-hidden"
-                                >
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.projectCode}</p>
-                                            <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors truncate">{project.name}</h3>
+                            {projects.map((project, idx) => {
+                                const lifecycle = projectLifecycle(project.status);
+                                const stageTheme = LIFECYCLE_THEME[lifecycle];
+                                const projectStart = lifecycleStart({
+                                    lifecycle,
+                                    startDate: project.startDate,
+                                    dueDate: project.endDate,
+                                    completedAt: project.completedAt,
+                                });
+                                return (
+                                    <motion.div key={project.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + (idx * 0.1) }}
+                                        onClick={() => router.push(`/dashboard/it-management/projects/${project.id}`)}
+                                        className="group bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/80 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer transition-all border-b-4 hover:border-b-blue-500 overflow-hidden"
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.projectCode}</p>
+                                                <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors truncate">{project.name}</h3>
+                                            </div>
+                                            <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" />
                                         </div>
-                                        <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" />
-                                    </div>
-                                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                            <span className="text-slate-400">Tactical Progress</span>
-                                            <span className="text-blue-600">{project.stats.completionRate}%</span>
+                                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${stageTheme.light.bg} ${stageTheme.light.text} ${stageTheme.light.border}`}>
+                                                {lifecycleLabel(lifecycle, PROJECT_LIFECYCLE_LABELS)}
+                                            </span>
+                                            <StartPill state={projectStart} tone="light" />
                                         </div>
-                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                            <motion.div initial={{ width: 0 }} animate={{ width: `${project.stats.completionRate}%` }} className="h-full bg-blue-600 rounded-full" />
+                                        <div className="space-y-4 pt-4 border-t border-slate-100">
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                <span className="text-slate-400">Tactical Progress</span>
+                                                <span className="text-blue-600">{project.stats.completionRate}%</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <motion.div initial={{ width: 0 }} animate={{ width: `${project.stats.completionRate}%` }} className="h-full bg-blue-600 rounded-full" />
+                                            </div>
+                                            <div className="flex justify-between items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                <PeopleStack
+                                                    people={(project.team ?? []).map(m => ({ id: m.id, name: m.name, email: m.email, role: m.role }))}
+                                                    tone="light" size="sm" max={4} caption="on it" emptyLabel="No crew"
+                                                />
+                                                <span className="flex items-center gap-1.5 shrink-0"><TrendingUp className="h-3 w-3" /> {project.stats.inProgressTasks} Active</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            <span className="flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> {project.stats.inProgressTasks} Active</span>
-                                            <span>{project.stats.completedTasks} Resolved</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}
@@ -199,8 +256,8 @@ export default function MyTasksPage() {
                         <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
                             <ListTodo className="h-6 w-6 text-indigo-600" /> Operational Queue
                         </h2>
-                        {activeFilter !== 'ALL' && (
-                            <button onClick={() => setActiveFilter('ALL')} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Reset Stream Filter ×</button>
+                        {stage !== 'ALL' && (
+                            <button onClick={() => setStage('ALL')} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Reset Stream Filter ×</button>
                         )}
                     </div>
 
@@ -220,7 +277,15 @@ export default function MyTasksPage() {
                                 filteredTasks.map((task, idx) => {
                                     const ui = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING;
                                     const prio = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.MEDIUM;
-                                    const overdue = isOverdue(task.dueDate) && task.status !== 'COMPLETED';
+                                    const overdue = task.start.tone === 'late';
+                                    // Who else is on this besides me — whoever raised it and whoever reports on it.
+                                    const people = [
+                                        ...(task.assignedTo ? [{ ...task.assignedTo, role: 'Assignee' }] : []),
+                                        ...(task.createdBy && task.createdBy.id !== task.assignedTo?.id
+                                            ? [{ ...task.createdBy, role: 'Raised by' }] : []),
+                                        ...(task.reporter && task.reporter.id !== task.assignedTo?.id && task.reporter.id !== task.createdBy?.id
+                                            ? [{ ...task.reporter, role: 'Reporter' }] : []),
+                                    ];
                                     return (
                                         <motion.div key={task.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05 }}
                                             className={`group relative bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm hover:shadow-xl transition-all ${overdue ? 'border-rose-100 ring-4 ring-rose-500/5' : ''}`}
@@ -235,11 +300,8 @@ export default function MyTasksPage() {
                                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${prio.bg} ${prio.text}`}>
                                                             {prio.label} Severity
                                                         </span>
-                                                        {overdue && (
-                                                            <span className="px-2 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5 shadow-lg shadow-rose-200">
-                                                                <AlertCircle className="h-3 w-3" /> Critical Delay
-                                                            </span>
-                                                        )}
+                                                        {/* Has it started, and is it on time? */}
+                                                        <StartPill state={task.start} tone="light" />
                                                     </div>
                                                     
                                                     <div className="space-y-1">
@@ -249,7 +311,7 @@ export default function MyTasksPage() {
                                                         <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                                             {task.project && <span className="flex items-center gap-1.5 text-blue-500"><LayoutGrid className="h-3.5 w-3.5" />{task.project.name}</span>}
                                                             {task.dueDate && <span className={`flex items-center gap-1.5 ${overdue ? 'text-rose-500' : ''}`}><Calendar className="h-3.5 w-3.5" />Limit: {new Date(task.dueDate).toLocaleDateString()}</span>}
-                                                            {task.createdBy && <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5" />Origin: {task.createdBy.name}</span>}
+                                                            <PeopleStack people={people} tone="light" size="sm" caption={null} emptyLabel="Unassigned" />
                                                         </div>
                                                     </div>
 
@@ -270,6 +332,7 @@ export default function MyTasksPage() {
                                                             <option value="IN_PROGRESS">Active</option>
                                                             <option value="UNDER_REVIEW">Review</option>
                                                             <option value="COMPLETED">Settled</option>
+                                                            <option value="CANCELLED">Aborted</option>
                                                         </select>
                                                     </div>
                                                     <div className="space-y-1">

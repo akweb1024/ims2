@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { LifeBuoy, Plus, X, ArrowRight, Building2, Clock, UserCheck } from 'lucide-react';
+import { LifeBuoy, Plus, X, ArrowRight, Building2, Clock, UserCheck, AlertCircle } from 'lucide-react';
 import {
     useTickets,
     useTicketMutations,
@@ -12,6 +12,12 @@ import {
     PRIORITY_STYLE,
     type TicketScope,
 } from '@/hooks/useSupportTickets';
+import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
+import {
+    ticketLifecycle, lifecycleStart,
+    TICKET_LIFECYCLES, TICKET_LIFECYCLE_LABELS,
+    type LifecycleKey,
+} from '@/lib/it/lifecycle';
 
 const TRIAGE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER', 'TEAM_LEADER'];
 const CATEGORIES = ['GENERAL', 'HARDWARE', 'SOFTWARE', 'NETWORK', 'ACCESS', 'OTHER'];
@@ -41,6 +47,40 @@ export default function SupportPage() {
         ],
         [isTriager],
     );
+
+    /* Scope answers "whose tickets"; stage answers "what state" — the two compose. */
+    const [stage, setStage] = useState<LifecycleKey | 'ALL'>('ALL');
+
+    const staged = useMemo(
+        () =>
+            tickets.map((t: any) => {
+                const lifecycle = ticketLifecycle(t.status);
+                return {
+                    ...t,
+                    lifecycle,
+                    start: lifecycleStart({
+                        lifecycle,
+                        kind: 'queue',
+                        startDate: t.createdAt,
+                        dueDate: t.dueAt,
+                        completedAt: t.resolvedAt,
+                    }),
+                };
+            }),
+        [tickets],
+    );
+
+    const stageCounts = useMemo(
+        () =>
+            staged.reduce<Record<string, number>>((acc, t) => {
+                acc[t.lifecycle] = (acc[t.lifecycle] ?? 0) + 1;
+                return acc;
+            }, {}),
+        [staged],
+    );
+
+    const visible = stage === 'ALL' ? staged : staged.filter((t) => t.lifecycle === stage);
+    const breached = staged.filter((t) => t.start.tone === 'late').length;
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,16 +120,43 @@ export default function SupportPage() {
                 ))}
             </div>
 
+            {!isLoading && tickets.length > 0 && (
+                <div className="space-y-3">
+                    <LifecycleTabs
+                        tone="light"
+                        value={stage}
+                        onChange={setStage}
+                        stages={TICKET_LIFECYCLES}
+                        counts={stageCounts}
+                        total={staged.length}
+                        labels={TICKET_LIFECYCLE_LABELS}
+                        allLabel="All States"
+                    />
+                    {breached > 0 && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-black uppercase tracking-widest">
+                            <AlertCircle size={12} /> {breached} past due
+                        </span>
+                    )}
+                </div>
+            )}
+
             {isLoading ? (
                 <div className="p-10 text-center animate-pulse">Loading tickets…</div>
-            ) : tickets.length === 0 ? (
+            ) : visible.length === 0 ? (
                 <div className="card-premium p-12 text-center text-secondary-400">
                     <LifeBuoy size={40} className="mx-auto mb-3 opacity-40" />
-                    <p className="font-bold text-secondary-600">No tickets here yet.</p>
+                    <p className="font-bold text-secondary-600">
+                        {stage === 'ALL' ? 'No tickets here yet.' : 'Nothing sits in this state right now.'}
+                    </p>
+                    {stage !== 'ALL' && (
+                        <button onClick={() => setStage('ALL')} className="mt-4 text-xs font-black text-primary-600 uppercase tracking-widest hover:underline">
+                            Show all states
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {tickets.map((t: any) => (
+                    {visible.map((t: any) => (
                         <Link key={t.id} href={`/dashboard/support-desk/${t.id}`} className="card-premium p-5 flex items-center justify-between gap-4 hover:-translate-y-0.5 hover:shadow-lg transition-all group">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -98,19 +165,24 @@ export default function SupportPage() {
                                     {t.department?.name && (
                                         <span className="text-[10px] font-bold text-secondary-400 uppercase tracking-wider flex items-center gap-1"><Building2 size={11} /> {t.department.name}</span>
                                     )}
-                                    {t.dueAt && !['RESOLVED', 'CLOSED'].includes(t.status) && (
-                                        new Date(t.dueAt) < new Date() ? (
-                                            <span className="text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider bg-rose-50 text-rose-700 border-rose-200">Overdue</span>
-                                        ) : (
-                                            <span className="text-[10px] font-bold text-secondary-400 uppercase tracking-wider">Due {new Date(t.dueAt).toLocaleDateString()}</span>
-                                        )
-                                    )}
+                                    {/* Waiting / being worked / breached, in the shared vocabulary */}
+                                    <StartPill state={t.start} tone="light" />
                                 </div>
                                 <h3 className="font-black text-secondary-900 truncate group-hover:text-primary-600">{t.title}</h3>
-                                <div className="flex items-center gap-3 mt-1 text-xs text-secondary-500">
-                                    <span>by {t.requester?.name || t.requester?.email || 'Unknown'}</span>
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-secondary-500">
+                                    <PeopleStack
+                                        tone="light" size="sm" caption={null} emptyLabel="Nobody on it"
+                                        people={[
+                                            ...(t.assignedTo ? [{ ...t.assignedTo, role: 'Working on it' }] : []),
+                                            ...(t.requester && t.requester.id !== t.assignedTo?.id
+                                                ? [{ ...t.requester, role: 'Requester' }] : []),
+                                        ]}
+                                    />
+                                    <span className="flex items-center gap-1">
+                                        <UserCheck size={11} />
+                                        {t.assignedTo ? (t.assignedTo.name || t.assignedTo.email) : 'Unassigned'}
+                                    </span>
                                     <span className="flex items-center gap-1"><Clock size={11} /> {new Date(t.createdAt).toLocaleDateString()}</span>
-                                    {t.assignedTo?.name && <span className="flex items-center gap-1"><UserCheck size={11} /> {t.assignedTo.name}</span>}
                                     {t._count?.comments > 0 && <span>{t._count.comments} repl{t._count.comments === 1 ? 'y' : 'ies'}</span>}
                                 </div>
                             </div>

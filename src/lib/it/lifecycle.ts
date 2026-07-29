@@ -268,9 +268,13 @@ export function lifecycleStart(input: StartInput): StartState {
   }
 
   if (lifecycle === 'ARCHIVED') {
+    // Carry the date when we have one — the status badge next to this already says "closed",
+    // so repeating the word adds nothing.
     return {
       tone: 'stopped',
-      label: kind === 'queue' ? 'Closed' : 'Archived',
+      label: kind === 'queue'
+        ? (done ? `Closed ${formatDay(done)}` : 'Closed')
+        : 'Archived',
       detail: start ? `${began} ${formatDay(start)}` : 'Filed away',
       started: Boolean(start),
     };
