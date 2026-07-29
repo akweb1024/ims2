@@ -21,23 +21,31 @@ import ProjectComments from '@/components/dashboard/it/ProjectComments';
 import ProjectSuggestions from '@/components/dashboard/it/ProjectSuggestions';
 import FleetAuditModal from '@/components/dashboard/it/FleetAuditModal';
 import WorkSessionPanel from '@/components/dashboard/work-sessions/WorkSessionPanel';
+import { StartPill, PeopleStack, LIFECYCLE_ICON } from '@/components/dashboard/it/LifecycleUI';
+import {
+    projectLifecycle, lifecycleStart, LIFECYCLE_THEME,
+    PROJECT_LIFECYCLE_LABELS, lifecycleLabel,
+} from '@/lib/it/lifecycle';
+import { buildProjectRoster, rosterMemberNote } from '@/lib/it/roster';
 
 interface Project {
     id: string; projectCode: string; name: string; description: string | null;
     category: string; type: string; status: string; priority: string;
     isRevenueBased: boolean; estimatedRevenue: number; actualRevenue: number;
     itRevenueEarned: number; itDepartmentCut: number;
-    startDate: string | null; endDate: string | null; createdAt: string; updatedAt: string;
+    startDate: string | null; endDate: string | null; completedAt: string | null;
+    createdAt: string; updatedAt: string;
     about?: string | null; details?: string | null; keywords?: string[];
     department?: { id: string; name: string } | null;
     website?: { id: string; name: string; url: string; status: string } | null;
-    taggedEmployees?: Array<{ id: string; name: string; email: string; employeeProfile: { profilePicture: string | null } | null }>;
-    projectManager: { id: string; name: string; email: string; employeeProfile?: { profilePicture: string | null } } | null;
-    teamLead: { id: string; name: string; email: string; employeeProfile?: { profilePicture: string | null } } | null;
+    taggedEmployees?: Array<{ id: string; name: string | null; email: string; employeeProfile: { profilePicture: string | null } | null }>;
+    projectManager: { id: string; name: string | null; email: string; employeeProfile?: { profilePicture: string | null } | null } | null;
+    teamLead: { id: string; name: string | null; email: string; employeeProfile?: { profilePicture: string | null } | null } | null;
+    timeEntries?: Array<{ id: string; hours: number; user: { id: string; name: string | null } | null }>;
     visibility: 'PRIVATE' | 'PUBLIC' | 'INDIVIDUALS';
     sharedWithIds: string[];
     milestones: Array<{ id: string; name: string; description: string | null; dueDate: string; status: string; completedAt: string | null; paymentAmount: number | null; isPaid: boolean; }>;
-    tasks: Array<{ id: string; taskCode: string; title: string; status: string; priority: string; type: string; progressPercent: number; assignedTo: { id: string; name: string; } | null; }>;
+    tasks: Array<{ id: string; taskCode: string; title: string; status: string; priority: string; type: string; progressPercent: number; assignedTo: { id: string; name: string | null; } | null; }>;
     suggestions: Array<{ id: string; content: string; status: 'PENDING' | 'RESOLVED' | 'FAILED' | 'HOLD'; authorName: string | null; createdAt: string; userId: string | null; user?: { id: string; name: string; employeeProfile?: { profilePicture: string | null } } }>;
     stats: { 
         totalTasks: number; 
@@ -137,6 +145,33 @@ export default function ProjectDetailPage() {
     }
 
     const stConf = STATUS_CONFIG[project.status] || { label: project.status, bg: 'bg-slate-500/10', text: 'text-slate-400', dot: 'bg-slate-400', shadow: '', border: 'border-slate-500/20' };
+
+    /* ── Lifecycle: which stage, has it started, and who is on it ────────── */
+    const lifecycle = projectLifecycle(project.status);
+    const stage = LIFECYCLE_THEME[lifecycle];
+    const StageIcon = LIFECYCLE_ICON[lifecycle];
+    const start = lifecycleStart({
+        lifecycle,
+        startDate: project.startDate,
+        dueDate: project.endDate,
+        completedAt: project.completedAt,
+    });
+    // Same builder the projects grid uses, so "6 on it" on the card matches this page.
+    const roster = buildProjectRoster({
+        projectManager: project.projectManager,
+        teamLead: project.teamLead,
+        taggedEmployees: project.taggedEmployees,
+        tasks: project.tasks,
+        timeEntries: project.timeEntries,
+    });
+    // Profile pictures only come through for named personnel and tagged employees, so keep a
+    // lookup and fall back to initials for anyone who joined via a task or a time entry.
+    const avatarById = new Map<string, string>();
+    [project.projectManager, project.teamLead, ...(project.taggedEmployees ?? [])].forEach(p => {
+        const pic = p?.employeeProfile?.profilePicture;
+        if (p?.id && pic) avatarById.set(p.id, pic);
+    });
+
     const userRole = (session?.user as any)?.role;
     const isAuthorized = userRole && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
     const isProjectManager = project.projectManager?.id === (session?.user as any)?.id;
@@ -234,11 +269,75 @@ export default function ProjectDetailPage() {
                     </div>
                 </motion.div>
 
+                {/* ── MISSION CLOCK ──────────────────────────── */}
+                {/* The three questions the grid card raises: what stage, has it started, who is on it. */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                    className="bg-slate-800/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 lg:p-8 flex flex-col xl:flex-row xl:items-center gap-6 xl:gap-8"
+                >
+                    <div className="flex items-center gap-4 shrink-0">
+                        <div className={`p-3.5 rounded-2xl border ${stage.dark.bg} ${stage.dark.border} ${stage.dark.text}`}>
+                            <StageIcon className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Lifecycle Stage</p>
+                            <p className="text-xl font-black text-white tracking-tight">
+                                {lifecycleLabel(lifecycle, PROJECT_LIFECYCLE_LABELS)}
+                            </p>
+                            <p className="text-[10px] font-semibold text-slate-500">{stage.blurb}</p>
+                        </div>
+                    </div>
+
+                    <div className="h-px xl:h-16 xl:w-px bg-white/10 shrink-0" />
+
+                    <div className="space-y-2 shrink-0">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Kick-off</p>
+                        <StartPill state={start} />
+                        <p className="text-[10px] font-semibold text-slate-500">{start.detail}</p>
+                    </div>
+
+                    <div className="h-px xl:h-16 xl:w-px bg-white/10 shrink-0" />
+
+                    <div className="flex items-center gap-6 shrink-0">
+                        {[
+                            { label: 'Planned Start', value: project.startDate, icon: Calendar },
+                            { label: 'Target Close', value: project.endDate, icon: Target },
+                            ...(project.completedAt ? [{ label: 'Delivered', value: project.completedAt, icon: CheckCircle2 }] : []),
+                        ].map(d => (
+                            <div key={d.label} className="space-y-1">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                    <d.icon className="h-3 w-3" /> {d.label}
+                                </p>
+                                <p className="text-sm font-black text-slate-200">
+                                    {d.value
+                                        ? new Date(d.value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+                                        : <span className="text-slate-600">Not set</span>}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="xl:flex-1" />
+
+                    <div className="space-y-2 shrink-0">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">On The Ground</p>
+                        <PeopleStack
+                            people={roster.map(m => ({
+                                id: m.id, name: m.name, email: m.email,
+                                role: m.role, note: rosterMemberNote(m),
+                            }))}
+                            max={6}
+                            caption="on it"
+                            emptyLabel="Nobody assigned yet"
+                        />
+                    </div>
+                </motion.div>
+
                 {/* ── METRICS GRID ─────────────────────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
                         { label: 'Lifecycle State', val: project.status, icon: Activity, color: stConf.text, trend: 'STABLE' },
-                        { label: 'Criticality Level', val: project.priority, icon: ShieldAlert, color: project.priority === 'CRITICAL' ? 'text-rose-400' : 'text-amber-400', trend: 'WATCH' },
+                        // Priority enum is LOW/MEDIUM/HIGH/URGENT — there is no CRITICAL.
+                        { label: 'Criticality Level', val: project.priority, icon: ShieldAlert, color: project.priority === 'URGENT' ? 'text-rose-400' : 'text-amber-400', trend: 'WATCH' },
                         { label: 'Efficiency Rate', val: `${project.stats.completionRate}%`, icon: Zap, color: 'text-emerald-400', trend: '+12.4%', progress: project.stats.completionRate },
                         { label: project.isRevenueBased ? 'Revenue Yield' : 'Mission Stream', val: project.isRevenueBased ? `₹${(project.itRevenueEarned / 1000).toFixed(1)}K` : project.type, icon: Binary, color: 'text-blue-400', trend: 'ACTIVE' },
                     ].map((stat, i) => (
@@ -658,63 +757,57 @@ export default function ProjectDetailPage() {
                         >
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-3">
                                 <Users className="h-4 w-4 text-blue-400" /> Team Topology
+                                <span className="ml-auto px-2 py-0.5 rounded-lg bg-slate-700/60 border border-white/10 text-slate-300 text-[9px]">
+                                    {roster.length}
+                                </span>
                             </h3>
-                            <div className="space-y-6">
-                                {[
-                                    { role: 'Mission Director', person: project.projectManager, badge: 'LEAD' },
-                                    { role: 'Tactical Lead', person: project.teamLead, badge: 'CORE' }
-                                ].map((node, i) => (
-                                    <div key={i} className="flex items-center gap-4 group/item relative">
-                                        {node.person?.employeeProfile?.profilePicture ? (
-                                            <Image
-                                                src={node.person.employeeProfile.profilePicture}
-                                                alt={`${node.person?.name || 'Team member'} profile`}
-                                                width={48}
-                                                height={48}
-                                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-white/10"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white/50 font-black border border-white/10">
-                                                {node.person?.name.charAt(0) || '?'}
-                                            </div>
-                                        )}
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{node.role}</p>
-                                                <span className="text-[7px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase">{node.badge}</span>
-                                            </div>
-                                            <p className="text-sm font-black text-white">{node.person?.name || 'UNASSIGNED'}</p>
-                                        </div>
-                                    </div>
-                                ))}
 
-                                {project.taggedEmployees && project.taggedEmployees.length > 0 && (
-                                    <div className="pt-6 border-t border-white/10">
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Field Agents</p>
-                                        <div className="flex -space-x-2 overflow-hidden px-1">
-                                            {project.taggedEmployees.slice(0, 5).map((emp, j) => (
-                                                <div key={emp.id} className="inline-block h-8 w-8 rounded-lg outline outline-2 outline-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-black text-white" title={emp.name}>
-                                                    {emp.employeeProfile?.profilePicture ? (
-                                                        <Image
-                                                            src={emp.employeeProfile.profilePicture}
-                                                            alt={`${emp.name} profile`}
-                                                            width={32}
-                                                            height={32}
-                                                            className="h-full w-full object-cover rounded-lg"
-                                                            unoptimized
-                                                        />
-                                                    ) : emp.name.charAt(0)}
-                                                </div>
-                                            ))}
-                                            {project.taggedEmployees.length > 5 && (
-                                                <div className="flex items-center justify-center h-8 w-8 rounded-lg outline outline-2 outline-slate-900 bg-blue-600/50 text-[9px] font-black text-white">
-                                                    +{project.taggedEmployees.length - 5}
+                            {/* Everyone attached to the project — named personnel, tagged staff, and
+                                anyone holding a task or logging hours against it. */}
+                            <div className="space-y-5">
+                                {roster.length === 0 && (
+                                    <p className="text-xs font-semibold text-slate-500">
+                                        Nobody is attached to this project yet.
+                                    </p>
+                                )}
+
+                                {roster.map(member => {
+                                    const picture = avatarById.get(member.id);
+                                    const label = member.name?.trim() || member.email?.split('@')[0] || 'Unknown';
+                                    const note = rosterMemberNote(member);
+                                    const isCommand = member.role === 'Manager' || member.role === 'Lead';
+                                    return (
+                                        <div key={member.id} className="flex items-center gap-4">
+                                            {picture ? (
+                                                <Image
+                                                    src={picture}
+                                                    alt={`${label} profile`}
+                                                    width={44}
+                                                    height={44}
+                                                    className="w-11 h-11 rounded-xl object-cover ring-2 ring-white/10 shrink-0"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white/60 font-black border border-white/10 shrink-0">
+                                                    {label.charAt(0).toUpperCase()}
                                                 </div>
                                             )}
+                                            <div className="space-y-1 min-w-0">
+                                                <span className={`text-[7px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
+                                                    isCommand
+                                                        ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                                        : 'bg-slate-700/60 text-slate-400 border-white/10'
+                                                }`}>
+                                                    {member.role}
+                                                </span>
+                                                <p className="text-sm font-black text-white truncate">{label}</p>
+                                                {note && (
+                                                    <p className="text-[10px] font-semibold text-slate-500">{note}</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })}
                             </div>
                         </motion.div>
 
