@@ -54,7 +54,7 @@ const COLUMN_GRID: Record<number, string> = {
 };
 
 const PRIORITY_STYLE: Record<string, { bg: string; text: string; border: string }> = {
-    CRITICAL: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
+    URGENT: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
     HIGH: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
     MEDIUM: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
     LOW: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
@@ -218,7 +218,7 @@ export default function TasksPage() {
                     className="group relative bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-white/5 hover:border-white/10 p-4 transition-all overflow-hidden"
                 >
                     {/* Priority left-bar */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl ${task.priority === 'CRITICAL' ? 'bg-rose-500' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                    <div className={`absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl ${task.priority === 'URGENT' ? 'bg-rose-500' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
 
                     <div className="pl-1.5">
                         <div className="flex items-center justify-between mb-2.5">
@@ -360,7 +360,7 @@ export default function TasksPage() {
                                 <div className="px-5 pb-5 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
                                     {[
                                         { label: 'Category', value: typeFilter, onChange: setTypeFilter, options: [['', 'All Streams'], ['REVENUE', 'Revenue'], ['SUPPORT', 'Support'], ['MAINTENANCE', 'Maintenance'], ['URGENT', 'Emergency'], ['SERVICE_REQUEST', 'Service Req']] },
-                                        { label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, options: [['', 'All Severity'], ['CRITICAL', 'Critical'], ['HIGH', 'High'], ['MEDIUM', 'Standard'], ['LOW', 'Low']] },
+                                        { label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, options: [['', 'All Severity'], ['URGENT', 'Urgent'], ['HIGH', 'High'], ['MEDIUM', 'Standard'], ['LOW', 'Low']] },
                                         { label: 'Project', value: projectFilter, onChange: setProjectFilter, options: [['', 'All Projects'], ...allProjects.map(p => [p.id, p.name])] },
                                         { label: 'Assigned To', value: assignedToFilter, onChange: setAssignedToFilter, options: [['', 'All Members'], ...allUsers.map(u => [u.id, u.name])] },
                                     ].map((f) => (

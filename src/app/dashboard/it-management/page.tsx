@@ -31,7 +31,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
 };
 
 const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-    CRITICAL: { label: 'Critical', color: 'text-rose-400' },
+    URGENT: { label: 'Urgent', color: 'text-rose-400' },
     HIGH: { label: 'High', color: 'text-orange-400' },
     MEDIUM: { label: 'Medium', color: 'text-amber-400' },
     LOW: { label: 'Low', color: 'text-emerald-400' },

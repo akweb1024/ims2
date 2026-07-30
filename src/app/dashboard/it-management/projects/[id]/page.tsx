@@ -644,7 +644,7 @@ export default function ProjectDetailPage() {
                                                         CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-400', dot: 'bg-rose-400' },
                                                     };
                                                     const TASK_PRI: Record<string, string> = {
-                                                        CRITICAL: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+                                                        URGENT: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
                                                         HIGH: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
                                                         MEDIUM: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
                                                         LOW: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
@@ -724,10 +724,10 @@ export default function ProjectDetailPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Shield className="h-3 w-3" /> Priority Index</span>
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${project.priority === 'CRITICAL' ? 'text-rose-400' : 'text-amber-400'}`}>{project.priority}</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest ${project.priority === 'URGENT' ? 'text-rose-400' : 'text-amber-400'}`}>{project.priority}</span>
                                     </div>
                                     <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden border border-white/10">
-                                        <motion.div initial={{ width: 0 }} animate={{ width: project.priority === 'CRITICAL' ? '100%' : project.priority === 'HIGH' ? '75%' : '50%' }} className={`h-full rounded-full ${project.priority === 'CRITICAL' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                        <motion.div initial={{ width: 0 }} animate={{ width: project.priority === 'URGENT' ? '100%' : project.priority === 'HIGH' ? '75%' : '50%' }} className={`h-full rounded-full ${project.priority === 'URGENT' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                     </div>
                                 </div>
 

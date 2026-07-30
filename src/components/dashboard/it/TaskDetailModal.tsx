@@ -45,7 +45,8 @@ const PRIORITIES = [
     { value: 'LOW', label: 'Low', color: 'text-emerald-600 bg-emerald-50' },
     { value: 'MEDIUM', label: 'Medium', color: 'text-amber-600 bg-amber-50' },
     { value: 'HIGH', label: 'High', color: 'text-orange-600 bg-orange-50' },
-    { value: 'CRITICAL', label: 'Critical', color: 'text-rose-600 bg-rose-50' },
+    // The Priority enum is LOW/MEDIUM/HIGH/URGENT — sending CRITICAL here failed validation.
+    { value: 'URGENT', label: 'Urgent', color: 'text-rose-600 bg-rose-50' },
 ];
 
 export default function TaskDetailModal({
