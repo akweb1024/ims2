@@ -9,6 +9,7 @@ import {
     ShieldCheck, Calendar, PieChart, Sparkles, LayoutGrid, Terminal, Cpu,
     Globe, BarChart3, ArrowRight, Gauge
 } from 'lucide-react';
+import type { PriorityValue } from '@/lib/constants/priority';
 
 interface DashboardStats {
     overview: {
@@ -30,7 +31,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
     UNDER_REVIEW: { label: 'Review', bg: 'bg-indigo-500/10', text: 'text-indigo-400', dot: 'bg-indigo-400', glow: 'shadow-indigo-500/20' },
 };
 
-const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
+const PRIORITY_LABELS: Record<PriorityValue, { label: string; color: string }> = {
     URGENT: { label: 'Urgent', color: 'text-rose-400' },
     HIGH: { label: 'High', color: 'text-orange-400' },
     MEDIUM: { label: 'Medium', color: 'text-amber-400' },
@@ -245,7 +246,7 @@ export default function ITManagementDashboard() {
                                 </div>
                             ) : stats.recentTasks.map((task, idx) => {
                                 const ui = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING;
-                                const pri = PRIORITY_LABELS[task.priority];
+                                const pri = PRIORITY_LABELS[task.priority as PriorityValue];
                                 return (
                                     <motion.div key={task.id}
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + idx * 0.05 }}
