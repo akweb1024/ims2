@@ -20,6 +20,7 @@ import {
     PROJECT_LIFECYCLES, PROJECT_LIFECYCLE_LABELS,
     type LifecycleKey, type StartState,
 } from '@/lib/it/lifecycle';
+import type { PriorityValue } from '@/lib/constants/priority';
 
 /* ─── Types ───────────────────────────────────────────────── */
 interface Personnel { id: string; name: string | null; email: string | null; }
@@ -63,7 +64,7 @@ const STATUS_CONFIG = {
     ARCHIVED:    { icon: AlertCircle,  barColor: 'bg-slate-400',   badgeBg: 'bg-slate-500/20',   badgeText: 'text-slate-300',   badgeBorder: 'border-slate-500/30',   dot: 'bg-slate-400',   accentBar: 'bg-slate-500',   label: 'Archived',    accent: 'from-slate-500/10' },
 };
 
-const PRIORITY_STYLES: Record<string, string> = {
+const PRIORITY_STYLES: Record<PriorityValue, string> = {
     URGENT:   'bg-rose-500/20 text-rose-300 border-rose-500/30',
     HIGH:     'bg-orange-500/20 text-orange-300 border-orange-500/30',
     MEDIUM:   'bg-amber-500/20 text-amber-300 border-amber-500/30',
@@ -131,7 +132,7 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
 /* ─── Project Card ────────────────────────────────────────── */
 function ProjectCard({ p, index, onOpen }: { p: DecoratedProject; index: number; onOpen: () => void }) {
     const ui  = getUI(p.status);
-    const pri = PRIORITY_STYLES[p.priority] ?? PRIORITY_STYLES.LOW;
+    const pri = PRIORITY_STYLES[p.priority as PriorityValue] ?? PRIORITY_STYLES.MEDIUM;
     const catLabel = CATEGORY_LABELS[p.category] ?? p.category;
     const stage = LIFECYCLE_THEME[p.lifecycle];
     const roster = rosterOf(p);

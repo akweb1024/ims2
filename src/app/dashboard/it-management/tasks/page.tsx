@@ -16,6 +16,7 @@ import {
     TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS,
     type LifecycleKey,
 } from '@/lib/it/lifecycle';
+import { PRIORITY_OPTIONS, type PriorityValue } from '@/lib/constants/priority';
 
 interface Person { id: string; name: string | null; email: string | null; }
 interface Task {
@@ -53,7 +54,7 @@ const COLUMN_GRID: Record<number, string> = {
     5: 'lg:grid-cols-5',
 };
 
-const PRIORITY_STYLE: Record<string, { bg: string; text: string; border: string }> = {
+const PRIORITY_STYLE: Record<PriorityValue, { bg: string; text: string; border: string }> = {
     URGENT: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
     HIGH: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
     MEDIUM: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
@@ -189,7 +190,7 @@ export default function TasksPage() {
     };
 
     const TaskCard = ({ task }: { task: BoardTask }) => {
-        const pri = PRIORITY_STYLE[task.priority] || PRIORITY_STYLE.LOW;
+        const pri = PRIORITY_STYLE[task.priority as PriorityValue] || PRIORITY_STYLE.MEDIUM;
         const typ = TYPE_COLOR[task.type] || { bg: 'bg-slate-500/10', text: 'text-slate-400' };
 
         // Everyone attached to this task, most relevant first.
@@ -360,7 +361,9 @@ export default function TasksPage() {
                                 <div className="px-5 pb-5 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
                                     {[
                                         { label: 'Category', value: typeFilter, onChange: setTypeFilter, options: [['', 'All Streams'], ['REVENUE', 'Revenue'], ['SUPPORT', 'Support'], ['MAINTENANCE', 'Maintenance'], ['URGENT', 'Emergency'], ['SERVICE_REQUEST', 'Service Req']] },
-                                        { label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, options: [['', 'All Severity'], ['URGENT', 'Urgent'], ['HIGH', 'High'], ['MEDIUM', 'Standard'], ['LOW', 'Low']] },
+                                        // Derived from the shared module, so a filter option can never again name a
+                                        // priority the enum does not have (and therefore match nothing).
+                                        { label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, options: [['', 'All Severity'], ...[...PRIORITY_OPTIONS].reverse().map(p => [p.value, p.label] as [string, string])] },
                                         { label: 'Project', value: projectFilter, onChange: setProjectFilter, options: [['', 'All Projects'], ...allProjects.map(p => [p.id, p.name])] },
                                         { label: 'Assigned To', value: assignedToFilter, onChange: setAssignedToFilter, options: [['', 'All Members'], ...allUsers.map(u => [u.id, u.name])] },
                                     ].map((f) => (

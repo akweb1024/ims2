@@ -4,8 +4,23 @@ import { getAuthenticatedUser } from "@/lib/auth-legacy";
 import { createErrorResponse } from "@/lib/api-utils";
 import { getDownlineUserIds } from "@/lib/hierarchy";
 import { creditLinkedMetric, reverseLinkedMetricCredit } from "@/lib/kra/auto-credit";
+import { itTaskSchema } from "@/lib/validation/schemas";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * The enum-backed fields of an update, reusing the create schema's definitions so the two can
+ * never disagree. Only these four, because the update path deliberately does not re-validate
+ * the whole body — the allowlist loop below coerces dates and numbers in its own way, and
+ * demanding the full create shape would reject partial edits that work today.
+ *
+ * Without this, an invalid enum member reaches Prisma and comes back as a 500 ("Invalid value
+ * for argument `priority`. Expected Priority."), so the user is told the app broke rather than
+ * that their input was wrong. That is exactly how the CRITICAL-priority bug presented.
+ */
+const taskEnumFields = itTaskSchema
+  .pick({ priority: true, status: true, category: true, type: true })
+  .partial();
 
 // GET /api/it/tasks/[id] - Get task details
 export async function GET(
@@ -194,6 +209,19 @@ export async function PATCH(
     }
 
     const body = await req.json();
+
+    // Reject bad enum values with a 400 that names the field, before anything reaches Prisma.
+    const enumCheck = taskEnumFields.safeParse(body);
+    if (!enumCheck.success) {
+      const issue = enumCheck.error.issues[0];
+      return NextResponse.json(
+        {
+          error: `Invalid ${issue?.path.join('.') || 'value'}: ${issue?.message || 'not an accepted value'}`,
+          details: enumCheck.error.issues,
+        },
+        { status: 400 },
+      );
+    }
 
     // Check if task exists and user has access
     const existingTask = await prisma.iTTask.findUnique({

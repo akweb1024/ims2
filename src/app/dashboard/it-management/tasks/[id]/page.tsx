@@ -8,6 +8,7 @@ import {
     AlertCircle, ArrowLeft, FolderKanban, Plus, X, MessageSquare, Send, TrendingUp, CheckCircle2,
     Activity, Zap, ShieldCheck, History, Timer, Info, MoreHorizontal
 } from 'lucide-react';
+import type { PriorityValue } from '@/lib/constants/priority';
 
 interface Task {
     id: string; taskCode: string; title: string; description: string | null;
@@ -30,7 +31,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
     UNDER_REVIEW: { label: 'Audit', bg: 'bg-indigo-50/50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
+const PRIORITY_CONFIG: Record<PriorityValue, { label: string; text: string; bg: string }> = {
     URGENT: { label: 'Urgent', text: 'text-rose-600', bg: 'bg-rose-50' },
     HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },
     MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },

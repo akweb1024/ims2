@@ -13,6 +13,7 @@ import {
     LIFECYCLE_THEME, TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS, PROJECT_LIFECYCLE_LABELS,
     type LifecycleKey,
 } from '@/lib/it/lifecycle';
+import type { PriorityValue } from '@/lib/constants/priority';
 
 interface Person { id: string; name: string | null; email: string | null }
 
@@ -45,7 +46,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
 };
 
 // Task priority is the Priority enum: LOW / MEDIUM / HIGH / URGENT. There is no CRITICAL.
-const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
+const PRIORITY_CONFIG: Record<PriorityValue, { label: string; text: string; bg: string }> = {
     LOW: { label: 'Low', text: 'text-emerald-600', bg: 'bg-emerald-50' },
     MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },
     HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },

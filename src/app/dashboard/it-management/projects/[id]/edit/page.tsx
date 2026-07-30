@@ -8,6 +8,7 @@ import {
     ArrowLeft, Globe, Cpu, Shield, Layers, Tag, Briefcase, Zap, Eye
 } from 'lucide-react';
 import WebsiteQuickAddModal from '@/components/dashboard/it/WebsiteQuickAddModal';
+import { PRIORITY_OPTIONS } from '@/lib/constants/priority';
 
 interface User { id: string; name: string; email: string; }
 interface Milestone { id: string; title: string; description: string; dueDate: string; status: string; }
@@ -257,10 +258,9 @@ export default function EditProjectPage() {
                                             <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
                                             >
-                                                <option value="LOW">Low</option>
-                                                <option value="MEDIUM">Medium</option>
-                                                <option value="HIGH">High</option>
-                                                <option value="URGENT">Urgent</option>
+                                                {PRIORITY_OPTIONS.map((p) => (
+                                                    <option key={p.value} value={p.value}>{p.label}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, AlignLeft, CheckSquare, Clock, AlertCircle, Link as LinkIcon, Save, Trash2, Rocket, Zap, ShieldCheck } from 'lucide-react';
+import { PRIORITY_OPTIONS, type PriorityValue } from '@/lib/constants/priority';
 
 interface Task {
     id: string;
@@ -41,13 +42,17 @@ const STATUSES = [
     { value: 'CANCELLED', label: 'Cancelled', color: 'bg-rose-500' },
 ];
 
-const PRIORITIES = [
-    { value: 'LOW', label: 'Low', color: 'text-emerald-600 bg-emerald-50' },
-    { value: 'MEDIUM', label: 'Medium', color: 'text-amber-600 bg-amber-50' },
-    { value: 'HIGH', label: 'High', color: 'text-orange-600 bg-orange-50' },
-    // The Priority enum is LOW/MEDIUM/HIGH/URGENT — sending CRITICAL here failed validation.
-    { value: 'URGENT', label: 'Urgent', color: 'text-rose-600 bg-rose-50' },
-];
+// Values come from the shared module so they cannot drift from the Prisma enum again; only the
+// colours live here. Typing the map as Record<PriorityValue, …> means a new enum member fails
+// to compile until it is given a colour.
+const PRIORITY_COLOR: Record<PriorityValue, string> = {
+    LOW: 'text-emerald-600 bg-emerald-50',
+    MEDIUM: 'text-amber-600 bg-amber-50',
+    HIGH: 'text-orange-600 bg-orange-50',
+    URGENT: 'text-rose-600 bg-rose-50',
+};
+
+const PRIORITIES = PRIORITY_OPTIONS.map((p) => ({ ...p, color: PRIORITY_COLOR[p.value] }));
 
 export default function TaskDetailModal({
     isOpen,
