@@ -73,6 +73,29 @@ export const useMySessions = () =>
         select: (d: any) => (Array.isArray(d) ? d : []),
     });
 
+/**
+ * What the caller's team is working on — per-person roll-up plus the team's projects, tasks and
+ * tickets. Counts come from assigned work, not timers, so someone who never clocks in still
+ * shows up with their load. Overseer roles only.
+ */
+export const useTeamWork = () =>
+    useQuery({
+        queryKey: ['team-work'],
+        queryFn: () => fetchJson('/api/team/work'),
+        refetchInterval: 60_000,
+        select: (d: any) => ({
+            scope: d?.scope ?? { kind: 'DOWNLINE', memberCount: 0 },
+            members: Array.isArray(d?.members) ? d.members : [],
+            projects: Array.isArray(d?.projects) ? d.projects : [],
+            tasks: Array.isArray(d?.tasks) ? d.tasks : [],
+            tickets: Array.isArray(d?.tickets) ? d.tickets : [],
+            summary: d?.summary ?? {
+                running: 0, openTasks: 0, overdueTasks: 0,
+                openTickets: 0, overdueTickets: 0, idleWithOverdue: 0,
+            },
+        }),
+    });
+
 /** Completed-session time totals over a window (managers/admins). */
 export const useTimeAnalytics = (days = 7, enabled = true) =>
     useQuery({
