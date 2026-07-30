@@ -56,6 +56,43 @@ export function elapsedMinutes(startedAt: Date, endedAt?: Date | null): number {
   return Math.max(0, Math.round((end - startedAt.getTime()) / 60000));
 }
 
+/**
+ * Whole minutes of DISTINCT wall-clock time covered by a set of sessions — overlapping
+ * periods counted once.
+ *
+ * Sessions may run on several projects at once, so summing `durationMinutes` answers
+ * "time per project" and will exceed the hours a person actually worked: three timers over
+ * one afternoon sum to three afternoons. Anywhere the figure means *person-hours* — payroll,
+ * utilisation, the WORK_SESSION_HOURS KRA metric — must union the intervals instead, which is
+ * what this does.
+ *
+ * Sorts by start, then walks merging anything that overlaps or touches the open period.
+ */
+export function distinctMinutes(
+  sessions: Array<{ startedAt: Date; endedAt?: Date | null }>,
+  now: Date = new Date(),
+): number {
+  const spans = sessions
+    .map((s) => ({ start: s.startedAt.getTime(), end: (s.endedAt ?? now).getTime() }))
+    .filter((s) => s.end > s.start)
+    .sort((a, b) => a.start - b.start);
+  if (spans.length === 0) return 0;
+
+  let total = 0;
+  let { start: openStart, end: openEnd } = spans[0];
+  for (const span of spans.slice(1)) {
+    if (span.start <= openEnd) {
+      openEnd = Math.max(openEnd, span.end);
+    } else {
+      total += openEnd - openStart;
+      openStart = span.start;
+      openEnd = span.end;
+    }
+  }
+  total += openEnd - openStart;
+  return Math.max(0, Math.round(total / 60000));
+}
+
 type Actor = { id: string; role: string; companyId?: string | null; allowedModules?: string[] };
 
 /**

@@ -121,6 +121,20 @@ const TASK_LIFECYCLE: Record<string, LifecycleKey> = {
   CANCELLED: 'FAILED',
 };
 
+/**
+ * The company `Project` module is a separate system from `ITProject` and uses its own status
+ * vocabulary — note `PLANNED`, not `PLANNING`, and its column is a free String.
+ */
+const COMPANY_PROJECT_LIFECYCLE: Record<string, LifecycleKey> = {
+  PLANNED: 'UPCOMING',
+  PLANNING: 'UPCOMING',
+  IN_PROGRESS: 'RUNNING',
+  ON_HOLD: 'ON_HOLD',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'FAILED',
+  ARCHIVED: 'ARCHIVED',
+};
+
 const TICKET_LIFECYCLE: Record<string, LifecycleKey> = {
   OPEN: 'UPCOMING',
   IN_PROGRESS: 'RUNNING',
@@ -134,6 +148,9 @@ export function projectLifecycle(status: string): LifecycleKey {
 }
 export function taskLifecycle(status: string): LifecycleKey {
   return TASK_LIFECYCLE[status] ?? 'UPCOMING';
+}
+export function companyProjectLifecycle(status: string): LifecycleKey {
+  return COMPANY_PROJECT_LIFECYCLE[status] ?? 'UPCOMING';
 }
 export function ticketLifecycle(status: string): LifecycleKey {
   return TICKET_LIFECYCLE[status] ?? 'UPCOMING';

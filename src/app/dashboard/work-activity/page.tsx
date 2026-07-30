@@ -118,7 +118,15 @@ export default function WorkActivityPage() {
                 <div className="card-premium p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-black text-secondary-900">Logged — last 7 days</h3>
-                        <span className="text-xs font-bold text-secondary-500">Total {formatMinutes(analytics.totalMinutes)} · {analytics.sessionCount} sessions</span>
+                        {/* Two measures, because people can run several projects at once: the
+                            per-project sum, and the real person-hours behind it. */}
+                        <span className="text-xs font-bold text-secondary-500">
+                            {formatMinutes(analytics.totalMinutes)} across projects
+                            {typeof analytics.totalPersonMinutes === 'number' && analytics.totalPersonMinutes !== analytics.totalMinutes && (
+                                <> · {formatMinutes(analytics.totalPersonMinutes)} actually worked</>
+                            )}
+                            {' · '}{analytics.sessionCount} sessions
+                        </span>
                     </div>
                     <div className="space-y-2">
                         {analytics.byProject.slice(0, 12).map((p: any) => {
