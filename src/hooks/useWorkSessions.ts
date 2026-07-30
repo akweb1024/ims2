@@ -19,13 +19,38 @@ const fetchJson = async (url: string, method: string = 'GET', body?: any) => {
 
 export type ProjectRef = { projectId?: string; itProjectId?: string };
 
-/** The caller's currently running session (polls so the timer/other tabs stay in sync). */
+/**
+ * The caller's most recently started running session (polls so the timer/other tabs stay in
+ * sync). Sessions can run on several projects at once — prefer `useCurrentSessions` for
+ * anything that should show all of them.
+ */
 export const useCurrentSession = () =>
     useQuery({
         queryKey: ['work-session-current'],
         queryFn: () => fetchJson('/api/work-sessions/current'),
         refetchInterval: 60_000,
         select: (d: any) => d?.session ?? null,
+    });
+
+/** Every session the caller currently has running, newest first. */
+export const useCurrentSessions = () =>
+    useQuery({
+        queryKey: ['work-session-current'],
+        queryFn: () => fetchJson('/api/work-sessions/current'),
+        refetchInterval: 60_000,
+        select: (d: any) => (Array.isArray(d?.sessions) ? d.sessions : d?.session ? [d.session] : []),
+    });
+
+/** Every project the caller is personally on, across the IT and company project systems. */
+export const useMyProjects = () =>
+    useQuery({
+        queryKey: ['my-projects'],
+        queryFn: () => fetchJson('/api/my/projects'),
+        refetchInterval: 60_000,
+        select: (d: any) => ({
+            projects: Array.isArray(d?.projects) ? d.projects : [],
+            summary: d?.summary ?? { total: 0, running: 0, loggedMinutesAcrossProjects: 0 },
+        }),
     });
 
 /** All sessions on one project (team view for the project detail page). */
@@ -71,6 +96,7 @@ export const useWorkSessionMutations = () => {
         qc.invalidateQueries({ queryKey: ['work-session-current'] });
         qc.invalidateQueries({ queryKey: ['work-sessions'] });
         qc.invalidateQueries({ queryKey: ['work-sessions-live'] });
+        qc.invalidateQueries({ queryKey: ['my-projects'] });
     };
 
     const start = useMutation({

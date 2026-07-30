@@ -40,7 +40,14 @@ export const GET = authorizedRoute(SESSION_USER_ROLES, async (req: NextRequest, 
 /**
  * POST /api/work-sessions — start a session ("clock in") on a project.
  * Body: { projectId? , itProjectId? , note? } — exactly one project id.
- * Refuses if the caller already has a running session (409) — one focus at a time.
+ *
+ * An employee may run sessions on SEVERAL projects at once. Only a second session on the
+ * *same* project is refused (409), since two timers on one project is always a mistake.
+ *
+ * Consequence to keep in mind when reading any hours figure: with parallel sessions, summed
+ * session minutes are time-per-project and can exceed the person's elapsed working time. Use
+ * the distinct-interval total (see /api/work-sessions/analytics) wherever person-hours are
+ * meant, and label the two differently in the UI.
  */
 export const POST = authorizedRoute(SESSION_USER_ROLES, async (req: NextRequest, user) => {
   try {
@@ -50,15 +57,20 @@ export const POST = authorizedRoute(SESSION_USER_ROLES, async (req: NextRequest,
     const ref = await resolveProjectRef(body);
     if ('error' in ref) return createErrorResponse(ref.error, 400);
 
-    const running = await prisma.projectWorkSession.findFirst({
-      where: { userId: user.id, endedAt: null },
+    // Parallel projects are allowed; a duplicate timer on the same project is not.
+    const duplicate = await prisma.projectWorkSession.findFirst({
+      where: {
+        userId: user.id,
+        endedAt: null,
+        ...(ref.projectId ? { projectId: ref.projectId } : { itProjectId: ref.itProjectId }),
+      },
       include: sessionInclude,
     });
-    if (running) {
+    if (duplicate) {
       return NextResponse.json(
         {
-          error: 'You already have a running session. Stop it before starting another.',
-          running: serializeSession(running),
+          error: 'You already have a running session on this project.',
+          running: serializeSession(duplicate),
         },
         { status: 409 },
       );

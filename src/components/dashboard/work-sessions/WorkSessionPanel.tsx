@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Play, Square, Clock, Users, Plus, Activity } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
-    useCurrentSession,
+    useCurrentSessions,
     useProjectSessions,
     useWorkSessionMutations,
     formatMinutes,
@@ -37,16 +37,18 @@ const useLiveClock = (startedAt?: string | null) => {
  */
 export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef) {
     const ref: ProjectRef = projectId ? { projectId } : { itProjectId };
-    const { data: current } = useCurrentSession();
+    const { data: running = [] } = useCurrentSessions();
     const { data: sessions = [] } = useProjectSessions(ref);
     const { start, stop, addActivity } = useWorkSessionMutations();
     const [activityText, setActivityText] = useState('');
 
-    const isThis =
-        !!current &&
-        ((projectId && current.projectId === projectId) || (itProjectId && current.itProjectId === itProjectId));
-    const otherName = current && !isThis ? current.project?.title || current.itProject?.name : null;
-    const clock = useLiveClock(isThis ? current?.startedAt : null);
+    // Sessions run on several projects at once, so find mine on THIS project and treat the
+    // rest as background context rather than a blocker.
+    const mine = running.find((s: any) =>
+        projectId ? s.projectId === projectId : s.itProjectId === itProjectId,
+    );
+    const others = running.filter((s: any) => s.id !== mine?.id);
+    const clock = useLiveClock(mine?.startedAt ?? null);
 
     const activeNow = sessions.filter((s: any) => s.isRunning);
     const totalMinutes = sessions.reduce((sum: number, s: any) => sum + (s.durationMinutes || s.elapsedMinutes || 0), 0);
@@ -56,9 +58,9 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
             await start.mutateAsync(ref);
             toast.success('Work session started');
         } catch (e: any) {
-            if (e?.status === 409 && e?.body?.running) {
-                const rn = e.body.running.project?.title || e.body.running.itProject?.name || 'another project';
-                toast.error(`You're already working on ${rn}. Stop it first.`);
+            // 409 now means only one thing: a timer is already running on THIS project.
+            if (e?.status === 409) {
+                toast.error('A session is already running on this project.');
             } else {
                 toast.error(e?.message || 'Could not start session');
             }
@@ -66,9 +68,9 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
     };
 
     const handleStop = async () => {
-        if (!current) return;
+        if (!mine) return;
         try {
-            await stop.mutateAsync({ id: current.id });
+            await stop.mutateAsync({ id: mine.id });
             toast.success('Work session stopped');
         } catch (e: any) {
             toast.error(e?.message || 'Could not stop session');
@@ -77,9 +79,9 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
 
     const handleAddActivity = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!current || !activityText.trim()) return;
+        if (!mine || !activityText.trim()) return;
         try {
-            await addActivity.mutateAsync({ id: current.id, description: activityText.trim() });
+            await addActivity.mutateAsync({ id: mine.id, description: activityText.trim() });
             setActivityText('');
         } catch (err: any) {
             toast.error(err?.message || 'Could not log activity');
@@ -100,7 +102,7 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
             </div>
 
             {/* Control block */}
-            {isThis ? (
+            {mine ? (
                 <div className="rounded-xl border border-success-200 bg-success-50/50 p-4">
                     <div className="flex items-center justify-between gap-4">
                         <div>
@@ -132,9 +134,9 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
                             <Plus size={14} /> Log
                         </button>
                     </form>
-                    {current?.activities?.length > 0 && (
+                    {mine?.activities?.length > 0 && (
                         <ul className="mt-3 space-y-1.5">
-                            {current.activities.map((a: any) => (
+                            {mine.activities.map((a: any) => (
                                 <li key={a.id} className="flex items-start gap-2 text-xs text-secondary-600">
                                     <Activity size={12} className="mt-0.5 text-secondary-400 shrink-0" />
                                     <span className="flex-1">{a.description}</span>
@@ -144,18 +146,24 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
                         </ul>
                     )}
                 </div>
-            ) : otherName ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-sm text-amber-800">
-                    You&apos;re currently working on <span className="font-bold">{otherName}</span>. Stop that session to start one here.
-                </div>
             ) : (
-                <button
-                    onClick={handleStart}
-                    disabled={start.isPending}
-                    className="btn btn-primary w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-bold disabled:opacity-60"
-                >
-                    <Play size={18} /> Start Work
-                </button>
+                <>
+                    <button
+                        onClick={handleStart}
+                        disabled={start.isPending}
+                        className="btn btn-primary w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-bold disabled:opacity-60"
+                    >
+                        <Play size={18} /> Start Work
+                    </button>
+                    {/* You can run several projects at once, so say what else is live rather
+                        than blocking — and be explicit that the clocks overlap. */}
+                    {others.length > 0 && (
+                        <p className="mt-3 text-xs text-secondary-500">
+                            Also running: {others.map((s: any) => s.project?.title || s.itProject?.name || 'a project').join(', ')}.
+                            Starting here runs alongside {others.length === 1 ? 'it' : 'them'}, so the time counts on both.
+                        </p>
+                    )}
+                </>
             )}
 
             {/* Project session history */}
