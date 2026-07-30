@@ -10,6 +10,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { communicationTypeFilter } from '@/lib/kra/communication-filter';
+import { distinctMinutes } from '@/lib/work-sessions';
 
 export type ContributionStatus =
   | 'PENDING'
@@ -170,9 +171,14 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
       },
     });
   },
-  // Hours this employee logged in project work sessions on the report day. Sums the
-  // durationMinutes of sessions that ended that day (a running session isn't counted until
-  // it stops), returned as hours. See lib/work-sessions + api/work-sessions.
+  // Hours this employee actually worked in project work sessions on the report day, from
+  // sessions that ended that day (a running session isn't counted until it stops).
+  //
+  // Counts DISTINCT wall-clock time, not the sum of session durations. An employee may run
+  // sessions on several projects at once (see api/work-sessions), so summing durations credits
+  // the same hour once per concurrent project — three timers over an 8h day would report 24h,
+  // and with the 12h auto-close cap a forgotten trio would report 36h. Unioning the intervals
+  // keeps this an honest person-hours figure. See distinctMinutes in lib/work-sessions.
   WORK_SESSION_HOURS: async ({ employeeId, companyId, date }) => {
     const profile = await prisma.employeeProfile.findUnique({
       where: { id: employeeId },
@@ -181,11 +187,11 @@ const SYSTEM_VERIFIERS: Record<string, SystemVerifier> = {
     if (!profile?.userId) return null;
 
     const { start, end } = dayWindow(date);
-    const agg = await prisma.projectWorkSession.aggregate({
-      _sum: { durationMinutes: true },
+    const sessions = await prisma.projectWorkSession.findMany({
       where: { companyId, userId: profile.userId, endedAt: { gte: start, lte: end } },
+      select: { startedAt: true, endedAt: true },
     });
-    const minutes = agg._sum.durationMinutes ?? 0;
+    const minutes = distinctMinutes(sessions);
     return Math.round((minutes / 60) * 100) / 100; // hours, 2dp
   },
   // Future: SUBSCRIPTION, INVOICE, COURSE_SALE, DISPATCH, PUBLICATION_ARTICLE…
