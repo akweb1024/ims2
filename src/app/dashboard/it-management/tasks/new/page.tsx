@@ -165,7 +165,7 @@ function NewTaskForm() {
                                             <option value="LOW">Low</option>
                                             <option value="MEDIUM">Medium</option>
                                             <option value="HIGH">High</option>
-                                            <option value="URGENT">Critical</option>
+                                            <option value="URGENT">Urgent</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">

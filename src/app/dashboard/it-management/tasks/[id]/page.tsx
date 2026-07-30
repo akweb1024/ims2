@@ -31,7 +31,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
-    CRITICAL: { label: 'Critical', text: 'text-rose-600', bg: 'bg-rose-50' },
+    URGENT: { label: 'Urgent', text: 'text-rose-600', bg: 'bg-rose-50' },
     HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },
     MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },
     LOW: { label: 'Low', text: 'text-emerald-600', bg: 'bg-emerald-50' },
