@@ -168,6 +168,9 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'My Team',
                 items: [
                     { name: 'Team Members', href: '/dashboard/manager/team', icon: Users, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
+                    // Team counterpart to My Work: load per person from assigned work, plus the
+                    // team's projects/tasks/tickets. Same roles as the live board it sits beside.
+                    { name: 'Team Work', href: '/dashboard/team-work', icon: Briefcase, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'HR_MANAGER'] },
                     { name: 'Live Work Activity', href: '/dashboard/work-activity', icon: Radio, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'HR_MANAGER'] },
                     { name: 'Team Attendance', href: '/dashboard/manager/team/attendance', icon: Clock, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Team Leave Requests', href: '/dashboard/manager/team/leaves', icon: Palmtree, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
