@@ -354,6 +354,10 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Revenue',
                 items: [
                     { name: 'Income Registry', href: '/dashboard/revenue/transactions', icon: Landmark, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'TEAM_LEADER', 'EXECUTIVE', 'HR', 'IT_MANAGER', 'IT_ADMIN'] },
+                    // Two independent sources compared: staff declare what they sold, finance
+                    // records what arrived. Declaring is open to every internal role.
+                    { name: 'My Revenue Declarations', href: '/dashboard/revenue/my-declarations', icon: Receipt, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'FINANCE_ADMIN', 'HR', 'HR_MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EDITOR', 'JOURNAL_MANAGER'] },
+                    { name: 'Revenue Reconciliation', href: '/dashboard/finance/revenue-reconciliation', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER'] },
                     { name: 'Verify Claims', href: '/dashboard/revenue/claims', icon: Scale, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN'] },
                     { name: 'Revenue Attribution', href: '/dashboard/analytics/revenue', icon: Wallet, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER'] },
                     { name: 'Revenue by Category', href: '/dashboard/reports/revenue', icon: Landmark, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },

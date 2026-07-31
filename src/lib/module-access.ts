@@ -64,6 +64,11 @@ const MODULE_ACCESS_PREFIX_EXCEPTIONS = [
     '/api/proforma',
     '/api/revenue/transactions',
     '/api/revenue/claims',
+    // Staff declare their own sales for reconciliation. Without this the FINANCE module gate
+    // refuses everyone outside the finance team, which is precisely the wrong set of people —
+    // the whole point is that the person who made the sale records it independently. The route
+    // itself only ever writes against the caller's own employee profile.
+    '/api/revenue/declarations',
     // Employee self-service record endpoints
     '/api/hr/salary-slips',
     '/api/hr/tasks',

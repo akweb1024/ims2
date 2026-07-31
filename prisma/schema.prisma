@@ -127,6 +127,8 @@ model Company {
   employeeAttendancePolicyOverrides EmployeeAttendancePolicyOverride[]
   redGreenDiaries                   RedGreenDiary[]
   revenueTransactions               RevenueTransaction[]
+  revenueDeclarations   EmployeeRevenueDeclaration[]
+  settlementRecords     SettlementRecord[]
   salaryAdvances                    SalaryAdvance[]
   salarySlips                       SalarySlip[]
   screeningTemplates                ScreeningTemplate[]
@@ -435,6 +437,7 @@ model User {
   @@index([role])
   @@index([companyId])
   @@index([departmentId])
+  settlementsEntered             SettlementRecord[]               @relation("SettlementEnteredBy")
 }
 
 model TeamMember {
@@ -1320,6 +1323,7 @@ model Payment {
   company             Company?             @relation(fields: [companyId], references: [id])
   invoice             Invoice?             @relation(fields: [invoiceId], references: [id])
   revenueTransactions RevenueTransaction[]
+  settlementRecords   SettlementRecord[]
 
   @@index([invoiceId])
   @@index([companyId])
@@ -1869,6 +1873,7 @@ model EmployeeProfile {
   privateDailyNoteTags     PrivateDailyNoteTag[]
   metricContributions      MetricContribution[]
   performanceIndices       PerformanceIndex[]
+  revenueDeclarations      EmployeeRevenueDeclaration[]
 
   // Declared to match reality: 20260708120000_employee_standing_shift already creates this
   // index, so every migrated database has it while the schema did not admit to it — which
@@ -5018,6 +5023,104 @@ model RevenueClaim {
   @@index([status])
 }
 
+/// Revenue reconciliation, employee side: what the person who made the sale says they sold.
+///
+/// Deliberately independent of RevenueTransaction and of any settlement record. The point of
+/// the exercise is that two parties record the same reality separately and the totals are then
+/// compared; a declaration that had to reference an existing finance entry would not be an
+/// independent second opinion.
+///
+/// `grossAmount` is what the CUSTOMER was billed, in `currency` — the number the employee
+/// actually knows. Gateway fees and FX are not their concern and are never deducted here.
+model EmployeeRevenueDeclaration {
+  id            String            @id @default(uuid())
+  companyId     String
+  employeeId    String
+  /// When the sale happened / the customer paid — not when it reached the bank.
+  saleDate      DateTime
+  customerName  String?
+  /// Invoice number, order id, or whatever reference the employee has to hand.
+  reference     String?
+  grossAmount   Float
+  currency      String            @default("INR")
+  channel       RevenueChannel    @default(BANK_DIRECT)
+  status        DeclarationStatus @default(SUBMITTED)
+  note          String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  company       Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee      EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  settlements   SettlementRecord[]
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([saleDate])
+  @@index([status])
+  @@index([channel])
+}
+
+/// Revenue reconciliation, money side: what actually arrived, with the gateway's deductions
+/// broken out so the two sides can be compared honestly.
+///
+/// INR paid straight into the bank is the trivial case — fee and tax are zero and
+/// `grossInr == netInr`. A foreign-currency payment routed through Razorpay or PayPal is not:
+/// the customer is billed USD, the gateway converts at `fxRate`, takes `feeInr`, adds GST on
+/// that fee as `taxInr`, and credits `netInr`. So the identity that must hold is
+///
+///     grossInr = originalAmount * fxRate  and  netInr = grossInr - feeInr - taxInr
+///
+/// and comparing an employee's declared gross against a bank credit without adding the fee and
+/// tax back will always look like a shortfall.
+///
+/// `settlementDate` null means captured but not yet credited — the in-transit bucket, which is
+/// why a period can differ from the declarations without anything being wrong.
+model SettlementRecord {
+  id               String           @id @default(uuid())
+  companyId        String
+  source           SettlementSource
+  /// Razorpay payment id, PayPal transaction id, or the bank's reference.
+  externalRef      String?
+  /// When the customer paid.
+  captureDate      DateTime
+  /// When INR actually credited. Null while in transit.
+  settlementDate   DateTime?
+  originalCurrency String           @default("INR")
+  originalAmount   Float
+  /// originalCurrency -> INR. 1 for INR.
+  fxRate           Float            @default(1)
+  grossInr         Float
+  feeInr           Float            @default(0)
+  /// GST (or equivalent) charged on the gateway fee.
+  taxInr           Float            @default(0)
+  /// Stored rather than derived: the bank credit is authoritative and may differ from
+  /// gross - fee - tax by rounding.
+  netInr           Float
+  bankReference    String?
+  narration        String?
+  /// The accounts person who entered it; null when synced from a gateway.
+  enteredById      String?
+  paymentId        String?
+  /// Optional line-level match. The headline reconciliation is on totals; this only helps
+  /// locate which line is responsible for a variance.
+  declarationId    String?
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  company          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  enteredBy        User?            @relation("SettlementEnteredBy", fields: [enteredById], references: [id])
+  payment          Payment?         @relation(fields: [paymentId], references: [id])
+  declaration      EmployeeRevenueDeclaration? @relation(fields: [declarationId], references: [id])
+
+  @@unique([source, externalRef])
+  @@index([companyId])
+  @@index([settlementDate])
+  @@index([captureDate])
+  @@index([source])
+  @@index([declarationId])
+}
+
 model Account {
   id              String        @id @default(uuid())
   companyId       String
@@ -6732,6 +6835,29 @@ enum ClaimStatus {
   APPROVED
   REJECTED
   DUPLICATE
+}
+
+/// How the money reaches us. BANK_DIRECT is INR straight into the account; the gateways take a
+/// fee and convert, which is what makes reconciliation non-trivial.
+enum RevenueChannel {
+  BANK_DIRECT
+  RAZORPAY
+  PAYPAL
+  OTHER
+}
+
+enum DeclarationStatus {
+  DRAFT
+  SUBMITTED
+  MATCHED
+  DISPUTED
+}
+
+enum SettlementSource {
+  BANK_STATEMENT
+  RAZORPAY
+  PAYPAL
+  MANUAL
 }
 
 enum CommissionPayoutStatus {
