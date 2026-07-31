@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
 import { getRazorpaySyncAccounts } from '@/lib/razorpay';
+import { settlementBreakdown } from '@/lib/finance/reconciliation';
 
 export async function POST() {
     try {
@@ -113,6 +114,52 @@ export async function POST() {
                             },
                         });
                         totalSynced++;
+
+                        // Record the settlement side of reconciliation. Razorpay reports `fee`
+                        // and `tax` (GST on the fee) in paise alongside the payment, and we were
+                        // discarding both — they are exactly what is needed to explain why a
+                        // ₹42,500 sale credits ₹41,320. Only captured payments are real money.
+                        if (savedPayment.companyId && rpPayment.status === 'captured') {
+                            try {
+                                const feeInr = Number(rpPayment.fee || 0) / 100;
+                                const taxInr = Number(rpPayment.tax || 0) / 100;
+                                const originalAmount = Number(rpPayment.amount) / 100;
+                                const originalCurrency = rpPayment.currency || 'INR';
+                                // For foreign currency Razorpay bills in the presentment currency
+                                // but settles INR; fee/tax come back in the settlement currency.
+                                // Without an explicit conversion on the payment we cannot invent
+                                // a rate, so leave it at 1 and let reconciliation flag it.
+                                const fxRate = originalCurrency === 'INR' ? 1 : 0;
+                                const { grossInr, netInr } = settlementBreakdown({
+                                    originalAmount, originalCurrency, fxRate: fxRate || 1, feeInr, taxInr,
+                                });
+
+                                await prisma.settlementRecord.upsert({
+                                    where: { source_externalRef: { source: 'RAZORPAY', externalRef: rpPayment.id } },
+                                    update: { feeInr, taxInr, netInr, grossInr },
+                                    create: {
+                                        companyId: savedPayment.companyId,
+                                        source: 'RAZORPAY',
+                                        externalRef: rpPayment.id,
+                                        captureDate: new Date(Number(rpPayment.created_at) * 1000),
+                                        // Razorpay settles on its own cycle; until a settlement
+                                        // report says otherwise this money is in transit.
+                                        settlementDate: null,
+                                        originalCurrency,
+                                        originalAmount,
+                                        fxRate: fxRate || 1,
+                                        grossInr,
+                                        feeInr,
+                                        taxInr,
+                                        netInr,
+                                        paymentId: savedPayment.id,
+                                        narration: `Razorpay ${rpPayment.method || ''} ${rpPayment.email || ''}`.trim(),
+                                    },
+                                });
+                            } catch (setErr) {
+                                logger.error('Failed to record settlement for payment', setErr, { paymentId: savedPayment.id });
+                            }
+                        }
 
                         // Journal Entry
                         if (savedPayment.companyId) {

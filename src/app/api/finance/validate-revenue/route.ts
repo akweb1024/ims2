@@ -66,14 +66,30 @@ export const GET = authorizedRoute(
                 const financeTotal = financeRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
                 const existingRefIds = new Set(financeRecords.map(r => r.referenceId).filter(Boolean));
 
-                const uniqueRazorpayRevenue = razorpayPayments
-                    .filter(p => !existingRefIds.has(p.razorpayPaymentId) && !existingRefIds.has(p.transactionId))
-                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+                // Payment.amount is in the payment's OWN currency, so summing it straight into an
+                // INR total counted a $500 payment as ₹500. Convert with the payment's stored
+                // conversionRate; a foreign payment with no usable rate is excluded and reported
+                // rather than silently understating the total by ~85x.
+                const convertible = razorpayPayments
+                    .filter(p => !existingRefIds.has(p.razorpayPaymentId) && !existingRefIds.has(p.transactionId));
+
+                const unconvertedPayments = convertible.filter(
+                    p => (p.currency || 'INR') !== 'INR' && !(p.conversionRate && p.conversionRate > 0)
+                );
+
+                const uniqueRazorpayRevenue = convertible
+                    .filter(p => !unconvertedPayments.includes(p))
+                    .reduce((sum, p) => {
+                        const rate = (p.currency || 'INR') === 'INR' ? 1 : (p.conversionRate || 0);
+                        return sum + (p.amount || 0) * rate;
+                    }, 0);
 
                 const reportedTotal = workReportRevenue._sum.revenueGenerated || 0;
                 const actualTotal = financeTotal + uniqueRazorpayRevenue;
                 const mismatch = Math.abs(reportedTotal - actualTotal);
-                const isValid = mismatch < 1; // Tolerance for small rounding
+                // A day with foreign payments we could not convert has an incomplete actual
+                // total, so it cannot be called valid however close the numbers look.
+                const isValid = mismatch < 1 && unconvertedPayments.length === 0;
 
                 results.push({
                     date: currentDate.toISOString().split('T')[0],
@@ -82,7 +98,9 @@ export const GET = authorizedRoute(
                     financeRevenue: financeTotal,
                     razorpayRevenue: uniqueRazorpayRevenue,
                     mismatch,
-                    isValid
+                    isValid,
+                    unconvertedPayments: unconvertedPayments.length,
+                    unconvertedCurrencies: [...new Set(unconvertedPayments.map(p => p.currency || 'INR'))],
                 });
             }
 
