@@ -1,8 +1,8 @@
 /**
  * Project work sessions — an employee "clocks in" on a project (Company or IT), logs
  * activities while it runs, then clocks out. A session with `endedAt === null` is running;
- * that is the live "who is working now" signal. One running session per employee is
- * enforced here (in the API), not the schema, so a person is focused on one thing at a time.
+ * that is the live "who is working now" signal. Sessions may run on SEVERAL projects at once;
+ * only a second session on the same project is refused, in the API rather than the schema.
  *
  * A session references EXACTLY ONE of `projectId` (Company Project) or `itProjectId` (IT
  * project). `companyId` is the worker's company, so team/company dashboards scope by it.
@@ -29,13 +29,11 @@ export const SESSION_USER_ROLES = [
   'MANAGER',
   'TEAM_LEADER',
   'EXECUTIVE',
-  'EMPLOYEE',
   'HR_MANAGER',
   'HR',
   'FINANCE_ADMIN',
   'IT_MANAGER',
   'IT_ADMIN',
-  'IT_SUPPORT',
   'EDITOR',
   'EDITOR_IN_CHIEF',
   'JOURNAL_MANAGER',

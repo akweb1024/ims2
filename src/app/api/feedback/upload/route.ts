@@ -8,7 +8,7 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 // POST /api/feedback/upload — upload attachment for a feedback message
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EXECUTIVE', 'HR', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EXECUTIVE', 'HR'],
     async (req: NextRequest, user: any) => {
         try {
             const formData = await req.formData();

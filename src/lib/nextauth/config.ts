@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { BASE_STAFF_ROLE } from "@/lib/constants/roles";
 
 export const authConfig = {
     pages: {
@@ -12,7 +13,10 @@ export const authConfig = {
             const userRole = (auth?.user as any)?.role;
             const companyId = (auth?.user as any)?.companyId;
             const isStaff = isLoggedIn && !['CUSTOMER', 'AGENCY'].includes(userRole);
-            const shouldRedirectToStaffPortal = userRole === 'EMPLOYEE';
+            // Ordinary staff land on the staff portal rather than the full dashboard. This read
+            // `=== 'EMPLOYEE'`, a role the UserRole enum does not contain, so it never fired and
+            // they were sent to /dashboard instead.
+            const shouldRedirectToStaffPortal = userRole === BASE_STAFF_ROLE;
             const hasCompany = !!companyId || userRole === 'SUPER_ADMIN';
 
             if (isAuthPage) {

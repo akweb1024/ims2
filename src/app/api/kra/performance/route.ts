@@ -7,7 +7,7 @@ import { computePerformanceIndex } from '@/lib/kra/performance-index';
 import type { KraPeriodType } from '@/lib/kra/period';
 
 const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
-const ALL_ROLES = [...MANAGERIAL_ROLES, 'EMPLOYEE', 'EXECUTIVE'];
+const ALL_ROLES = [...MANAGERIAL_ROLES, 'EXECUTIVE'];
 
 // GET /api/kra/performance?employeeId=&periodType=MONTHLY&periodRef=ISO
 //  - employee/executive (or no employeeId): own index
@@ -25,7 +25,7 @@ export const GET = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) => 
     const wantSelf = searchParams.get('self') === '1';
 
     // Self view ("My Performance" forces this even for managers)
-    if (wantSelf || !isManager || (employeeIdParam && ['EMPLOYEE', 'EXECUTIVE'].includes(user.role))) {
+    if (wantSelf || !isManager || (employeeIdParam && [ 'EXECUTIVE'].includes(user.role))) {
       const self = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
       if (!self) return createErrorResponse('Profile not found', 404);
       const index = await computePerformanceIndex({ employeeId: self.id, companyId: user.companyId, periodType, ref, persist: true });

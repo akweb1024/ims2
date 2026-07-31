@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { canAccessAllCompanies, getAvailableCompaniesForUser } from '@/lib/access-policy';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'FINANCE_ADMIN', 'HR_MANAGER', 'HR', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'FINANCE_ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, decoded) => {
         try {
             const { searchParams } = new URL(req.url);

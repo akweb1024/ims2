@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/feedback/[id]/messages
 export const GET = authorizedRoute(
-  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EXECUTIVE', 'HR', 'EMPLOYEE'],
+  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EXECUTIVE', 'HR'],
   async (req: NextRequest, user) => {
     try {
       const id = req.nextUrl.pathname.split('/').at(-2)!;
@@ -44,7 +44,7 @@ export const GET = authorizedRoute(
 
 // POST /api/feedback/[id]/messages — add reply to a thread
 export const POST = authorizedRoute(
-  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EXECUTIVE', 'HR', 'EMPLOYEE'],
+  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EXECUTIVE', 'HR'],
   async (req: NextRequest, user) => {
     try {
       const id = req.nextUrl.pathname.split('/').at(-2)!;

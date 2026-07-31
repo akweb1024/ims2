@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
 import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
+import { BASE_STAFF_ROLE } from '@/lib/constants/roles';
 import {
     taskLifecycle, lifecycleStart,
     TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS,
@@ -72,8 +73,12 @@ const TYPE_COLOR: Record<string, { bg: string; text: string }> = {
 export default function TasksPage() {
     const router = useRouter();
     const { data: session } = useSession();
-    const userRole = (session?.user as any)?.role || 'EMPLOYEE';
-    const isEmployee = userRole === 'EMPLOYEE';
+    // Default to the least-privileged role while the session loads, so the restricted UI is
+    // what flashes rather than the manager one.
+    const userRole = (session?.user as any)?.role || BASE_STAFF_ROLE;
+    // Was `=== 'EMPLOYEE'`, which the UserRole enum has never contained, so this was always
+    // false: ordinary staff saw the Squad tab and New Task button, then hit a 403 from the API.
+    const isEmployee = userRole === BASE_STAFF_ROLE;
     const canManage = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(userRole);
 
     const [tasks, setTasks] = useState<Task[]>([]);

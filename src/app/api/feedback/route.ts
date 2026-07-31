@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/feedback — list current user's feedback threads
 export const GET = authorizedRoute(
-  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EXECUTIVE', 'HR', 'EMPLOYEE'],
+  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EXECUTIVE', 'HR'],
   async (_req: NextRequest, user) => {
     try {
       const threads = await prisma.userFeedback.findMany({
@@ -34,7 +34,7 @@ export const GET = authorizedRoute(
 
 // POST /api/feedback — create a new feedback thread with first message
 export const POST = authorizedRoute(
-  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EXECUTIVE', 'HR', 'EMPLOYEE'],
+  ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'EXECUTIVE', 'HR'],
   async (req: NextRequest, user) => {
     try {
       const body = await req.json();

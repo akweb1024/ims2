@@ -44,6 +44,8 @@ export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEA
     }
 });
 
+// NOTE: 'EMPLOYEE' is not a UserRole member, so ordinary staff are denied here. Left as-is
+// deliberately — widening financial data to all staff is a business decision, not a bug fix.
 export const POST = authorizedRoute(['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'EMPLOYEE', 'FINANCE_ADMIN'], async (req: NextRequest, user) => {
     try {
         const body = await req.json();

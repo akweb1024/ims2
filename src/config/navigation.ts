@@ -345,6 +345,8 @@ export const ALL_MODULES: NavModule[] = [
                 items: [
                     { name: 'Payment Ledger (All)', href: '/dashboard/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                     { name: 'Razorpay Tracker', href: '/dashboard/analytics/razorpay', icon: CreditCard, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                    // NOTE: 'EMPLOYEE' is not a UserRole member, so ordinary staff are denied here. Left as-is
+                    // deliberately — widening financial data to all staff is a business decision, not a bug fix.
                     { name: 'Company Transactions', href: '/dashboard/payments/by-company', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'] },
                 ]
             },

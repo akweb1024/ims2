@@ -8,6 +8,8 @@ import { performRazorpaySync } from '@/lib/services/razorpay-sync';
 export async function GET(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
+        // NOTE: 'EMPLOYEE' is not a UserRole member, so ordinary staff are denied here. Left as-is
+        // deliberately — widening financial data to all staff is a business decision, not a bug fix.
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

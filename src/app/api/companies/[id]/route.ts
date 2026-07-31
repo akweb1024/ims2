@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { parseAutomationConfigInput } from '@/lib/document-automation';
+import { BASE_STAFF_ROLE } from '@/lib/constants/roles';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', BASE_STAFF_ROLE],
     async (req: NextRequest, decoded, { params }) => {
         try {
             const { id } = await params;

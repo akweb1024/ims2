@@ -4,8 +4,19 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { buildLetterVars, hydrate } from '@/lib/services/documents/letterVars';
 
+/**
+ * HR-admin surface for generating and managing employee documents.
+ *
+ * Staff self-service lives at /api/hr/my-documents, which is open to every role and is on the
+ * module-access exception list. This route previously listed a role called `EMPLOYEE` — not a
+ * member of the UserRole enum — alongside a `user.role === 'EMPLOYEE'` branch that scoped the
+ * query to the caller's own documents. Neither could ever fire, and `/api/hr/*` requires the HR
+ * module regardless, so staff never reached it by either path. Both are removed rather than
+ * repointed at EXECUTIVE: widening an HR-admin endpoint is not the way to serve staff when the
+ * self-service endpoint already exists.
+ */
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -13,13 +24,7 @@ export const GET = authorizedRoute(
 
             const where: any = {};
 
-            if (user.role === 'EMPLOYEE') {
-                const profile = await prisma.employeeProfile.findUnique({
-                    where: { userId: user.id }
-                });
-                if (!profile) return NextResponse.json([]);
-                where.employeeId = profile.id;
-            } else if (employeeId) {
+            if (employeeId) {
                 where.employeeId = employeeId;
             } else if (user.companyId) {
                 where.employee = { user: { companyId: user.companyId } };
@@ -87,9 +92,10 @@ export const POST = authorizedRoute(
     }
 );
 
-// Sign document
+// Sign document. Still self-scoped below by doc.employeeId === the caller's own profile.
+// The dead `EMPLOYEE` role is dropped rather than repointed, for the reason given on GET.
 export const PATCH = authorizedRoute(
-    ['EMPLOYEE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+    ['MANAGER', 'ADMIN', 'SUPER_ADMIN'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
