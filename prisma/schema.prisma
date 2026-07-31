@@ -159,6 +159,7 @@ model Company {
   metricContributions               MetricContribution[]
   performanceIndices                PerformanceIndex[]
   kraRollups                        KraRollup[]
+  reconciliationSignOffs ReconciliationSignOff[]
 }
 
 model CompanyIntegration {
@@ -438,6 +439,7 @@ model User {
   @@index([companyId])
   @@index([departmentId])
   settlementsEntered             SettlementRecord[]               @relation("SettlementEnteredBy")
+  reconciliationSignOffs         ReconciliationSignOff[]          @relation("ReconciliationSignedBy")
 }
 
 model TeamMember {
@@ -5119,6 +5121,53 @@ model SettlementRecord {
   @@index([captureDate])
   @@index([source])
   @@index([declarationId])
+}
+
+/// An optional record that someone in accounts looked at a period's reconciliation and accepted
+/// it. Entirely optional: the reconciliation itself computes live from the two tables and works
+/// with or without this, so nothing is blocked by a period going unsigned.
+///
+/// It stores a SNAPSHOT of the figures as they stood at the moment of signing. Reconciliation is
+/// computed on demand, so a declaration or settlement edited afterwards would silently change
+/// what was supposedly agreed; keeping the numbers means a later view can say "these figures
+/// have moved since this was signed" instead of quietly rewriting history.
+model ReconciliationSignOff {
+  id             String   @id @default(uuid())
+  companyId      String
+  /// Inclusive period bounds, matching the reconciliation query.
+  periodStart    DateTime
+  periodEnd      DateTime
+  signedById     String
+  signedAt       DateTime @default(now())
+  note           String?
+
+  /// Tolerance the period was accepted under — a later reader needs to know how loose it was.
+  toleranceInr   Float    @default(1)
+
+  // Snapshot of both bases at signing.
+  declaredGrossInr Float
+  declaredNetInr   Float
+  settledGrossInr  Float
+  settledNetInr    Float
+  feeInr           Float  @default(0)
+  taxInr           Float  @default(0)
+  inTransitNetInr  Float  @default(0)
+  declaredCount    Int    @default(0)
+  settledCount     Int    @default(0)
+  /// Whether it reconciled at signing. Signing off a period that did not match is allowed —
+  /// sometimes a known difference is accepted deliberately — so this records which it was.
+  matchedAtSignOff Boolean @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  signedBy       User     @relation("ReconciliationSignedBy", fields: [signedById], references: [id])
+
+  /// One live sign-off per company period. Reopening deletes it rather than versioning.
+  @@unique([companyId, periodStart, periodEnd])
+  @@index([companyId])
+  @@index([signedAt])
 }
 
 model Account {

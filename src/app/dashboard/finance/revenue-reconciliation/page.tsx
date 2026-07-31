@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 import {
     Scale, AlertTriangle, CheckCircle2, Clock, ArrowRight, Info,
-    TrendingDown, Users, Landmark,
+    TrendingDown, Users, Landmark, Stamp, RotateCcw, History,
 } from 'lucide-react';
 
 /**
@@ -54,8 +55,76 @@ export default function RevenueReconciliationPage() {
         },
     });
 
+    const qc = useQueryClient();
+
+    const { data: signOffData } = useQuery({
+        queryKey: ['reconciliation-sign-off', from, to],
+        queryFn: async () => {
+            const res = await fetch(`/api/finance/revenue-reconciliation/sign-off?from=${from}&to=${to}`);
+            if (!res.ok) return { signOff: null };
+            return res.json();
+        },
+    });
+    const signOff = signOffData?.signOff ?? null;
+
+    const signMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            const res = await fetch('/api/finance/revenue-reconciliation/sign-off', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not sign off');
+            return res.json();
+        },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['reconciliation-sign-off'] }); toast.success('Period signed off'); },
+        onError: (e: any) => toast.error(e?.message || 'Could not sign off'),
+    });
+
+    const reopenMutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/finance/revenue-reconciliation/sign-off?from=${from}&to=${to}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Could not reopen');
+            return res.json();
+        },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['reconciliation-sign-off'] }); toast.success('Period reopened'); },
+        onError: (e: any) => toast.error(e?.message || 'Could not reopen'),
+    });
+
     const v = data?.variance;
     const clean = Boolean(v?.matches);
+
+    /**
+     * Has anything moved since the period was signed? Reconciliation recomputes on every view,
+     * so an edited declaration or settlement would otherwise quietly change what was agreed.
+     * Compared to the paise to avoid float noise reading as a change.
+     */
+    const drift = useMemo(() => {
+        if (!signOff || !data) return null;
+        const pairs: [string, number, number][] = [
+            ['Declared gross', data.declared.grossInr, signOff.declaredGrossInr],
+            ['Declared net', data.declared.netInr, signOff.declaredNetInr],
+            ['Settled gross', data.settled.grossInr, signOff.settledGrossInr],
+            ['Settled net', data.settled.netInr, signOff.settledNetInr],
+            ['Declarations', data.declared.count, signOff.declaredCount],
+            ['Settlements', data.settled.count, signOff.settledCount],
+        ];
+        const moved = pairs.filter(([, now, then]) => Math.round(now * 100) !== Math.round(then * 100));
+        return moved.length ? moved : null;
+    }, [signOff, data]);
+
+    const snapshotFromCurrent = () => ({
+        from, to,
+        toleranceInr: tolerance,
+        matchedAtSignOff: clean,
+        declaredGrossInr: data.declared.grossInr,
+        declaredNetInr: data.declared.netInr,
+        settledGrossInr: data.settled.grossInr,
+        settledNetInr: data.settled.netInr,
+        feeInr: data.settled.feeInr,
+        taxInr: data.settled.taxInr,
+        inTransitNetInr: data.inTransit.netInr,
+        declaredCount: data.declared.count,
+        settledCount: data.settled.count,
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -115,6 +184,79 @@ export default function RevenueReconciliationPage() {
                                 )}
                             </div>
                         </div>
+                    </div>
+
+                    {/* Sign-off — optional. The reconciliation stands on its own; this is just a
+                        record that somebody looked and accepted it. */}
+                    <div className="card-premium p-5">
+                        {signOff ? (
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <Stamp className="text-success-600 shrink-0 mt-0.5" size={22} />
+                                    <div>
+                                        <p className="font-black text-secondary-900">
+                                            Signed off by {signOff.signedBy?.name || signOff.signedBy?.email || 'someone'}
+                                        </p>
+                                        <p className="text-xs text-secondary-500">
+                                            {new Date(signOff.signedAt).toLocaleString('en-IN')} · tolerance {inr(signOff.toleranceInr)}
+                                            {' · '}
+                                            {signOff.matchedAtSignOff ? 'reconciled at the time' : 'accepted with a known difference'}
+                                        </p>
+                                        {signOff.note && <p className="text-sm text-secondary-600 mt-1">{signOff.note}</p>}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => reopenMutation.mutate()}
+                                    disabled={reopenMutation.isPending}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-secondary-200 text-secondary-600 font-bold text-sm hover:bg-secondary-50 disabled:opacity-60 shrink-0"
+                                >
+                                    <RotateCcw size={15} /> Reopen
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <Stamp className="text-secondary-300 shrink-0 mt-0.5" size={22} />
+                                    <div>
+                                        <p className="font-black text-secondary-900">This period is not signed off</p>
+                                        <p className="text-xs text-secondary-500">
+                                            Optional — the figures above stand either way. Signing records who accepted them and what they were at the time.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => signMutation.mutate({ ...snapshotFromCurrent(), note: '' })}
+                                    disabled={signMutation.isPending}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 disabled:opacity-60 shrink-0"
+                                >
+                                    <Stamp size={15} /> {clean ? 'Sign off this period' : 'Accept with difference'}
+                                </button>
+                            </div>
+                        )}
+
+                        {drift && (
+                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <p className="font-black text-amber-800 text-sm flex items-center gap-2">
+                                    <History size={15} /> These figures have moved since sign-off
+                                </p>
+                                <ul className="mt-2 space-y-0.5">
+                                    {drift.map(([label, now, then]) => (
+                                        <li key={label} className="text-xs text-amber-700 tabular-nums">
+                                            {label}: was {typeof then === 'number' && then % 1 !== 0 ? inr(then) : then}
+                                            {' → now '}
+                                            {typeof now === 'number' && now % 1 !== 0 ? inr(now) : now}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button
+                                    onClick={() => signMutation.mutate({ ...snapshotFromCurrent(), note: signOff?.note || '' })}
+                                    disabled={signMutation.isPending}
+                                    className="mt-3 text-xs font-black uppercase tracking-widest text-amber-800 hover:underline"
+                                >
+                                    Re-sign with the current figures
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
