@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { computePeriodWindow, KraPeriodType } from '@/lib/kra/period';
 
-const ALL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER', 'EMPLOYEE', 'EXECUTIVE'];
+const ALL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -41,7 +41,7 @@ export const GET = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) => 
 
     // Resolve which employee profile we are reading.
     let employeeId: string;
-    if (!employeeIdParam || ['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+    if (!employeeIdParam || [ 'EXECUTIVE'].includes(user.role)) {
       const self = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
       if (!self) return createErrorResponse('Profile not found', 404);
       employeeId = self.id;

@@ -7,7 +7,6 @@ export const CRM_WORKER_ROLES = [
     'FINANCE_ADMIN',
     'HR_MANAGER',
     'HR',
-    'EMPLOYEE',
 ] as const;
 
 export const CRM_CUSTOMER_EDITOR_ROLES = new Set<string>(CRM_WORKER_ROLES);

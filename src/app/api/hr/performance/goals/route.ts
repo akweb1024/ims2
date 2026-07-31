@@ -10,7 +10,7 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 // (POST/PATCH/DELETE) were removed; this route only lists goals for the various
 // read views. Progress (currentValue) is driven by KRA contributions, not here.
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER', 'EMPLOYEE', 'EXECUTIVE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -34,7 +34,7 @@ export const GET = authorizedRoute(
                 select: { id: true },
             });
 
-            if (['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+            if ([ 'EXECUTIVE'].includes(user.role)) {
                 if (!selfProfile) return createErrorResponse('Profile not found', 404);
                 where.employeeId = selfProfile.id;
             } else if (employeeIdParam) {

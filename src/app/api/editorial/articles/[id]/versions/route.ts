@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { BASE_STAFF_ROLE } from '@/lib/constants/roles';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CUSTOMER'], // Customers (authors) can upload revisions
@@ -62,7 +63,7 @@ export const POST = authorizedRoute(
 );
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'STAFF'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', BASE_STAFF_ROLE],
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;

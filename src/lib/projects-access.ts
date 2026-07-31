@@ -16,7 +16,6 @@ export const PROJECT_VIEWER_ROLES = [
     'MANAGER',
     'TEAM_LEADER',
     'EXECUTIVE',
-    'EMPLOYEE',
     'HR_MANAGER',
     'HR',
     'FINANCE_ADMIN',

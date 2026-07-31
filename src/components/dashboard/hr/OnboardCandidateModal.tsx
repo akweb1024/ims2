@@ -16,7 +16,7 @@ const sev = {
     OK: { icon: CheckCircle2, cls: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
 } as const;
 
-const ROLES = ['EXECUTIVE', 'EMPLOYEE', 'TEAM_LEADER', 'MANAGER', 'HR', 'HR_MANAGER'];
+const ROLES = ['EXECUTIVE', 'TEAM_LEADER', 'MANAGER', 'HR', 'HR_MANAGER'];
 
 export default function OnboardCandidateModal({ app, onClose, onDone }: { app: any; onClose: () => void; onDone?: () => void }) {
     const { onboardCandidate } = useRecruitmentOnboarding();

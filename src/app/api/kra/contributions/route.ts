@@ -7,7 +7,7 @@ import { kraContributionSubmitSchema, kraContributionReviewSchema } from '@/lib/
 import { recordContributions, reviewContribution } from '@/lib/kra/contributions';
 
 const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
-const ALL_ROLES = [...MANAGERIAL_ROLES, 'EMPLOYEE', 'EXECUTIVE'];
+const ALL_ROLES = [...MANAGERIAL_ROLES, 'EXECUTIVE'];
 
 async function teamEmployeeIds(user: any): Promise<string[]> {
   const downline = await getDownlineUserIds(user.id, user.companyId || undefined);
@@ -28,7 +28,7 @@ export const POST = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) =>
 
     // Resolve target employee profile.
     let employeeId: string;
-    if (!input.employeeId || ['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+    if (!input.employeeId || [ 'EXECUTIVE'].includes(user.role)) {
       const self = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
       if (!self) return createErrorResponse('Profile not found', 404);
       employeeId = self.id;
@@ -75,7 +75,7 @@ export const GET = authorizedRoute(ALL_ROLES, async (req: NextRequest, user) => 
     if (status) where.status = { in: status.split(',') };
     if (from || to) where.date = { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(to) } : {}) };
 
-    if (['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+    if ([ 'EXECUTIVE'].includes(user.role)) {
       const self = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
       if (!self) return createErrorResponse('Profile not found', 404);
       where.employeeId = self.id;

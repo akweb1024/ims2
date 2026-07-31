@@ -8,7 +8,7 @@ const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER',
 
 // GET /api/kra/metrics?department=Publication&includeInactive=true
 export const GET = authorizedRoute(
-  [...MANAGERIAL_ROLES, 'EMPLOYEE', 'EXECUTIVE'],
+  [...MANAGERIAL_ROLES, 'EXECUTIVE'],
   async (req: NextRequest, user) => {
     try {
       if (!user.companyId) return createErrorResponse('Company association required', 403);

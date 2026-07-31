@@ -8,7 +8,7 @@ import { companyScopeWhere } from '@/lib/company-scope';
 
 // GET: Fetch KPIs for the company or a specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -25,7 +25,7 @@ export const GET = authorizedRoute(
             const selfProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
 
             // Resolve self for employee/executive default access
-            if (employeeId === 'self' || (!employeeId && ['EXECUTIVE', 'EMPLOYEE'].includes(user.role))) {
+            if (employeeId === 'self' || (!employeeId && ['EXECUTIVE'].includes(user.role))) {
                 if (!selfProfile) return NextResponse.json([]);
                 where.employeeId = selfProfile.id;
             } else if (employeeId) {
@@ -39,7 +39,7 @@ export const GET = authorizedRoute(
                 if (!targetProfile) return createErrorResponse('Employee not found', 404);
 
                 // Strict self-only for non-managerial staff
-                if (['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+                if ([ 'EXECUTIVE'].includes(user.role)) {
                     if (!selfProfile || targetProfile.id !== selfProfile.id) {
                         return createErrorResponse('Forbidden: You can only view your own KPIs', 403);
                     }
@@ -62,7 +62,7 @@ export const GET = authorizedRoute(
                     select: { id: true },
                 });
                 where.employeeId = { in: profiles.map((p) => p.id) };
-            } else if (['EMPLOYEE', 'EXECUTIVE'].includes(user.role)) {
+            } else if ([ 'EXECUTIVE'].includes(user.role)) {
                 if (!selfProfile) return NextResponse.json([]);
                 where.employeeId = selfProfile.id;
             } else if (!employeeId) {

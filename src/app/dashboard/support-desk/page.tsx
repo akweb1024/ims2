@@ -19,7 +19,7 @@ import {
     type LifecycleKey,
 } from '@/lib/it/lifecycle';
 
-const TRIAGE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER', 'TEAM_LEADER'];
+const TRIAGE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER', 'TEAM_LEADER'];
 const CATEGORIES = ['GENERAL', 'HARDWARE', 'SOFTWARE', 'NETWORK', 'ACCESS', 'OTHER'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const EMPTY = { title: '', description: '', departmentId: '', category: 'GENERAL', priority: 'MEDIUM' };
