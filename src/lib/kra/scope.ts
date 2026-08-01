@@ -35,8 +35,29 @@ export const ROLE_RANK: Record<string, number> = {
 /** Roles that bypass downline/company scoping (group-wide ≈ DIRECTOR+). */
 export const GROUP_WIDE_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'HR', 'HR_MANAGER']);
 
-/** Managerial roles that may assign/verify within their downline. */
-export const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
+/**
+ * Managerial roles that may assign/verify within their downline.
+ *
+ * IT_MANAGER and IT_ADMIN belong here: they run a department with direct reports exactly
+ * like MANAGER/TEAM_LEADER, and were previously locked out of every KRA managerial route —
+ * they could not even see the assignee list, so an IT lead had no way to set goals for
+ * their own team. They are NOT in GROUP_WIDE_ROLES, so like MANAGER they only reach their
+ * downline, never the whole company.
+ *
+ * Several routes used to inline this array as a literal instead of importing it, which meant
+ * a change here silently applied to only some of them. They all import it now.
+ */
+export const MANAGERIAL_ROLES = [
+  'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER', 'IT_MANAGER', 'IT_ADMIN',
+];
+
+/**
+ * Roles that may create/edit/delete the company-wide KRA *definitions* — metric definitions
+ * and templates. Deliberately narrower than MANAGERIAL_ROLES: those writes are not scoped to
+ * a downline (a template delete is a hard delete for the whole company), so running a
+ * department earns you the right to assign goals, not to redefine what the company measures.
+ */
+export const KRA_DEFINITION_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
 export function rankOf(role: ActorRole): number {
   return ROLE_RANK[role] ?? 0;

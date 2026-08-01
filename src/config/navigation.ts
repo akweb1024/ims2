@@ -163,7 +163,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Review',
                 items: [
-                    { name: 'Review Inbox', href: '/dashboard/review-inbox', icon: Inbox, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
+                    { name: 'Review Inbox', href: '/dashboard/review-inbox', icon: Inbox, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'IT_MANAGER', 'IT_ADMIN'] },
                 ]
             },
             {
@@ -184,8 +184,8 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Performance',
                 items: [
                     { name: 'Performance Workspace', href: '/dashboard/performance/workspace', icon: Target, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
-                    { name: 'Assign KRA', href: '/dashboard/performance/assign', icon: Target, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
-                    { name: 'Team KRA Analytics', href: '/dashboard/performance/team', icon: BarChart3, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'] },
+                    { name: 'Assign KRA', href: '/dashboard/performance/assign', icon: Target, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'IT_MANAGER', 'IT_ADMIN'] },
+                    { name: 'Team KRA Analytics', href: '/dashboard/performance/team', icon: BarChart3, roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'IT_MANAGER', 'IT_ADMIN'] },
                     { name: 'Team KPI Overview', href: '/dashboard/manager/team/performance', icon: BarChart3, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Goal Appraisals', href: '/dashboard/performance/goals', icon: Award, roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance Observatory', href: '/dashboard/performance-observability', icon: Compass, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'FINANCE_ADMIN'] },

@@ -6,8 +6,8 @@ import { getDownlineUserIds } from '@/lib/hierarchy';
 import { kraAssignSchema } from '@/lib/validators/kra';
 import { computePeriodWindow, KraPeriodType } from '@/lib/kra/period';
 import { upsertGoal, notifyGoalsAssigned } from '@/lib/kra/create-goals';
+import { MANAGERIAL_ROLES } from '@/lib/kra/scope';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
 // POST /api/kra/assign — apply a template's metrics to employees for a period.
 // Generates one EmployeeGoal per (employee, metric), idempotent for the same period window.

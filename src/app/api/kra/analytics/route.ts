@@ -3,8 +3,8 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getKraTeamAnalytics } from '@/lib/kra/analytics';
 import type { KraPeriodType } from '@/lib/kra/period';
+import { MANAGERIAL_ROLES } from '@/lib/kra/scope';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 const VALID_PERIODS = new Set(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY']);
 
 // GET /api/kra/analytics?periodType=MONTHLY&periodRef=ISO&departmentId=

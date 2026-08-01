@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { MANAGERIAL_ROLES, KRA_DEFINITION_ROLES } from '@/lib/kra/scope';
 import { kraTemplateSchema, kraTemplateUpdateSchema } from '@/lib/validators/kra';
 import { itemKey, propagateTemplateToGoals } from '@/lib/kra/template-propagation';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
 const templateInclude = {
   items: { include: { metric: true }, orderBy: { createdAt: 'asc' as const } },
@@ -36,7 +36,7 @@ export const GET = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, us
 });
 
 // POST /api/kra/templates — create template with items
-export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const POST = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const result = kraTemplateSchema.safeParse(await req.json());
@@ -83,7 +83,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
 });
 
 // PATCH /api/kra/templates — update template; if `items` provided, replace them wholesale
-export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const PATCH = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const result = kraTemplateUpdateSchema.safeParse(await req.json());
@@ -155,7 +155,7 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
 });
 
 // DELETE /api/kra/templates?id=... — hard delete (items cascade)
-export const DELETE = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const DELETE = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const id = new URL(req.url).searchParams.get('id');

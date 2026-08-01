@@ -5,8 +5,8 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { kraContributionSubmitSchema, kraContributionReviewSchema } from '@/lib/validators/kra';
 import { recordContributions, reviewContribution } from '@/lib/kra/contributions';
+import { MANAGERIAL_ROLES } from '@/lib/kra/scope';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 const ALL_ROLES = [...MANAGERIAL_ROLES, 'EXECUTIVE'];
 
 async function teamEmployeeIds(user: any): Promise<string[]> {
