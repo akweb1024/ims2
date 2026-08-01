@@ -92,7 +92,6 @@ export const GET = authorizedRoute(
         where,
         include: {
           project: { select: { id: true, name: true, projectCode: true } },
-          service: { select: { id: true, name: true } },
           assignedTo: {
             select: {
               id: true,
@@ -146,21 +145,11 @@ export const POST = authorizedRoute(
             ? parseFloat(validatedData.itDepartmentCut!.toString())
             : 0;
 
-      // Auto-calculate Due Date based on Service SLA if not provided
-      let calculatedDueDate = validatedData.dueDate
+      // The service catalogue used to supply an SLA here; with it retired, a due date is
+      // whatever the caller sets.
+      const calculatedDueDate = validatedData.dueDate
         ? new Date(validatedData.dueDate)
         : null;
-      if (validatedData.serviceId && !calculatedDueDate) {
-        const serviceDef = await prisma.iTServiceDefinition.findUnique({
-          where: { id: validatedData.serviceId },
-        });
-        if (serviceDef?.estimatedDays) {
-          calculatedDueDate = new Date();
-          calculatedDueDate.setDate(
-            calculatedDueDate.getDate() + serviceDef.estimatedDays,
-          );
-        }
-      }
 
       const taskCount = await prisma.iTTask.count({ where: { companyId } });
       const codeYear = new Date().getFullYear();
@@ -215,9 +204,6 @@ export const POST = authorizedRoute(
               itDepartmentCut: effectiveItCut as any,
               tags: validatedData.tags,
               dependencies: validatedData.dependencies,
-              service: validatedData.serviceId
-                ? { connect: { id: validatedData.serviceId } }
-                : undefined,
             },
             include: {
               project: { select: { id: true, name: true, projectCode: true } },

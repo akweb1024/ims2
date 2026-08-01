@@ -318,7 +318,7 @@ export async function PATCH(
       if (body[field] !== undefined) {
         // 1. Handle relations
         if (
-          ["projectId", "assignedToId", "reporterId", "serviceId", "linkedMetricId"].includes(
+          ["projectId", "assignedToId", "reporterId", "linkedMetricId"].includes(
             field,
           )
         ) {

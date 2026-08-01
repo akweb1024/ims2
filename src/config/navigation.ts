@@ -125,7 +125,9 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Performance', href: '/dashboard/my-performance', icon: TrendingUp, roles: INTERNAL },
                     { name: 'My Publication Workload', href: '/dashboard/my-publication-workload', icon: Newspaper, roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },
                     { name: 'My Sales & Marketing', href: '/dashboard/my-sales-workload', icon: TrendingUp, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
-                    { name: 'Get IT Help', href: '/dashboard/service-desk', icon: Ticket, roles: INTERNAL },
+                    // One place to ask for help. The old "Get IT Help" service desk raised a
+                    // separate ITTask against a priced catalogue and is retired; Support Desk
+                    // routes to any department, IT included.
                     { name: 'Support Desk', href: '/dashboard/support-desk', icon: LifeBuoy, roles: INTERNAL },
                 ]
             },
@@ -469,7 +471,6 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'IT Support',
                 items: [
                     { name: 'Service Desk (Admin)', href: '/dashboard/it-management/tickets', icon: Wrench, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Service Catalog', href: '/dashboard/it-management/services', icon: ClipboardList, roles: ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'] },
                     { name: 'Asset Inventory', href: '/dashboard/it-management/assets', icon: Laptop, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                 ]
             },

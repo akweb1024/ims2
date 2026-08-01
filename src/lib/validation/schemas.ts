@@ -438,7 +438,6 @@ export const itTaskSchema = z.object({
     itDepartmentCut: z.number().optional().default(0).or(z.string().optional()),
     tags: z.array(z.string()).optional().default([]),
     dependencies: z.array(z.string()).optional().default([]),
-    serviceId: z.string().optional().nullable(),
     linkedMetricId: z.string().optional().nullable(),
     progressPercent: z.number().optional().default(0).or(z.string().optional()),
 });
