@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import FormattedDate from '@/components/common/FormattedDate';
 import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import EmployeeIDCard from '@/components/dashboard/EmployeeIDCard';
@@ -526,9 +527,9 @@ function StaffPortalPageContent() {
                                         <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary w-full py-2 text-xs font-black shadow-lg">
                                             Submit Daily Report 📝
                                         </a>
-                                        <a href="/dashboard/service-desk/request" className="btn bg-amber-500 hover:bg-amber-600 text-white w-full py-2 text-xs font-black shadow-lg">
-                                            Request IT Service 🛠️
-                                        </a>
+                                        <Link href="/dashboard/support-desk" className="btn bg-amber-500 hover:bg-amber-600 text-white w-full py-2 text-xs font-black shadow-lg">
+                                            Raise a Support Ticket 🛠️
+                                        </Link>
                                         <a href="/dashboard/think-tank" className="btn bg-indigo-600 hover:bg-indigo-700 text-white w-full py-2 text-xs font-black shadow-lg">
                                             Open Think Tank 💡
                                         </a>
@@ -723,15 +724,15 @@ function StaffPortalPageContent() {
                                         </div>
                                     </div>
                                     <p className="text-secondary-300 leading-relaxed max-w-2xl mb-8">
-                                        Need technical assistance? Request software installations, hardware upgrades, access permissions, or any other IT-related equipment directly from here.
+                                        Need technical assistance? Raise a ticket for software installations, hardware upgrades, access permissions, or any other IT-related equipment. You can route it to IT or to any other department.
                                     </p>
                                     <div className="flex flex-wrap gap-4">
-                                        <a href="/dashboard/service-desk/request" className="btn btn-primary px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
-                                            <span>➕</span> Request New Service
-                                        </a>
-                                        <a href="/dashboard/service-desk" className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border border-white/10">
-                                            <span>📋</span> View My Requests
-                                        </a>
+                                        <Link href="/dashboard/support-desk" className="btn btn-primary px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
+                                            <span>➕</span> Raise a Ticket
+                                        </Link>
+                                        <Link href="/dashboard/my-work?tab=tickets" className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border border-white/10">
+                                            <span>📋</span> View My Tickets
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

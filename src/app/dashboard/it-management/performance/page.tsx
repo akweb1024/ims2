@@ -18,7 +18,6 @@ interface PerformanceData {
         stats: { completedTasks: number; totalHours: number; billableHours: number; billablePercentage: number; revenueGenerated: number };
     }>;
     trends: Array<{ month: string; year: number; completedTasks: number; revenue: number; hours: number }>;
-    servicePopularity: Array<{ name: string; count: number; revenue: number }>;
 }
 
 export default function PerformancePage() {
