@@ -31,6 +31,16 @@ const REPOINTED: Record<string, string> = {
     // C9: goal verification merged into the Review Inbox's Goals tab; the old
     // route is a redirect stub to /dashboard/review-inbox?tab=goals.
     '/dashboard/performance/verify': '/dashboard/review-inbox',
+    // #192: "My IT Tasks" was one of three nav entries all reading as "my tasks" and it
+    // fetched exactly what My Work's tasks tab fetches. It is now that tab, and the old
+    // route is a redirect stub to /dashboard/my-work?tab=tasks.
+    '/dashboard/my-tasks': '/dashboard/my-work',
+    // #192: same for the personal to-do list, now My Work's To-Dos tab.
+    '/dashboard/tasks': '/dashboard/my-work',
+    // #193: the IT service desk raised a parallel ITTask against a priced catalogue,
+    // one nav line from Support Desk, which routes to any department including IT.
+    // The catalogue is gone and the old route is a redirect stub to the support desk.
+    '/dashboard/service-desk': '/dashboard/support-desk',
 };
 
 // Deliberate removals. Key: `${role}:${scenario}:${href}`.
