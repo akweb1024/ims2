@@ -6,9 +6,10 @@ import {
     Ticket, Plus, User, Clock, Loader2, X, Save,
     Filter, Search, ArrowRight, CheckCircle2, AlertCircle,
     HardDrive, Monitor, Wifi, Lock, Shield, ChevronRight,
-    Command, Zap, Layers, RefreshCcw
+    Command, Zap, Layers, RefreshCcw, Building2
 } from 'lucide-react';
 import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
+import { useSupportDepartments, useSupportAssignees } from '@/hooks/useSupportTickets';
 import {
     ticketLifecycle, taskLifecycle, lifecycleStart,
     TICKET_LIFECYCLES, TICKET_LIFECYCLE_LABELS,
@@ -69,10 +70,17 @@ export default function ITTicketsPage() {
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     
-    const [formData, setFormData] = useState({ 
-        title: '', description: '', priority: 'MEDIUM', 
-        category: 'HARDWARE', assetId: '', status: 'OPEN', resolution: '' 
+    const [formData, setFormData] = useState({
+        title: '', description: '', priority: 'MEDIUM',
+        category: 'HARDWARE', assetId: '', status: 'OPEN', resolution: '',
+        departmentId: '', assignedToId: '',
     });
+
+    // Routing options — only fetched once the modal is open, and only for the roles
+    // allowed to triage (the assignee endpoint is triager-gated).
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
+    const { data: departments = [] } = useSupportDepartments(showModal);
+    const { data: assignees = [] } = useSupportAssignees(showModal && isAdmin);
 
     useEffect(() => {
         const user = localStorage.getItem('user');
@@ -124,10 +132,11 @@ export default function ITTicketsPage() {
 
     const resetForm = () => {
         setEditingTicket(null);
-        setFormData({ title: '', description: '', priority: 'MEDIUM', category: 'HARDWARE', assetId: '', status: 'OPEN', resolution: '' });
+        setFormData({
+            title: '', description: '', priority: 'MEDIUM', category: 'HARDWARE',
+            assetId: '', status: 'OPEN', resolution: '', departmentId: '', assignedToId: '',
+        });
     };
-
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
 
     // Search, then stamp each item with its lifecycle stage and how long it has been sitting.
     // Tickets and service requests use different status enums but land in the same buckets.
@@ -389,15 +398,17 @@ export default function ITTicketsPage() {
                                             transition={{ delay: idx * 0.05, type: 'spring', stiffness: 100 }}
                                             onClick={() => { 
                                                 setEditingTicket(ticket); 
-                                                setFormData({ 
-                                                    title: ticket.title, 
-                                                    description: ticket.description, 
-                                                    priority: ticket.priority, 
-                                                    category: ticket.category || 'HARDWARE', 
-                                                    assetId: ticket.assetId || '', 
-                                                    status: ticket.status, 
-                                                    resolution: ticket.resolution || '' 
-                                                }); 
+                                                setFormData({
+                                                    title: ticket.title,
+                                                    description: ticket.description,
+                                                    priority: ticket.priority,
+                                                    category: ticket.category || 'HARDWARE',
+                                                    assetId: ticket.assetId || '',
+                                                    status: ticket.status,
+                                                    resolution: ticket.resolution || '',
+                                                    departmentId: ticket.department?.id || '',
+                                                    assignedToId: ticket.assignedTo?.id || '',
+                                                });
                                                 setShowModal(true); 
                                             }}
                                             className="group bg-white/60 hover:bg-white backdrop-blur-xl rounded-[2.5rem] p-1 border border-white/80 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-indigo-100 transition-all cursor-pointer relative overflow-hidden"
@@ -418,6 +429,10 @@ export default function ITTicketsPage() {
                                                     <div className="flex flex-wrap items-center gap-4">
                                                         <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] bg-indigo-50 px-3 py-1.5 rounded-lg flex items-center gap-2">
                                                             <CatIcon className="h-3.5 w-3.5" /> {ticket.category}
+                                                        </span>
+                                                        <div className="h-1 w-1 rounded-full bg-slate-300" />
+                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                                            <Building2 className="h-3.5 w-3.5" /> {ticket.department?.name || 'IT'}
                                                         </span>
                                                         <div className="h-1 w-1 rounded-full bg-slate-300" />
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -557,12 +572,47 @@ export default function ITTicketsPage() {
                                     </div>
                                 </div>
 
+                                {/* Routing — which team owns it, and who on that team picks it up.
+                                    Both were missing, so every ticket landed in the IT queue unowned. */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Route to Department</label>
+                                        <div className="relative">
+                                            <select className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-8 py-5 text-[10px] font-black text-slate-900 uppercase focus:bg-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 outline-none appearance-none cursor-pointer"
+                                                value={formData.departmentId}
+                                                onChange={e => setFormData({ ...formData, departmentId: e.target.value })}>
+                                                <option value="">IT (default)</option>
+                                                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                            </select>
+                                            <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 rotate-90 pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    {isAdmin && (
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign To</label>
+                                            <div className="relative">
+                                                <select className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-8 py-5 text-[10px] font-black text-slate-900 uppercase focus:bg-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 outline-none appearance-none cursor-pointer"
+                                                    value={formData.assignedToId}
+                                                    onChange={e => setFormData({ ...formData, assignedToId: e.target.value })}>
+                                                    <option value="">Leave in queue</option>
+                                                    {assignees.map(a => (
+                                                        <option key={a.userId} value={a.userId}>
+                                                            {a.name}{a.departmentName ? ` · ${a.departmentName}` : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 rotate-90 pointer-events-none" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Disruption Intel *</label>
-                                    <textarea className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-8 py-5 text-sm font-medium text-slate-600 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 transition-all outline-none resize-none" 
+                                    <textarea className="w-full bg-slate-50/80 border border-slate-100 rounded-2xl px-8 py-5 text-sm font-medium text-slate-600 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 transition-all outline-none resize-none"
                                         rows={5} placeholder="Full diagnostic description of the fault condition..." required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
                                 </div>
-                                
+
                                 <div className="flex gap-4 pt-6">
                                     <motion.button 
                                         type="submit" disabled={submitting} 

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { createNotification } from '@/lib/system-notifications';
+import { UserRole } from '@prisma/client';
 import {
   TICKET_USER_ROLES,
   ticketInclude,
@@ -75,6 +76,20 @@ export const POST = authorizedRoute(TICKET_USER_ROLES, async (req: NextRequest, 
       departmentHeadId = dept.headUserId;
     }
 
+    // Triagers may hand the ticket straight to a resolver instead of dropping it in the
+    // queue unassigned. A plain requester cannot pick who works on their own request.
+    let assignedToId: string | null = null;
+    if (body.assignedToId && canTriageTickets(user.role)) {
+      const assignee = await prisma.user.findFirst({
+        // Staff only — the same set /api/support/assignees offers, so a customer or
+        // conference login can never end up owning a ticket.
+        where: { id: body.assignedToId, companyId, isActive: true, role: { in: TICKET_USER_ROLES as UserRole[] } },
+        select: { id: true },
+      });
+      if (!assignee) return createErrorResponse('Assignee not found in this company', 400);
+      assignedToId = assignee.id;
+    }
+
     const ticket = await prisma.iTSupportTicket.create({
       data: {
         companyId,
@@ -84,6 +99,7 @@ export const POST = authorizedRoute(TICKET_USER_ROLES, async (req: NextRequest, 
         priority: body.priority || 'MEDIUM',
         category: body.category || 'GENERAL',
         departmentId,
+        assignedToId,
         assetId: body.assetId || null,
         status: 'OPEN',
         dueAt: slaDueDate(body.priority || 'MEDIUM'),
@@ -98,6 +114,8 @@ export const POST = authorizedRoute(TICKET_USER_ROLES, async (req: NextRequest, 
     });
     const recipients = new Set<string>([...(departmentHeadId ? [departmentHeadId] : []), ...itAdmins.map((u) => u.id)]);
     recipients.delete(user.id);
+    // The named resolver gets the sharper "it's yours" message instead of the queue notice.
+    if (assignedToId) recipients.delete(assignedToId);
     await Promise.all(
       [...recipients].map((uid) =>
         createNotification({
@@ -110,6 +128,17 @@ export const POST = authorizedRoute(TICKET_USER_ROLES, async (req: NextRequest, 
         }).catch(() => {}),
       ),
     );
+
+    if (assignedToId && assignedToId !== user.id) {
+      await createNotification({
+        userId: assignedToId,
+        title: 'Ticket assigned to you',
+        message: `You were assigned: ${title}`,
+        type: 'INFO',
+        link: `/dashboard/support-desk/${ticket.id}`,
+        category: 'GENERAL',
+      }).catch(() => {});
+    }
 
     return NextResponse.json(ticket, { status: 201 });
   } catch (error) {
