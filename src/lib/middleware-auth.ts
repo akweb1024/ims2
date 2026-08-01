@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/session';
 import { TokenPayload } from '@/lib/auth-legacy';
 import { handleApiError, AuthorizationError, AuthenticationError } from '@/lib/error-handler';
 import { getRequiredSensitiveModule, hasModuleAccess } from '@/lib/module-access';
+import { hasAnyRole } from '@/lib/constants/roles';
 import { prisma } from '@/lib/prisma';
 
 type ProtectedRouteHandler = (req: NextRequest, user: TokenPayload, context?: any) => Promise<NextResponse>;
@@ -23,7 +24,9 @@ export const authorizedRoute = (allowedRoles: string[] = [], handler: ProtectedR
                 throw new AuthenticationError('Unauthorized: Session not found');
             }
 
-            if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+            // A user passes if ANY role they hold is allowed — their primary role or one of
+            // their additional ones. This single check covers every authorizedRoute in the app.
+            if (!hasAnyRole(user, allowedRoles)) {
                 throw new AuthorizationError('Forbidden: Insufficient permissions');
             }
 

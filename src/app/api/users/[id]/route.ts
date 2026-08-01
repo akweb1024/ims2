@@ -5,6 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
 import { assertCompanyAccess, normalizeAllowedModulesForWrite, userHasCompanyAccess } from '@/lib/access-policy';
 import { hardDeleteUser } from '@/lib/user-deletion';
+import { sanitiseAdditionalRoles } from '@/lib/constants/roles';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
@@ -53,7 +54,7 @@ export const PATCH = authorizedRoute(
         try {
             const { id } = await params;
             const body = await req.json();
-            const { role, name, isActive, password, companyId, companyIds, email, departmentId, allowedModules } = body;
+            const { role, roles, name, isActive, password, companyId, companyIds, email, departmentId, allowedModules } = body;
 
             const existingUser = await prisma.user.findUnique({ where: { id } });
             if (!existingUser) return createErrorResponse('User not found', 404);
@@ -68,18 +69,18 @@ export const PATCH = authorizedRoute(
             }
 
             // Role Hierarchy Validation for Updates
-            if (role) {
-                const ROLE_HIERARCHY: Record<string, number> = {
-                    'SUPER_ADMIN': 100,
-                    'ADMIN': 80,
-                    'FINANCE_ADMIN': 80,
-                    'MANAGER': 60,
-                    'TEAM_LEADER': 40,
-                    'EXECUTIVE': 20,
-                    'CUSTOMER': 0
-                };
+            const ROLE_HIERARCHY: Record<string, number> = {
+                'SUPER_ADMIN': 100,
+                'ADMIN': 80,
+                'FINANCE_ADMIN': 80,
+                'MANAGER': 60,
+                'TEAM_LEADER': 40,
+                'EXECUTIVE': 20,
+                'CUSTOMER': 0
+            };
+            const requesterLevel = ROLE_HIERARCHY[user.role] || 0;
 
-                const requesterLevel = ROLE_HIERARCHY[user.role] || 0;
+            if (role) {
                 const targetLevel = ROLE_HIERARCHY[role as string] || 0;
 
                 // 1. Prevent assigning a role higher than oneself
@@ -93,8 +94,28 @@ export const PATCH = authorizedRoute(
                 }
             }
 
+            // Additional roles get the SAME rank ceiling as the primary one. Without this the
+            // hierarchy check above is trivially bypassed — a MANAGER could leave `role` alone
+            // and hand out SUPER_ADMIN through `roles` instead.
+            let additionalRoles: string[] | undefined;
+            if (roles !== undefined) {
+                const primary = (role as string) || existingUser.role;
+                additionalRoles = sanitiseAdditionalRoles(roles, primary);
+                const tooHigh = additionalRoles.find((r) => (ROLE_HIERARCHY[r] || 0) > requesterLevel);
+                if (tooHigh) {
+                    return createErrorResponse(`Insufficient privileges to assign the ${tooHigh} role`, 403);
+                }
+            }
+
             const updateData: any = {};
             if (role) updateData.role = role;
+            // The primary role always stays inside roles[], so the union can never lose it.
+            if (additionalRoles !== undefined) {
+                const primary = (role as string) || existingUser.role;
+                updateData.roles = [primary, ...additionalRoles.filter((r) => r !== primary)];
+            } else if (role && !existingUser.roles.includes(role)) {
+                updateData.roles = [role, ...existingUser.roles.filter((r) => r !== existingUser.role)];
+            }
             if (name) updateData.name = name;
             if (isActive !== undefined) updateData.isActive = isActive;
             if (departmentId !== undefined) updateData.departmentId = departmentId;

@@ -51,6 +51,7 @@ export const authConfig = {
             if (user) {
                 token.id = user.id as string;
                 token.role = user.role;
+                token.roles = (user as any).roles || [];
                 token.companyId = user.companyId;
                 token.allowedModules = (user as any).allowedModules || ['CORE'];
             }
@@ -58,6 +59,7 @@ export const authConfig = {
             if (trigger === "update" && session) {
                 if (session.companyId !== undefined) token.companyId = session.companyId;
                 if (session.role) token.role = session.role;
+                if (session.roles !== undefined) token.roles = session.roles;
             }
 
             return token;
@@ -66,6 +68,7 @@ export const authConfig = {
             if (token && session.user) {
                 session.user.id = token.id as string;
                 session.user.role = token.role as any;
+                session.user.roles = (token.roles as string[]) || [];
                 session.user.companyId = token.companyId as string;
                 (session.user as any).allowedModules = (token as any).allowedModules || ['CORE'];
             }

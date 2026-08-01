@@ -79,3 +79,52 @@ export const INTERNAL_ROLES = USER_ROLES.filter(
 export function isUserRole(v: unknown): v is UserRoleValue {
   return typeof v === 'string' && (USER_ROLES as readonly string[]).includes(v);
 }
+
+/* ─── Multiple roles per user ─────────────────────────────────────────────── */
+
+/**
+ * A user carries one *primary* role (`User.role`) plus any number of *additional* roles
+ * (`User.roles`). The primary role is what the app displays and what rank checks read; the
+ * additional ones only ever grant more access, never less.
+ *
+ * The `roles` column existed in the schema from the baseline migration but nothing read or
+ * wrote it, so it had drifted — most rows still held the `[EXECUTIVE]` default while their
+ * real role was something else. Treat it as additive-only and always union with `role`, so a
+ * stale or empty array can never take access away from someone.
+ */
+export interface RoleBearer {
+  role?: string | null;
+  roles?: string[] | null;
+}
+
+/** Every role a user effectively holds: their primary role plus any additional ones. */
+export function effectiveRoles(user: RoleBearer | null | undefined): string[] {
+  if (!user) return [];
+  const all = new Set<string>();
+  if (user.role) all.add(user.role);
+  for (const r of user.roles ?? []) if (r) all.add(r);
+  return [...all];
+}
+
+/**
+ * Does the user hold at least one of `allowed`?
+ *
+ * `'*'` in `allowed` means everyone. An empty `allowed` list means "no role requirement",
+ * matching how authorizedRoute has always treated it.
+ */
+export function hasAnyRole(user: RoleBearer | null | undefined, allowed: readonly string[]): boolean {
+  if (allowed.length === 0) return true;
+  if (allowed.includes('*')) return true;
+  const held = effectiveRoles(user);
+  return allowed.some((r) => held.includes(r));
+}
+
+/** Keep only real enum members, drop duplicates and drop the primary role. */
+export function sanitiseAdditionalRoles(input: unknown, primaryRole?: string | null): UserRoleValue[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<UserRoleValue>();
+  for (const v of input) {
+    if (isUserRole(v) && v !== primaryRole) seen.add(v);
+  }
+  return [...seen];
+}

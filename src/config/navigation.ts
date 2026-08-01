@@ -560,8 +560,14 @@ export const ALL_MODULES: NavModule[] = [
  * CONFERENCE). API authorization is separate and stays deny-by-default in
  * src/lib/module-access.ts.
  */
-export function getNavigationModules(role: string, allowedModules: string[] = []) {
-    const isSuperAdmin = role === 'SUPER_ADMIN';
+export function getNavigationModules(
+    role: string,
+    allowedModules: string[] = [],
+    /** Additional roles held alongside the primary one. A link shows if ANY of them allows it. */
+    additionalRoles: string[] = [],
+) {
+    const held = new Set<string>([role, ...additionalRoles].filter(Boolean));
+    const isSuperAdmin = held.has('SUPER_ADMIN');
     const licensed = (l?: string) =>
         !l || isSuperAdmin || allowedModules.includes('*') || allowedModules.includes(l);
 
@@ -572,7 +578,7 @@ export function getNavigationModules(role: string, allowedModules: string[] = []
                 .map(cat => ({
                     ...cat,
                     items: cat.items.filter(item =>
-                        (isSuperAdmin || item.roles.includes('*') || item.roles.includes(role))
+                        (isSuperAdmin || item.roles.includes('*') || item.roles.some(r => held.has(r)))
                         && licensed(item.licence)
                     )
                 }))
