@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FormattedDate from '@/components/common/FormattedDate';
 import { KNOWLEDGE_BASE_LIBRARY_TABS, getKnowledgeCategoryLabel } from '@/lib/knowledge-base';
+import { useCan } from '@/lib/client-roles';
 
 const decodeHtmlEntities = (value: string) =>
     value
@@ -38,12 +39,13 @@ export default function KnowledgeBasePage() {
     const [articles, setArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [actioningId, setActioningId] = useState<string | null>(null);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [activeCategory, setActiveCategory] = useState('MY WORK');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
 
-    const isPrivileged = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+    const isPrivileged = can(['SUPER_ADMIN', 'ADMIN']);
 
     const fetchArticles = useCallback(async (cat?: string, searchTerm?: string, roleOverride?: string) => {
         setLoading(true);
@@ -141,7 +143,7 @@ export default function KnowledgeBasePage() {
                         <h1 className="text-4xl font-extrabold text-secondary-900 tracking-tight">Knowledge Library</h1>
                         <p className="text-secondary-600 mt-2 text-lg">Central storage for SOPs, guides, and company documentation.</p>
                     </div>
-                    {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+                    {can(['SUPER_ADMIN', 'ADMIN']) && (
                         <button
                             onClick={() => router.push('/dashboard/knowledge-base/new')}
                             className="btn btn-primary shadow-xl"

@@ -12,6 +12,7 @@ import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformance
 import DesignationCombobox from '@/components/crm/DesignationCombobox';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 import { CRM_CUSTOMER_EDITOR_ROLES } from '@/lib/crm-access';
+import { useCan } from '@/lib/client-roles';
 
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const router = useRouter();
     const { data: customer, isLoading: loading, refetch: fetchCustomer } = useCustomer(id);
     const { updateCustomer, updateCommunicationLog } = useCustomerMutations();
+
+    const can = useCan();
 
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [activeTab, setActiveTab] = useState('overview');
@@ -45,7 +48,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [region, setRegion] = useState('');
     const [designationEditValue, setDesignationEditValue] = useState('');
     const [sharedCompanyIds, setSharedCompanyIds] = useState<string[]>([]);
-    const canManageDefaultDiscount = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const canManageDefaultDiscount = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
     const formRef = useRef<HTMLDivElement>(null);
 

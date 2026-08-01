@@ -17,6 +17,7 @@ import {
     Building2, Activity, Calendar, History, TrendingUp,
     Zap, Search, Filter, ShieldCheck, AlertCircle
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 function ChannelIcon({ channel }: { channel: string }) {
     const chan = channel?.toUpperCase();
@@ -30,6 +31,7 @@ function ChannelIcon({ channel }: { channel: string }) {
 export default function CommunicationsPage() {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
@@ -70,7 +72,7 @@ export default function CommunicationsPage() {
                 breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Communications History' }]}
                 icon={<History className="w-5 h-5" />}
                 actions={
-                    ['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                    can(['SUPER_ADMIN', 'MANAGER']) && (
                         <Link href="/dashboard/communications/bulk" className="btn btn-primary py-2 px-6 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-xl shadow-primary-200 group grow-0">
                             <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                             Initiate Broadcast
@@ -229,7 +231,7 @@ export default function CommunicationsPage() {
                                                         </div>
                                                     </div>
                                                     
-                                                    {!log.isFollowUpCompleted && ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(userRole) && (
+                                                    {!log.isFollowUpCompleted && can(['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE']) && (
                                                         <Link
                                                             href={`/dashboard/customers/${log.customerProfileId}?followUpId=${log.id}#communication-form`}
                                                             className="flex items-center justify-center gap-3 bg-white text-primary-600 border border-primary-200 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:shadow-xl hover:shadow-primary-100 hover:bg-primary-600 hover:text-white hover:-translate-y-1 transition-all duration-300 w-full"

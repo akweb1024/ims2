@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useCan } from '@/lib/client-roles';
 
 type Tab = 'General' | 'Security' | 'Notifications' | 'Allocations' | 'Dashboard';
 
 export default function SettingsPage() {
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [activeTab, setActiveTab] = useState<Tab>('General');
     const [loading, setLoading] = useState(false);
@@ -190,8 +192,8 @@ export default function SettingsPage() {
         'General',
         'Security',
         'Notifications',
-        ...(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'].includes(userRole) ? ['Dashboard' as Tab] : []),
-        ...(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(userRole) ? ['Allocations' as Tab] : [])
+        ...(can(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER']) ? ['Dashboard' as Tab] : []),
+        ...(can(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN']) ? ['Allocations' as Tab] : [])
     ];
 
     const tabIcons: Record<Tab, string> = {
@@ -272,7 +274,7 @@ export default function SettingsPage() {
                                     </div>
                                 </section>
 
-                                {userRole === 'SUPER_ADMIN' && (
+                                {can(['SUPER_ADMIN']) && (
                                     <section className="card-premium">
                                         <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Business Information (Admin Only)</h3>
                                         <form className="space-y-4" onSubmit={handleUpdateSystemSettings}>
@@ -543,7 +545,7 @@ export default function SettingsPage() {
                         )}
 
                         {/* Danger Zone / Logs */}
-                        {userRole === 'SUPER_ADMIN' && activeTab === 'General' && (
+                        {can(['SUPER_ADMIN']) && activeTab === 'General' && (
                             <>
                                 <section className="card-premium border-danger-100">
                                     <h3 className="text-lg font-bold text-danger-900 mb-2">Danger Zone</h3>

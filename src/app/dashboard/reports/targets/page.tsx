@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { canAccessAllCompanies } from '@/lib/access-policy';
 import TargetAchievementTable from './TargetAchievementTable';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ async function getTargetData() {
         whereClause.companyId = user.companyId;
     }
 
-    if (user.role !== 'SUPER_ADMIN' && user.role !== 'HR') {
+    if (!hasAnyRole(user, ['SUPER_ADMIN', 'HR'])) {
         whereClause.OR = [
             { employee: { user: { managerId: user.id } } }, // Nested relation for manager check
             { employee: { userId: user.id } }

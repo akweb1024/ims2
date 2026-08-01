@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import FormattedDate from '@/components/common/FormattedDate';
 import ReactMarkdown from 'react-markdown';
 import { KNOWLEDGE_BASE_CATEGORIES, getKnowledgeCategoryLabel } from '@/lib/knowledge-base';
+import { useCan } from '@/lib/client-roles';
 
 export default function KnowledgeArticleDetailPage() {
     const params = useParams();
@@ -15,6 +16,7 @@ export default function KnowledgeArticleDetailPage() {
     const [saving, setSaving] = useState(false);
     const [restoringRevisionId, setRestoringRevisionId] = useState<string | null>(null);
     const [editing, setEditing] = useState(false);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [form, setForm] = useState({
         title: '',
@@ -25,7 +27,7 @@ export default function KnowledgeArticleDetailPage() {
         revisionNotes: '',
     });
 
-    const canManage = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+    const canManage = can(['SUPER_ADMIN', 'ADMIN']);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');

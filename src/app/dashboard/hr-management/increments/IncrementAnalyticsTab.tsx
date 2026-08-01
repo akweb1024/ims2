@@ -13,6 +13,7 @@ import {
     Users
 } from 'lucide-react';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 
 export default function IncrementAnalyticsTab() {
@@ -123,7 +124,7 @@ export default function IncrementAnalyticsTab() {
     }, [filters.companyId, fetchDepartments]);
 
     useEffect(() => {
-        if (user?.role === 'SUPER_ADMIN') {
+        if (hasAnyRole(user, ['SUPER_ADMIN'])) {
             fetchCompanies();
         }
     }, [user, fetchCompanies]);
@@ -189,7 +190,7 @@ export default function IncrementAnalyticsTab() {
                         </select>
                     </div>
 
-                    {user?.role === 'SUPER_ADMIN' && (
+                    {hasAnyRole(user, ['SUPER_ADMIN']) && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-50 rounded-xl border border-secondary-200">
                             <Search size={14} className="text-secondary-400" />
                             <select

@@ -6,11 +6,13 @@ import Link from 'next/link';
 import ConferenceShell from '@/components/dashboard/conferences/ConferenceShell';
 import { Calendar, MapPin, Users, Plus, Search, Eye, Trash2, CheckCircle, Clock, X, Brain, Sparkles, Radio, ArrowRight } from 'lucide-react';
 import { getHealthBadgeColor } from '@/lib/predictions';
+import { useCan } from '@/lib/client-roles';
 
 export default function AllConferencesPage() {
     const router = useRouter();
     const [conferences, setConferences] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -96,7 +98,7 @@ export default function AllConferencesPage() {
         conference.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const canCreate = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const canCreate = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { bg: string; text: string; icon: any }> = {

@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import FormattedDate from '@/components/common/FormattedDate';
+import { useCan } from '@/lib/client-roles';
 
 export default function BulletinBoard({ limit = 5 }: { limit?: number }) {
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -78,7 +80,7 @@ export default function BulletinBoard({ limit = 5 }: { limit?: number }) {
 
     return (
         <div className="space-y-4">
-            {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+            {can(['SUPER_ADMIN', 'ADMIN']) && (
                 <button
                     onClick={() => setShowModal(true)}
                     className="mb-4 w-full rounded-xl border-2 border-dashed border-primary/30 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition-colors hover:bg-accent"

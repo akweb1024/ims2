@@ -8,6 +8,7 @@ import {
     User, Mail, Phone, Calendar, Info, Check, Trash2, Smartphone, X, CheckCheck
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 const PAYMENT_METHODS = [
     { value: 'RAZORPAY', label: 'Razorpay', icon: CreditCard, color: 'blue' },
@@ -183,7 +184,7 @@ export default function RevenueTransactionsPage() {
                         </h1>
                         <p className="text-secondary-500 mt-2">Manage and verify company income to prevent duplicate claims</p>
                     </div>
-                    {(['ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(user?.role)) && (
+                    {(hasAnyRole(user, ['ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'])) && (
                         <button
                             onClick={() => setShowModal(true)}
                             className="btn btn-primary flex items-center gap-2 px-6 shadow-indigo-200 shadow-xl"
@@ -320,7 +321,7 @@ export default function RevenueTransactionsPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <div className="flex justify-center gap-2">
-                                                {t.verificationStatus !== 'VERIFIED' && (['ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(user?.role)) && (
+                                                {t.verificationStatus !== 'VERIFIED' && (hasAnyRole(user, ['ADMIN', 'FINANCE_ADMIN', 'MANAGER'])) && (
                                                     <button
                                                         onClick={() => handleVerifyTransaction(t.id, 'VERIFIED')}
                                                         className="p-2 bg-success-50 text-success-600 rounded-lg hover:bg-success-100"

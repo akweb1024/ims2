@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
 import { LifecycleTabs, StartPill, PeopleStack } from '@/components/dashboard/it/LifecycleUI';
-import { BASE_STAFF_ROLE } from '@/lib/constants/roles';
+import { BASE_STAFF_ROLE, hasAnyRole } from '@/lib/constants/roles';
 import {
     taskLifecycle, lifecycleStart,
     TASK_LIFECYCLES, TASK_LIFECYCLE_LABELS,
@@ -79,7 +79,7 @@ export default function TasksPage() {
     // Was `=== 'EMPLOYEE'`, which the UserRole enum has never contained, so this was always
     // false: ordinary staff saw the Squad tab and New Task button, then hit a 403 from the API.
     const isEmployee = userRole === BASE_STAFF_ROLE;
-    const canManage = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(userRole);
+    const canManage = hasAnyRole(session?.user as any, ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER', 'TEAM_LEADER']);
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);

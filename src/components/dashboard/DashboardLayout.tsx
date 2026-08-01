@@ -12,6 +12,7 @@ import Breadcrumbs from './Breadcrumbs';
 import FeedbackWidget from './FeedbackWidget';
 import AIChatWidget from './AIChatWidget';
 import { CommandNexus } from '@/components/nexus/CommandNexus';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 
 interface DashboardLayoutProps {
@@ -268,7 +269,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const user = session?.user as any;
     const finalRole = user?.role || propUserRole;
 
-    const canUseAllCompanies = user?.role === 'SUPER_ADMIN' || user?.allowedModules?.includes('ALL_COMPANIES');
+    const canUseAllCompanies = hasAnyRole(user, ['SUPER_ADMIN']) || user?.allowedModules?.includes('ALL_COMPANIES');
     const displayRole = mounted && user?.companyId
         ? (user.company?.name || finalRole.replace('_', ' '))
         : (mounted ? (canUseAllCompanies ? 'All Companies' : finalRole.replace('_', ' ')) : finalRole.replace('_', ' '));

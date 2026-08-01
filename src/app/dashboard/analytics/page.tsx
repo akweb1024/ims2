@@ -5,11 +5,13 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
+import { useCan } from '@/lib/client-roles';
 
 export default function AnalyticsPage() {
     const [data, setData] = useState<any>(null);
     const [leakageData, setLeakageData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
 
     const fetchAnalytics = useCallback(async () => {
@@ -281,7 +283,7 @@ export default function AnalyticsPage() {
                     </div>
 
                     {/* Revenue Leakage Detection */}
-                    {['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(userRole) && leakageData && (
+                    {can(['SUPER_ADMIN', 'FINANCE_ADMIN']) && leakageData && (
                         <div className="card-premium lg:col-span-2 border-danger-200 bg-danger-50/20">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-lg font-bold text-danger-900 flex items-center">

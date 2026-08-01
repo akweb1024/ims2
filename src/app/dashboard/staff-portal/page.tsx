@@ -43,6 +43,7 @@ import PrivateDailyNotesPanel from '@/components/dashboard/notes/PrivateDailyNot
 import WorkAssignmentManager from '@/components/dashboard/assignments/WorkAssignmentManager';
 import { useSearchParams } from 'next/navigation';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 function StaffPortalPageContent() {
     const searchParams = useSearchParams();
@@ -302,7 +303,7 @@ function StaffPortalPageContent() {
         { id: 'id-card', name: 'ID Card', icon: '🪪' },
     ];
 
-    const managerTabs = ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [
+    const managerTabs = hasAnyRole(user, ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN']) ? [
         { id: 'separator', name: '', icon: '', isSeparator: true },
         { id: 'team-ops', name: 'Team Ops', icon: '🏢' },
         { id: 'team-payroll', name: 'Team Payroll', icon: '💰' },

@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth';
 import { canAccessAllCompanies } from '@/lib/access-policy';
 import { Download, Search, TrendingUp } from 'lucide-react';
 import IncrementReportTable from './IncrementReportTable';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ async function getIncrementData() {
         whereClause.companyId = user.companyId;
     }
 
-    if (user.role !== 'SUPER_ADMIN' && user.role !== 'HR') {
+    if (!hasAnyRole(user, ['SUPER_ADMIN', 'HR'])) {
         whereClause.OR = [
             { managerId: user.id },
             { id: user.id }

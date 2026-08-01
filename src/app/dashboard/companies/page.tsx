@@ -5,10 +5,12 @@ import Link from 'next/link';
 import CompanyClientLayout from './CompanyClientLayout';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
 import { CardSkeleton } from '@/components/ui/skeletons';
+import { useCan } from '@/lib/client-roles';
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [showNewModal, setShowNewModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
@@ -92,7 +94,7 @@ export default function CompaniesPage() {
                         <h1 className="text-3xl font-bold text-secondary-900">Companies</h1>
                         <p className="text-secondary-600">Administrative control over multi-tenant organizations</p>
                     </div>
-                    {userRole === 'SUPER_ADMIN' && (
+                    {can(['SUPER_ADMIN']) && (
                         <div className="flex items-center gap-3">
                             <DataTransferActions type="companies" onSuccess={fetchCompanies} />
                             <button

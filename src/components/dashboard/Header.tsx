@@ -7,6 +7,7 @@ import GlobalSearch from './GlobalSearch';
 import { NavModule } from '@/config/navigation';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 import { Home } from 'lucide-react';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 interface HeaderProps {
     sidebarOpen: boolean;
@@ -46,7 +47,7 @@ export default function Header({
     isImpersonating
 }: HeaderProps) {
     const router = useRouter();
-    const canUseAllCompanies = user?.role === 'SUPER_ADMIN' || user?.allowedModules?.includes('ALL_COMPANIES');
+    const canUseAllCompanies = hasAnyRole(user, ['SUPER_ADMIN']) || user?.allowedModules?.includes('ALL_COMPANIES');
     const currentCompanyName = user?.company?.name
         || availableCompanies.find((comp) => comp.id === user?.companyId)?.name
         || (canUseAllCompanies && !user?.companyId ? 'All Companies' : 'No company selected');
@@ -58,7 +59,7 @@ export default function Header({
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement | null>(null);
 
-    const isStaff = user && !['CUSTOMER', 'AGENCY'].includes(user.role);
+    const isStaff = user && !hasAnyRole(user, ['CUSTOMER', 'AGENCY']);
     const todayAttendance = attendance.find(a => {
         return formatToISTDate(a.date) === formatToISTDate(new Date());
     });

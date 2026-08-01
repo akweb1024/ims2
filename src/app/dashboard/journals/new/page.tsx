@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function NewJournalPage() {
     const router = useRouter();
@@ -36,7 +37,7 @@ export default function NewJournalPage() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (user.role !== 'SUPER_ADMIN') {
+            if (!hasAnyRole(user, ['SUPER_ADMIN'])) {
                 router.push('/dashboard/journals');
             }
         } else {

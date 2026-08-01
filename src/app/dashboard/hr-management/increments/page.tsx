@@ -36,6 +36,9 @@ async function getIncrements() {
 
         const where: any = {};
 
+        // Primary role on purpose. This NARROWS the query to direct reports, so running it
+        // over the full role set would shrink what an ADMIN-who-also-holds-MANAGER can see.
+        // Union checks are only ever safe where holding the role grants something.
         if (user.role === 'MANAGER') {
             const directReports = await prisma.user.findMany({
                 where: { managerId: user.id },

@@ -17,6 +17,7 @@ import GoalList from '@/components/dashboard/performance/GoalList';
 import GoalModal from '@/components/dashboard/performance/GoalModal';
 import EvaluationModal from '@/components/dashboard/performance/EvaluationModal';
 import { Goal } from '@/types/performance';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function GoalsPage() {
     const { data: session } = useSession();
@@ -30,7 +31,7 @@ export default function GoalsPage() {
 
     const user = session?.user as any;
     const userRole = user?.role;
-    const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER'].includes(userRole);
+    const isManager = hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'HR_MANAGER']);
 
     const fetchGoals = useCallback(async () => {
         setIsLoading(true);

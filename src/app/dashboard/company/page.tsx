@@ -15,6 +15,7 @@ import {
   emptyWebhookConfig,
   normalizeScopedRuleMap,
 } from "@/lib/document-automation-config";
+import { useCan } from '@/lib/client-roles';
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<any>(null);
@@ -22,6 +23,7 @@ export default function CompanyPage() {
   const [designations, setDesignations] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const can = useCan();
   const [userRole, setUserRole] = useState("CUSTOMER");
   const [activeTab, setActiveTab] = useState<
     "OVERVIEW" | "WORKFORCE" | "DETAILS" | "BRANDS" | "PAYMENTS"
@@ -681,7 +683,7 @@ export default function CompanyPage() {
           >
             Brand Portfolios
           </button>
-          {["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+          {can(["SUPER_ADMIN", "ADMIN"]) && (
             <button
               onClick={() => setActiveTab("PAYMENTS")}
               className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "PAYMENTS" ? "bg-white text-primary-600 shadow-sm" : "text-secondary-500 hover:text-secondary-700"}`}
@@ -705,7 +707,7 @@ export default function CompanyPage() {
             <div className="space-y-6 animate-fadeIn">
               {/* Company Overview */}
               <div className="flex justify-end">
-                {["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+                {can(["SUPER_ADMIN", "ADMIN"]) && (
                   <button
                     onClick={() => setShowEditModal(true)}
                     className="btn btn-primary"
@@ -1469,7 +1471,7 @@ export default function CompanyPage() {
                       Organizational structure and hierarchy
                     </p>
                   </div>
-                  {["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+                  {can(["SUPER_ADMIN", "ADMIN"]) && (
                     <button
                       onClick={() => setShowDeptModal(true)}
                       className="btn btn-primary"
@@ -1546,7 +1548,7 @@ export default function CompanyPage() {
                     <p className="text-secondary-500">
                       No departments created yet.
                     </p>
-                    {["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+                    {can(["SUPER_ADMIN", "ADMIN"]) && (
                       <button
                         onClick={() => setShowDeptModal(true)}
                         className="mt-4 btn btn-secondary"
@@ -1569,7 +1571,7 @@ export default function CompanyPage() {
                       Personnel associated with this organization
                     </p>
                   </div>
-                  {["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(userRole) && (
+                  {can(["SUPER_ADMIN", "ADMIN", "MANAGER"]) && (
                     <button
                       onClick={() => setShowUserModal(true)}
                       className="btn btn-primary"
@@ -1663,7 +1665,7 @@ export default function CompanyPage() {
                     company
                   </p>
                 </div>
-                {["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(userRole) && (
+                {can(["SUPER_ADMIN", "ADMIN", "MANAGER"]) && (
                   <button
                     onClick={() => {
                       setEditingBrand(null);
@@ -1792,7 +1794,7 @@ export default function CompanyPage() {
             </div>
           )}
 
-          {activeTab === "PAYMENTS" && ["SUPER_ADMIN", "ADMIN"].includes(userRole) && (
+          {activeTab === "PAYMENTS" && can(["SUPER_ADMIN", "ADMIN"]) && (
             <div className="space-y-6 animate-fadeIn">
               <div>
                 <h2 className="text-2xl font-bold font-primary">Payments</h2>

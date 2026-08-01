@@ -5,10 +5,12 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
+import { useCan } from '@/lib/client-roles';
 
 export default function JournalsPage() {
     const [journals, setJournals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
@@ -63,7 +65,7 @@ export default function JournalsPage() {
                         <p className="text-secondary-600 mt-1">Browse and manage available scientific journals and pricing plans</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {userRole === 'SUPER_ADMIN' && (
+                        {can(['SUPER_ADMIN']) && (
                             <>
                                 <DataTransferActions type="journals" onSuccess={fetchJournals} />
                                 <Link href="/dashboard/journals/new" className="btn btn-primary px-6">
@@ -183,7 +185,7 @@ export default function JournalsPage() {
 
                         <div className="mt-8 pt-8 border-t border-secondary-100 flex justify-between items-center">
                             <div className="flex gap-3">
-                                {userRole === 'SUPER_ADMIN' && (
+                                {can(['SUPER_ADMIN']) && (
                                     <>
                                         <Link
                                             href={`/dashboard/journals/${selectedJournal.id}/reviewers`}

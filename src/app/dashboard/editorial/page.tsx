@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle, AlertTriangle, Clock, BookOpen, UserCheck, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { useCan } from '@/lib/client-roles';
 
 export default function EditorialPage() {
     const [articles, setArticles] = useState<any[]>([]);
@@ -13,6 +14,7 @@ export default function EditorialPage() {
     const [articleReviews, setArticleReviews] = useState<any[]>([]);
     const [articleVersions, setArticleVersions] = useState<any[]>([]);
     const [loadingReviews, setLoadingReviews] = useState(false);
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('');
     const [isUploadingVersion, setIsUploadingVersion] = useState(false);
     const [availableIssues, setAvailableIssues] = useState<any[]>([]);
@@ -144,7 +146,7 @@ export default function EditorialPage() {
         } catch (error) { console.error(error); }
     };
 
-    const isEditor = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'].includes(userRole);
+    const isEditor = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR']);
 
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading...</div>;
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function BulkCommunicationPage() {
     const router = useRouter();
@@ -21,7 +22,7 @@ export default function BulkCommunicationPage() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (!['SUPER_ADMIN', 'MANAGER'].includes(user.role)) {
+            if (!hasAnyRole(user, ['SUPER_ADMIN', 'MANAGER'])) {
                 router.push('/dashboard');
             }
         }

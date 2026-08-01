@@ -52,6 +52,7 @@ import {
     useBulkSalaryMutation, useLeaveMonitor, useAdvances, useAdvanceMutations,
     useLeaveLedger, useUpdateLeaveLedger, useDepartmentMutations
 } from '@/hooks/useHR';
+import { useCan } from '@/lib/client-roles';
 
 const FormattedTime = ({ date }: { date: string | Date | null }) => {
     if (!date) return <span>--:--</span>;
@@ -142,6 +143,7 @@ const HRManagementContent = () => {
     const [showAllEmployees, setShowAllEmployees] = useState(false);
 
     // State for filtering
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [user, setUser] = useState<any>(null);
     const [fullProfile, setFullProfile] = useState<any>(null);
@@ -551,7 +553,7 @@ const HRManagementContent = () => {
                     </div>
                     <div className="flex gap-4 items-center">
                         {/* Show All Employees Toggle for Admins */}
-                        {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+                        {can(['SUPER_ADMIN', 'ADMIN']) && (
                             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-secondary-200 shadow-sm mr-2">
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -763,7 +765,7 @@ const HRManagementContent = () => {
                                                 const badge = status === 'VERIFIED' ? 'bg-success-50 text-success-700'
                                                     : status === 'REJECTED' ? 'bg-danger-50 text-danger-700'
                                                     : 'bg-warning-50 text-warning-700';
-                                                const canVerify = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'].includes(userRole);
+                                                const canVerify = can(['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER']);
                                                 return (
                                                 <div key={doc.id} className="group bg-white p-4 rounded-xl border border-secondary-100 hover:border-primary-300 hover:shadow-md transition-all flex justify-between items-center gap-3">
                                                     <div className="flex items-center gap-4 min-w-0">

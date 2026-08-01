@@ -27,6 +27,8 @@ import {
 import { cn } from '@/lib/classnames';
 import CRMClientLayout from '../crm/CRMClientLayout';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
+import { useCan } from '@/lib/client-roles';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 // ─── Customer type tabs ────────────────────────────────────────────────────────
 const TYPE_TABS = [
@@ -40,6 +42,7 @@ export default function CustomersPage() {
     const router = useRouter();
     const [customers, setCustomers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('');
@@ -68,7 +71,7 @@ export default function CustomersPage() {
             const user = JSON.parse(userData);
             setUserRole(user.role);
 
-            if (['SUPER_ADMIN', 'MANAGER'].includes(user.role)) {
+            if (hasAnyRole(user, ['SUPER_ADMIN', 'MANAGER'])) {
                 fetch('/api/users?limit=100', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 })
@@ -261,7 +264,7 @@ export default function CustomersPage() {
         }
     };
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+    const isAdmin = can(['SUPER_ADMIN', 'ADMIN']);
 
     return (
         <CRMClientLayout>
@@ -340,7 +343,7 @@ export default function CustomersPage() {
                 )}
 
                 {/* Bulk Actions */}
-                {selectedIds.size > 0 && ['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                {selectedIds.size > 0 && can(['SUPER_ADMIN', 'MANAGER']) && (
                     <div className="bg-primary-900 text-white p-4 rounded-3xl flex items-center justify-between mb-8 animate-in slide-in-from-top-4 duration-500 shadow-2xl shadow-primary-200 ring-4 ring-primary-50">
                         <div className="flex items-center gap-4 pl-2">
                             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-primary-400">
@@ -396,7 +399,7 @@ export default function CustomersPage() {
                                 onChange={(e) => setStateFilter(e.target.value)}
                              />
                         </div>
-                        {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && selectedIds.size === 0 && (
+                        {can(['SUPER_ADMIN', 'MANAGER']) && selectedIds.size === 0 && (
                             <button
                                 onClick={() => setShowBulkModal(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-secondary-50 text-secondary-600 border border-secondary-200 border-dashed rounded-xl hover:bg-secondary-100 hover:border-primary-300 transition-all text-[10px] font-black uppercase tracking-widest"
@@ -413,7 +416,7 @@ export default function CustomersPage() {
                     <CRMTable>
                         <thead>
                             <tr className="bg-secondary-50/50">
-                                {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                                {can(['SUPER_ADMIN', 'MANAGER']) && (
                                     <th className="w-12 text-center py-5">
                                         <div className="flex justify-center">
                                             <input
@@ -436,15 +439,15 @@ export default function CustomersPage() {
                         </thead>
                         <tbody className="divide-y divide-secondary-50">
                             {loading ? (
-                                <CRMTableLoading colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} rows={8} />
+                                <CRMTableLoading colSpan={can(['SUPER_ADMIN', 'MANAGER']) ? 8 : 7} rows={8} />
                             ) : error ? (
-                                <CRMTableError message={error} onRetry={fetchCustomers} colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} />
+                                <CRMTableError message={error} onRetry={fetchCustomers} colSpan={can(['SUPER_ADMIN', 'MANAGER']) ? 8 : 7} />
                             ) : customers.length === 0 ? (
-                                <CRMTableEmpty icon={<Users size={48} />} message="No customers found for the current filters." colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} />
+                                <CRMTableEmpty icon={<Users size={48} />} message="No customers found for the current filters." colSpan={can(['SUPER_ADMIN', 'MANAGER']) ? 8 : 7} />
                             ) : (
                                 customers.map((customer) => (
                                     <tr key={customer.id} className={`group hover:bg-secondary-50/30 transition-all border-l-4 ${selectedIds.has(customer.id) ? 'bg-primary-50/40 border-primary-500' : 'border-transparent hover:border-primary-500'}`}>
-                                        {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                                        {can(['SUPER_ADMIN', 'MANAGER']) && (
                                             <td className="py-5 text-center">
                                                 <div className="flex justify-center">
                                                     <input

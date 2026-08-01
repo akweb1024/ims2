@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
             id: user.id,
             email: user.email,
             role: user.role,
+            roles: user.roles,
             companyId: (requiresCompanySelection ? undefined : (user.companyId || (availableCompanies.length === 1 ? availableCompanies[0].id : undefined)))
         });
 
@@ -98,6 +99,9 @@ export async function POST(request: NextRequest) {
             email: user.email,
             name: user.name,
             role: user.role,
+            // Additional roles ride along so the client can gate on the full set, not just
+            // the primary role. /api/auth/me already returns them (it sends the whole row).
+            roles: user.roles,
             isActive: user.isActive,
             lastLogin: user.lastLogin,
             createdAt: user.createdAt,

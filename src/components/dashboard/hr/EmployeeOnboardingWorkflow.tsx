@@ -3,6 +3,7 @@
 // HR/manager view for Onboarding System B — NEW-HIRE WORKFLOW STEPS (data via onboarding/workflow-state).
 // This is NOT the training/quiz modules (System A) — that is staff/EmployeeOnboarding.tsx.
 import { useEffect, useMemo, useState } from 'react';
+import { useCan } from '@/lib/client-roles';
 
 type Mode = 'NEW' | 'UPGRADE';
 type TeamFilter = 'ALL' | 'PENDING_APPROVAL' | 'COMPLETED' | 'BLOCKED';
@@ -23,6 +24,7 @@ export default function EmployeeOnboardingWorkflow() {
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('joining');
+  const can = useCan();
   const [userRole, setUserRole] = useState('');
   const [employees, setEmployees] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -97,7 +99,7 @@ export default function EmployeeOnboardingWorkflow() {
     const done = Object.values(stepSaved).filter(Boolean).length;
     return Math.round((done / STEPS.length) * 100);
   }, [stepSaved]);
-  const canApprove = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER'].includes(userRole);
+  const canApprove = can(['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER']);
 
   const handoverRows = useMemo(() => {
     const actorLabel = (id: any) => (id ? (workflowActors[String(id)] || String(id)) : '');

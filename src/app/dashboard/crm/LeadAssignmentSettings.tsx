@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, Clock3, RefreshCcw, RotateCcw, UserRound } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 type Executive = {
   id: string;
@@ -29,6 +30,7 @@ type AssignmentState = {
 };
 
 export default function LeadAssignmentSettings() {
+  const can = useCan();
   const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
@@ -61,9 +63,11 @@ export default function LeadAssignmentSettings() {
   }, []);
 
   useEffect(() => {
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole)) return;
+    if (!can(['SUPER_ADMIN', 'ADMIN', 'MANAGER'])) return;
     fetchState();
-  }, [fetchState, userRole]);
+    // `can` is memoised on the cached user, so this re-runs once the user hydrates —
+    // which is exactly when the check can first return true.
+  }, [fetchState, can]);
 
   const handleReset = async () => {
     if (!confirm('Reset the round-robin cursor? The next new lead will go to the first executive in the order shown.')) return;
@@ -115,7 +119,7 @@ export default function LeadAssignmentSettings() {
     }
   };
 
-  if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole)) return null;
+  if (!can(['SUPER_ADMIN', 'ADMIN', 'MANAGER'])) return null;
 
   const formatExecutiveLabel = (executive?: Executive | null, fallback?: string) =>
     executive?.name || executive?.email || fallback || 'Not available';

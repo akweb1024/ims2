@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function EmployeeTransferPage() {
     const router = useRouter();
@@ -21,7 +22,7 @@ export default function EmployeeTransferPage() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (user.role !== 'SUPER_ADMIN') {
+            if (!hasAnyRole(user, ['SUPER_ADMIN'])) {
                 router.push('/dashboard');
                 return;
             }

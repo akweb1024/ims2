@@ -23,6 +23,7 @@ import {
     MoreHorizontal, Eye, CreditCard, Clock, CheckCircle2,
     XCircle, AlertCircle, IndianRupee
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 type BadgeVariant = 'success' | 'warning' | 'danger' | 'secondary' | 'info';
 
@@ -32,6 +33,7 @@ export default function InvoicesPage() {
     const [availableBrands, setAvailableBrands] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
     const [searchTerm, setSearchTerm] = useState('');
@@ -191,7 +193,7 @@ export default function InvoicesPage() {
                 icon={<FileText className="w-5 h-5" />}
                 actions={
                     <div className="flex items-center gap-3">
-                        {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'ADMIN', 'EXECUTIVE'].includes(userRole) && (
+                        {can(['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'ADMIN', 'EXECUTIVE']) && (
                             <>
                                 <button
                                     onClick={handleExport}

@@ -6,6 +6,7 @@ import { FormattedNumber } from '@/components/common/FormattedNumber';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
 import IncrementDistributionChart from '@/components/dashboard/hr/IncrementDistributionChart';
 import TopIncrementsTable from '@/components/dashboard/hr/TopIncrementsTable';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function IncrementAnalyticsPage() {
     const [user, setUser] = useState<any>(null);
@@ -101,8 +102,8 @@ export default function IncrementAnalyticsPage() {
                                     key={s}
                                     onClick={() => setScope(s as any)}
                                     disabled={
-                                        (s === 'COMPANY' && !['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'].includes(user?.role)) ||
-                                        (s === 'TEAM' && !['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'TEAM_LEADER'].includes(user?.role))
+                                        (s === 'COMPANY' && !hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'])) ||
+                                        (s === 'TEAM' && !hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'TEAM_LEADER']))
                                     }
                                     className={`px-4 py-2 text-xs font-bold rounded-md transition-all flex items-center gap-2 ${scope === s
                                         ? 'bg-white text-primary-700 shadow-sm'

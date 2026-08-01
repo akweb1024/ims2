@@ -14,9 +14,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { CRMSearchInput, CRMBadge, CRMRowAction, CRMModal, CRMStatCard } from '@/components/crm/CRMPageShell';
 import { formatDisplayLabel } from '@/lib/customer-display';
+import { useCan } from '@/lib/client-roles';
 
 export default function InstitutionList({ userRole }: { userRole: string }) {
     const router = useRouter();
+    // userRole arrives as a prop (the parent's primary role only), so capability checks read
+    // the cached user's full role set instead.
+    const can = useCan();
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +43,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (['SUPER_ADMIN', 'MANAGER'].includes(userRole)) {
+        if (can(['SUPER_ADMIN', 'MANAGER'])) {
             fetch('/api/users?limit=100', {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -50,7 +54,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                 })
                 .catch(err => console.error('Failed to fetch staff', err));
         }
-    }, [userRole]);
+    }, [can]);
 
     const fetchInstitutions = useCallback(async (page = 1) => {
         setLoading(true);
@@ -282,7 +286,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                        {can(['SUPER_ADMIN', 'MANAGER']) && (
                             <button
                                 onClick={() => setShowBulkModal(true)}
                                 className="h-14 bg-white border border-dashed border-secondary-300 text-[10px] font-black uppercase tracking-[0.2em] px-8 rounded-2xl hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
