@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { MANAGERIAL_ROLES, KRA_DEFINITION_ROLES } from '@/lib/kra/scope';
 import { kraMetricSchema, kraMetricUpdateSchema } from '@/lib/validators/kra';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
 // GET /api/kra/metrics?department=Publication&includeInactive=true
 export const GET = authorizedRoute(
@@ -34,7 +34,7 @@ export const GET = authorizedRoute(
 );
 
 // POST /api/kra/metrics — create a KRA metric
-export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const POST = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const result = kraMetricSchema.safeParse(await req.json());
@@ -65,7 +65,7 @@ export const POST = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, u
 });
 
 // PATCH /api/kra/metrics — update a metric by id
-export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const PATCH = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const result = kraMetricUpdateSchema.safeParse(await req.json());
@@ -99,7 +99,7 @@ export const PATCH = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, 
 });
 
 // DELETE /api/kra/metrics?id=... — soft delete (deactivate)
-export const DELETE = authorizedRoute(MANAGERIAL_ROLES, async (req: NextRequest, user) => {
+export const DELETE = authorizedRoute(KRA_DEFINITION_ROLES, async (req: NextRequest, user) => {
   try {
     if (!user.companyId) return createErrorResponse('Company association required', 403);
     const id = new URL(req.url).searchParams.get('id');

@@ -3,9 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
-import { GROUP_WIDE_ROLES } from '@/lib/kra/scope';
+import { GROUP_WIDE_ROLES, MANAGERIAL_ROLES } from '@/lib/kra/scope';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 
 // GET /api/kra/assignees — employees the actor may assign KRAs to.
 //  - MANAGER / TEAM_LEADER → their downline (+ self)

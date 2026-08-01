@@ -5,8 +5,8 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { computePerformanceIndex } from '@/lib/kra/performance-index';
 import type { KraPeriodType } from '@/lib/kra/period';
+import { MANAGERIAL_ROLES } from '@/lib/kra/scope';
 
-const MANAGERIAL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
 const ALL_ROLES = [...MANAGERIAL_ROLES, 'EXECUTIVE'];
 
 // GET /api/kra/performance?employeeId=&periodType=MONTHLY&periodRef=ISO
