@@ -49,14 +49,18 @@ export const useSupportDepartments = (enabled = true) =>
         select: (d: any) => (Array.isArray(d) ? d : []) as Array<{ id: string; name: string }>,
     });
 
-/** Assignable users for triagers (reuses the company-scoped KRA assignee list). */
+/**
+ * Assignable users for triagers. Uses the ticket-scoped endpoint rather than
+ * /api/kra/assignees, whose managerial role gate excludes IT_MANAGER / IT_ADMIN and
+ * therefore handed the helpdesk an empty dropdown.
+ */
 export const useSupportAssignees = (enabled = true) =>
     useQuery({
         queryKey: ['support-assignees'],
-        queryFn: () => fetchJson('/api/kra/assignees'),
+        queryFn: () => fetchJson('/api/support/assignees'),
         enabled,
         staleTime: 5 * 60 * 1000,
-        select: (d: any) => (d?.assignees ?? []) as Array<{ userId: string; name: string; departmentName: string | null }>,
+        select: (d: any) => (Array.isArray(d) ? d : []) as Array<{ userId: string; name: string; departmentName: string | null }>,
     });
 
 export const useTicketMutations = (id?: string) => {

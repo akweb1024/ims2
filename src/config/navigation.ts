@@ -119,8 +119,8 @@ export const ALL_MODULES: NavModule[] = [
                 items: [
                     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['*'] },
                     { name: 'Submit Daily Report', href: '/dashboard/staff-portal/submit-report', icon: PenLine, roles: INTERNAL },
-                    { name: 'My IT Tasks', href: '/dashboard/my-tasks', icon: ClipboardList, roles: INTERNAL },
-                    { name: 'My To-Dos', href: '/dashboard/tasks', icon: CheckSquare, roles: INTERNAL },
+                    // One entry, not three. /dashboard/my-tasks (IT tasks) and /dashboard/tasks
+                    // (personal to-dos) are now tabs of this page and redirect into it.
                     { name: 'My Work', href: '/dashboard/my-work', icon: Timer, roles: INTERNAL },
                     { name: 'My Performance', href: '/dashboard/my-performance', icon: TrendingUp, roles: INTERNAL },
                     { name: 'My Publication Workload', href: '/dashboard/my-publication-workload', icon: Newspaper, roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },

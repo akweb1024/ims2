@@ -2024,7 +2024,7 @@ export const convertThinkTankIdeaToExecution = async (params: {
         idea.id,
         'Think Tank idea moved to execution',
         `"${idea.topic}" has been converted into task "${task.title}".`,
-        '/dashboard/tasks'
+        '/dashboard/my-work?tab=todos'
     );
 
     return { type: 'TASK' as const, entity: task, idea: updatedIdea };
