@@ -281,8 +281,8 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     // Navigation items based on role and module
     const navigationModules = useMemo(() => {
         const userAllowedModules = user?.allowedModules || ['CORE'];
-        return getNavigationModules(finalRole, userAllowedModules);
-    }, [finalRole, user?.allowedModules]);
+        return getNavigationModules(finalRole, userAllowedModules, user?.roles || []);
+    }, [finalRole, user?.allowedModules, user?.roles]);
 
     // Sync active module with current path
     useEffect(() => {

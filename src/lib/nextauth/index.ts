@@ -37,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             email: user.email,
                             name: user.name,
                             role: user.role,
+                            roles: (user as any).roles || [],
                             companyId: companyId || undefined,
                             allowedModules: (user as any).allowedModules || ['CORE']
                         };
@@ -72,6 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     email: user.email,
                     name: user.name,
                     role: user.role,
+                    roles: (user as any).roles || [],
                     companyId: companyId || undefined,
                     allowedModules: (user as any).allowedModules || ['CORE']
                 };

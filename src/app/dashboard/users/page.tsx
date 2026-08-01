@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import FormattedDate from '@/components/common/FormattedDate';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
+import { INTERNAL_ROLES } from '@/lib/constants/roles';
 
 function UsersContent() {
     const searchParams = useSearchParams();
@@ -193,6 +194,22 @@ function UsersContent() {
     };
 
     const [editingUser, setEditingUser] = useState<any>(null);
+    // Primary role + the extra hats, kept in state so the "additional" list can exclude
+    // whichever role is currently primary as the user switches it.
+    const [primaryRole, setPrimaryRole] = useState('');
+    const [extraRoles, setExtraRoles] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!editingUser) return;
+        setPrimaryRole(editingUser.role || '');
+        setExtraRoles(((editingUser.roles as string[]) || []).filter(r => r !== editingUser.role));
+    }, [editingUser]);
+
+    // Never offer a role above the editor's own rank — the API enforces the same ceiling.
+    const assignableAdditionalRoles = useMemo(() => {
+        const ceiling = new Set(getAssignableRoles(userRole).map(r => r.value));
+        return INTERNAL_ROLES.filter(r => r !== primaryRole && (userRole === 'SUPER_ADMIN' || ceiling.has(r)));
+    }, [userRole, primaryRole]);
 
     const handleUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -201,6 +218,7 @@ function UsersContent() {
         const formData = new FormData(form);
         const payload: any = {
             role: formData.get('role'),
+            roles: extraRoles,
             name: formData.get('name'),
         };
         if (userRole === 'SUPER_ADMIN') {
@@ -581,6 +599,13 @@ function UsersContent() {
                                                 }`}>
                                                 {user.role.replace('_', ' ')}
                                             </span>
+                                            {/* Extra hats, if any — the primary role is always inside
+                                                roles[], so it is filtered out here. */}
+                                            {((user.roles as string[]) || []).filter((r) => r !== user.role).map((r) => (
+                                                <span key={r} className="badge bg-amber-100 text-amber-700 ml-1" title="Additional role">
+                                                    +{r.replace(/_/g, ' ')}
+                                                </span>
+                                            ))}
                                         </td>
                                         <td>
                                             <button
@@ -814,12 +839,52 @@ function UsersContent() {
                             )}
                             <div>
                                 <label className="label">System Role</label>
-                                <select name="role" className="input" defaultValue={editingUser.role} required title="System Role">
+                                <select
+                                    name="role"
+                                    className="input"
+                                    value={primaryRole}
+                                    onChange={(e) => setPrimaryRole(e.target.value)}
+                                    required
+                                    title="System Role"
+                                >
                                     {getAssignableRoles(userRole).map(role => (
                                         <option key={role.value} value={role.value}>{role.label}</option>
                                     ))}
                                 </select>
                             </div>
+
+                            {/* Additional roles — additive only, so this can never take access away.
+                                The list is capped by the editor's own rank, same as the primary role. */}
+                            <div>
+                                <label className="label">Additional Roles (Optional)</label>
+                                <p className="text-[11px] text-secondary-400 mb-2">
+                                    Grants access on top of the primary role. Useful when one person wears two hats —
+                                    an IT manager who also leads a sales team, for example.
+                                </p>
+                                <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto rounded-xl border border-secondary-200 p-3">
+                                    {assignableAdditionalRoles.map(r => (
+                                        <label key={r} className="flex items-center gap-2 text-xs font-medium text-secondary-700 cursor-pointer hover:text-primary-600">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-secondary-300"
+                                                checked={extraRoles.includes(r)}
+                                                onChange={(e) =>
+                                                    setExtraRoles(prev =>
+                                                        e.target.checked ? [...prev, r] : prev.filter(x => x !== r),
+                                                    )
+                                                }
+                                            />
+                                            {r.replace(/_/g, ' ')}
+                                        </label>
+                                    ))}
+                                </div>
+                                {extraRoles.length > 0 && (
+                                    <p className="text-[11px] font-bold text-primary-600 mt-2">
+                                        {primaryRole.replace(/_/g, ' ')} + {extraRoles.length} more
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="flex justify-end space-x-3 mt-8">
                                 <button
                                     type="button"

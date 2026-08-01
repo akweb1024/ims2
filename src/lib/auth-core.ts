@@ -9,7 +9,10 @@ if (!JWT_SECRET) {
 export interface TokenPayload {
     id: string;
     email: string;
+    /** Primary role — what the UI displays and what rank checks read. */
     role: string;
+    /** Additional roles held alongside the primary one. Additive only; never removes access. */
+    roles?: string[];
     companyId?: string;
     isImpersonated?: boolean;
     impersonatorId?: string;

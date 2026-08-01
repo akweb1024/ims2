@@ -20,6 +20,7 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
                 id: session.user.id,
                 email: session.user.email as string,
                 role: session.user.role,
+                roles: (session.user as any).roles || [],
                 companyId: session.user.companyId || undefined,
                 allowedModules: (session.user as any).allowedModules,
             };
@@ -43,6 +44,7 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
                         id: true,
                         email: true,
                         role: true,
+                        roles: true,
                         isActive: true,
                         companyId: true,
                         allowedModules: true,
@@ -69,6 +71,7 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
                     id: dbUser.id,
                     email: dbUser.email,
                     role: dbUser.role,
+                    roles: dbUser.roles || [],
                     companyId,
                     allowedModules: dbUser.allowedModules || ['CORE'],
                     isImpersonated: payload.isImpersonated,
