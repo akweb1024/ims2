@@ -135,6 +135,9 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
             // 3. Determine final destination: an explicit redirect_url wins,
             // otherwise land on the chosen persona's home dashboard.
             const userRole = user.role;
+            // Audience check, not a permission: it decides which landing page you get.
+            // Run over the full role set it would invert — a staff member who also carries
+            // CUSTOMER would be treated as a customer and lose the staff destination.
             const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
             const isGenericTarget = redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal';
 

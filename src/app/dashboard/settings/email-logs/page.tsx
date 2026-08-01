@@ -4,13 +4,14 @@ import { redirect } from 'next/navigation';
 import FormattedDate from '@/components/common/FormattedDate';
 import EmailLogFilters from './EmailLogFilters';
 import Link from 'next/link';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EmailLogsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const user = await getAuthenticatedUser();
 
-    if (!user || !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+    if (!hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN'])) {
         redirect('/login'); // Or show access denied
     }
 

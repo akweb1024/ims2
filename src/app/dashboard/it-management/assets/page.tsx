@@ -8,6 +8,7 @@ import {
     Cpu, Calendar, DollarSign, Fingerprint, Layers, Activity,
     Box, Monitor, HelpCircle, ArrowRight
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 export default function ITAssetsPage() {
     const [assets, setAssets] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export default function ITAssetsPage() {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showModal, setShowModal] = useState(false);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -122,7 +124,7 @@ export default function ITAssetsPage() {
         LOST: 'bg-rose-50 text-rose-600 border-rose-100',
     };
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
+    const isAdmin = can(['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN']);
 
     const filteredAssets = assets.filter(a => 
         a.name.toLowerCase().includes(searchQuery.toLowerCase()) || 

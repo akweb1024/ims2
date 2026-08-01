@@ -7,6 +7,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, Cell, PieChart, Pie
 } from 'recharts';
+import { useCan } from '@/lib/client-roles';
 
 type ViewType = 'OVERVIEW' | 'ORDERS' | 'COURIERS';
 
@@ -17,6 +18,7 @@ export default function LogisticsPage() {
     const [loading, setLoading] = useState(true);
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [view, setView] = useState<ViewType>('OVERVIEW');
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('');
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -541,7 +543,7 @@ export default function LogisticsPage() {
                                                     <span className="font-black text-secondary-900">{order.fulfillmentType === 'DIGITAL' ? '--' : (order.weight || '--')} {order.fulfillmentType === 'DIGITAL' ? '' : 'kg'}</span>
                                                 </td>
 	                                                <td className="px-6 py-4">
-	                                                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) ? (
+	                                                    {can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']) ? (
 	                                                        <select
 	                                                            value={order.status}
 	                                                            disabled={rowUpdatingId === order.id || bulkUpdating}

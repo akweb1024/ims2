@@ -7,6 +7,7 @@ import {
     ArrowLeft, FileText, CheckCircle, XCircle, AlertTriangle,
     Download, ExternalLink, MessageSquare, Star, Save
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 export default function PaperDetailPage() {
     const params = useParams();
@@ -16,6 +17,7 @@ export default function PaperDetailPage() {
 
     const [paper, setPaper] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [userId, setUserId] = useState('');
 
@@ -175,8 +177,8 @@ export default function PaperDetailPage() {
         }
     };
 
-    const isStaff = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
-    const isReviewer = userRole === 'REVIEWER' || isStaff;
+    const isStaff = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
+    const isReviewer = can(['REVIEWER']) || isStaff;
     const isAuthor = paper?.userId === userId;
 
     if (loading) return <div className="p-8 text-center">Loading paper...</div>;

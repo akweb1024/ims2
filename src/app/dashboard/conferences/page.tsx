@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import ConferenceShell from '@/components/dashboard/conferences/ConferenceShell';
 import { Calendar, MessageSquare, AlertCircle, ArrowRight, Plus, Sparkles, Activity, AlarmClock } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 export default function ConferencesHubPage() {
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [stats, setStats] = useState({
         totalConferences: 0,
@@ -42,7 +44,7 @@ export default function ConferencesHubPage() {
         fetchStats();
     }, [fetchStats]);
 
-    const canCreate = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const canCreate = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
     return (
         <ConferenceShell

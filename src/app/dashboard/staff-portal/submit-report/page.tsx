@@ -8,6 +8,7 @@ import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import DprKraSection from '@/components/dashboard/kra/DprKraSection';
 import { toast } from 'react-hot-toast';
 import { decodeAgendaMetadata } from '@/lib/hr/work-agenda';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 const getISTDateString = (date = new Date()) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -1119,7 +1120,7 @@ function SubmitReportInner() {
                                         />
                                         {(isEditMode || isHistoricalEdit) && <p className="text-[10px] text-secondary-400 mt-1">{isHistoricalEdit ? 'Filing for a past date' : 'Date cannot be changed once submitted'}</p>}
                                     </div>
-                                    {user && ['SUPER_ADMIN', 'ADMIN'].includes(user.role) && (
+                                    {user && hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN']) && (
                                         <div className="col-span-2 flex items-center gap-2 mt-2">
                                             <input
                                                 type="checkbox"

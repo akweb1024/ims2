@@ -15,6 +15,7 @@ import {
     Tag, IndianRupee, Percent, Layers, Globe,
     ChevronRight, Target, Activity, Calendar
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 type Coupon = {
     id: string;
@@ -41,6 +42,7 @@ const initialForm = {
 };
 
 export default function CouponsPage() {
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [brands, setBrands] = useState<any[]>([]);
@@ -157,7 +159,7 @@ export default function CouponsPage() {
         else alert('Failed to delete coupon');
     };
 
-    const canManage = ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(userRole);
+    const canManage = can(['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER']);
     const filtered = coupons.filter(c =>
         filterStatus === 'all' ? true : filterStatus === 'active' ? c.isActive : !c.isActive
     );

@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useCan } from '@/lib/client-roles';
 
 export default function CoursesPage() {
     const [courses, setCourses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('');
     const router = useRouter();
 
@@ -63,7 +65,7 @@ export default function CoursesPage() {
         }
     };
 
-    const canCreate = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const canCreate = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
     if (loading) return <div className="p-8 text-center text-secondary-500">Loading courses...</div>;
 

@@ -15,6 +15,7 @@ import {
     TICKET_LIFECYCLES, TICKET_LIFECYCLE_LABELS,
     type LifecycleKey, type StartState,
 } from '@/lib/it/lifecycle';
+import { useCan } from '@/lib/client-roles';
 
 interface Person { id: string; name: string | null; email: string | null }
 
@@ -51,6 +52,7 @@ export default function ITTicketsPage() {
     const [tickets, setTickets] = useState<TicketItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [stage, setStage] = useState<LifecycleKey | 'ALL'>('ALL');
     const [editingTicket, setEditingTicket] = useState<TicketItem | null>(null);
@@ -65,7 +67,7 @@ export default function ITTicketsPage() {
 
     // Routing options — only fetched once the modal is open, and only for the roles
     // allowed to triage (the assignee endpoint is triager-gated).
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
+    const isAdmin = can(['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN']);
     const { data: departments = [] } = useSupportDepartments(showModal);
     const { data: assignees = [] } = useSupportAssignees(showModal && isAdmin);
 

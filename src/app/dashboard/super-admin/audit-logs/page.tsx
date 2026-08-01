@@ -3,13 +3,14 @@ import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { Activity, Search, Filter, ShieldCheck, User } from 'lucide-react';
 import AuditLogClient from '@/components/dashboard/super-admin/AuditLogClient';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Audit Logs | STM Dashboard' };
 
 export default async function AuditLogsPage() {
     const user = await getSessionUser();
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!hasAnyRole(user, ['SUPER_ADMIN'])) {
         redirect('/dashboard');
     }
 

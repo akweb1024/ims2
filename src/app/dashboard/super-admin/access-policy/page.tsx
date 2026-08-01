@@ -17,6 +17,7 @@ import {
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { ACCESS_POLICY_MODULES } from '@/lib/access-policy';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Access Policy Audit | STM Dashboard' };
@@ -186,7 +187,7 @@ function ModuleBadge({ moduleId }: { moduleId: string }) {
 
 export default async function AccessPolicyAuditPage() {
     const user = await getSessionUser();
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!hasAnyRole(user, ['SUPER_ADMIN'])) {
         redirect('/dashboard');
     }
 

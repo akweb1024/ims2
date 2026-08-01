@@ -5,6 +5,7 @@ import Image from 'next/image';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Download, Search, X, FileText, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const MONTH_NAMES = [
@@ -941,7 +942,7 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
     isAdmin?: boolean;
     defaultTab?: 'form' | 'history' | 'hr';
 }) {
-    const isHROrAdmin = isAdmin || user?.role === 'SUPER_ADMIN' || user?.role === 'HR' || user?.role === 'HR_MANAGER' || user?.role === 'FINANCE_ADMIN';
+    const isHROrAdmin = isAdmin || hasAnyRole(user, ['SUPER_ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN']);
 
     const [subTab, setSubTab] = useState<'form' | 'history' | 'hr'>(defaultTab || (isAdmin ? 'hr' : 'form'));
     const [records, setRecords] = useState<any[]>([]);

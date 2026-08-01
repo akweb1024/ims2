@@ -9,6 +9,8 @@ import IdeaSubmissionForm from './IdeaSubmissionForm';
 import { showError, showInfo, showWarning } from '@/lib/toast';
 import ReactMarkdown from 'react-markdown';
 import { Sparkles, BrainCircuit } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 // Animation and Design Tokens - Swiss-Bauhaus Remix
 const TT_ANIMATIONS = `
@@ -966,14 +968,14 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                             onVoteWithPoints={handleVoteWithPoints}
                             onAskQuestion={handleAskQuestion}
                             onAnswerQuestion={handleAnswerQuestion}
-                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
+                            onDeleteIdea={hasAnyRole(user, ['SUPER_ADMIN']) ? handleDeleteIdea : undefined}
                         />
                     ) : governance?.votingOpen ? (
                         <VoteIdeaTable
                             title="Ideas for Vote"
                             ideas={ideas}
                             pointAccount={pointAccount}
-                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
+                            onDeleteIdea={hasAnyRole(user, ['SUPER_ADMIN']) ? handleDeleteIdea : undefined}
                         />
                     ) : null}
                     {governanceAccess?.canManage ? (
@@ -1014,7 +1016,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                             onVoteWithPoints={handleVoteWithPoints}
                             onAskQuestion={handleAskQuestion}
                             onAnswerQuestion={handleAskQuestion} // Use same for view
-                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
+                            onDeleteIdea={hasAnyRole(user, ['SUPER_ADMIN']) ? handleDeleteIdea : undefined}
                         />
                     ) : (
                         <GlobalPoolTable ideas={ideas} />
@@ -1024,7 +1026,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         }
 
         if (mode === 'customization') {
-            if (user?.role !== 'SUPER_ADMIN') {
+            if (!hasAnyRole(user, ['SUPER_ADMIN'])) {
                 return (
                     <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
                         Only super admins can access Think Tank customization.
@@ -1098,7 +1100,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
 
                 <IdeaGrid
                     title={
-                        user?.role === 'SUPER_ADMIN' && governance?.mode !== 'REVEAL_READY' 
+                        hasAnyRole(user, ['SUPER_ADMIN']) && governance?.mode !== 'REVEAL_READY' 
                             ? "Ideas Result (Live Preview)" 
                             : "Ideas Result"
                     }
@@ -1166,13 +1168,15 @@ function ThinkTankWorkspaceHeader({
     pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
     onNavigate: (path: string) => void;
 }) {
+    // `userRole` is the caller's primary role only; capability checks use the full set.
+    const can = useCan();
     const navItems = [
         { id: 'dashboard', path: '/dashboard/think-tank', label: THINK_TANK_MODE_CONTENT.dashboard.navLabel, description: 'Cycle health, reviews, and performance snapshot.' },
         { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: THINK_TANK_MODE_CONTENT['my-ideas'].navLabel, description: 'Draft, submit, and track your own proposals.' },
         { id: 'vote', path: '/dashboard/think-tank/vote', label: THINK_TANK_MODE_CONTENT.vote.navLabel, description: 'Browse the voting queue and open full idea records.' },
         { id: 'results', path: '/dashboard/think-tank/results', label: THINK_TANK_MODE_CONTENT.results.navLabel, description: 'Revealed standings, lessons, and execution outcomes.' },
         { id: 'explorer', path: '/dashboard/think-tank/explorer', label: THINK_TANK_MODE_CONTENT.explorer.navLabel, description: 'Universal archive of all ideas regardless of cycles.' },
-        ...(userRole === 'SUPER_ADMIN'
+        ...(can(['SUPER_ADMIN'])
             ? [{ id: 'customization', path: '/dashboard/think-tank/customization', label: THINK_TANK_MODE_CONTENT.customization.navLabel, description: 'Schedule, override, and vote-control tools.' }]
             : []),
     ] as Array<{ id: string; path: string; label: string; description: string }>;

@@ -25,6 +25,7 @@ import {
     Clock, Archive
 } from 'lucide-react';
 import { cn } from '@/lib/classnames';
+import { useCan } from '@/lib/client-roles';
 
 function getStatusVariant(status: SubscriptionStatus) {
     switch (status) {
@@ -41,6 +42,7 @@ function getStatusVariant(status: SubscriptionStatus) {
 export default function SubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('');
@@ -111,7 +113,7 @@ export default function SubscriptionsPage() {
         }
     };
 
-    const isAdmin = ['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole);
+    const isAdmin = can(['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN']);
 
     return (
         <>

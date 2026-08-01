@@ -67,6 +67,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
 };
 
 import { useSession } from 'next-auth/react';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default function ProjectDetailPage() {
     const { data: session } = useSession();
@@ -173,7 +174,7 @@ export default function ProjectDetailPage() {
     });
 
     const userRole = (session?.user as any)?.role;
-    const isAuthorized = userRole && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
+    const isAuthorized = hasAnyRole(session?.user as any, ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN']);
     const isProjectManager = project.projectManager?.id === (session?.user as any)?.id;
     const isTeamLead = project.teamLead?.id === (session?.user as any)?.id;
     const canManageProject = isAuthorized || isProjectManager || isTeamLead;
@@ -253,7 +254,7 @@ export default function ProjectDetailPage() {
                                                 <Edit className="h-4 w-4" /> Refine Setup
                                             </button>
                                         </Link>
-                                        {userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || isProjectManager ? (
+                                        {hasAnyRole(session?.user as any, ['SUPER_ADMIN', 'ADMIN']) || isProjectManager ? (
                                             <button onClick={handleDelete} disabled={deleting} 
                                                 className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 hover:bg-rose-500/20 transition-all disabled:opacity-50">
                                                 <Trash2 className="h-4 w-4" />

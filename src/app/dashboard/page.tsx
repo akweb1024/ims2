@@ -19,6 +19,7 @@ import {
     Trash2,
     Users,
 } from 'lucide-react';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 type WidgetPayloadMap = Partial<Record<DashboardWidgetKey, any>>;
 
@@ -100,7 +101,7 @@ export default function DashboardPage() {
         teamId: '',
     });
 
-    const isManagerial = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(userRole);
+    const isManagerial = hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER']);
     const canUseTeamContext = isManagerial;
 
     const authHeaders = useCallback(() => {
@@ -730,6 +731,7 @@ export default function DashboardPage() {
                     </div>
                 </section>
 
+                {/* Audience check on the primary role — see the note in login/page.tsx. */}
                 {userRole !== 'CUSTOMER' && userRole !== 'AGENCY' && (
                     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

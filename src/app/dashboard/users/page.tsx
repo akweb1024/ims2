@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import FormattedDate from '@/components/common/FormattedDate';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
-import { INTERNAL_ROLES } from '@/lib/constants/roles';
+import { INTERNAL_ROLES, hasAnyRole } from '@/lib/constants/roles';
+import { useCan } from '@/lib/client-roles';
 
 function UsersContent() {
     const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ function UsersContent() {
     const [departments, setDepartments] = useState<any[]>([]);
     const [designations, setDesignations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [showNewModal, setShowNewModal] = useState(false);
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
@@ -37,7 +39,7 @@ function UsersContent() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (user.role === 'SUPER_ADMIN') {
+            if (hasAnyRole(user, ['SUPER_ADMIN'])) {
                 fetchCompanies();
             }
             // Fetch departments and designations for all users
@@ -208,8 +210,8 @@ function UsersContent() {
     // Never offer a role above the editor's own rank — the API enforces the same ceiling.
     const assignableAdditionalRoles = useMemo(() => {
         const ceiling = new Set(getAssignableRoles(userRole).map(r => r.value));
-        return INTERNAL_ROLES.filter(r => r !== primaryRole && (userRole === 'SUPER_ADMIN' || ceiling.has(r)));
-    }, [userRole, primaryRole]);
+        return INTERNAL_ROLES.filter(r => r !== primaryRole && (can(['SUPER_ADMIN']) || ceiling.has(r)));
+    }, [userRole, primaryRole, can]);
 
     const handleUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -221,7 +223,7 @@ function UsersContent() {
             roles: extraRoles,
             name: formData.get('name'),
         };
-        if (userRole === 'SUPER_ADMIN') {
+        if (can(['SUPER_ADMIN'])) {
             payload.email = formData.get('email');
             payload.companyId = formData.get('companyId');
         }
@@ -591,6 +593,9 @@ function UsersContent() {
                                             </div>
                                         </td>
                                         <td>
+                                            {/* `user` here is the ROW being listed, not the
+                                                signed-in actor, and this is display only. Both
+                                                reasons it stays on the primary role. */}
                                             <span className={`badge ${user.role === 'SUPER_ADMIN' ? 'badge-primary' :
                                                 user.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' :
                                                     user.role === 'MANAGER' ? 'badge-success' :
@@ -627,7 +632,7 @@ function UsersContent() {
                                         </td>
                                         <td className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                {userRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN' && (
+                                                {can(['SUPER_ADMIN']) && user.role !== 'SUPER_ADMIN' && (
                                                     <button
                                                         onClick={() => handleImpersonate(user.id)}
                                                         className="p-2 border border-primary-200 rounded-lg text-primary-600 hover:bg-primary-50 transition-colors flex items-center gap-1 text-xs font-bold"
@@ -649,7 +654,7 @@ function UsersContent() {
                                                 >
                                                     Edit
                                                 </button>
-                                                {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && user.role !== 'SUPER_ADMIN' && (
+                                                {can(['SUPER_ADMIN', 'ADMIN']) && user.role !== 'SUPER_ADMIN' && (
                                                     <button
                                                         onClick={() => loadDeletePreview(user)}
                                                         className="p-2 border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
@@ -723,7 +728,7 @@ function UsersContent() {
                             </div>
 
                             {/* Company & Role */}
-                            {userRole === 'SUPER_ADMIN' && (
+                            {can(['SUPER_ADMIN']) && (
                                 <div>
                                     <label className="label">Assign to Company *</label>
                                     <select name="companyId" className="input" required title="Select Company">
@@ -810,14 +815,14 @@ function UsersContent() {
                                 />
                             </div>
                             <div>
-                                <label className="label">Work Email {userRole !== 'SUPER_ADMIN' && '(Read Only)'}</label>
+                                <label className="label">Work Email {!can(['SUPER_ADMIN']) && '(Read Only)'}</label>
                                 <input
                                     name="email"
                                     type="email"
-                                    className={`input ${userRole !== 'SUPER_ADMIN' ? 'bg-secondary-100' : ''}`}
+                                    className={`input ${!can(['SUPER_ADMIN']) ? 'bg-secondary-100' : ''}`}
                                     defaultValue={editingUser.email}
-                                    readOnly={userRole !== 'SUPER_ADMIN'}
-                                    required={userRole === 'SUPER_ADMIN'}
+                                    readOnly={!can(['SUPER_ADMIN'])}
+                                    required={can(['SUPER_ADMIN'])}
                                     title="Work Email"
                                 />
                             </div>
@@ -825,7 +830,7 @@ function UsersContent() {
                                 <label className="label">New Password (Optional)</label>
                                 <input name="password" type="password" className="input" placeholder="Leave blank to keep current" title="New Password" />
                             </div>
-                            {userRole === 'SUPER_ADMIN' && (
+                            {can(['SUPER_ADMIN']) && (
                                 <div>
                                     <label className="label">Primary Company</label>
                                     <select name="companyId" className="input" defaultValue={editingUser.companyId} required title="Primary Company">

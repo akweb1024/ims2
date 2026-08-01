@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { CRMStatCard } from '@/components/crm/CRMPageShell';
 import { Target, Briefcase, IndianRupee, Users, TrendingUp, Zap, ShieldCheck, Activity } from 'lucide-react';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default async function CRMMetrics({ user }: { user: any }) {
-    const isGlobal = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role);
+    const isGlobal = hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER']);
     const customerFilter = isGlobal ? {} : { assignedToUserId: user.id };
     const revenueFilter = isGlobal ? {} : {
         subscription: {

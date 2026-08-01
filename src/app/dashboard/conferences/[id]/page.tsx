@@ -12,6 +12,7 @@ import {
     Globe, Palette, Settings, Ticket, Tag, Award, CheckCircle,
     Plus, Edit2, Trash2, Save, X, ExternalLink, HelpCircle, Brain, MessageSquare, AlertCircle
 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 export default function ConferenceDetailPage() {
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function ConferenceDetailPage() {
 
     const [conference, setConference] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [activeTab, setActiveTab] = useState<'overview' | 'tickets' | 'tracks' | 'sponsors' | 'committee' | 'insights'>('overview');
     const [editMode, setEditMode] = useState(false);
@@ -379,7 +381,7 @@ export default function ConferenceDetailPage() {
         }
     };
 
-    const canEdit = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const canEdit = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER']);
 
     if (loading) return <div className="p-8 text-center">Loading conference...</div>;
     if (!conference) return <div className="p-8 text-center">Conference not found</div>;
@@ -413,7 +415,7 @@ export default function ConferenceDetailPage() {
                     >
                         <Users size={16} /> Registrations
                     </Link>
-                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(userRole) && (
+                    {can(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER']) && (
                         <Link
                             href={`/dashboard/conferences/${conferenceId}/papers`}
                             className="btn btn-secondary flex items-center gap-2"

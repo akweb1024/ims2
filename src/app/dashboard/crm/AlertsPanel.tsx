@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AlertCircle, IndianRupee, Calendar, ArrowRight, UserCheck, MessageSquare, Bell } from 'lucide-react';
+import { hasAnyRole } from '@/lib/constants/roles';
 
 export default async function AlertsPanel({ user }: { user: any }) {
-    const isGlobal = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role);
+    const isGlobal = hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER']);
 
     // Filters depend on role
     const invoiceFilter = isGlobal ? {} : {

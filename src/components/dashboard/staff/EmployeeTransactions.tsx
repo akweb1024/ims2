@@ -8,6 +8,7 @@ import {
     Banknote, Wallet, AlertCircle
 } from 'lucide-react';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
+import { useCan } from '@/lib/client-roles';
 
 export default function EmployeeTransactions() {
     const [tab, setTab] = useState<'company' | 'personal'>('company');
@@ -26,6 +27,7 @@ export default function EmployeeTransactions() {
     const [expandedSlip, setExpandedSlip] = useState<string | null>(null);
 
     // User info
+    const can = useCan();
     const [userRole, setUserRole] = useState<string>('');
 
     const fetchCompany = async (companyId: string) => {
@@ -272,7 +274,7 @@ export default function EmployeeTransactions() {
                                                         <th className="px-6 py-4 text-right">Amount</th>
                                                 <th className="px-6 py-4 text-center">Status</th>
                                                 <th className="px-6 py-4 text-center">Method</th>
-                                                {['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(userRole) && (
+                                                {can(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE']) && (
                                                     <th className="px-6 py-4 text-center">Action</th>
                                                 )}
                                             </tr>
@@ -347,7 +349,7 @@ export default function EmployeeTransactions() {
                                                                 {p.method || 'N/A'}
                                                             </span>
                                                         </td>
-                                                        {['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(userRole) && (
+                                                        {can(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE']) && (
                                                             <td className="px-6 py-5 text-center">
                                                                 {p.status === 'captured' && !p.revenueTransaction ? (
                                                                     <button

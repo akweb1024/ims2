@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import CRMClientLayout from '../CRMClientLayout';
 import { CRMPageShell, CRMSearchInput, CRMModal } from '@/components/crm/CRMPageShell';
 import { Tags, Plus, Pencil, Trash2, AlertTriangle, Check, X, Loader2 } from 'lucide-react';
+import { useCan } from '@/lib/client-roles';
 
 interface Designation {
     id: string;
@@ -16,6 +17,7 @@ export default function ManageDesignationsPage() {
     const [designations, setDesignations] = useState<Designation[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const can = useCan();
     const [userRole, setUserRole] = useState('EXECUTIVE');
 
     // Add new
@@ -37,7 +39,7 @@ export default function ManageDesignationsPage() {
         if (u) setUserRole(JSON.parse(u).role);
     }, []);
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+    const isAdmin = can(['SUPER_ADMIN', 'ADMIN']);
 
     const fetchDesignations = useCallback(async () => {
         setLoading(true);

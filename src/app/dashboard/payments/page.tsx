@@ -5,6 +5,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell
 } from 'recharts';
+import { useCan } from '@/lib/client-roles';
 
 export default function PaymentsPage() {
     const [payments, setPayments] = useState<any[]>([]);
@@ -14,6 +15,7 @@ export default function PaymentsPage() {
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'year' | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const can = useCan();
     const [userRole, setUserRole] = useState('');
     const [lastSync, setLastSync] = useState<any>(null);
 
@@ -84,7 +86,7 @@ export default function PaymentsPage() {
         return lastMonth * (1 + growth);
     };
 
-    const canSync = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TL'].includes(userRole);
+    const canSync = can(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TL']);
 
     const filteredPayments = payments.filter(p =>
         p.razorpayPaymentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
