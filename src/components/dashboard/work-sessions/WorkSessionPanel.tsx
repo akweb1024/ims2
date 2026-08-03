@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Play, Square, Clock, Users, Plus, Activity } from 'lucide-react';
+import { Play, Square, Clock, Users, Plus, Activity, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
     useCurrentSessions,
@@ -41,6 +41,17 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
     const { data: sessions = [] } = useProjectSessions(ref);
     const { start, stop, addActivity } = useWorkSessionMutations();
     const [activityText, setActivityText] = useState('');
+    // Which past sessions have their activity log open. A stopped session hides its notes
+    // everywhere else, so this row is the only place they can be read back.
+    const [openSessions, setOpenSessions] = useState<Set<string>>(new Set());
+
+    const toggleSession = (id: string) =>
+        setOpenSessions((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
 
     // Sessions run on several projects at once, so find mine on THIS project and treat the
     // rest as background context rather than a blocker.
@@ -175,21 +186,55 @@ export default function WorkSessionPanel({ projectId, itProjectId }: ProjectRef)
                 {sessions.length === 0 ? (
                     <p className="text-xs text-secondary-400 italic">No one has logged work on this project yet.</p>
                 ) : (
-                    <ul className="space-y-2 max-h-64 overflow-y-auto">
-                        {sessions.slice(0, 30).map((s: any) => (
-                            <li key={s.id} className="flex items-center justify-between gap-3 text-sm">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${s.isRunning ? 'bg-success-500 animate-pulse' : 'bg-secondary-300'}`} />
-                                    <span className="font-semibold text-secondary-800 truncate">{personLabel(s.user)}</span>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0 text-xs">
-                                    <span className="font-bold text-secondary-700 tabular-nums">
-                                        {s.isRunning ? `${formatMinutes(s.elapsedMinutes)} (live)` : formatMinutes(s.durationMinutes || 0)}
-                                    </span>
-                                    <span className="text-secondary-400">{new Date(s.startedAt).toLocaleDateString()}</span>
-                                </div>
-                            </li>
-                        ))}
+                    <ul className="space-y-1 max-h-80 overflow-y-auto">
+                        {sessions.slice(0, 30).map((s: any) => {
+                            const logs = s.activities ?? [];
+                            const isOpen = openSessions.has(s.id);
+                            return (
+                                <li key={s.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSession(s.id)}
+                                        aria-expanded={isOpen}
+                                        className="w-full flex items-center justify-between gap-3 text-sm text-left px-1.5 py-1.5 -mx-1.5 rounded-lg hover:bg-secondary-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className={`w-2 h-2 rounded-full shrink-0 ${s.isRunning ? 'bg-success-500 animate-pulse' : 'bg-secondary-300'}`} />
+                                            <span className="font-semibold text-secondary-800 truncate">{personLabel(s.user)}</span>
+                                            {logs.length > 0 && (
+                                                <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black text-secondary-500 bg-secondary-100 px-1.5 py-0.5 rounded">
+                                                    <Activity size={10} /> {logs.length}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0 text-xs">
+                                            <span className="font-bold text-secondary-700 tabular-nums">
+                                                {s.isRunning ? `${formatMinutes(s.elapsedMinutes)} (live)` : formatMinutes(s.durationMinutes || 0)}
+                                            </span>
+                                            <span className="text-secondary-400">{new Date(s.startedAt).toLocaleDateString()}</span>
+                                            <ChevronDown size={14} className={`text-secondary-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                        </div>
+                                    </button>
+                                    {isOpen && (
+                                        <div className="ml-3 mt-1 mb-2 pl-3 border-l-2 border-secondary-100 space-y-1.5">
+                                            {logs.length === 0 ? (
+                                                <p className="text-xs text-secondary-400 italic">Nothing was logged during this session.</p>
+                                            ) : (
+                                                logs.map((a: any) => (
+                                                    <div key={a.id} className="flex items-start gap-2 text-xs text-secondary-600">
+                                                        <Activity size={12} className="mt-0.5 text-secondary-400 shrink-0" />
+                                                        <span className="flex-1">{a.description}</span>
+                                                        <span className="text-secondary-400 shrink-0">
+                                                            {new Date(a.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
