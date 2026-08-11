@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getDigitalTwinScoringConfig, type DepartmentScoringWeights } from "@/lib/digital-twin/scoring-config";
+import { consumptionOverWindow, daysOfCoverFromRate, forecastConfidence } from "@/lib/inventory/movement";
 
 /**
  * Valid states for Digital Twin nodes
@@ -50,7 +51,14 @@ export interface InventoryTwin {
   minLevel: number;
   status: TwinStatus;
   warehouse: string;
-  velocity: number;
+  /** Units used per day over the consumption window, from the movement ledger. */
+  dailyConsumption: number;
+  /** Units taken out over the window — what the rate is derived from. */
+  unitsConsumed: number;
+  /** Days of stock left at that rate, or null when nothing has moved. */
+  daysOfCover: number | null;
+  /** 0–100, based on how many movements the rate rests on. */
+  confidence: number;
 }
 
 export interface TwinSummary {
@@ -479,9 +487,14 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
  * Aggregates real-time status for all inventory items in a company.
  * Optimized for real-time dashboard polling.
  */
+/** Window over which consumption is measured. Long enough to smooth a slow-moving item. */
+const CONSUMPTION_WINDOW_DAYS = 30;
+
 export async function getInventoryTwinStatus(companyId: string): Promise<InventoryTwin[]> {
   const startTime = Date.now();
   try {
+    const since = new Date(Date.now() - CONSUMPTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
     const items = await prisma.inventoryItem.findMany({
       where: { companyId },
       select: {
@@ -493,9 +506,13 @@ export async function getInventoryTwinStatus(companyId: string): Promise<Invento
         warehouse: {
           select: { name: true }
         },
+        // Every movement in the window, not the last 10 rows. `velocity` used to be
+        // `stockMovements.length` under `take: 10`, so it capped at 10 however fast stock
+        // actually moved, counted a receipt of 500 the same as an issue of 1, and treated
+        // ten movements two years ago as current demand.
         stockMovements: {
-          select: { id: true },
-          take: 10,
+          where: { createdAt: { gte: since } },
+          select: { type: true, quantity: true, createdAt: true },
           orderBy: { createdAt: 'desc' }
         }
       }
@@ -503,9 +520,11 @@ export async function getInventoryTwinStatus(companyId: string): Promise<Invento
 
     const result = items.map(item => {
       const minLevel = item.minStockLevel || 0;
-      const stockStatus: TwinStatus = item.quantity <= minLevel ? 'CRITICAL' : 
+      const stockStatus: TwinStatus = item.quantity <= minLevel ? 'CRITICAL' :
                           item.quantity <= minLevel * 1.5 ? 'WARNING' : 'HEALTHY';
-      
+
+      const consumption = consumptionOverWindow(item.stockMovements, CONSUMPTION_WINDOW_DAYS);
+
       return {
         id: item.id,
         sku: item.sku,
@@ -514,7 +533,10 @@ export async function getInventoryTwinStatus(companyId: string): Promise<Invento
         minLevel: minLevel,
         status: stockStatus,
         warehouse: item.warehouse?.name || 'In Transit / General',
-        velocity: item.stockMovements.length
+        dailyConsumption: Math.round(consumption.dailyRate * 100) / 100,
+        unitsConsumed: consumption.unitsConsumed,
+        daysOfCover: daysOfCoverFromRate(item.quantity, consumption.dailyRate),
+        confidence: forecastConfidence(consumption.movementCount),
       };
     });
 

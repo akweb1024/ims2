@@ -1,10 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { consumptionOverWindow, daysOfCoverFromRate, forecastConfidence } from '@/lib/inventory/movement';
 
 export interface DepletionForecast {
   itemId: string;
   itemName: string;
-  daysToZero: number;
+  /** Null when nothing has been consumed, rather than a sentinel that reads as "plenty". */
+  daysToZero: number | null;
+  dailyConsumption: number;
   confidence: number;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
 }
@@ -19,14 +22,21 @@ export interface RunwayForecast {
 /**
  * Predicts inventory depletion dates based on historical stock movements.
  */
+const CONSUMPTION_WINDOW_DAYS = 30;
+
 export async function predictInventoryDepletion(companyId: string): Promise<DepletionForecast[]> {
+  const since = new Date(Date.now() - CONSUMPTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
   const items = await prisma.inventoryItem.findMany({
     where: { companyId },
     include: {
+      // Was filtered to `type: 'OUT'`, which misses RESERVE — units committed to an invoice
+      // and no longer available. The shared module classifies every type, so this now agrees
+      // with the digital twin and the reorder report instead of quietly using its own rule.
       stockMovements: {
-        where: { type: 'OUT' },
-        orderBy: { createdAt: 'desc' },
-        take: 50
+        where: { createdAt: { gte: since } },
+        select: { type: true, quantity: true, createdAt: true },
+        orderBy: { createdAt: 'desc' }
       }
     }
   });
@@ -34,27 +44,26 @@ export async function predictInventoryDepletion(companyId: string): Promise<Depl
   const forecasts: DepletionForecast[] = [];
 
   for (const item of items) {
-    if (item.stockMovements.length < 3) continue;
+    const consumption = consumptionOverWindow(item.stockMovements, CONSUMPTION_WINDOW_DAYS);
+    // Nothing drawn down means no rate to project from. Previously this produced a
+    // daysToZero of 999, which reads on a dashboard as "plenty of cover" when it means
+    // "we have no idea".
+    if (consumption.movementCount < 3) continue;
 
-    // Calculate average daily velocity
-    const totalOut = item.stockMovements.reduce((sum, m) => sum + Math.abs(m.quantity), 0);
-    const earliest = item.stockMovements[item.stockMovements.length - 1].createdAt;
-    const latest = item.stockMovements[0].createdAt;
-    const daysDiff = Math.max(1, (latest.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24));
-
-    const velocity = totalOut / daysDiff; // items per day
-    const daysToZero = velocity > 0 ? item.quantity / velocity : 999;
+    const daysToZero = daysOfCoverFromRate(item.quantity, consumption.dailyRate);
+    if (daysToZero === null) continue;
 
     forecasts.push({
       itemId: item.id,
       itemName: item.name,
       daysToZero: Math.round(daysToZero),
-      confidence: Math.min(100, item.stockMovements.length * 2),
+      dailyConsumption: Math.round(consumption.dailyRate * 100) / 100,
+      confidence: forecastConfidence(consumption.movementCount),
       riskLevel: daysToZero < 7 ? 'HIGH' : daysToZero < 21 ? 'MEDIUM' : 'LOW'
     });
   }
 
-  return forecasts.sort((a, b) => a.daysToZero - b.daysToZero);
+  return forecasts.sort((a, b) => (a.daysToZero ?? Infinity) - (b.daysToZero ?? Infinity));
 }
 
 /**

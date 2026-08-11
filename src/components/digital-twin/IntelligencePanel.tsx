@@ -327,22 +327,26 @@ export const IntelligencePanel = ({ intelligence, employees, inventory, onDispat
                                                     <span className="text-[10px] font-mono text-indigo-400">{fc.sku}</span>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className={`text-2xl font-black tabular-nums ${fc.estimatedDaysLeft <= 7 ? 'text-red-400' : 'text-yellow-400'}`}>
-                                                        {fc.estimatedDaysLeft}
+                                                    {/* Null means nothing has been drawn down, so there is no rate to project
+                                                        from. Showing a number here would be an invented date. */}
+                                                    <p className={`text-2xl font-black tabular-nums ${fc.estimatedDaysLeft !== null && fc.estimatedDaysLeft <= 7 ? 'text-red-400' : 'text-yellow-400'}`}>
+                                                        {fc.estimatedDaysLeft ?? '—'}
                                                     </p>
-                                                    <p className="text-[9px] text-white/30 uppercase">days left</p>
+                                                    <p className="text-[9px] text-white/30 uppercase">
+                                                        {fc.estimatedDaysLeft === null ? 'no usage yet' : 'days left'}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-1000 ${fc.estimatedDaysLeft <= 7 ? 'bg-red-500' : 'bg-yellow-500'}`}
+                                                    className={`h-full rounded-full transition-all duration-1000 ${fc.estimatedDaysLeft !== null && fc.estimatedDaysLeft <= 7 ? 'bg-red-500' : 'bg-yellow-500'}`}
                                                     style={{ width: `${Math.min(100, (fc.currentQuantity / (fc.minLevel * 3 || 1)) * 100)}%` }}
                                                 />
                                             </div>
                                             <div className="flex justify-between mt-1 text-[9px] text-white/30">
                                                 <span>Min: {fc.minLevel} units</span>
                                                 <span>Current: {fc.currentQuantity} units</span>
-                                                <span>Velocity: {fc.velocity} moves</span>
+                                                <span>{fc.dailyConsumption}/day · {fc.confidence}% confidence</span>
                                             </div>
                                         </div>
                                     ))
