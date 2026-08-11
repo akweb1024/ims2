@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Package, MapPin, AlertTriangle, Loader2, ArrowRight, Pencil, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ReorderPanel from '@/components/dashboard/supply-chain/ReorderPanel';
 
 type StockFilter = 'ALL' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'HEALTHY';
 
@@ -259,6 +260,8 @@ export default function InventoryLedgerPage() {
                         <span>Open Product Catalog</span>
                     </button>
                 </div>
+
+                <ReorderPanel />
 
                 {/* Toolbar */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 shadow-xl shadow-secondary-200/50 border border-white flex flex-col md:flex-row gap-4 items-center justify-between">

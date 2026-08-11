@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Download, Mail, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GlobalProPOTemplate from '@/components/dashboard/supply-chain/GlobalProPOTemplate';
+import GoodsReceiptPanel from '@/components/dashboard/supply-chain/GoodsReceiptPanel';
 
 export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -197,6 +198,12 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                         <div className="po-print-content-vendor fixed left-[-100000px] top-0 opacity-0 pointer-events-none">
                             <GlobalProPOTemplate po={po} companyLabel={companyLabel} vendorCopy={true} />
                         </div>
+                        <GoodsReceiptPanel
+                            purchaseOrderId={id}
+                            status={po.status}
+                            items={po.items || []}
+                            onReceived={fetchPO}
+                        />
                     </>
                 )}
             </div>

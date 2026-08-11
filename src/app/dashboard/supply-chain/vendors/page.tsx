@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, Pencil, Power } from 'lucide-react';
+import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, Pencil, Power, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import VendorScorecardModal from '@/components/dashboard/supply-chain/VendorScorecardModal';
 
 type VendorStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
@@ -13,6 +14,7 @@ export default function VendorsPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [statusFilter, setStatusFilter] = useState<VendorStatusFilter>('ACTIVE');
     const [editVendor, setEditVendor] = useState<any | null>(null);
+    const [scorecardVendorId, setScorecardVendorId] = useState<string | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [saving, setSaving] = useState(false);
     
@@ -264,6 +266,14 @@ export default function VendorsPage() {
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             type="button"
+                                            onClick={() => setScorecardVendorId(vendor.id)}
+                                            className="p-2 rounded-xl bg-white border border-secondary-200 shadow-sm text-secondary-700 hover:text-primary-700 hover:border-primary-200 transition-colors"
+                                            title="Delivery performance"
+                                        >
+                                            <BarChart3 size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => openEdit(vendor)}
                                             className="p-2 rounded-xl bg-white border border-secondary-200 shadow-sm text-secondary-700 hover:text-primary-700 hover:border-primary-200 transition-colors"
                                             title="Edit vendor"
@@ -386,6 +396,10 @@ export default function VendorsPage() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {scorecardVendorId && (
+                <VendorScorecardModal vendorId={scorecardVendorId} onClose={() => setScorecardVendorId(null)} />
             )}
 
             {/* Edit Modal */}
