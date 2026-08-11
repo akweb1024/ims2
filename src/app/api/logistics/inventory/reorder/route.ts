@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session';
 import { companyScopeWhere } from '@/lib/company-scope';
 import { buildReorderList } from '@/lib/supply-chain/reorder';
 import { summariseValuation, stockValue, marginPercent } from '@/lib/supply-chain/valuation';
+import { consumptionOverWindow } from '@/lib/inventory/movement';
 
 const DEFAULT_WINDOW_DAYS = 30;
 
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
                 warehouse: { select: { id: true, name: true } },
                 stockMovements: {
                     where: { createdAt: { gte: since } },
-                    select: { quantity: true },
+                    select: { type: true, quantity: true, createdAt: true },
                 },
             },
             orderBy: { name: 'asc' },
@@ -53,10 +54,10 @@ export async function GET(req: NextRequest) {
                 quantity: item.quantity,
                 minStockLevel: item.minStockLevel,
                 reorderQuantity: item.reorderQuantity,
-                // Outbound movements are recorded as negatives; their magnitude is what was used.
-                unitsConsumed: item.stockMovements
-                    .filter((m) => m.quantity < 0)
-                    .reduce((total, m) => total + Math.abs(m.quantity), 0),
+                // Direction lives in `type`, not in the sign of `quantity` — the table holds
+                // no negatives, so filtering on `quantity < 0` would match nothing and report
+                // every item as never used.
+                unitsConsumed: consumptionOverWindow(item.stockMovements, windowDays).unitsConsumed,
             })),
             windowDays,
         );
