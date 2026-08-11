@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { runFinanceSentinel } from '@/lib/sentinel/agents/sentinel-manager';
 import { emitSentinelEvent, SentinelEvent } from '@/lib/sentinel/event-bus';
+import { prepareJournalEntry } from '@/lib/finance/journal-entry';
 
 export class FinanceService {
     /**
@@ -25,35 +26,9 @@ export class FinanceService {
     ) {
         const { date, description, reference, postedBy, lines } = data;
 
-        // 1. Calculate totals
-        let totalDebit = new Prisma.Decimal(0);
-        let totalCredit = new Prisma.Decimal(0);
-
-        const formattedLines = lines.map((line) => {
-            const debit = line.debit ? new Prisma.Decimal(line.debit) : new Prisma.Decimal(0);
-            const credit = line.credit ? new Prisma.Decimal(line.credit) : new Prisma.Decimal(0);
-
-            totalDebit = totalDebit.plus(debit);
-            totalCredit = totalCredit.plus(credit);
-
-            return {
-                accountId: line.accountId,
-                description: line.description || description,
-                debit,
-                credit,
-            };
-        });
-
-        // 2. Validate Balance
-        if (!totalDebit.equals(totalCredit)) {
-            throw new Error(
-                `Journal Entry is not balanced. Total Debit: ${totalDebit}, Total Credit: ${totalCredit}`
-            );
-        }
-
-        if (totalDebit.equals(0)) {
-            throw new Error(`Journal Entry cannot be empty.`);
-        }
+        // 1 & 2. Normalise the lines and enforce the double-entry invariants. Lives in
+        // src/lib/finance/journal-entry.ts so it can be unit-tested without a database.
+        const { lines: formattedLines, totalDebit } = prepareJournalEntry(lines, description);
 
         // 3. Generate Entry Number (Simple auto-increment logic or timestamp based for now)
         const count = await prisma.journalEntry.count({ where: { companyId: String(companyId) } });

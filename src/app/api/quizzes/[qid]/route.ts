@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { gradeQuizAttempt } from '@/lib/lms/grading';
 
 export const GET = authorizedRoute(
     [],
@@ -99,20 +100,11 @@ export const POST = authorizedRoute(
             }
 
             // Grade the quiz
-            let totalPoints = 0;
-            let earnedPoints = 0;
-
-            quiz.questions.forEach(question => {
-                totalPoints += question.points;
-                const userAnswer = answers[question.id];
-
-                if (userAnswer && userAnswer.toString().toLowerCase() === question.correctAnswer.toLowerCase()) {
-                    earnedPoints += question.points;
-                }
-            });
-
-            const score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
-            const passed = score >= quiz.passingScore;
+            const { score, passed, earnedPoints, totalPoints } = gradeQuizAttempt(
+                quiz.questions,
+                answers,
+                quiz.passingScore,
+            );
 
             // Save attempt
             const attempt = await prisma.quizAttempt.create({
