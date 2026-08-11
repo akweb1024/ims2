@@ -97,7 +97,7 @@ export const InventoryTwinCard = ({
                     isHighlighted ? 'bg-white/10 border-white/20' : 'bg-indigo-500/10 border-indigo-500/20'
                 }`}>
                     <div className={`w-2 h-2 rounded-full animate-pulse ${isHighlighted ? 'bg-white' : 'bg-indigo-400'}`} />
-                    <p className={`text-[10px] font-bold ${isHighlighted ? 'text-white' : 'text-indigo-300'}`}>Velocity: {item.velocity} events / recent</p>
+                    <p className={`text-[10px] font-bold ${isHighlighted ? 'text-white' : 'text-indigo-300'}`}>{item.daysOfCover === null ? 'No usage recorded' : `${item.dailyConsumption}/day · ${item.daysOfCover}d cover`}</p>
                 </div>
             </div>
 

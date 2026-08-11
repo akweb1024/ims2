@@ -19,8 +19,13 @@ export interface DepletionForecast {
     sku: string;
     currentQuantity: number;
     minLevel: number;
-    velocity: number;
-    estimatedDaysLeft: number;
+    /** Units used per day, measured from the movement ledger. */
+    dailyConsumption: number;
+    /** Days until the shelf is empty at that rate. Null when nothing has been consumed —
+     *  the item is flagged on stock level alone rather than given an invented date. */
+    estimatedDaysLeft: number | null;
+    /** 0–100. A forecast from two withdrawals should not read like one from twenty. */
+    confidence: number;
     risk: RiskLevel;
 }
 
@@ -114,24 +119,30 @@ export function predictOverload(employees: EmployeeTwin[]): OverloadPrediction[]
 }
 
 /**
- * Forecasts stock depletion timelines based on recent movement velocity.
- * Uses a linear depletion model: estimatedDays = quantity / dailyRate.
+ * Forecasts stock depletion from measured consumption.
+ *
+ * This used to derive a daily rate from `velocity`, which was the number of movement rows
+ * fetched under `take: 10` — so it capped at 10 however fast stock moved, ignored how much
+ * each movement was for, ignored whether the movement was in or out, ignored when it
+ * happened, and fell back to 0.5 units/day for items nobody had touched. Every "runs out in
+ * N days" it produced was invented.
+ *
+ * The rate now comes from the movement ledger (see src/lib/inventory/movement.ts).
+ * `daysOfCover` is null for an item with no consumption, and such an item gets no forecast
+ * at all rather than a fabricated one — it can still be flagged on stock level alone.
  */
 export function forecastDepletion(inventory: InventoryTwin[]): DepletionForecast[] {
     return inventory
         .map(item => {
-            // velocity = number of recent movements (proxy for daily demand)
-            // We treat 10 recent movements as roughly 10 daily units of demand
-            const dailyRate = item.velocity > 0 ? item.velocity / 5 : 0.5;
-            const estimatedDaysLeft = Math.floor(item.quantity / dailyRate);
+            const estimatedDaysLeft = item.daysOfCover;
 
             let risk: RiskLevel | null = null;
 
             if (item.status === 'CRITICAL') {
                 risk = 'HIGH';
-            } else if (estimatedDaysLeft <= 7) {
+            } else if (estimatedDaysLeft !== null && estimatedDaysLeft <= 7) {
                 risk = 'HIGH';
-            } else if (estimatedDaysLeft <= 30 || item.status === 'WARNING') {
+            } else if (item.status === 'WARNING' || (estimatedDaysLeft !== null && estimatedDaysLeft <= 30)) {
                 risk = 'MEDIUM';
             }
 
@@ -143,8 +154,9 @@ export function forecastDepletion(inventory: InventoryTwin[]): DepletionForecast
                 sku: item.sku,
                 currentQuantity: item.quantity,
                 minLevel: item.minLevel,
-                velocity: item.velocity,
+                dailyConsumption: item.dailyConsumption,
                 estimatedDaysLeft,
+                confidence: item.confidence,
                 risk,
             };
         })

@@ -53,7 +53,7 @@ export function exportTwinToCSV(
 
     // Asset Section
     lines.push('INVENTORY ASSET NODES');
-    lines.push('Name,SKU,Status,Quantity,Min Level,Warehouse,Velocity');
+    lines.push('Name,SKU,Status,Quantity,Min Level,Warehouse,Units/Day,Days Of Cover,Confidence %');
     inventory.forEach(item => {
         lines.push([
             `"${item.name}"`,
@@ -62,7 +62,9 @@ export function exportTwinToCSV(
             item.quantity,
             item.minLevel,
             `"${item.warehouse}"`,
-            item.velocity,
+            item.dailyConsumption,
+            item.daysOfCover ?? '',
+            item.confidence,
         ].join(','));
     });
 
