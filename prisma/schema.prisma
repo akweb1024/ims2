@@ -119,6 +119,7 @@ model Company {
   productionOrders                  ProductionOrder[]
   projects                          Project[]
   purchaseOrders                    PurchaseOrder[]
+  goodsReceipts                     GoodsReceipt[]
   dashboardLayoutPreferences        DashboardLayoutPreference[]
   dashboardRoleDefaults             DashboardRoleDefault[]
   dashboardWidgetPolicies           DashboardWidgetPolicy[]
@@ -392,6 +393,7 @@ model User {
   assignedByTasks                StageAssignment[]                @relation("TaskAssigner")
   assignedTasks                  StageAssignment[]                @relation("TaskAssignee")
   movedStocks                    StockMovement[]                  @relation("StockMover")
+  goodsReceipts                  GoodsReceipt[]                   @relation("GoodsReceiver")
   assignedSubscriptions          Subscription[]                   @relation("AssignedSalesExecutive")
   assignedTickets                SupportTicket[]                  @relation("AssignedTickets")
   createdTasks                   Task[]                           @relation("TaskAssigner")
@@ -2245,6 +2247,7 @@ model PurchaseOrder {
   company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   vendor       Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   items        PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
 
   @@index([companyId])
   @@index([vendorId])
@@ -2259,10 +2262,62 @@ model PurchaseOrderItem {
   quantity        Int
   unitPrice       Float
   total           Float
+  /// Running total across every goods receipt against this line. Drives the
+  /// PO's PARTIALLY_RECEIVED / RECEIVED status and the outstanding quantity.
+  quantityReceived Int           @default(0)
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
   purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  receiptLines    GoodsReceiptLine[]
 
   @@index([purchaseOrderId])
+  @@index([inventoryItemId])
+}
+
+/// A delivery arriving against a purchase order. Receiving is its own event rather than a
+/// PO status flip, because one order can arrive in several drops, some of it can be rejected,
+/// and the price on the delivery note is what stock should be valued at — none of which a
+/// single status field can carry.
+model GoodsReceipt {
+  id              String             @id @default(uuid())
+  companyId       String
+  purchaseOrderId String
+  receiptNumber   String             @unique
+  receivedDate    DateTime           @default(now())
+  receivedBy      String?
+  warehouseId     String?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  receiver        User?              @relation("GoodsReceiver", fields: [receivedBy], references: [id])
+  warehouse       Warehouse?         @relation(fields: [warehouseId], references: [id])
+  lines           GoodsReceiptLine[]
+
+  @@index([companyId])
+  @@index([purchaseOrderId])
+  @@index([receivedDate])
+}
+
+model GoodsReceiptLine {
+  id                  String            @id @default(uuid())
+  goodsReceiptId      String
+  purchaseOrderItemId String
+  inventoryItemId     String?
+  /// Quantity accepted into stock. Only this moves inventory.
+  quantityReceived    Int
+  /// Quantity delivered but refused (damaged, wrong item). Counts against the vendor's
+  /// rejection rate and never enters stock.
+  quantityRejected    Int               @default(0)
+  /// Price actually charged on this delivery, which can differ from the PO's unitPrice.
+  /// Stock is valued at what was paid, not what was quoted.
+  unitCost            Float
+  notes               String?
+  goodsReceipt        GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  inventoryItem       InventoryItem?    @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([goodsReceiptId])
+  @@index([purchaseOrderItemId])
   @@index([inventoryItemId])
 }
 
@@ -2275,6 +2330,7 @@ model Warehouse {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   inventoryItems InventoryItem[]
+  goodsReceipts  GoodsReceipt[]
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   manager        User?           @relation("WarehouseManager", fields: [managerId], references: [id])
 
@@ -2290,13 +2346,22 @@ model InventoryItem {
   companyId      String?
   createdAt      DateTime            @default(now())
   description    String?
+  /// Reorder point. Stock at or below this triggers a reorder suggestion.
   minStockLevel  Int                 @default(0)
+  /// How much to order when reordering. Zero means "top back up to the reorder point".
+  reorderQuantity Int                @default(0)
   quantity       Int                 @default(0)
+  /// Selling / list price. Not what the stock cost — see averageCost.
   unitPrice      Float               @default(0)
+  /// Weighted average cost per unit across every receipt, which is what the stock on hand
+  /// is worth. Kept separate from unitPrice so margin is knowable and so a price change
+  /// never silently revalues inventory already in the warehouse.
+  averageCost    Float               @default(0)
   warehouseId    String?
   company        Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   warehouse      Warehouse?          @relation(fields: [warehouseId], references: [id])
   purchaseItems  PurchaseOrderItem[]
+  receiptLines   GoodsReceiptLine[]
   stockMovements StockMovement[]
   tasks          Task[]
 
@@ -2312,12 +2377,16 @@ model StockMovement {
   quantity        Int
   referenceId     String?
   notes           String?
+  /// Cost per unit for this movement. Set on receipts so inventory can be valued from the
+  /// ledger; null on movements where cost is not established (manual corrections, issues).
+  unitCost        Float?
   createdBy       String?
   createdAt       DateTime      @default(now())
   user            User?         @relation("StockMover", fields: [createdBy], references: [id])
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
 
   @@index([inventoryItemId])
+  @@index([createdAt])
 }
 
 model ProductionOrder {
