@@ -2244,13 +2244,15 @@ function ReviewBoard({
         try {
             const res = await fetch('/api/think-tank/evaluate', { method: 'POST' });
             const data = await res.json();
-            if (data.themes) {
+            if (!res.ok || data.error) {
+                showError(data.error || 'Could not analyse the ideas. Please try again.');
+            } else if (data.themes?.length) {
                 setThemes(data.themes);
                 setEvaluations(data.evaluations || {});
                 setShowEvaluateWorkspace(true);
                 showInfo('AI clustering analysis completed!');
             } else {
-                showError('Evaluation completed but returned empty themes.');
+                showError(data.message || 'No active ideas were available to evaluate.');
             }
         } catch (err) {
             showError('Failed to analyze and cluster ideas.');

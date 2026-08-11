@@ -93,49 +93,53 @@ Return your response in standard JSON format exactly. Do not wrap in markdown co
             responseText = responseText.replace(/^```/, '').replace(/```$/, '').trim();
         }
 
+        let parsed: any;
         try {
-            const parsed = JSON.parse(responseText);
-            
-            // Optionally update database metadata with these AI scores
-            for (const ideaId in parsed.evaluations) {
-                const evalData = parsed.evaluations[ideaId];
-                await prisma.thinkTankIdea.updateMany({
-                    where: { id: ideaId },
-                    data: {
-                        ideaReadinessScore: evalData.readinessScore || 70,
-                        metadata: {
-                            estimatedBudget: evalData.estimatedBudget,
-                            projectedROI: evalData.projectedROI,
-                            readinessScore: evalData.readinessScore
-                        }
-                    }
-                });
-            }
-
-            return NextResponse.json(parsed);
-        } catch (parseError) {
+            parsed = JSON.parse(responseText);
+        } catch {
+            // Previously this fell back to a fabricated evaluation — a Math.random()
+            // readiness score, a flat ₹1,20,000 budget and a generic ROI line — in the same
+            // response shape as a real one, so nothing downstream could tell that the
+            // numbers had been invented. Ideas were rankable, and fundable, on a rolled
+            // number. Fail loudly instead: an evaluation we could not compute is not an
+            // evaluation.
             console.error('Failed to parse Gemini evaluation output:', responseText);
-            // Return fallback mock response if parsing fails
-            const mockEvaluations: any = {};
-            ideas.forEach(idea => {
-                mockEvaluations[idea.id] = {
-                    estimatedBudget: '₹1,20,000',
-                    projectedROI: 'Operational efficiency gains of 15%',
-                    readinessScore: Math.floor(Math.random() * 30) + 65
-                };
-            });
+            return NextResponse.json(
+                { error: 'The AI returned a response we could not read. No scores were saved — try running the evaluation again.' },
+                { status: 502 }
+            );
+        }
 
-            return NextResponse.json({
-                themes: [
-                    {
-                        name: 'Core System Upgrades',
-                        description: 'Technical refinements to baseline ERP operations.',
-                        ideaIds: ideas.map(i => i.id)
+        // Only ever write back to the ideas we fetched for this company. The ids come from
+        // the model's output, so an echoed or hallucinated id must not be able to reach
+        // another company's row.
+        const ownIdeaIds = new Set(ideas.map((i) => i.id));
+
+        for (const ideaId of Object.keys(parsed.evaluations || {})) {
+            if (!ownIdeaIds.has(ideaId)) continue;
+
+            const evalData = parsed.evaluations[ideaId] || {};
+            const readinessScore =
+                typeof evalData.readinessScore === 'number' && Number.isFinite(evalData.readinessScore)
+                    ? Math.max(0, Math.min(100, Math.round(evalData.readinessScore)))
+                    : null;
+
+            await prisma.thinkTankIdea.update({
+                where: { id: ideaId },
+                data: {
+                    // Leave the stored score untouched when the model omitted one, rather
+                    // than stamping a default 70 that reads as a real measurement.
+                    ...(readinessScore !== null ? { ideaReadinessScore: readinessScore } : {}),
+                    metadata: {
+                        estimatedBudget: evalData.estimatedBudget ?? null,
+                        projectedROI: evalData.projectedROI ?? null,
+                        readinessScore
                     }
-                ],
-                evaluations: mockEvaluations
+                }
             });
         }
+
+        return NextResponse.json(parsed);
 
     } catch (error: any) {
         console.error('Think Tank Evaluation API Error:', error);

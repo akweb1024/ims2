@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { UserRoleValue } from "@/lib/constants/roles";
 import {
     LineChart,
     Radio,
@@ -71,11 +72,19 @@ import {
     Zap
 } from "lucide-react";
 
+/**
+ * `'*'` renders the item for everyone, including external accounts. Anything else must be a
+ * real member of the Prisma `UserRole` enum — typing it as `UserRoleValue` is what stops a
+ * plausible-looking name like `EMPLOYEE` (which the enum has never contained) being added to
+ * a role list, where it reads as "ordinary staff too" but silently grants nobody.
+ */
+export type NavRole = UserRoleValue | '*';
+
 export interface NavItem {
     name: string;
     href: string;
     icon: LucideIcon;
-    roles: string[];
+    roles: NavRole[];
     /**
      * Per-tenant feature licence. When set, the item renders only if the user's
      * allowedModules contains this id (or '*', or the user is SUPER_ADMIN).
@@ -101,9 +110,17 @@ export interface NavModule {
 // Every staff role. Used for internal work surfaces that external accounts
 // (CUSTOMER, AGENCY, REVIEWER) must not see. Items marked ['*'] instead are
 // genuinely universal — they render for external accounts too.
-const INTERNAL = [
-    'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE',
-    'FINANCE_ADMIN', 'HR_MANAGER', 'HR', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT',
+//
+// REVIEWER is excluded on purpose: peer reviewers are outside contributors, so they are
+// treated as an external account here despite being an internal-looking enum member.
+//
+// This list previously also carried 'EMPLOYEE' and 'IT_SUPPORT', neither of which is in the
+// UserRole enum. Both were inert — a whitelist entry no user can hold simply never matches —
+// but they made the list read as covering ordinary staff twice over. The base staff role is
+// EXECUTIVE, which is already here.
+const INTERNAL: NavRole[] = [
+    'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE',
+    'FINANCE_ADMIN', 'HR_MANAGER', 'HR', 'IT_MANAGER', 'IT_ADMIN',
     'EDITOR', 'EDITOR_IN_CHIEF', 'SECTION_EDITOR', 'JOURNAL_MANAGER',
     'PLAGIARISM_CHECKER', 'QUALITY_CHECKER',
 ];
@@ -349,7 +366,12 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Razorpay Tracker', href: '/dashboard/analytics/razorpay', icon: CreditCard, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                     // NOTE: 'EMPLOYEE' is not a UserRole member, so ordinary staff are denied here. Left as-is
                     // deliberately — widening financial data to all staff is a business decision, not a bug fix.
-                    { name: 'Company Transactions', href: '/dashboard/payments/by-company', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'] },
+                    // 'EMPLOYEE' was listed here and never matched anyone, so this item has
+                    // only ever rendered for the four roles below. /api/payments/razorpay
+                    // carries the same dead entry and denies ordinary staff for the same
+                    // reason — deliberately, per the note there: widening financial data to
+                    // all staff is a business decision. The nav now says what it does.
+                    { name: 'Company Transactions', href: '/dashboard/payments/by-company', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER'] },
                 ]
             },
             {
