@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextauth';
 import prisma from '@/lib/prisma';
+import { resolveJournalScope } from '@/lib/journal-scope';
 
 // GET - Manuscript workflow dashboard
 export async function GET(req: NextRequest) {
@@ -15,16 +16,11 @@ export async function GET(req: NextRequest) {
         const journalId = searchParams.get('journalId');
 
         // Build where clause based on role
-        const where: any = {};
+        const scope = await resolveJournalScope(prisma, user);
+        const where: any = { ...scope };
 
-        if (user.role === 'JOURNAL_MANAGER') {
-            // Get journals managed by this user
-            const managedJournals = await prisma.journal.findMany({
-                where: { journalManagerId: user.id },
-                select: { id: true }
-            });
-            where.journalId = { in: managedJournals.map(j => j.id) };
-        } else if (journalId) {
+        // An explicit journalId narrows further, but never widens a scoped manager's view.
+        if (journalId && !scope.journalId) {
             where.journalId = journalId;
         }
 

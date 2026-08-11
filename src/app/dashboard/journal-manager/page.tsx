@@ -5,14 +5,21 @@ export const dynamic = 'force-dynamic';
 import JournalManagerBoard from '@/components/dashboard/journals/JournalManagerBoard';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { resolveJournalScope } from '@/lib/journal-scope';
 
 async function getManuscripts() {
     const user = await getAuthenticatedUser();
     if (!user) return [];
 
-    // Fetch all manuscripts if admin, or meaningful checks if needed
-    // For now, assuming Journal Manager can see all or scoped to their journals
+    // A journal manager sees the journals assigned to them; the catalogue-wide roles
+    // (SUPER_ADMIN, ADMIN, EDITOR_IN_CHIEF) see everything. This board previously ran with
+    // no where clause at all, so it returned every journal's submissions to whoever opened
+    // it — the same scoping the manuscripts dashboard and the plagiarism and quality
+    // queues have always applied.
+    const scope = await resolveJournalScope(prisma, user);
+
     return await prisma.article.findMany({
+        where: scope,
         include: {
             journal: { select: { name: true } },
             authors: { select: { name: true } }

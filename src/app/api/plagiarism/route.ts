@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextauth';
 import prisma from '@/lib/prisma';
+import { resolveJournalScope } from '@/lib/journal-scope';
 
 // GET - Fetch plagiarism reports
 export async function GET(req: NextRequest) {
@@ -21,17 +22,13 @@ export async function GET(req: NextRequest) {
         // Role-based filtering
         if (user.role === 'PLAGIARISM_CHECKER') {
             where.checkedBy = user.id;
-        } else if (user.role === 'JOURNAL_MANAGER') {
-            // Get journals managed by this user
-            const managedJournals = await prisma.journal.findMany({
-                where: { journalManagerId: user.id },
-                select: { id: true }
-            });
-            where.journalId = { in: managedJournals.map(j => j.id) };
+        } else {
+            Object.assign(where, await resolveJournalScope(prisma, user));
         }
 
         if (status) where.status = status;
-        if (journalId) where.journalId = journalId;
+        // An explicit journalId narrows further, but never widens a scoped manager's view.
+        if (journalId && !where.journalId) where.journalId = journalId;
         if (pending) where.status = 'PENDING';
 
         const reports = await prisma.plagiarismReport.findMany({

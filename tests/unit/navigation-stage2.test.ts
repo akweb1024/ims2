@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { getNavigationModules } from '../../src/config/navigation';
+import { getNavigationModules, ALL_MODULES } from '../../src/config/navigation';
+import { isUserRole } from '../../src/lib/constants/roles';
 import preStage2 from './fixtures/nav-hrefs-pre-stage2.json';
 
 /**
@@ -62,8 +63,16 @@ function hrefsFor(role: string, allowedModules: string[]): Set<string> {
     return hrefs;
 }
 
+// Fixture keys that are not members of the Prisma UserRole enum, so no user can hold them.
+// The pre-Stage-2 nav listed them in its role arrays, which is why they were captured — but
+// the access they describe was never reachable by anyone. Their entries are kept in the
+// fixture as a record of the old config and skipped here: "did this role lose a link" is only
+// a meaningful question for a role someone can actually log in as.
+const NON_ROLES = new Set(['EMPLOYEE', 'IT_SUPPORT']);
+
 describe('nav stage 2: no role silently loses a link', () => {
     for (const [role, scenarios] of Object.entries(preStage2)) {
+        if (NON_ROLES.has(role)) continue;
         for (const [scenario, oldHrefs] of Object.entries(scenarios)) {
             it(`${role} (${scenario}) keeps every pre-Stage-2 link`, () => {
                 const now = hrefsFor(role, SCENARIOS[scenario]);
@@ -86,11 +95,31 @@ describe('nav stage 2: no role silently loses a link', () => {
 });
 
 describe('nav stage 2: intended shape', () => {
-    it('EMPLOYEE sees Money containing exactly Company Transactions', () => {
-        const money = getNavigationModules('EMPLOYEE', ['CORE']).find((m) => m.id === 'FINANCE');
-        assert.ok(money, 'EMPLOYEE lost the Money module');
-        const hrefs = money.categories.flatMap((c) => c.items.map((i) => i.href));
-        assert.deepEqual(hrefs, ['/dashboard/payments/by-company']);
+    it('every role named in the nav tree is a real UserRole member', () => {
+        // The guard for the whole class. `EMPLOYEE` sat in these arrays for a long time
+        // reading as "ordinary staff too", while granting nobody — a whitelist entry no user
+        // can hold simply never matches. NavItem.roles is typed as UserRoleValue | '*' so tsc
+        // catches this too; this asserts it at runtime for anyone reading the suite.
+        const named = new Set<string>();
+        for (const mod of ALL_MODULES)
+            for (const cat of mod.categories)
+                for (const item of cat.items) for (const r of item.roles) named.add(r);
+
+        const unknown = [...named].filter((r) => r !== '*' && !isUserRole(r));
+        assert.deepEqual(unknown, [], `nav lists roles that do not exist: ${unknown.join(', ')}`);
+    });
+
+    it('Company Transactions is finance-and-management only', () => {
+        // This item previously listed EMPLOYEE, so it read as being open to ordinary staff
+        // while rendering for nobody outside the four roles below. /api/payments/razorpay
+        // carries the same restriction deliberately — widening financial data to all staff is
+        // a business decision, so the nav was corrected to match the API rather than the
+        // other way round. Flipping that means changing BOTH.
+        const CT = '/dashboard/payments/by-company';
+        for (const role of ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER']) {
+            assert.ok(hrefsFor(role, ['CORE']).has(CT), `${role} should see Company Transactions`);
+        }
+        assert.ok(!hrefsFor('EXECUTIVE', ['CORE']).has(CT), 'ordinary staff should not see Company Transactions');
     });
 
     it('external accounts never see internal modules', () => {
